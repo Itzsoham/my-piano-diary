@@ -33,6 +33,8 @@ model User {
   sessions      Session[]
 
   teacher       Teacher?
+
+  createdAt     DateTime  @default(now())
 }
 
 model Account {

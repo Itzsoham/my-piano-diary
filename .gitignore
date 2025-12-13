@@ -46,4 +46,4 @@ yarn-error.log*
 .idea
 
 # prisma generated
-prisma/generated/
+/generated
