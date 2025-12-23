@@ -17,8 +17,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.className}`}>
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className}`}>
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>
