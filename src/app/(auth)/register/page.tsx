@@ -5,7 +5,7 @@ import { Command } from "lucide-react";
 import { RegisterForm } from "../_components/register-form";
 import { GoogleButton } from "../_components/social-auth/google-button";
 
-export default function RegisterV1() {
+export default function Register() {
   return (
     <div className="flex h-dvh">
       <div className="bg-background flex w-full items-center justify-center p-8 lg:w-2/3">

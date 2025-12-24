@@ -29,7 +29,17 @@ export async function loginAction(formData: FormData) {
       redirect: false,
     });
 
-    return { success: true, message: "Login successful!" };
+    // Fetch user details to return to client
+    const user = await db.user.findUnique({
+      where: { email: validatedData.email },
+      select: { id: true, email: true, name: true, image: true },
+    });
+
+    return {
+      success: true,
+      message: "Login successful!",
+      user,
+    };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -76,11 +86,12 @@ export async function registerAction(formData: FormData) {
     const hashedPassword = await hash(validatedData.password, 10);
 
     // Create new user
-    await db.user.create({
+    const newUser = await db.user.create({
       data: {
         email: validatedData.email,
         password: hashedPassword,
       },
+      select: { id: true, email: true, name: true, image: true },
     });
 
     // Automatically sign in the new user
@@ -90,7 +101,11 @@ export async function registerAction(formData: FormData) {
       redirect: false,
     });
 
-    return { success: true, message: "Account created successfully!" };
+    return {
+      success: true,
+      message: "Account created successfully!",
+      user: newUser,
+    };
   } catch (error) {
     if (error instanceof AuthError) {
       return {

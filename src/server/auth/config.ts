@@ -1,7 +1,6 @@
 import { compare } from "bcryptjs";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import DiscordProvider from "next-auth/providers/discord";
 
 import { db } from "@/server/db";
 
@@ -37,7 +36,6 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    DiscordProvider,
     CredentialsProvider({
       name: "Credentials",
       credentials: {

@@ -21,10 +21,12 @@ import {
   type RegisterInput,
 } from "@/lib/validations/auth-schemas";
 import { registerAction } from "@/server/actions/auth-actions";
+import { useUserStore } from "@/store/use-user-store";
 
 export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const setUser = useUserStore((state) => state.setUser);
 
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -48,8 +50,9 @@ export function RegisterForm() {
       // Call the server action
       const result = await registerAction(formData);
 
-      if (result.success) {
+      if (result.success && result.user) {
         toast.success(result.message);
+        setUser(result.user);
         router.push("/dashboard");
         router.refresh();
       } else {

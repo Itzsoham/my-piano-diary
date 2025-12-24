@@ -19,10 +19,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth-schemas";
 import { loginAction } from "@/server/actions/auth-actions";
+import { useUserStore } from "@/store/use-user-store";
 
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const setUser = useUserStore((state) => state.setUser);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -46,8 +48,9 @@ export function LoginForm() {
       // Call the server action
       const result = await loginAction(formData);
 
-      if (result.success) {
+      if (result.success && result.user) {
         toast.success(result.message);
+        setUser(result.user);
         router.push("/dashboard");
         router.refresh();
       } else {
