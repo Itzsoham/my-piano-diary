@@ -37,24 +37,41 @@ const studentFormSchema = z.object({
 
 type StudentFormValues = z.infer<typeof studentFormSchema>;
 
-interface StudentFormProps {
-  studentId: string;
-}
-
-export function StudentForm({ studentId }: StudentFormProps) {
+export function StudentForm({
+  studentId,
+  onSuccess,
+}: {
+  studentId?: string;
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const utils = api.useUtils();
 
-  const { data: student, isLoading } = api.student.getByGuid.useQuery({
-    id: studentId,
+  // Fetch student data only if we have an ID (edit mode)
+  const { data: student, isLoading } = api.student.getByGuid.useQuery(
+    { id: studentId! },
+    { enabled: !!studentId },
+  );
+
+  const createMutation = api.student.create.useMutation({
+    onSuccess: () => {
+      toast.success("Student created successfully");
+      void utils.student.getAll.invalidate();
+      onSuccess?.();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create student");
+    },
   });
 
   const updateMutation = api.student.update.useMutation({
     onSuccess: () => {
       toast.success("Student updated successfully");
       void utils.student.getAll.invalidate();
-      void utils.student.getByGuid.invalidate({ id: studentId });
-      router.push("/dashboard/students");
+      if (studentId) {
+        void utils.student.getByGuid.invalidate({ id: studentId });
+      }
+      onSuccess?.();
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update student");
@@ -81,157 +98,142 @@ export function StudentForm({ studentId }: StudentFormProps) {
   }, [student, form]);
 
   const onSubmit = (data: StudentFormValues) => {
-    updateMutation.mutate({
-      id: studentId,
-      ...data,
-      avatar: data.avatar || undefined,
-      notes: data.notes || undefined,
-    });
+    if (studentId) {
+      updateMutation.mutate({
+        id: studentId,
+        ...data,
+        avatar: data.avatar || undefined,
+        notes: data.notes || undefined,
+      });
+    } else {
+      createMutation.mutate({
+        ...data,
+        avatar: data.avatar || undefined,
+        notes: data.notes || undefined,
+      });
+    }
   };
 
-  if (isLoading) {
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  if (studentId && isLoading) {
     return (
-      <div className="flex h-[400px] items-center justify-center">
+      <div className="flex h-[200px] items-center justify-center">
         <Loader2 className="text-muted-foreground size-8 animate-spin" />
       </div>
     );
   }
 
-  if (!student) {
-    return (
-      <div className="flex h-[400px] items-center justify-center">
-        <p className="text-muted-foreground">Student not found</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Student</CardTitle>
-          <CardDescription>
-            Update student information and track their progress
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter student name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter student name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              <FormField
-                control={form.control}
-                name="avatar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Avatar URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="https://example.com/avatar.jpg"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Enter a URL to an image for the student's avatar
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <FormField
+            control={form.control}
+            name="avatar"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Avatar URL</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="https://example.com/avatar.jpg"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Enter a URL to an image for the student's avatar
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Add any notes about the student..."
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Track important information about the student
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Add any notes about the student..."
+                    className="min-h-[100px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Track important information about the student
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              <div className="flex gap-4">
-                <Button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="flex-1"
-                >
-                  {updateMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push("/dashboard/students")}
-                >
-                  Cancel
-                </Button>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onSuccess?.()}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  {studentId ? "Saving..." : "Creating..."}
+                </>
+              ) : (
+                <>{studentId ? "Save Changes" : "Add Student"}</>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
+
+      {student && (
+        <div className="space-y-4 rounded-lg border p-4">
+          <h4 className="font-semibold">Student Information</h4>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">Teacher</div>
+              <div className="text-muted-foreground text-sm">
+                {student.teacher.user.name || student.teacher.user.email}
               </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Student Information</CardTitle>
-          <CardDescription>
-            Additional details about {student.name}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2">
-            <div className="text-sm font-medium">Teacher</div>
-            <div className="text-muted-foreground text-sm">
-              {student.teacher.user.name || student.teacher.user.email}
+            </div>
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">Total Lessons</div>
+              <div className="text-muted-foreground text-sm">
+                {student.lessons.length} lessons recorded
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">Joined</div>
+              <div className="text-muted-foreground text-sm">
+                {new Date(student.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </div>
             </div>
           </div>
-          <div className="grid gap-2">
-            <div className="text-sm font-medium">Total Lessons</div>
-            <div className="text-muted-foreground text-sm">
-              {student.lessons.length} lessons recorded
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <div className="text-sm font-medium">Joined</div>
-            <div className="text-muted-foreground text-sm">
-              {new Date(student.createdAt).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }

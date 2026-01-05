@@ -1,23 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Camera,
-  ChartBar,
-  LayoutDashboard,
-  Database,
-  Sparkles,
-  FileText,
-  File,
-  Folder,
-  CircleHelp,
-  Music,
-  ListOrdered,
-  ScrollText,
-  Search,
-  Settings,
-  Users,
-} from "lucide-react";
+import { LayoutDashboard, Music, ListOrdered, Users } from "lucide-react";
 
 import { NavMain } from "@/app/dashboard/_components/nav-main";
 import { NavUser } from "@/app/dashboard/_components/nav-user";
@@ -35,110 +19,18 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: LayoutDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
-      icon: ListOrdered,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: ChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: Folder,
-    },
-    {
-      title: "Team",
-      url: "#",
+      title: "Students",
+      url: "/dashboard/students",
       icon: Users,
     },
-  ],
-  navClouds: [
     {
-      title: "Capture",
-      icon: Camera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: FileText,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: Sparkles,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: CircleHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: Search,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: Database,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: ScrollText,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: File,
+      title: "Calendar",
+      url: "/dashboard/calendar",
+      icon: ListOrdered,
     },
   ],
 };

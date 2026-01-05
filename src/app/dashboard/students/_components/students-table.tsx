@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { StudentSheet } from "./student-sheet";
 
 type Student = {
   id: string;
@@ -140,35 +141,42 @@ export function StudentsTable({ data }: StudentsTableProps) {
       id: "actions",
       cell: ({ row }) => {
         const student = row.original;
+        const [showEditSheet, setShowEditSheet] = React.useState(false);
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="size-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/students/${student.id}`}>
+          <>
+            <StudentSheet
+              mode="edit"
+              studentId={student.id}
+              open={showEditSheet}
+              onOpenChange={setShowEditSheet}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="size-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setShowEditSheet(true)}>
                   <Edit className="mr-2 size-4" />
                   Edit
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => {
-                  // TODO: Implement delete functionality
-                  console.log("Delete student:", student.id);
-                }}
-              >
-                <Trash className="mr-2 size-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => {
+                    // TODO: Implement delete functionality
+                    console.log("Delete student:", student.id);
+                  }}
+                >
+                  <Trash className="mr-2 size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         );
       },
     },
@@ -202,12 +210,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
           }
           className="max-w-sm"
         />
-        <Button asChild>
-          <Link href="/dashboard/students/new">
-            <UserPlus className="mr-2 size-4" />
-            Add Student
-          </Link>
-        </Button>
+        <StudentSheet mode="create" />
       </div>
 
       <div className="rounded-md border">
