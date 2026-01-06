@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,7 +9,6 @@ import {
   Edit,
   MoreHorizontal,
   Trash,
-  UserPlus,
 } from "lucide-react";
 import {
   flexRender,
@@ -43,6 +41,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { StudentSheet } from "./student-sheet";
+import Image from "next/image";
 
 type Student = {
   id: string;
@@ -75,6 +74,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
 
   const columns: ColumnDef<Student>[] = [
     {
@@ -83,7 +83,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           {row.original.avatar ? (
-            <img
+            <Image
               src={row.original.avatar}
               alt={row.original.name}
               className="size-8 rounded-full object-cover"
@@ -104,7 +104,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
       header: "Teacher",
       cell: ({ row }) => (
         <span className="text-muted-foreground">
-          {row.original.teacher.user.name || row.original.teacher.user.email}
+          {row.original.teacher.user.name ?? row.original.teacher.user.email}
         </span>
       ),
     },
@@ -133,7 +133,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
       header: "Notes",
       cell: ({ row }) => (
         <span className="text-muted-foreground line-clamp-1">
-          {row.original.notes || "—"}
+          {row.original.notes ?? "—"}
         </span>
       ),
     },
@@ -141,15 +141,16 @@ export function StudentsTable({ data }: StudentsTableProps) {
       id: "actions",
       cell: ({ row }) => {
         const student = row.original;
-        const [showEditSheet, setShowEditSheet] = React.useState(false);
 
         return (
           <>
             <StudentSheet
               mode="edit"
               studentId={student.id}
-              open={showEditSheet}
-              onOpenChange={setShowEditSheet}
+              open={showEditSheet === student.id}
+              onOpenChange={(open) =>
+                setShowEditSheet(open ? student.id : null)
+              }
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -159,7 +160,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setShowEditSheet(true)}>
+                <DropdownMenuItem onSelect={() => setShowEditSheet(student.id)}>
                   <Edit className="mr-2 size-4" />
                   Edit
                 </DropdownMenuItem>

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -21,14 +20,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
 const studentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   avatar: z.string().url("Must be a valid URL").optional().or(z.literal("")),
@@ -44,7 +35,6 @@ export function StudentForm({
   studentId?: string;
   onSuccess?: () => void;
 }) {
-  const router = useRouter();
   const utils = api.useUtils();
 
   // Fetch student data only if we have an ID (edit mode)
@@ -60,7 +50,7 @@ export function StudentForm({
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to create student");
+      toast.error(error.message ?? "Failed to create student");
     },
   });
 
@@ -74,7 +64,7 @@ export function StudentForm({
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update student");
+      toast.error(error.message ?? "Failed to update student");
     },
   });
 
@@ -91,8 +81,8 @@ export function StudentForm({
     if (student) {
       form.reset({
         name: student.name,
-        avatar: student.avatar || "",
-        notes: student.notes || "",
+        avatar: student.avatar ?? "",
+        notes: student.notes ?? "",
       });
     }
   }, [student, form]);
@@ -102,23 +92,23 @@ export function StudentForm({
       updateMutation.mutate({
         id: studentId,
         ...data,
-        avatar: data.avatar || undefined,
-        notes: data.notes || undefined,
+        avatar: data.avatar ?? undefined,
+        notes: data.notes ?? undefined,
       });
     } else {
       createMutation.mutate({
         ...data,
-        avatar: data.avatar || undefined,
-        notes: data.notes || undefined,
+        avatar: data.avatar ?? undefined,
+        notes: data.notes ?? undefined,
       });
     }
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending ?? updateMutation.isPending;
 
   if (studentId && isLoading) {
     return (
-      <div className="flex h-[200px] items-center justify-center">
+      <div className="flex h-50 items-center justify-center">
         <Loader2 className="text-muted-foreground size-8 animate-spin" />
       </div>
     );
@@ -155,7 +145,7 @@ export function StudentForm({
                   />
                 </FormControl>
                 <FormDescription>
-                  Enter a URL to an image for the student's avatar
+                  Enter a URL to an image for the student avatar
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -171,7 +161,7 @@ export function StudentForm({
                 <FormControl>
                   <Textarea
                     placeholder="Add any notes about the student..."
-                    className="min-h-[100px]"
+                    className="min-h-25"
                     {...field}
                   />
                 </FormControl>
@@ -212,7 +202,7 @@ export function StudentForm({
             <div className="grid gap-2">
               <div className="text-sm font-medium">Teacher</div>
               <div className="text-muted-foreground text-sm">
-                {student.teacher.user.name || student.teacher.user.email}
+                {student.teacher.user.name ?? student.teacher.user.email}
               </div>
             </div>
             <div className="grid gap-2">

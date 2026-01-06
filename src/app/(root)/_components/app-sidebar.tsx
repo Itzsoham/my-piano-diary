@@ -3,8 +3,8 @@
 import * as React from "react";
 import { LayoutDashboard, Music, ListOrdered, Users } from "lucide-react";
 
-import { NavMain } from "@/app/dashboard/_components/nav-main";
-import { NavUser } from "@/app/dashboard/_components/nav-user";
+import { NavMain } from "@/app/(root)/_components/nav-main";
+import { NavUser } from "@/app/(root)/_components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -24,12 +24,12 @@ const data = {
     },
     {
       title: "Students",
-      url: "/dashboard/students",
+      url: "/students",
       icon: Users,
     },
     {
       title: "Calendar",
-      url: "/dashboard/calendar",
+      url: "/calendar",
       icon: ListOrdered,
     },
   ],

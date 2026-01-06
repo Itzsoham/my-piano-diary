@@ -27,7 +27,6 @@ export function StudentSheet({
   mode = "create",
   studentId,
   trigger,
-  children,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: StudentSheetProps) {
@@ -60,12 +59,12 @@ export function StudentSheet({
           </SheetTrigger>
         )
       )}
-      <SheetContent className="overflow-y-auto sm:max-w-[600px]">
+      <SheetContent className="overflow-y-auto sm:max-w-150">
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        <div className="mt-6">
+        <div className="m-6">
           <StudentForm
             studentId={studentId}
             onSuccess={() => onOpenChange?.(false)}
