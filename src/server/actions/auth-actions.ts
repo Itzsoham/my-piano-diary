@@ -2,7 +2,6 @@
 
 import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
-import { redirect } from "next/navigation";
 
 import { loginSchema, registerSchema } from "@/lib/validations/auth-schemas";
 import { signIn } from "@/server/auth";

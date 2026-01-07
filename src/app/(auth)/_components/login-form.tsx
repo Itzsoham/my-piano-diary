@@ -56,7 +56,7 @@ export function LoginForm() {
       } else {
         toast.error(result.message);
       }
-    } catch (error) {
+    } catch {
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);

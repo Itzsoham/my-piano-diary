@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 export const studentRouter = createTRPCRouter({
   getAll: protectedProcedure.query(({ ctx }) => {
@@ -73,13 +69,11 @@ export const studentRouter = createTRPCRouter({
         where: { userId: ctx.session.user.id },
       });
 
-      if (!teacher) {
-        teacher = await ctx.db.teacher.create({
-          data: {
-            userId: ctx.session.user.id,
-          },
-        });
-      }
+      teacher ??= await ctx.db.teacher.create({
+        data: {
+          userId: ctx.session.user.id,
+        },
+      });
 
       return ctx.db.student.create({
         data: {

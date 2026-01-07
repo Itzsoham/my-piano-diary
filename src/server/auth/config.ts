@@ -57,7 +57,7 @@ export const authConfig = {
 
         const isPasswordValid = await compare(
           credentials.password as string,
-          user.password,
+          user?.password,
         );
 
         if (!isPasswordValid) {
