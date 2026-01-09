@@ -7,6 +7,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Edit,
+  FileText,
   MoreHorizontal,
   Trash,
 } from "lucide-react";
@@ -42,6 +43,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { StudentSheet } from "./student-sheet";
 import Image from "next/image";
+import Link from "next/link";
 
 type Student = {
   id: string;
@@ -163,6 +165,12 @@ export function StudentsTable({ data }: StudentsTableProps) {
                 <DropdownMenuItem onSelect={() => setShowEditSheet(student.id)}>
                   <Edit className="mr-2 size-4" />
                   Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/students/${student.id}/reports`}>
+                    <FileText className="mr-2 size-4" />
+                    View Reports
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
