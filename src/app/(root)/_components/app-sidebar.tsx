@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { LayoutDashboard, Music, ListOrdered, Users } from "lucide-react";
+import { LayoutDashboard, ListOrdered, Users } from "lucide-react";
 
 import { NavMain } from "@/app/(root)/_components/nav-main";
 import { NavUser } from "@/app/(root)/_components/nav-user";
@@ -14,6 +14,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import Image from "next/image";
+import { APP_CONFIG } from "@/config/app-config";
 
 const data = {
   navMain: [
@@ -43,11 +45,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <a href="#">
-                <Music className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <Image
+                  src="/logo.png"
+                  alt="App Logo"
+                  width={30}
+                  height={30}
+                  className="inline-block"
+                />
+                <span className="text-base font-semibold">
+                  {APP_CONFIG.name}
+                </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
