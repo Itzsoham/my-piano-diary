@@ -1,10 +1,18 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { redirect } from "next/navigation";
+import { getServerAuthSession } from "@/server/auth";
 import { AppSidebar } from "./_components/app-sidebar";
 import { SiteHeader } from "./_components/site-header";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await getServerAuthSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
   return (
     <SidebarProvider
       style={
