@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import {
+  createStudentSchema,
+  updateStudentSchema,
+  idSchema,
+} from "@/lib/validations/common-schemas";
 
 export const studentRouter = createTRPCRouter({
   getAll: protectedProcedure.query(({ ctx }) => {
@@ -27,7 +32,7 @@ export const studentRouter = createTRPCRouter({
   }),
 
   getByGuid: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: idSchema }))
     .query(async ({ ctx, input }) => {
       const student = await ctx.db.student.findUnique({
         where: { id: input.id },
@@ -57,13 +62,7 @@ export const studentRouter = createTRPCRouter({
     }),
 
   create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1),
-        avatar: z.string().optional(),
-        notes: z.string().optional(),
-      }),
-    )
+    .input(createStudentSchema)
     .mutation(async ({ ctx, input }) => {
       let teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
@@ -78,7 +77,6 @@ export const studentRouter = createTRPCRouter({
       return ctx.db.student.create({
         data: {
           name: input.name,
-          avatar: input.avatar,
           notes: input.notes,
           teacher: { connect: { id: teacher.id } },
         },
@@ -86,14 +84,7 @@ export const studentRouter = createTRPCRouter({
     }),
 
   update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string().min(1).optional(),
-        avatar: z.string().optional(),
-        notes: z.string().optional(),
-      }),
-    )
+    .input(updateStudentSchema)
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
@@ -104,7 +95,7 @@ export const studentRouter = createTRPCRouter({
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: idSchema }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.student.delete({
         where: { id: input.id },

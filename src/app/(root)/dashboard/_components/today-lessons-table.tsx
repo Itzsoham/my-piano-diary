@@ -1,0 +1,199 @@
+"use client";
+
+import { api } from "@/trpc/react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Calendar, Clock, DollarSign } from "lucide-react";
+
+interface TodayLesson {
+  id: string;
+  studentId: string;
+  teacherId: string;
+  date: Date;
+  duration: number;
+  status: string;
+  cancelReason: string | null;
+  pieceId: string | null;
+  createdAt: Date;
+  earnings: number;
+  piece: {
+    title: string;
+  } | null;
+  student: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  };
+}
+
+export function TodayLessonsTable() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  const query: any = (api as any).earnings.getTodayLessons.useQuery();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  const lessonsData: unknown = query.data;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  const isLoading: unknown = query.isLoading;
+  const lessons = (lessonsData ?? []) as TodayLesson[];
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatTime = (date: Date) => {
+    return new Date(date).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "COMPLETE":
+        return "default";
+      case "MAKEUP":
+        return "secondary";
+      case "CANCELLED":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
+
+  const totalEarnings =
+    lessons?.reduce((sum, lesson) => sum + lesson.earnings, 0) ?? 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="size-5" />
+              Today&apos;s Lessons
+            </CardTitle>
+            <CardDescription>
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </CardDescription>
+          </div>
+          <div className="bg-muted/50 flex items-center gap-2 rounded-lg border px-3 py-2">
+            <DollarSign className="text-primary size-5" />
+            <div>
+              <div className="text-muted-foreground text-xs">
+                Today&apos;s Total
+              </div>
+              <div className="font-semibold">
+                {formatCurrency(totalEarnings)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-muted-foreground flex h-32 items-center justify-center">
+            Loading lessons...
+          </div>
+        ) : lessons && lessons.length > 0 ? (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Piece</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Earnings</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lessons.map((lesson) => (
+                  <TableRow key={lesson.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Clock className="text-muted-foreground size-4" />
+                        {formatTime(lesson.date)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-8">
+                          <AvatarImage
+                            src={lesson.student.avatar ?? undefined}
+                          />
+                          <AvatarFallback>
+                            {lesson.student.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{lesson.student.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {lesson.piece?.title ?? (
+                        <span className="text-muted-foreground">No piece</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{lesson.duration} min</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusColor(lesson.status)}>
+                        {lesson.status.toLowerCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {lesson.status === "CANCELLED" ? (
+                        <span className="text-destructive">
+                          {formatCurrency(lesson.earnings)}
+                        </span>
+                      ) : (
+                        <span className="text-green-600">
+                          {formatCurrency(lesson.earnings)}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
+            <div className="text-muted-foreground text-center">
+              <Calendar className="mx-auto mb-2 size-8 opacity-50" />
+              <p>No lessons scheduled for today</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

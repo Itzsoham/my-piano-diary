@@ -8,10 +8,10 @@ export default function Register() {
   return (
     <div className="flex h-dvh">
       {/* Left Side – Register Form */}
-      <div className="flex w-full items-center justify-center bg-gradient-to-br from-white via-purple-50/30 to-rose-50/30 p-8 lg:w-2/3">
+      <div className="flex w-full items-center justify-center bg-linear-to-br from-white via-purple-50/30 to-rose-50/30 p-8 lg:w-2/3">
         <div className="w-full max-w-md space-y-10 py-24 lg:py-32">
           <div className="space-y-4 text-center">
-            <div className="mb-2 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 shadow-sm">
+            <div className="mb-2 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-purple-100 to-pink-100 shadow-sm">
               <span className="text-2xl">🎹</span>
             </div>
             <div className="text-3xl font-light tracking-tight text-gray-800">
@@ -45,7 +45,7 @@ export default function Register() {
       </div>
 
       {/* Right Side – Piano Diary Mood */}
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-rose-50 lg:block lg:w-1/3">
+      <div className="relative hidden overflow-hidden bg-linear-to-br from-purple-100 via-pink-50 to-rose-50 lg:block lg:w-1/3">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(221,160,221,0.15),transparent_50%),radial-gradient(circle_at_30%_80%,rgba(255,182,193,0.15),transparent_50%)]"></div>
         <div className="relative flex h-full flex-col items-center justify-center p-12 text-center">
           <div className="space-y-8">

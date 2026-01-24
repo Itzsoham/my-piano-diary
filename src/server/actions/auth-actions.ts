@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { loginSchema, registerSchema } from "@/lib/validations/auth-schemas";
 import { signIn } from "@/server/auth";
 import { db } from "@/server/db";
+import { logError } from "@/lib/error-handler";
 
 /**
  * Server action for user login
@@ -41,6 +42,11 @@ export async function loginAction(formData: FormData) {
     };
   } catch (error) {
     if (error instanceof AuthError) {
+      logError(`Login failed - AuthError: ${error.type}`, error, {
+        component: "Auth Action: Login",
+        severity: "warning",
+      });
+
       switch (error.type) {
         case "CredentialsSignin":
           return { success: false, message: "Invalid email or password." };
@@ -51,9 +57,17 @@ export async function loginAction(formData: FormData) {
 
     // Validation errors
     if (error instanceof Error) {
+      logError(`Login validation error: ${error.message}`, error, {
+        component: "Auth Action: Login",
+        severity: "warning",
+      });
       return { success: false, message: error.message };
     }
 
+    logError("Login error - Unknown", error, {
+      component: "Auth Action: Login",
+      severity: "error",
+    });
     return { success: false, message: "An unexpected error occurred." };
   }
 }
@@ -107,6 +121,10 @@ export async function registerAction(formData: FormData) {
     };
   } catch (error) {
     if (error instanceof AuthError) {
+      logError(`Registration failed - AuthError`, error, {
+        component: "Auth Action: Register",
+        severity: "warning",
+      });
       return {
         success: false,
         message: "Failed to sign in after registration.",
@@ -115,9 +133,17 @@ export async function registerAction(formData: FormData) {
 
     // Validation errors
     if (error instanceof Error) {
+      logError(`Registration validation error: ${error.message}`, error, {
+        component: "Auth Action: Register",
+        severity: "warning",
+      });
       return { success: false, message: error.message };
     }
 
+    logError("Registration error - Unknown", error, {
+      component: "Auth Action: Register",
+      severity: "error",
+    });
     return { success: false, message: "An unexpected error occurred." };
   }
 }

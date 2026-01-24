@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import {
+  createPieceSchema,
+  updatePieceSchema,
+  idSchema,
+} from "@/lib/validations/common-schemas";
 
 export const pieceRouter = createTRPCRouter({
   getAll: protectedProcedure.query(({ ctx }) => {
@@ -17,7 +22,7 @@ export const pieceRouter = createTRPCRouter({
   }),
 
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: idSchema }))
     .query(async ({ ctx, input }) => {
       const piece = await ctx.db.piece.findUnique({
         where: { id: input.id },
@@ -45,32 +50,19 @@ export const pieceRouter = createTRPCRouter({
     }),
 
   create: protectedProcedure
-    .input(
-      z.object({
-        title: z.string().min(1),
-        description: z.string().optional(),
-        level: z.string().optional(),
-      }),
-    )
+    .input(createPieceSchema)
     .mutation(async ({ ctx, input }) => {
       return ctx.db.piece.create({
         data: {
           title: input.title,
-          description: input.description,
           level: input.level,
+          description: input.description,
         },
       });
     }),
 
   update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        title: z.string().min(1).optional(),
-        description: z.string().optional(),
-        level: z.string().optional(),
-      }),
-    )
+    .input(updatePieceSchema)
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
@@ -81,7 +73,7 @@ export const pieceRouter = createTRPCRouter({
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: idSchema }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.piece.delete({
         where: { id: input.id },

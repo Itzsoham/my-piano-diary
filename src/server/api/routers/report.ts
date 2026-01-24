@@ -1,15 +1,16 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { endOfMonth } from "date-fns";
+import { idSchema } from "@/lib/validations/common-schemas";
 
 export const reportRouter = createTRPCRouter({
   // Get student report for a specific month
   getStudentReport: protectedProcedure
     .input(
       z.object({
-        studentId: z.string(),
-        month: z.number().min(1).max(12),
-        year: z.number(),
+        studentId: idSchema,
+        month: z.number().int().min(1).max(12),
+        year: z.number().int().min(1900).max(2100),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -74,12 +75,12 @@ export const reportRouter = createTRPCRouter({
   upsertReport: protectedProcedure
     .input(
       z.object({
-        studentId: z.string(),
-        month: z.number().min(1).max(12),
-        year: z.number(),
-        summary: z.string().optional(),
-        comments: z.string().optional(),
-        nextMonthPlan: z.string().optional(),
+        studentId: idSchema,
+        month: z.number().int().min(1).max(12),
+        year: z.number().int().min(1900).max(2100),
+        summary: z.string().max(5000).optional(),
+        comments: z.string().max(5000).optional(),
+        nextMonthPlan: z.string().max(5000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

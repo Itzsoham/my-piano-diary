@@ -3,6 +3,10 @@ import { hash } from "bcryptjs";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import {
+  updateUserSchema,
+  passwordSchema,
+} from "@/lib/validations/common-schemas";
 
 export const userRouter = createTRPCRouter({
   // Get current user profile
@@ -42,17 +46,7 @@ export const userRouter = createTRPCRouter({
 
   // Update user profile
   updateProfile: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1, "Name is required").optional(),
-        email: z.string().email("Invalid email").optional(),
-        image: z
-          .string()
-          .url("Must be a valid URL")
-          .optional()
-          .or(z.literal("")),
-      }),
-    )
+    .input(updateUserSchema)
     .mutation(async ({ ctx, input }) => {
       // Check if email is already taken by another user
       if (input.email) {
@@ -83,9 +77,7 @@ export const userRouter = createTRPCRouter({
     .input(
       z.object({
         currentPassword: z.string().min(1, "Current password is required"),
-        newPassword: z
-          .string()
-          .min(6, "Password must be at least 6 characters"),
+        newPassword: passwordSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -124,7 +116,10 @@ export const userRouter = createTRPCRouter({
   updateHourlyRate: protectedProcedure
     .input(
       z.object({
-        hourlyRate: z.number().min(0, "Hourly rate must be positive"),
+        hourlyRate: z
+          .number()
+          .positive("Hourly rate must be greater than 0")
+          .multipleOf(0.01, "Hourly rate must have max 2 decimal places"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
