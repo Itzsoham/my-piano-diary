@@ -1,5 +1,4 @@
 import { ReportView } from "./_components/report-view";
-import { notFound } from "next/navigation";
 
 export default async function ReportPage(props: {
   params: Promise<{ id: string }>;

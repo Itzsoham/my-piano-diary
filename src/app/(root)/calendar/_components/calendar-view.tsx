@@ -89,10 +89,8 @@ function DraggableLessonCard({
     <div
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
       className={cn(
         "w-full text-left transition-all",
-        "cursor-grab active:cursor-grabbing",
         isDragging && "scale-105 opacity-50",
       )}
     >
@@ -106,7 +104,12 @@ function DraggableLessonCard({
         )}
       >
         <div className="flex items-center gap-1">
-          <GripVertical className="text-muted-foreground h-3 w-3 flex-shrink-0" />
+          <div
+            {...listeners}
+            className="text-muted-foreground flex h-3 w-3 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
+          >
+            <GripVertical className="h-3 w-3" />
+          </div>
           {lesson.attendance && getAttendanceIcon(lesson.attendance.status)}
           <Clock className="h-3 w-3" />
           <span className="font-medium">
@@ -152,7 +155,7 @@ function DroppableDay({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[120px] space-y-1 rounded-lg border p-2 transition-colors",
+        "min-h-30 space-y-1 rounded-lg border p-2 transition-colors",
         isToday && "border-primary bg-accent/30",
         isOver && "bg-accent/70 border-primary",
       )}
@@ -292,7 +295,7 @@ export function CalendarView({
               ))}
 
               {emptyCells.map((_, index) => (
-                <div key={`empty-${index}`} className="min-h-[120px] p-2" />
+                <div key={`empty-${index}`} className="min-h-30 p-2" />
               ))}
 
               {daysInMonth.map((day) => {

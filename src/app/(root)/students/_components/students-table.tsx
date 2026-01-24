@@ -26,6 +26,7 @@ import {
 } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,12 +83,17 @@ export function StudentsTable({ data }: StudentsTableProps) {
   });
   const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"table" | "grid">("table");
+  const [deleteConfirm, setDeleteConfirm] = React.useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const utils = api.useUtils();
   const deleteStudent = api.student.delete.useMutation({
     onSuccess: () => {
       toast.success("Student deleted successfully");
       void utils.student.getAll.invalidate();
+      setDeleteConfirm(null);
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to delete student");
@@ -95,12 +101,12 @@ export function StudentsTable({ data }: StudentsTableProps) {
   });
 
   const handleDelete = (id: string, name: string) => {
-    if (
-      confirm(
-        `Are you sure you want to delete ${name}? This action cannot be undone.`,
-      )
-    ) {
-      deleteStudent.mutate({ id });
+    setDeleteConfirm({ id, name });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm) {
+      deleteStudent.mutate({ id: deleteConfirm.id });
     }
   };
 
@@ -482,6 +488,18 @@ export function StudentsTable({ data }: StudentsTableProps) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete Student"
+        description={`Are you sure you want to delete ${deleteConfirm?.name}? This action cannot be undone and will remove all associated lessons and data.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        isLoading={deleteStudent.isPending}
+      />
     </div>
   );
 }

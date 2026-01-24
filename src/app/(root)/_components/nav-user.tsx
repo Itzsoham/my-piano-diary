@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useUserStore } from "@/store/use-user-store";
 import { signOut, useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
@@ -35,10 +36,10 @@ export function NavUser() {
 
   // Prefer store user, fallback to session user
   const user =
-    storeUser ||
+    storeUser ??
     (session?.user
       ? {
-          id: (session.user as any).id,
+          id: (session.user as { id: string }).id,
           name: session.user.name,
           email: session.user.email,
           image: session.user.image,
@@ -63,11 +64,11 @@ export function NavUser() {
 
   // Final check - if we are authenticated but have no user data yet
   const effectiveUser =
-    user ||
+    user ??
     (status === "authenticated"
       ? {
-          name: session?.user?.name || "User",
-          email: session?.user?.email || "",
+          name: session?.user?.name ?? "User",
+          email: session?.user?.email ?? "",
         }
       : null);
 
@@ -76,8 +77,14 @@ export function NavUser() {
   }
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/login" });
-    clearUser();
+    try {
+      await signOut({ callbackUrl: "/login" });
+      clearUser();
+      toast.success("Logged out successfully");
+    } catch (error) {
+      toast.error("Failed to log out. Please try again.");
+      console.error("Logout error:", error);
+    }
   };
 
   const userDisplayName = effectiveUser.name ?? "User";

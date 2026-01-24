@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { getWeekOfMonth, getDate, format } from "date-fns";
 import { Loader2, Save, Printer } from "lucide-react";
 import { api } from "@/trpc/react";
-import type { AttendanceStatus } from "@prisma/client";
 
 interface ReportViewProps {
   studentId: string;
@@ -34,10 +33,10 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
 
   const upsertReport = api.report.upsertReport.useMutation();
 
-  const [summary, setSummary] = useState(data?.report?.summary || "");
-  const [comments, setComments] = useState(data?.report?.comments || "");
+  const [summary, setSummary] = useState(data?.report?.summary ?? "");
+  const [comments, setComments] = useState(data?.report?.comments ?? "");
   const [nextMonthPlan, setNextMonthPlan] = useState(
-    data?.report?.nextMonthPlan || "",
+    data?.report?.nextMonthPlan ?? "",
   );
 
   // Update state when data loads
@@ -47,9 +46,9 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
     comments === "" &&
     nextMonthPlan === ""
   ) {
-    setSummary(data.report.summary || "");
-    setComments(data.report.comments || "");
-    setNextMonthPlan(data.report.nextMonthPlan || "");
+    setSummary(data.report.summary ?? "");
+    setComments(data.report.comments ?? "");
+    setNextMonthPlan(data.report.nextMonthPlan ?? "");
   }
 
   const handleSave = async () => {
@@ -63,7 +62,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
         nextMonthPlan,
       });
       toast.success("Report saved successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to save report");
     }
   };
@@ -116,7 +115,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
   lessons.forEach((lesson) => {
     const week = getWeekOfMonth(lesson.date, { weekStartsOn: 1 });
     const day = getDate(lesson.date);
-    const status = lesson.attendance?.status || "PENDING";
+    const status = lesson.attendance?.status ?? "PENDING";
     if (weeksData[week]) {
       weeksData[week].push({ day, status });
     }
@@ -131,7 +130,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
       <div className="bg-card flex flex-col items-center justify-between gap-4 rounded-lg border p-4 shadow-sm sm:flex-row print:hidden">
         <div className="flex items-center gap-2">
           <Select value={month.toString()} onValueChange={handleMonthChange}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-30">
               <SelectValue placeholder="Month" />
             </SelectTrigger>
             <SelectContent>
@@ -144,7 +143,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
           </Select>
 
           <Select value={year.toString()} onValueChange={handleYearChange}>
-            <SelectTrigger className="w-[100px]">
+            <SelectTrigger className="w-25">
               <SelectValue placeholder="Year" />
             </SelectTrigger>
             <SelectContent>
@@ -190,7 +189,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
             <Textarea
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              className="min-h-[100px] w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
+              className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
               placeholder="- Student completed..."
             />
           </section>
@@ -200,7 +199,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
             <Textarea
               value={comments}
               onChange={(e) => setComments(e.target.value)}
-              className="min-h-[150px] w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
+              className="min-h-37.5 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
               placeholder="- Technique..."
             />
           </section>
@@ -210,7 +209,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
             <Textarea
               value={nextMonthPlan}
               onChange={(e) => setNextMonthPlan(e.target.value)}
-              className="min-h-[100px] w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
+              className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
               placeholder="- Learn new piece..."
             />
           </section>
@@ -242,7 +241,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
 
               {/* Data Row */}
               <div
-                className="grid min-h-[60px] divide-x divide-black text-center"
+                className="grid min-h-15 divide-x divide-black text-center"
                 style={{
                   gridTemplateColumns: `50px 100px repeat(${weeks.length}, 1fr)`,
                 }}

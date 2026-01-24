@@ -207,7 +207,7 @@ export function PieceForm({
                 piece._count &&
                 typeof piece._count === "object" &&
                 "lessons" in piece._count
-                  ? (piece._count.lessons as number)
+                  ? piece._count.lessons
                   : 0}
               </span>
             </div>

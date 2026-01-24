@@ -55,7 +55,19 @@ export function LessonDialog({
   initialDate,
   onSuccess,
 }: LessonDialogProps) {
-  const createLesson = api.lesson.create.useMutation();
+  const utils = api.useUtils();
+  const createLesson = api.lesson.create.useMutation({
+    onSuccess: () => {
+      toast.success("Lesson created successfully!");
+      void utils.lesson.invalidate();
+      onOpenChange(false);
+      form.reset();
+      onSuccess?.();
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to create lesson");
+    },
+  });
 
   const form = useForm<LessonFormValues>({
     resolver: zodResolver(LessonFormSchema),
@@ -70,27 +82,18 @@ export function LessonDialog({
   });
 
   const onSubmit = async (data: LessonFormValues) => {
-    try {
-      const dateTime = new Date(`${data.date}T${data.time}`);
+    const dateTime = new Date(`${data.date}T${data.time}`);
 
-      await createLesson.mutateAsync({
-        studentId: data.studentId,
-        date: dateTime,
-        duration: parseInt(data.duration),
-      });
-
-      toast.success("Lesson created successfully!");
-      onOpenChange(false);
-      form.reset();
-      onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "An error occurred");
-    }
+    createLesson.mutate({
+      studentId: data.studentId,
+      date: dateTime,
+      duration: parseInt(data.duration),
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Schedule Lesson</DialogTitle>
           <DialogDescription>
@@ -181,10 +184,10 @@ export function LessonDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={createLesson.isPending}
                 className="flex-1"
               >
-                {form.formState.isSubmitting ? "Creating..." : "Create"}
+                {createLesson.isPending ? "Creating..." : "Create"}
               </Button>
             </div>
           </form>

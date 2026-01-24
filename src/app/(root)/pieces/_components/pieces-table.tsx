@@ -26,6 +26,7 @@ import {
 } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,12 +74,17 @@ export function PiecesTable({ data }: PiecesTableProps) {
   });
   const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"table" | "grid">("table");
+  const [deleteConfirm, setDeleteConfirm] = React.useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   const utils = api.useUtils();
   const deletePiece = api.piece.delete.useMutation({
     onSuccess: () => {
       toast.success("Piece deleted successfully");
       void utils.piece.getAll.invalidate();
+      setDeleteConfirm(null);
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to delete piece");
@@ -86,12 +92,12 @@ export function PiecesTable({ data }: PiecesTableProps) {
   });
 
   const handleDelete = (id: string, title: string) => {
-    if (
-      confirm(
-        `Are you sure you want to delete "${title}"? This action cannot be undone.`,
-      )
-    ) {
-      deletePiece.mutate({ id });
+    setDeleteConfirm({ id, title });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm) {
+      deletePiece.mutate({ id: deleteConfirm.id });
     }
   };
 
@@ -441,6 +447,18 @@ export function PiecesTable({ data }: PiecesTableProps) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete Piece"
+        description={`Are you sure you want to delete "${deleteConfirm?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        isLoading={deletePiece.isPending}
+      />
     </div>
   );
 }

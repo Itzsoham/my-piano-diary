@@ -65,42 +65,48 @@ export function AttendanceDialog({
   lesson,
   onSuccess,
 }: AttendanceDialogProps) {
-  const markAttendance = api.lesson.markAttendance.useMutation();
+  const utils = api.useUtils();
+  const markAttendance = api.lesson.markAttendance.useMutation({
+    onSuccess: () => {
+      toast.success("Attendance marked successfully!");
+      void utils.lesson.invalidate();
+      onOpenChange(false);
+      onSuccess?.();
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to mark attendance");
+    },
+  });
 
   const form = useForm<AttendanceFormValues>({
     resolver: zodResolver(AttendanceFormSchema),
     defaultValues: {
-      status: lesson.attendance?.status || "PRESENT",
+      status: (lesson.attendance?.status ?? "PRESENT") as
+        | "PRESENT"
+        | "ABSENT"
+        | "MAKEUP",
       actualMin:
-        lesson.attendance?.actualMin.toString() || lesson.duration.toString(),
-      reason: lesson.attendance?.reason || "",
-      note: lesson.attendance?.note || "",
+        lesson.attendance?.actualMin.toString() ?? lesson.duration.toString(),
+      reason: lesson.attendance?.reason ?? "",
+      note: lesson.attendance?.note ?? "",
     },
   });
 
   const selectedStatus = form.watch("status");
 
   const onSubmit = async (data: AttendanceFormValues) => {
-    try {
-      await markAttendance.mutateAsync({
-        lessonId: lesson.id,
-        status: data.status as AttendanceStatus,
-        actualMin: parseInt(data.actualMin),
-        reason: data.reason,
-        note: data.note,
-      });
-
-      toast.success("Attendance marked successfully!");
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "An error occurred");
-    }
+    markAttendance.mutate({
+      lessonId: lesson.id,
+      status: data.status as AttendanceStatus,
+      actualMin: parseInt(data.actualMin),
+      reason: data.reason,
+      note: data.note,
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Mark Attendance</DialogTitle>
           <DialogDescription>
@@ -188,7 +194,7 @@ export function AttendanceDialog({
                   <FormControl>
                     <Textarea
                       placeholder="Any additional notes..."
-                      className="min-h-[80px]"
+                      className="min-h-20"
                       {...field}
                     />
                   </FormControl>
@@ -208,10 +214,10 @@ export function AttendanceDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={markAttendance.isPending}
                 className="flex-1"
               >
-                {form.formState.isSubmitting ? "Saving..." : "Save"}
+                {markAttendance.isPending ? "Saving..." : "Save"}
               </Button>
             </div>
           </form>
