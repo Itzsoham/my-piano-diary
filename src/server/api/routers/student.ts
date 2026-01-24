@@ -102,4 +102,12 @@ export const studentRouter = createTRPCRouter({
         data,
       });
     }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.student.delete({
+        where: { id: input.id },
+      });
+    }),
 });

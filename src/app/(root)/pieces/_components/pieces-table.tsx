@@ -7,11 +7,11 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Edit,
-  FileText,
   MoreHorizontal,
   Trash,
   LayoutGrid,
   Table as TableIcon,
+  Music,
 } from "lucide-react";
 import {
   flexRender,
@@ -43,35 +43,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { StudentSheet } from "./student-sheet";
-import Image from "next/image";
-import Link from "next/link";
+import { PieceSheet } from "./piece-sheet";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 
-type Student = {
+type Piece = {
   id: string;
-  name: string;
-  avatar: string | null;
-  notes: string | null;
+  title: string;
+  description: string | null;
+  level: string | null;
   createdAt: Date;
-  teacher: {
-    id: string;
-    user: {
-      name: string | null;
-      email: string | null;
-    };
-  };
   _count: {
     lessons: number;
   };
 };
 
-interface StudentsTableProps {
-  data: Student[];
+interface PiecesTableProps {
+  data: Piece[];
 }
 
-export function StudentsTable({ data }: StudentsTableProps) {
+export function PiecesTable({ data }: PiecesTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -84,55 +75,45 @@ export function StudentsTable({ data }: StudentsTableProps) {
   const [viewMode, setViewMode] = React.useState<"table" | "grid">("table");
 
   const utils = api.useUtils();
-  const deleteStudent = api.student.delete.useMutation({
+  const deletePiece = api.piece.delete.useMutation({
     onSuccess: () => {
-      toast.success("Student deleted successfully");
-      void utils.student.getAll.invalidate();
+      toast.success("Piece deleted successfully");
+      void utils.piece.getAll.invalidate();
     },
     onError: (error) => {
-      toast.error(error.message ?? "Failed to delete student");
+      toast.error(error.message ?? "Failed to delete piece");
     },
   });
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = (id: string, title: string) => {
     if (
       confirm(
-        `Are you sure you want to delete ${name}? This action cannot be undone.`,
+        `Are you sure you want to delete "${title}"? This action cannot be undone.`,
       )
     ) {
-      deleteStudent.mutate({ id });
+      deletePiece.mutate({ id });
     }
   };
 
-  const columns: ColumnDef<Student>[] = [
+  const columns: ColumnDef<Piece>[] = [
     {
-      accessorKey: "name",
-      header: "Name",
+      accessorKey: "title",
+      header: "Title",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          {row.original.avatar ? (
-            <Image
-              src={row.original.avatar}
-              alt={row.original.name}
-              className="size-8 rounded-full object-cover"
-            />
-          ) : (
-            <div className="bg-primary/10 flex size-8 items-center justify-center rounded-full">
-              <span className="text-primary text-sm font-medium">
-                {row.original.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-          <span className="font-medium">{row.original.name}</span>
+          <div className="bg-primary/10 flex size-8 items-center justify-center rounded-lg">
+            <Music className="text-primary size-4" />
+          </div>
+          <span className="font-medium">{row.original.title}</span>
         </div>
       ),
     },
     {
-      accessorKey: "teacher.user.name",
-      header: "Teacher",
+      accessorKey: "level",
+      header: "Level",
       cell: ({ row }) => (
         <span className="text-muted-foreground">
-          {row.original.teacher.user.name ?? row.original.teacher.user.email}
+          {row.original.level ?? "—"}
         </span>
       ),
     },
@@ -144,8 +125,17 @@ export function StudentsTable({ data }: StudentsTableProps) {
       ),
     },
     {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground line-clamp-1">
+          {row.original.description ?? "—"}
+        </span>
+      ),
+    },
+    {
       accessorKey: "createdAt",
-      header: "Joined",
+      header: "Created",
       cell: ({ row }) => (
         <span className="text-muted-foreground">
           {new Date(row.original.createdAt).toLocaleDateString("en-US", {
@@ -157,28 +147,17 @@ export function StudentsTable({ data }: StudentsTableProps) {
       ),
     },
     {
-      accessorKey: "notes",
-      header: "Notes",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground line-clamp-1">
-          {row.original.notes ?? "—"}
-        </span>
-      ),
-    },
-    {
       id: "actions",
       cell: ({ row }) => {
-        const student = row.original;
+        const piece = row.original;
 
         return (
           <>
-            <StudentSheet
+            <PieceSheet
               mode="edit"
-              studentId={student.id}
-              open={showEditSheet === student.id}
-              onOpenChange={(open) =>
-                setShowEditSheet(open ? student.id : null)
-              }
+              pieceId={piece.id}
+              open={showEditSheet === piece.id}
+              onOpenChange={(open) => setShowEditSheet(open ? piece.id : null)}
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -188,20 +167,14 @@ export function StudentsTable({ data }: StudentsTableProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setShowEditSheet(student.id)}>
+                <DropdownMenuItem onSelect={() => setShowEditSheet(piece.id)}>
                   <Edit className="mr-2 size-4" />
                   Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href={`/students/${student.id}/reports`}>
-                    <FileText className="mr-2 size-4" />
-                    View Reports
-                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={() => handleDelete(student.id, student.name)}
+                  onClick={() => handleDelete(piece.id, piece.title)}
                 >
                   <Trash className="mr-2 size-4" />
                   Delete
@@ -235,10 +208,10 @@ export function StudentsTable({ data }: StudentsTableProps) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <Input
-          placeholder="Filter students..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          placeholder="Filter pieces..."
+          value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
+            table.getColumn("title")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -261,7 +234,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
               <LayoutGrid className="size-4" />
             </Button>
           </div>
-          <StudentSheet mode="create" />
+          <PieceSheet mode="create" />
         </div>
       </div>
 
@@ -309,7 +282,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No students found.
+                    No pieces found.
                   </TableCell>
                 </TableRow>
               )}
@@ -320,43 +293,35 @@ export function StudentsTable({ data }: StudentsTableProps) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => {
-              const student = row.original;
+              const piece = row.original;
               return (
                 <div
-                  key={student.id}
+                  key={piece.id}
                   className="group bg-card relative overflow-hidden rounded-xl border p-5 shadow-sm transition-all hover:shadow-md"
                 >
                   <div className="flex flex-col items-center space-y-4">
-                    {student.avatar ? (
-                      <Image
-                        src={student.avatar}
-                        alt={student.name}
-                        width={80}
-                        height={80}
-                        className="ring-primary/10 size-20 rounded-full object-cover ring-2"
+                    <div className="ring-primary/10 flex size-20 items-center justify-center rounded-full bg-linear-to-br from-purple-100 to-pink-100 ring-2">
+                      <Music
+                        className="size-10 text-purple-500"
+                        strokeWidth={1.5}
                       />
-                    ) : (
-                      <div className="ring-primary/10 flex size-20 items-center justify-center rounded-full bg-linear-to-br from-rose-100 to-pink-100 ring-2">
-                        <span className="text-3xl font-medium text-rose-500">
-                          {student.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                    </div>
 
                     <div className="w-full space-y-2 text-center">
                       <h3 className="text-lg leading-none font-semibold">
-                        {student.name}
+                        {piece.title}
                       </h3>
-                      <p className="text-muted-foreground text-sm">
-                        {student.teacher.user.name ??
-                          student.teacher.user.email}
-                      </p>
+                      {piece.level && (
+                        <p className="text-muted-foreground text-sm">
+                          {piece.level}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex w-full items-center justify-center gap-4 pt-2">
                       <div className="text-center">
                         <div className="text-primary text-2xl font-bold">
-                          {student._count.lessons}
+                          {piece._count.lessons}
                         </div>
                         <div className="text-muted-foreground text-xs">
                           Lessons
@@ -364,15 +329,15 @@ export function StudentsTable({ data }: StudentsTableProps) {
                       </div>
                     </div>
 
-                    {student.notes && (
+                    {piece.description && (
                       <p className="text-muted-foreground line-clamp-2 w-full text-center text-xs">
-                        {student.notes}
+                        {piece.description}
                       </p>
                     )}
 
                     <div className="text-muted-foreground text-xs">
-                      Joined{" "}
-                      {new Date(student.createdAt).toLocaleDateString("en-US", {
+                      Added{" "}
+                      {new Date(piece.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -381,12 +346,12 @@ export function StudentsTable({ data }: StudentsTableProps) {
                   </div>
 
                   <div className="absolute top-2 right-2">
-                    <StudentSheet
+                    <PieceSheet
                       mode="edit"
-                      studentId={student.id}
-                      open={showEditSheet === student.id}
+                      pieceId={piece.id}
+                      open={showEditSheet === piece.id}
                       onOpenChange={(open) =>
-                        setShowEditSheet(open ? student.id : null)
+                        setShowEditSheet(open ? piece.id : null)
                       }
                     />
                     <DropdownMenu>
@@ -398,21 +363,15 @@ export function StudentsTable({ data }: StudentsTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onSelect={() => setShowEditSheet(student.id)}
+                          onSelect={() => setShowEditSheet(piece.id)}
                         >
                           <Edit className="mr-2 size-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/students/${student.id}/reports`}>
-                            <FileText className="mr-2 size-4" />
-                            View Reports
-                          </Link>
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           variant="destructive"
-                          onClick={() => handleDelete(student.id, student.name)}
+                          onClick={() => handleDelete(piece.id, piece.title)}
                         >
                           <Trash className="mr-2 size-4" />
                           Delete
@@ -425,7 +384,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
             })
           ) : (
             <div className="col-span-full flex h-48 items-center justify-center rounded-lg border border-dashed">
-              <p className="text-muted-foreground">No students found.</p>
+              <p className="text-muted-foreground">No pieces found.</p>
             </div>
           )}
         </div>
@@ -433,7 +392,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
 
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground text-sm">
-          Showing {table.getRowModel().rows.length} of {data.length} student(s)
+          Showing {table.getRowModel().rows.length} of {data.length} piece(s)
         </div>
         <div className="flex items-center gap-2">
           <Button

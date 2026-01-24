@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { LayoutDashboard, ListOrdered, Users } from "lucide-react";
+import { LayoutDashboard, ListOrdered, Users, Music } from "lucide-react";
 
 import { NavMain } from "@/app/(root)/_components/nav-main";
 import { NavUser } from "@/app/(root)/_components/nav-user";
@@ -28,6 +28,11 @@ const data = {
       title: "Students",
       url: "/students",
       icon: Users,
+    },
+    {
+      title: "Pieces",
+      url: "/pieces",
+      icon: Music,
     },
     {
       title: "Calendar",
