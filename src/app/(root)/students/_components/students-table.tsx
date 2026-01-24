@@ -10,6 +10,8 @@ import {
   FileText,
   MoreHorizontal,
   Trash,
+  LayoutGrid,
+  Table as TableIcon,
 } from "lucide-react";
 import {
   flexRender,
@@ -77,6 +79,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
     pageSize: 10,
   });
   const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
+  const [viewMode, setViewMode] = React.useState<"table" | "grid">("table");
 
   const columns: ColumnDef<Student>[] = [
     {
@@ -219,59 +222,190 @@ export function StudentsTable({ data }: StudentsTableProps) {
           }
           className="max-w-sm"
         />
-        <StudentSheet mode="create" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border bg-background p-1">
+            <Button
+              variant={viewMode === "table" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className="h-7 px-2"
+            >
+              <TableIcon className="size-4" />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className="h-7 px-2"
+            >
+              <LayoutGrid className="size-4" />
+            </Button>
+          </div>
+          <StudentSheet mode="create" />
+        </div>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
+      {viewMode === "table" ? (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No students found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => {
+              const student = row.original;
+              return (
+                <div
+                  key={student.id}
+                  className="group relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md"
                 >
-                  No students found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  <div className="flex flex-col items-center space-y-4">
+                    {student.avatar ? (
+                      <Image
+                        src={student.avatar}
+                        alt={student.name}
+                        width={80}
+                        height={80}
+                        className="size-20 rounded-full object-cover ring-2 ring-primary/10"
+                      />
+                    ) : (
+                      <div className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-pink-100 ring-2 ring-primary/10">
+                        <span className="text-3xl font-medium text-rose-500">
+                          {student.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="w-full text-center space-y-2">
+                      <h3 className="font-semibold text-lg leading-none">
+                        {student.name}
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        {student.teacher.user.name ?? student.teacher.user.email}
+                      </p>
+                    </div>
+
+                    <div className="flex w-full items-center justify-center gap-4 pt-2">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">
+                          {student._count.lessons}
+                        </div>
+                        <div className="text-muted-foreground text-xs">Lessons</div>
+                      </div>
+                    </div>
+
+                    {student.notes && (
+                      <p className="text-muted-foreground line-clamp-2 w-full text-center text-xs">
+                        {student.notes}
+                      </p>
+                    )}
+
+                    <div className="text-muted-foreground text-xs">
+                      Joined {new Date(student.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="absolute right-2 top-2">
+                    <StudentSheet
+                      mode="edit"
+                      studentId={student.id}
+                      open={showEditSheet === student.id}
+                      onOpenChange={(open) =>
+                        setShowEditSheet(open ? student.id : null)
+                      }
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-8">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setShowEditSheet(student.id)}>
+                          <Edit className="mr-2 size-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/students/${student.id}/reports`}>
+                            <FileText className="mr-2 size-4" />
+                            View Reports
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => {
+                            console.log("Delete student:", student.id);
+                          }}
+                        >
+                          <Trash className="mr-2 size-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full flex h-48 items-center justify-center rounded-lg border border-dashed">
+              <p className="text-muted-foreground">No students found.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground text-sm">
