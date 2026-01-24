@@ -223,7 +223,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
           className="max-w-sm"
         />
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-lg border bg-background p-1">
+          <div className="bg-background flex items-center rounded-lg border p-1">
             <Button
               variant={viewMode === "table" ? "secondary" : "ghost"}
               size="sm"
@@ -304,7 +304,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
               return (
                 <div
                   key={student.id}
-                  className="group relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md"
+                  className="group bg-card relative overflow-hidden rounded-xl border p-5 shadow-sm transition-all hover:shadow-md"
                 >
                   <div className="flex flex-col items-center space-y-4">
                     {student.avatar ? (
@@ -313,31 +313,34 @@ export function StudentsTable({ data }: StudentsTableProps) {
                         alt={student.name}
                         width={80}
                         height={80}
-                        className="size-20 rounded-full object-cover ring-2 ring-primary/10"
+                        className="ring-primary/10 size-20 rounded-full object-cover ring-2"
                       />
                     ) : (
-                      <div className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-pink-100 ring-2 ring-primary/10">
+                      <div className="ring-primary/10 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-pink-100 ring-2">
                         <span className="text-3xl font-medium text-rose-500">
                           {student.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
-                    
-                    <div className="w-full text-center space-y-2">
-                      <h3 className="font-semibold text-lg leading-none">
+
+                    <div className="w-full space-y-2 text-center">
+                      <h3 className="text-lg leading-none font-semibold">
                         {student.name}
                       </h3>
                       <p className="text-muted-foreground text-sm">
-                        {student.teacher.user.name ?? student.teacher.user.email}
+                        {student.teacher.user.name ??
+                          student.teacher.user.email}
                       </p>
                     </div>
 
                     <div className="flex w-full items-center justify-center gap-4 pt-2">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">
+                        <div className="text-primary text-2xl font-bold">
                           {student._count.lessons}
                         </div>
-                        <div className="text-muted-foreground text-xs">Lessons</div>
+                        <div className="text-muted-foreground text-xs">
+                          Lessons
+                        </div>
                       </div>
                     </div>
 
@@ -348,7 +351,8 @@ export function StudentsTable({ data }: StudentsTableProps) {
                     )}
 
                     <div className="text-muted-foreground text-xs">
-                      Joined {new Date(student.createdAt).toLocaleDateString("en-US", {
+                      Joined{" "}
+                      {new Date(student.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -356,7 +360,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                     </div>
                   </div>
 
-                  <div className="absolute right-2 top-2">
+                  <div className="absolute top-2 right-2">
                     <StudentSheet
                       mode="edit"
                       studentId={student.id}
@@ -373,7 +377,9 @@ export function StudentsTable({ data }: StudentsTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => setShowEditSheet(student.id)}>
+                        <DropdownMenuItem
+                          onSelect={() => setShowEditSheet(student.id)}
+                        >
                           <Edit className="mr-2 size-4" />
                           Edit
                         </DropdownMenuItem>
