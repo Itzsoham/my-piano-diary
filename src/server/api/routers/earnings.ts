@@ -36,6 +36,12 @@ interface TodayLesson {
     name: string;
     avatar: string | null;
   };
+  attendance?: {
+    status: string;
+    actualMin: number;
+    reason: string | null;
+    note: string | null;
+  } | null;
 }
 
 export const earningsRouter = createTRPCRouter({
@@ -190,6 +196,14 @@ export const earningsRouter = createTRPCRouter({
           piece: {
             select: {
               title: true,
+            },
+          },
+          attendance: {
+            select: {
+              status: true,
+              actualMin: true,
+              reason: true,
+              note: true,
             },
           },
         },

@@ -79,6 +79,7 @@ export async function registerAction(formData: FormData) {
   try {
     // Extract and validate form data
     const rawData = {
+      name: formData.get("name"),
       email: formData.get("email"),
       password: formData.get("password"),
       confirmPassword: formData.get("confirmPassword"),
@@ -101,6 +102,7 @@ export async function registerAction(formData: FormData) {
     // Create new user
     const newUser = await db.user.create({
       data: {
+        name: validatedData.name,
         email: validatedData.email,
         password: hashedPassword,
       },

@@ -71,7 +71,7 @@ export default function Register() {
                 <span className="text-2xl">✨</span>
               </div>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-xl text-rose-500">
               Made with love, just for you
             </p>
           </div>

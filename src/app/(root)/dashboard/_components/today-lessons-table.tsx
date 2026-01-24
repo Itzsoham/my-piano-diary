@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { api } from "@/trpc/react";
 import {
   Table,
@@ -10,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, Clock, DollarSign } from "lucide-react";
+import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 
 interface TodayLesson {
   id: string;
@@ -39,6 +42,12 @@ interface TodayLesson {
     name: string;
     avatar: string | null;
   };
+  attendance?: {
+    status: "PRESENT" | "ABSENT" | "MAKEUP";
+    actualMin: number;
+    reason: string | null;
+    note: string | null;
+  } | null;
 }
 
 export function TodayLessonsTable() {
@@ -49,6 +58,19 @@ export function TodayLessonsTable() {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   const isLoading: unknown = query.isLoading;
   const lessons = (lessonsData ?? []) as TodayLesson[];
+
+  const [open, setOpen] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<{
+    id: string;
+    studentName: string;
+    duration: number;
+    attendance?: {
+      status: "PRESENT" | "ABSENT" | "MAKEUP";
+      actualMin: number;
+      reason: string | null;
+      note: string | null;
+    } | null;
+  } | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -129,6 +151,7 @@ export function TodayLessonsTable() {
                   <TableHead>Piece</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Attendance</TableHead>
                   <TableHead className="text-right">Earnings</TableHead>
                 </TableRow>
               </TableHeader>
@@ -169,6 +192,24 @@ export function TodayLessonsTable() {
                         {lesson.status.toLowerCase()}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant={lesson.attendance ? "default" : "outline"}
+                        disabled={lesson.status === "CANCELLED"}
+                        onClick={() => {
+                          setSelectedLesson({
+                            id: lesson.id,
+                            studentName: lesson.student.name,
+                            duration: lesson.duration,
+                            attendance: lesson.attendance,
+                          });
+                          setOpen(true);
+                        }}
+                      >
+                        {lesson.attendance ? "Update" : "Mark"}
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-right font-semibold">
                       {lesson.status === "CANCELLED" ? (
                         <span className="text-destructive">
@@ -192,6 +233,18 @@ export function TodayLessonsTable() {
               <p>No lessons scheduled for today</p>
             </div>
           </div>
+        )}
+
+        {selectedLesson && (
+          <AttendanceDialog
+            open={open}
+            onOpenChange={(o) => setOpen(o)}
+            lesson={selectedLesson}
+            onSuccess={() => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              void query.refetch?.();
+            }}
+          />
         )}
       </CardContent>
     </Card>

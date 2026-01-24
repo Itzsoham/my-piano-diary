@@ -54,13 +54,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <Image
-                  src="/logo.png"
+                  src="/public/logo.png"
                   alt="App Logo"
                   width={30}
                   height={30}
                   className="inline-block"
                 />
-                <span className="text-base font-semibold">
+                <span className="text-base tracking-tight text-gray-800">
                   {APP_CONFIG.name}
                 </span>
               </a>
