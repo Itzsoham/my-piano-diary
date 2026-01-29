@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CalendarView } from "./_components/calendar-view";
+import { FullCalendarView } from "./_components/full-calendar-view";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
 import { api } from "@/trpc/react";
@@ -24,23 +24,25 @@ interface Lesson {
 }
 
 export default function CalendarPage() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+  });
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth() + 1;
-
-  const { data: lessons = [], refetch } = api.lesson.getForMonth.useQuery({
-    year,
-    month,
+  const { data: lessons = [], refetch } = api.lesson.getInRange.useQuery({
+    start: dateRange.start,
+    end: dateRange.end,
   });
 
   const { data: students = [] } = api.student.getAll.useQuery();
 
   const handleAddLesson = (date: Date) => {
+    // Check if the click is on a specific time slot or just a day
+    // FullCalendar passes date with time if clicked on timeGrid
     setSelectedDate(date);
     setSelectedLesson(null);
     setLessonDialogOpen(true);
@@ -70,10 +72,11 @@ export default function CalendarPage() {
         </Button>
       </div>
 
-      <CalendarView
+      <FullCalendarView
         lessons={lessons as Lesson[]}
-        currentMonth={currentMonth}
-        onMonthChange={setCurrentMonth}
+        onDateRangeChange={(start: Date, end: Date) =>
+          setDateRange({ start, end })
+        }
         onAddLesson={handleAddLesson}
         onLessonClick={handleLessonClick}
         onRefresh={handleSuccess}

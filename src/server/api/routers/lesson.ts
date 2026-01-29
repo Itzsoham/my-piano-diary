@@ -56,6 +56,47 @@ export const lessonRouter = createTRPCRouter({
       });
     }),
 
+  // Get lessons for a specific date range
+  getInRange: protectedProcedure
+    .input(
+      z.object({
+        start: z.date(),
+        end: z.date(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        return [];
+      }
+
+      return ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          date: {
+            gte: input.start,
+            lte: input.end,
+          },
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          piece: true,
+        },
+        orderBy: {
+          date: "asc",
+        },
+      });
+    }),
+
   // Create a new lesson
   create: protectedProcedure
     .input(createLessonSchema)
