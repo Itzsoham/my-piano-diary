@@ -17,7 +17,6 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  RotateCcw,
   GripVertical,
 } from "lucide-react";
 import {
@@ -37,12 +36,12 @@ interface Lesson {
   id: string;
   date: Date;
   duration: number;
+  status: "PENDING" | "COMPLETE" | "CANCELLED";
   student: {
     id: string;
     name: string;
     avatar: string | null;
   };
-  attendance: string | null;
   actualMin: number | null;
   cancelReason: string | null;
   note: string | null;
@@ -64,20 +63,23 @@ function DraggableLessonCard({
   lesson: Lesson;
   onClick: () => void;
 }) {
+  // Only allow dragging for PENDING lessons
+  const canDrag = lesson.status === "PENDING";
+
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: lesson.id,
     data: lesson,
+    disabled: !canDrag,
   });
 
-  const getAttendanceIcon = (status: string | null) => {
-    if (!status) return null;
+  const getStatusIcon = (status: "PENDING" | "COMPLETE" | "CANCELLED") => {
     switch (status) {
-      case "PRESENT":
+      case "COMPLETE":
         return <CheckCircle2 className="h-3 w-3 text-green-600" />;
-      case "ABSENT":
+      case "CANCELLED":
         return <XCircle className="h-3 w-3 text-red-600" />;
-      case "MAKEUP":
-        return <RotateCcw className="h-3 w-3 text-blue-600" />;
+      case "PENDING":
+        return null;
     }
   };
 
@@ -93,20 +95,31 @@ function DraggableLessonCard({
       <div
         className={cn(
           "rounded border p-1.5 text-xs transition-colors select-none",
-          lesson.attendance
+          lesson.status !== "PENDING"
             ? "bg-muted hover:bg-muted/80"
             : "bg-primary/10 border-primary/20 hover:bg-primary/20",
           isDragging && "ring-primary ring-2",
+          !canDrag && "opacity-60",
         )}
       >
         <div className="flex items-center gap-1">
           <div
-            {...listeners}
-            className="text-muted-foreground flex h-3 w-3 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
+            {...(canDrag ? listeners : {})}
+            className={cn(
+              "text-muted-foreground flex h-3 w-3 shrink-0 items-center justify-center",
+              canDrag
+                ? "cursor-grab active:cursor-grabbing"
+                : "cursor-not-allowed",
+            )}
+            title={
+              canDrag
+                ? "Reschedule lesson"
+                : "Cannot reschedule completed or cancelled lessons"
+            }
           >
             <GripVertical className="h-3 w-3" />
           </div>
-          {lesson.attendance && getAttendanceIcon(lesson.attendance)}
+          {getStatusIcon(lesson.status)}
           <Clock className="h-3 w-3" />
           <span className="font-medium">
             {format(new Date(lesson.date), "HH:mm")}
@@ -238,7 +251,11 @@ export function CalendarView({
         date: newDate,
       });
 
-      toast.success("Lesson rescheduled successfully!");
+      // Format the new date for the toast message
+      const dayOfWeek = format(newDate, "EEEE"); // e.g., "Tuesday"
+      const time = format(newDate, "h:mm a"); // e.g., "4:00 PM"
+
+      toast.success(`Lesson moved to ${dayOfWeek} ${time} 🎶`);
       onRefresh();
     } catch (error) {
       toast.error("Failed to reschedule lesson");
@@ -327,10 +344,6 @@ export function CalendarView({
               <div className="flex items-center gap-2">
                 <XCircle className="h-4 w-4 text-red-600" />
                 <span>Absent</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <RotateCcw className="h-4 w-4 text-blue-600" />
-                <span>Makeup</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="border-primary/20 bg-primary/10 h-4 w-4 rounded border" />

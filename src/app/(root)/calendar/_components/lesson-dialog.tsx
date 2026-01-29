@@ -15,6 +15,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { api } from "@/trpc/react";
 import { format } from "date-fns";
 
@@ -36,6 +38,9 @@ const LessonFormSchema = z.object({
   date: z.string().min(1, { message: "Date is required." }),
   time: z.string().min(1, { message: "Time is required." }),
   duration: z.string().min(1, { message: "Duration is required." }),
+  isRecurring: z.boolean(),
+  dayOfWeek: z.string().optional(),
+  recurrenceMonths: z.string().optional(),
 });
 
 type LessonFormValues = z.infer<typeof LessonFormSchema>;
@@ -69,6 +74,19 @@ export function LessonDialog({
     },
   });
 
+  const createRecurring = api.lesson.createRecurring.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.count} lessons created successfully!`);
+      void utils.lesson.invalidate();
+      onOpenChange(false);
+      form.reset();
+      onSuccess?.();
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to create recurring lessons");
+    },
+  });
+
   const form = useForm<LessonFormValues>({
     resolver: zodResolver(LessonFormSchema),
     defaultValues: {
@@ -78,17 +96,41 @@ export function LessonDialog({
         : format(new Date(), "yyyy-MM-dd"),
       time: "10:00",
       duration: "60",
+      isRecurring: false,
+      dayOfWeek: "0", // Sunday
+      recurrenceMonths: "1",
     },
   });
 
-  const onSubmit = async (data: LessonFormValues) => {
-    const dateTime = new Date(`${data.date}T${data.time}`);
+  const isRecurring = form.watch("isRecurring");
 
-    createLesson.mutate({
-      studentId: data.studentId,
-      date: dateTime,
-      duration: parseInt(data.duration),
-    });
+  const onSubmit = async (data: LessonFormValues) => {
+    try {
+      if (data.isRecurring) {
+        // Create recurring lessons
+        const startDate = new Date(`${data.date}T${data.time}`);
+
+        createRecurring.mutate({
+          studentId: data.studentId,
+          startDate,
+          dayOfWeek: parseInt(data.dayOfWeek ?? "0"),
+          time: data.time,
+          duration: parseInt(data.duration),
+          recurrenceMonths: parseInt(data.recurrenceMonths ?? "1"),
+        });
+      } else {
+        // Create single lesson
+        const dateTime = new Date(`${data.date}T${data.time}`);
+
+        createLesson.mutate({
+          studentId: data.studentId,
+          date: dateTime,
+          duration: parseInt(data.duration),
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -172,6 +214,93 @@ export function LessonDialog({
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="isRecurring"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                      Recurring Lesson
+                    </FormLabel>
+                    <FormDescription>
+                      Create multiple lessons on a weekly schedule
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {isRecurring && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="dayOfWeek"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Day of Week</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select day" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0">Sunday</SelectItem>
+                          <SelectItem value="1">Monday</SelectItem>
+                          <SelectItem value="2">Tuesday</SelectItem>
+                          <SelectItem value="3">Wednesday</SelectItem>
+                          <SelectItem value="4">Thursday</SelectItem>
+                          <SelectItem value="5">Friday</SelectItem>
+                          <SelectItem value="6">Saturday</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="recurrenceMonths"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recurrence Length</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select duration" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">1 Month (4 lessons)</SelectItem>
+                          <SelectItem value="2">
+                            2 Months (8-9 lessons)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Maximum 2 months allowed
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button

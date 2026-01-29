@@ -33,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/trpc/react";
 
 const AttendanceFormSchema = z.object({
-  status: z.enum(["PRESENT", "ABSENT", "MAKEUP"]),
+  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
   actualMin: z.string().optional(),
   cancelReason: z.string().optional(),
   note: z.string().optional(),
@@ -48,7 +48,7 @@ interface AttendanceDialogProps {
     id: string;
     studentName: string;
     duration: number;
-    attendance: string | null;
+    status: "PENDING" | "COMPLETE" | "CANCELLED";
     actualMin: number | null;
     cancelReason: string | null;
     note: string | null;
@@ -78,10 +78,7 @@ export function AttendanceDialog({
   const form = useForm<AttendanceFormValues>({
     resolver: zodResolver(AttendanceFormSchema),
     defaultValues: {
-      status: (lesson.attendance ?? "PRESENT") as
-        | "PRESENT"
-        | "ABSENT"
-        | "MAKEUP",
+      status: lesson.status,
       actualMin: lesson.actualMin?.toString() ?? lesson.duration.toString(),
       cancelReason: lesson.cancelReason ?? "",
       note: lesson.note ?? "",
@@ -93,7 +90,7 @@ export function AttendanceDialog({
   const onSubmit = async (data: AttendanceFormValues) => {
     markAttendance.mutate({
       lessonId: lesson.id,
-      status: data.status as "PRESENT" | "ABSENT" | "MAKEUP",
+      status: data.status,
       actualMin: data.actualMin ? parseInt(data.actualMin) : undefined,
       cancelReason: data.cancelReason,
       note: data.note,
@@ -128,9 +125,9 @@ export function AttendanceDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="PRESENT">✓ Present</SelectItem>
-                      <SelectItem value="ABSENT">✗ Absent</SelectItem>
-                      <SelectItem value="MAKEUP">↻ Makeup</SelectItem>
+                      <SelectItem value="PENDING">⏳ Pending</SelectItem>
+                      <SelectItem value="COMPLETE">✓ Complete</SelectItem>
+                      <SelectItem value="CANCELLED">✗ Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -138,7 +135,7 @@ export function AttendanceDialog({
               )}
             />
 
-            {selectedStatus === "PRESENT" && (
+            {selectedStatus === "COMPLETE" && (
               <FormField
                 control={form.control}
                 name="actualMin"
@@ -162,7 +159,7 @@ export function AttendanceDialog({
               />
             )}
 
-            {selectedStatus === "ABSENT" && (
+            {selectedStatus === "CANCELLED" && (
               <FormField
                 control={form.control}
                 name="cancelReason"

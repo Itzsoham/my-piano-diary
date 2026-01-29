@@ -12,12 +12,12 @@ interface Lesson {
   id: string;
   date: Date;
   duration: number;
+  status: "PENDING" | "COMPLETE" | "CANCELLED";
   student: {
     id: string;
     name: string;
     avatar: string | null;
   };
-  attendance: string | null;
   actualMin: number | null;
   cancelReason: string | null;
   note: string | null;
@@ -95,7 +95,7 @@ export default function CalendarPage() {
             id: selectedLesson.id,
             studentName: selectedLesson.student.name,
             duration: selectedLesson.duration,
-            attendance: selectedLesson.attendance,
+            status: selectedLesson.status,
             actualMin: selectedLesson.actualMin,
             cancelReason: selectedLesson.cancelReason,
             note: selectedLesson.note,

@@ -108,11 +108,38 @@ export const updateLessonSchema = z.object({
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration must be less than 8 hours")
     .optional(),
-  status: z.enum(["PENDING", "COMPLETE", "MAKEUP", "CANCELLED"]).optional(),
+  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]).optional(),
   cancelReason: z
     .string()
     .max(500, "Cancel reason must be less than 500 characters")
     .optional(),
+});
+
+export const createRecurringLessonSchema = z.object({
+  studentId: z.string().uuid("Invalid student ID"),
+  startDate: z
+    .date()
+    .refine((date) => date instanceof Date && !isNaN(date.getTime()), {
+      message: "Invalid date",
+    }),
+  dayOfWeek: z
+    .number()
+    .int()
+    .min(0, "Day of week must be between 0 (Sunday) and 6 (Saturday)")
+    .max(6, "Day of week must be between 0 (Sunday) and 6 (Saturday)"),
+  time: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+  duration: z
+    .number()
+    .min(15, "Duration must be at least 15 minutes")
+    .max(480, "Duration must be less than 8 hours"),
+  recurrenceMonths: z
+    .number()
+    .int()
+    .min(1, "Recurrence must be at least 1 month")
+    .max(2, "Recurrence cannot exceed 2 months"),
+  pieceId: z.string().uuid("Invalid piece ID").optional(),
 });
 
 export const deleteLessonSchema = z.object({
@@ -138,7 +165,7 @@ export const getMonthLessonsSchema = z.object({
  */
 export const markAttendanceSchema = z.object({
   lessonId: z.string().uuid("Invalid lesson ID"),
-  status: z.enum(["COMPLETE", "MAKEUP", "CANCELLED"]),
+  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
   actualMin: z
     .number()
     .int()
