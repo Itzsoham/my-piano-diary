@@ -7,7 +7,6 @@ import { CalendarView } from "./_components/calendar-view";
 import { LessonDialog } from "./_components/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
 import { api } from "@/trpc/react";
-import type { AttendanceStatus } from "@prisma/client";
 
 interface Lesson {
   id: string;
@@ -18,13 +17,10 @@ interface Lesson {
     name: string;
     avatar: string | null;
   };
-  attendance: {
-    id: string;
-    status: AttendanceStatus;
-    actualMin: number;
-    reason: string | null;
-    note: string | null;
-  } | null;
+  attendance: string | null;
+  actualMin: number | null;
+  cancelReason: string | null;
+  note: string | null;
 }
 
 export default function CalendarPage() {
@@ -100,6 +96,9 @@ export default function CalendarPage() {
             studentName: selectedLesson.student.name,
             duration: selectedLesson.duration,
             attendance: selectedLesson.attendance,
+            actualMin: selectedLesson.actualMin,
+            cancelReason: selectedLesson.cancelReason,
+            note: selectedLesson.note,
           }}
           onSuccess={handleSuccess}
         />

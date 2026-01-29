@@ -69,13 +69,12 @@ export const searchSchema = z.object({
 });
 
 // Status enums
-export const attendanceStatusSchema = z.enum(["PRESENT", "ABSENT", "MAKEUP"], {
-  errorMap: () => ({ message: "Invalid attendance status" }),
-});
-
-export const lessonStatusSchema = z.enum(["COMPLETE", "MAKEUP", "CANCELLED"], {
-  errorMap: () => ({ message: "Invalid lesson status" }),
-});
+export const lessonStatusSchema = z.enum(
+  ["PENDING", "COMPLETE", "MAKEUP", "CANCELLED"],
+  {
+    errorMap: () => ({ message: "Invalid lesson status" }),
+  },
+);
 
 // Student validation
 export const createStudentSchema = z.object({
@@ -132,17 +131,7 @@ export const updatePieceSchema = createPieceSchema.partial().extend({
 });
 
 // Attendance validation
-export const createAttendanceSchema = z.object({
-  lessonId: idSchema,
-  status: attendanceStatusSchema,
-  actualMin: z.number().int().min(0).optional(),
-  reason: descriptionSchema,
-  note: descriptionSchema,
-});
-
-export const updateAttendanceSchema = createAttendanceSchema.partial().extend({
-  id: idSchema,
-});
+// Attendance is now part of Lesson model, use lesson update schemas
 
 // Report validation
 export const createReportSchema = z.object({
@@ -214,8 +203,6 @@ export type CreateLessonInput = z.infer<typeof createLessonSchema>;
 export type UpdateLessonInput = z.infer<typeof updateLessonSchema>;
 export type CreatePieceInput = z.infer<typeof createPieceSchema>;
 export type UpdatePieceInput = z.infer<typeof updatePieceSchema>;
-export type CreateAttendanceInput = z.infer<typeof createAttendanceSchema>;
-export type UpdateAttendanceInput = z.infer<typeof updateAttendanceSchema>;
 export type CreateReportInput = z.infer<typeof createReportSchema>;
 export type UpdateReportInput = z.infer<typeof updateReportSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

@@ -108,7 +108,7 @@ export const updateLessonSchema = z.object({
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration must be less than 8 hours")
     .optional(),
-  status: z.enum(["COMPLETE", "MAKEUP", "CANCELLED"]).optional(),
+  status: z.enum(["PENDING", "COMPLETE", "MAKEUP", "CANCELLED"]).optional(),
   cancelReason: z
     .string()
     .max(500, "Cancel reason must be less than 500 characters")
@@ -134,18 +134,20 @@ export const getMonthLessonsSchema = z.object({
 
 /**
  * Attendance validation schemas
+ * Attendance is now merged into Lesson model - use lesson statuses
  */
 export const markAttendanceSchema = z.object({
   lessonId: z.string().uuid("Invalid lesson ID"),
-  status: z.enum(["PRESENT", "ABSENT", "MAKEUP"]),
+  status: z.enum(["COMPLETE", "MAKEUP", "CANCELLED"]),
   actualMin: z
     .number()
     .int()
     .min(0, "Actual minutes must be positive")
-    .max(480, "Actual minutes must be less than 8 hours"),
-  reason: z
+    .max(480, "Actual minutes must be less than 8 hours")
+    .optional(),
+  cancelReason: z
     .string()
-    .max(500, "Reason must be less than 500 characters")
+    .max(500, "Cancel reason must be less than 500 characters")
     .optional(),
   note: z
     .string()

@@ -3,9 +3,9 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import {
   createLessonSchema,
   updateLessonSchema,
-  createAttendanceSchema,
   idSchema,
 } from "@/lib/validations/common-schemas";
+import { markAttendanceSchema } from "@/lib/validations/api-schemas";
 
 export const lessonRouter = createTRPCRouter({
   // Get lessons for a specific month
@@ -45,7 +45,7 @@ export const lessonRouter = createTRPCRouter({
               avatar: true,
             },
           },
-          attendance: true,
+          piece: true,
         },
         orderBy: {
           date: "asc",
@@ -83,7 +83,7 @@ export const lessonRouter = createTRPCRouter({
           teacherId: teacher.id,
           date: input.date,
           duration: input.duration,
-          status: "COMPLETE",
+          status: "PENDING",
           pieceId: input.pieceId,
         },
         include: {
@@ -162,7 +162,7 @@ export const lessonRouter = createTRPCRouter({
 
   // Mark attendance
   markAttendance: protectedProcedure
-    .input(createAttendanceSchema)
+    .input(markAttendanceSchema)
     .mutation(async ({ ctx, input }) => {
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
@@ -184,24 +184,20 @@ export const lessonRouter = createTRPCRouter({
         throw new Error("Lesson not found");
       }
 
-      // Upsert attendance
-      return ctx.db.attendance.upsert({
+      // Update lesson with attendance information
+      return ctx.db.lesson.update({
         where: {
-          lessonId: input.lessonId,
+          id: input.lessonId,
         },
-        create: {
-          lessonId: input.lessonId,
-          date: lesson.date,
+        data: {
           status: input.status,
-          actualMin: input.actualMin ?? 0,
-          reason: input.reason,
+          actualMin: input.actualMin,
+          cancelReason: input.cancelReason,
           note: input.note,
         },
-        update: {
-          status: input.status,
-          actualMin: input.actualMin ?? 0,
-          reason: input.reason,
-          note: input.note,
+        include: {
+          student: true,
+          piece: true,
         },
       });
     }),

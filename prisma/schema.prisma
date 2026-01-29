@@ -87,42 +87,30 @@ model Piece {
 }
 
 model Lesson {
-  id           String       @id @default(cuid())
-  studentId    String
-  teacherId    String
-  date         DateTime
-  duration     Int
-  status       LessonStatus @default(COMPLETE)
-  cancelReason String?
-  pieceId      String?
-  createdAt    DateTime     @default(now())
-  piece        Piece?       @relation(fields: [pieceId], references: [id])
-  student      Student      @relation(fields: [studentId], references: [id])
-  teacher      Teacher      @relation(fields: [teacherId], references: [id])
-  attendance   Attendance?
+  id            String           @id @default(cuid())
+  studentId     String
+  teacherId     String
+  date          DateTime
+  duration      Int
+  status        LessonStatus     @default(PENDING)
+  actualMin     Int?
+  cancelReason  String?
+  note          String?
+  pieceId       String?
+  createdAt     DateTime         @default(now())
+  piece         Piece?           @relation(fields: [pieceId], references: [id])
+  student       Student          @relation(fields: [studentId], references: [id])
+  teacher       Teacher          @relation(fields: [teacherId], references: [id])
+
+  @@index([teacherId, date])
+  @@index([studentId, date])
 }
 
 enum LessonStatus {
+  PENDING
   COMPLETE
   MAKEUP
   CANCELLED
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  MAKEUP
-}
-
-model Attendance {
-  id        String           @id @default(cuid())
-  lessonId  String           @unique
-  date      DateTime
-  status    AttendanceStatus
-  actualMin Int
-  reason    String?
-  note      String?
-  lesson    Lesson           @relation(fields: [lessonId], references: [id])
 }
 
 model MonthlyReport {

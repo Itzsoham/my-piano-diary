@@ -120,6 +120,8 @@ export function StudentsTable({ data }: StudentsTableProps) {
             <Image
               src={row.original.avatar}
               alt={row.original.name}
+              width={32}
+              height={32}
               className="size-8 rounded-full object-cover"
             />
           ) : (

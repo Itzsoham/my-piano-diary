@@ -34,6 +34,9 @@ interface TodayLesson {
   pieceId: string | null;
   createdAt: Date;
   earnings: number;
+  attendance: string | null;
+  actualMin: number | null;
+  note: string | null;
   piece: {
     title: string;
   } | null;
@@ -42,12 +45,6 @@ interface TodayLesson {
     name: string;
     avatar: string | null;
   };
-  attendance?: {
-    status: "PRESENT" | "ABSENT" | "MAKEUP";
-    actualMin: number;
-    reason: string | null;
-    note: string | null;
-  } | null;
 }
 
 export function TodayLessonsTable() {
@@ -64,12 +61,10 @@ export function TodayLessonsTable() {
     id: string;
     studentName: string;
     duration: number;
-    attendance?: {
-      status: "PRESENT" | "ABSENT" | "MAKEUP";
-      actualMin: number;
-      reason: string | null;
-      note: string | null;
-    } | null;
+    attendance: string | null;
+    actualMin: number | null;
+    cancelReason: string | null;
+    note: string | null;
   } | null>(null);
 
   const formatCurrency = (amount: number) => {
@@ -203,6 +198,9 @@ export function TodayLessonsTable() {
                             studentName: lesson.student.name,
                             duration: lesson.duration,
                             attendance: lesson.attendance,
+                            actualMin: lesson.actualMin,
+                            cancelReason: lesson.cancelReason,
+                            note: lesson.note,
                           });
                           setOpen(true);
                         }}

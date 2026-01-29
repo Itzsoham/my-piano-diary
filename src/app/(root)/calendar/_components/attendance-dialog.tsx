@@ -31,12 +31,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/trpc/react";
-import type { AttendanceStatus } from "@prisma/client";
 
 const AttendanceFormSchema = z.object({
   status: z.enum(["PRESENT", "ABSENT", "MAKEUP"]),
-  actualMin: z.string().min(1, { message: "Duration is required." }),
-  reason: z.string().optional(),
+  actualMin: z.string().optional(),
+  cancelReason: z.string().optional(),
   note: z.string().optional(),
 });
 
@@ -49,12 +48,10 @@ interface AttendanceDialogProps {
     id: string;
     studentName: string;
     duration: number;
-    attendance?: {
-      status: AttendanceStatus;
-      actualMin: number;
-      reason: string | null;
-      note: string | null;
-    } | null;
+    attendance: string | null;
+    actualMin: number | null;
+    cancelReason: string | null;
+    note: string | null;
   };
   onSuccess?: () => void;
 }
@@ -81,14 +78,13 @@ export function AttendanceDialog({
   const form = useForm<AttendanceFormValues>({
     resolver: zodResolver(AttendanceFormSchema),
     defaultValues: {
-      status: (lesson.attendance?.status ?? "PRESENT") as
+      status: (lesson.attendance ?? "PRESENT") as
         | "PRESENT"
         | "ABSENT"
         | "MAKEUP",
-      actualMin:
-        lesson.attendance?.actualMin.toString() ?? lesson.duration.toString(),
-      reason: lesson.attendance?.reason ?? "",
-      note: lesson.attendance?.note ?? "",
+      actualMin: lesson.actualMin?.toString() ?? lesson.duration.toString(),
+      cancelReason: lesson.cancelReason ?? "",
+      note: lesson.note ?? "",
     },
   });
 
@@ -97,9 +93,9 @@ export function AttendanceDialog({
   const onSubmit = async (data: AttendanceFormValues) => {
     markAttendance.mutate({
       lessonId: lesson.id,
-      status: data.status as AttendanceStatus,
-      actualMin: parseInt(data.actualMin),
-      reason: data.reason,
+      status: data.status as "PRESENT" | "ABSENT" | "MAKEUP",
+      actualMin: data.actualMin ? parseInt(data.actualMin) : undefined,
+      cancelReason: data.cancelReason,
       note: data.note,
     });
   };
@@ -169,7 +165,7 @@ export function AttendanceDialog({
             {selectedStatus === "ABSENT" && (
               <FormField
                 control={form.control}
-                name="reason"
+                name="cancelReason"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Reason for Absence</FormLabel>

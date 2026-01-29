@@ -33,8 +33,6 @@ import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 
-type AttendanceStatus = "PRESENT" | "ABSENT" | "MAKEUP";
-
 interface Lesson {
   id: string;
   date: Date;
@@ -44,13 +42,10 @@ interface Lesson {
     name: string;
     avatar: string | null;
   };
-  attendance: {
-    id: string;
-    status: AttendanceStatus;
-    actualMin: number;
-    reason: string | null;
-    note: string | null;
-  } | null;
+  attendance: string | null;
+  actualMin: number | null;
+  cancelReason: string | null;
+  note: string | null;
 }
 
 interface CalendarViewProps {
@@ -74,7 +69,8 @@ function DraggableLessonCard({
     data: lesson,
   });
 
-  const getAttendanceIcon = (status: AttendanceStatus) => {
+  const getAttendanceIcon = (status: string | null) => {
+    if (!status) return null;
     switch (status) {
       case "PRESENT":
         return <CheckCircle2 className="h-3 w-3 text-green-600" />;
@@ -110,7 +106,7 @@ function DraggableLessonCard({
           >
             <GripVertical className="h-3 w-3" />
           </div>
-          {lesson.attendance && getAttendanceIcon(lesson.attendance.status)}
+          {lesson.attendance && getAttendanceIcon(lesson.attendance)}
           <Clock className="h-3 w-3" />
           <span className="font-medium">
             {format(new Date(lesson.date), "HH:mm")}

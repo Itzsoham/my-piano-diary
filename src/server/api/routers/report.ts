@@ -55,9 +55,6 @@ export const reportRouter = createTRPCRouter({
               lte: endDate,
             },
           },
-          include: {
-            attendance: true,
-          },
           orderBy: {
             date: "asc",
           },

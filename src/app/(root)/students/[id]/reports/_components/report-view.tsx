@@ -97,8 +97,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
 
   // Calculate Stats
   const validLessons = lessons.filter(
-    (l) =>
-      l.attendance?.status === "PRESENT" || l.attendance?.status === "MAKEUP",
+    (l) => l.status === "COMPLETE" || l.status === "MAKEUP",
   );
   const totalSessions = validLessons.length;
 
@@ -115,7 +114,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
   lessons.forEach((lesson) => {
     const week = getWeekOfMonth(lesson.date, { weekStartsOn: 1 });
     const day = getDate(lesson.date);
-    const status = lesson.attendance?.status ?? "PENDING";
+    const status = lesson.status ?? "PENDING";
     if (weeksData[week]) {
       weeksData[week].push({ day, status });
     }
