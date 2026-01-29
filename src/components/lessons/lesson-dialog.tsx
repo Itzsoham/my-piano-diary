@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -101,6 +102,22 @@ export function LessonDialog({
       recurrenceMonths: "1",
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        studentId: "",
+        date: initialDate
+          ? format(initialDate, "yyyy-MM-dd")
+          : format(new Date(), "yyyy-MM-dd"),
+        time: "10:00",
+        duration: "60",
+        isRecurring: false,
+        dayOfWeek: "0",
+        recurrenceMonths: "1",
+      });
+    }
+  }, [open, initialDate, form]);
 
   const isRecurring = form.watch("isRecurring");
 

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import { APP_CONFIG } from "@/config/app-config";
+import Link from "next/link";
 
 const data = {
   navMain: [
@@ -48,22 +49,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
-            >
-              <a href="#">
-                <Image
-                  src="/public/logo.png"
-                  alt="App Logo"
-                  width={30}
-                  height={30}
-                  className="inline-block"
-                />
-                <span className="text-base tracking-tight text-gray-800">
-                  {APP_CONFIG.name}
-                </span>
-              </a>
+            <SidebarMenuButton size="lg" asChild className="md:h-12">
+              <Link href="/dashboard">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <Image
+                    src="/logo.png"
+                    alt="App Logo"
+                    width={40}
+                    height={40}
+                    className="size-full object-contain"
+                    priority
+                    unoptimized
+                  />
+                </div>
+                <div className="grid flex-1 text-left text-base leading-tight">
+                  <span className="text-sidebar-foreground truncate">
+                    {APP_CONFIG.name}
+                  </span>
+                </div>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalendarView } from "./_components/calendar-view";
-import { LessonDialog } from "./_components/lesson-dialog";
+import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
 import { api } from "@/trpc/react";
 

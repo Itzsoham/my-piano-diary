@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { api } from "@/trpc/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -36,6 +37,7 @@ export function StudentForm({
   onSuccess?: () => void;
 }) {
   const utils = api.useUtils();
+  const router = useRouter();
 
   // Fetch student data only if we have an ID (edit mode)
   const { data: student, isLoading } = api.student.getByGuid.useQuery(
@@ -47,6 +49,7 @@ export function StudentForm({
     onSuccess: () => {
       toast.success("Student created successfully");
       void utils.student.getAll.invalidate();
+      router.refresh();
       onSuccess?.();
     },
     onError: (error) => {
@@ -58,6 +61,7 @@ export function StudentForm({
     onSuccess: () => {
       toast.success("Student updated successfully");
       void utils.student.getAll.invalidate();
+      router.refresh();
       if (studentId) {
         void utils.student.getByGuid.invalidate({ id: studentId });
       }

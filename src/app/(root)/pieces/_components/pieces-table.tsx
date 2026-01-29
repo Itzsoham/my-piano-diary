@@ -46,6 +46,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { PieceSheet } from "./piece-sheet";
 import { api } from "@/trpc/react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 type Piece = {
@@ -73,17 +74,19 @@ export function PiecesTable({ data }: PiecesTableProps) {
     pageSize: 10,
   });
   const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
-  const [viewMode, setViewMode] = React.useState<"table" | "grid">("table");
+  const [viewMode, setViewMode] = React.useState<"table" | "grid">("grid");
   const [deleteConfirm, setDeleteConfirm] = React.useState<{
     id: string;
     title: string;
   } | null>(null);
 
   const utils = api.useUtils();
+  const router = useRouter();
   const deletePiece = api.piece.delete.useMutation({
     onSuccess: () => {
       toast.success("Piece deleted successfully");
       void utils.piece.getAll.invalidate();
+      router.refresh();
       setDeleteConfirm(null);
     },
     onError: (error) => {

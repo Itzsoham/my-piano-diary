@@ -48,6 +48,7 @@ import { StudentSheet } from "./student-sheet";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 type Student = {
@@ -82,17 +83,19 @@ export function StudentsTable({ data }: StudentsTableProps) {
     pageSize: 10,
   });
   const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
-  const [viewMode, setViewMode] = React.useState<"table" | "grid">("table");
+  const [viewMode, setViewMode] = React.useState<"table" | "grid">("grid");
   const [deleteConfirm, setDeleteConfirm] = React.useState<{
     id: string;
     name: string;
   } | null>(null);
 
   const utils = api.useUtils();
+  const router = useRouter();
   const deleteStudent = api.student.delete.useMutation({
     onSuccess: () => {
       toast.success("Student deleted successfully");
       void utils.student.getAll.invalidate();
+      router.refresh();
       setDeleteConfirm(null);
     },
     onError: (error) => {

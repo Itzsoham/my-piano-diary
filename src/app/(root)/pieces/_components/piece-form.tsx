@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { api } from "@/trpc/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -37,6 +38,7 @@ export function PieceForm({
   onSuccess?: () => void;
 }) {
   const utils = api.useUtils();
+  const router = useRouter();
 
   // Fetch piece data only if we have an ID (edit mode)
   const { data: piece, isLoading } = api.piece.getById.useQuery(
@@ -48,6 +50,7 @@ export function PieceForm({
     onSuccess: () => {
       toast.success("Piece created successfully");
       void utils.piece.getAll.invalidate();
+      router.refresh();
       onSuccess?.();
     },
     onError: (error) => {
@@ -59,6 +62,7 @@ export function PieceForm({
     onSuccess: () => {
       toast.success("Piece updated successfully");
       void utils.piece.getAll.invalidate();
+      router.refresh();
       if (pieceId) {
         void utils.piece.getById.invalidate({ id: pieceId });
       }
