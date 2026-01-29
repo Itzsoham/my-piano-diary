@@ -17,7 +17,7 @@ export const createStudentSchema = z.object({
 });
 
 export const updateStudentSchema = z.object({
-  id: z.string().uuid("Invalid student ID"),
+  id: z.string().cuid("Invalid student ID"),
   name: z
     .string()
     .min(1, "Name is required")
@@ -32,11 +32,11 @@ export const updateStudentSchema = z.object({
 });
 
 export const deleteStudentSchema = z.object({
-  id: z.string().uuid("Invalid student ID"),
+  id: z.string().cuid("Invalid student ID"),
 });
 
 export const getStudentSchema = z.object({
-  id: z.string().uuid("Invalid student ID"),
+  id: z.string().cuid("Invalid student ID"),
 });
 
 /**
@@ -56,7 +56,7 @@ export const createPieceSchema = z.object({
 });
 
 export const updatePieceSchema = z.object({
-  id: z.string().uuid("Invalid piece ID"),
+  id: z.string().cuid("Invalid piece ID"),
   title: z
     .string()
     .min(1, "Title is required")
@@ -71,18 +71,18 @@ export const updatePieceSchema = z.object({
 });
 
 export const deletePieceSchema = z.object({
-  id: z.string().uuid("Invalid piece ID"),
+  id: z.string().cuid("Invalid piece ID"),
 });
 
 export const getPieceSchema = z.object({
-  id: z.string().uuid("Invalid piece ID"),
+  id: z.string().cuid("Invalid piece ID"),
 });
 
 /**
  * Lesson validation schemas
  */
 export const createLessonSchema = z.object({
-  studentId: z.string().uuid("Invalid student ID"),
+  studentId: z.string().cuid("Invalid student ID"),
   date: z
     .date()
     .refine((date) => date instanceof Date && !isNaN(date.getTime()), {
@@ -92,11 +92,11 @@ export const createLessonSchema = z.object({
     .number()
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration must be less than 8 hours"),
-  pieceId: z.string().uuid("Invalid piece ID").optional(),
+  pieceId: z.string().cuid("Invalid piece ID").optional(),
 });
 
 export const updateLessonSchema = z.object({
-  id: z.string().uuid("Invalid lesson ID"),
+  id: z.string().cuid("Invalid lesson ID"),
   date: z
     .date()
     .refine((date) => date instanceof Date && !isNaN(date.getTime()), {
@@ -116,7 +116,7 @@ export const updateLessonSchema = z.object({
 });
 
 export const createRecurringLessonSchema = z.object({
-  studentId: z.string().uuid("Invalid student ID"),
+  studentId: z.string().cuid("Invalid student ID"),
   startDate: z
     .date()
     .refine((date) => date instanceof Date && !isNaN(date.getTime()), {
@@ -139,11 +139,11 @@ export const createRecurringLessonSchema = z.object({
     .int()
     .min(1, "Recurrence must be at least 1 month")
     .max(2, "Recurrence cannot exceed 2 months"),
-  pieceId: z.string().uuid("Invalid piece ID").optional(),
+  pieceId: z.string().cuid("Invalid piece ID").optional(),
 });
 
 export const deleteLessonSchema = z.object({
-  id: z.string().uuid("Invalid lesson ID"),
+  id: z.string().cuid("Invalid lesson ID"),
 });
 
 export const getMonthLessonsSchema = z.object({
@@ -164,7 +164,7 @@ export const getMonthLessonsSchema = z.object({
  * Attendance is now merged into Lesson model - use lesson statuses
  */
 export const markAttendanceSchema = z.object({
-  lessonId: z.string().uuid("Invalid lesson ID"),
+  lessonId: z.string().cuid("Invalid lesson ID"),
   status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
   actualMin: z
     .number()
@@ -186,7 +186,7 @@ export const markAttendanceSchema = z.object({
  * Report validation schemas
  */
 export const getStudentReportSchema = z.object({
-  studentId: z.string().uuid("Invalid student ID"),
+  studentId: z.string().cuid("Invalid student ID"),
   month: z
     .number()
     .int()
@@ -200,7 +200,7 @@ export const getStudentReportSchema = z.object({
 });
 
 export const upsertReportSchema = z.object({
-  studentId: z.string().uuid("Invalid student ID"),
+  studentId: z.string().cuid("Invalid student ID"),
   month: z
     .number()
     .int()

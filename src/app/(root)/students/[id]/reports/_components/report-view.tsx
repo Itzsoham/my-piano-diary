@@ -96,9 +96,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
   const { student, lessons } = data;
 
   // Calculate Stats
-  const validLessons = lessons.filter(
-    (l) => l.status === "COMPLETE" || l.status === "MAKEUP",
-  );
+  const validLessons = lessons.filter((l) => l.status === "COMPLETE");
   const totalSessions = validLessons.length;
 
   // Attendance Grid Logic
@@ -257,10 +255,12 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
                     {weeksData[w]?.map((item, idx) => (
                       <span
                         key={idx}
-                        className={`inline-flex h-8 w-8 items-center justify-center border border-gray-300 text-sm font-semibold ${
-                          item.status === "ABSENT" ? "bg-yellow-300" : ""
-                        } ${item.status === "MAKEUP" ? "bg-blue-300" : ""} ${
-                          item.status === "PRESENT" ? "bg-white" : ""
+                        className={`inline-flex h-8 w-8 items-center justify-center border border-black text-sm font-semibold ${
+                          item.status === "CANCELLED" ? "bg-yellow-300" : ""
+                        } ${item.status === "COMPLETE" ? "bg-white" : ""} ${
+                          item.status === "PENDING"
+                            ? "bg-gray-100 text-gray-400"
+                            : ""
                         } `}
                       >
                         {item.day}
@@ -275,12 +275,16 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
             <div className="mt-4 space-y-2">
               <div className="flex gap-6 text-sm">
                 <div className="flex items-center gap-2">
-                  <span>Note: Absent:</span>
-                  <div className="h-4 w-4 border border-gray-400 bg-yellow-300"></div>
+                  <span>Legend: Cancelled:</span>
+                  <div className="h-4 w-4 border border-black bg-yellow-300"></div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Makeup:</span>
-                  <div className="h-4 w-4 border border-gray-400 bg-blue-300"></div>
+                  <span>Completed:</span>
+                  <div className="h-4 w-4 border border-black bg-white"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Pending:</span>
+                  <div className="h-4 w-4 border border-black bg-gray-100"></div>
                 </div>
               </div>
 

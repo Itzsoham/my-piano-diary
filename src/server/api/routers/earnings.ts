@@ -72,9 +72,7 @@ export const earningsRouter = createTRPCRouter({
       const completedLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
-          status: {
-            in: ["COMPLETE", "MAKEUP"],
-          },
+          status: "COMPLETE",
         },
         select: {
           duration: true,
@@ -89,9 +87,7 @@ export const earningsRouter = createTRPCRouter({
             gte: currentMonthStart,
             lte: currentMonthEnd,
           },
-          status: {
-            in: ["COMPLETE", "MAKEUP"],
-          },
+          status: "COMPLETE",
         },
         select: {
           duration: true,
@@ -239,9 +235,7 @@ export const earningsRouter = createTRPCRouter({
             gte: currentMonthStart,
             lte: currentMonthEnd,
           },
-          status: {
-            in: ["COMPLETE", "MAKEUP"],
-          },
+          status: "COMPLETE",
         },
         include: {
           student: {

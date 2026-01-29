@@ -29,12 +29,11 @@ interface TodayLesson {
   teacherId: string;
   date: Date;
   duration: number;
-  status: string;
+  status: "PENDING" | "COMPLETE" | "CANCELLED";
   cancelReason: string | null;
   pieceId: string | null;
   createdAt: Date;
   earnings: number;
-  attendance: string | null;
   actualMin: number | null;
   note: string | null;
   piece: {
@@ -61,7 +60,7 @@ export function TodayLessonsTable() {
     id: string;
     studentName: string;
     duration: number;
-    attendance: string | null;
+    status: "PENDING" | "COMPLETE" | "CANCELLED";
     actualMin: number | null;
     cancelReason: string | null;
     note: string | null;
@@ -88,8 +87,6 @@ export function TodayLessonsTable() {
     switch (status) {
       case "COMPLETE":
         return "default";
-      case "MAKEUP":
-        return "secondary";
       case "CANCELLED":
         return "destructive";
       default:
@@ -190,14 +187,16 @@ export function TodayLessonsTable() {
                     <TableCell>
                       <Button
                         size="sm"
-                        variant={lesson.attendance ? "default" : "outline"}
+                        variant={
+                          lesson.status !== "PENDING" ? "default" : "outline"
+                        }
                         disabled={lesson.status === "CANCELLED"}
                         onClick={() => {
                           setSelectedLesson({
                             id: lesson.id,
                             studentName: lesson.student.name,
                             duration: lesson.duration,
-                            attendance: lesson.attendance,
+                            status: lesson.status,
                             actualMin: lesson.actualMin,
                             cancelReason: lesson.cancelReason,
                             note: lesson.note,
@@ -205,7 +204,7 @@ export function TodayLessonsTable() {
                           setOpen(true);
                         }}
                       >
-                        {lesson.attendance ? "Update" : "Mark"}
+                        {lesson.status !== "PENDING" ? "Update" : "Mark"}
                       </Button>
                     </TableCell>
                     <TableCell className="text-right font-semibold">
