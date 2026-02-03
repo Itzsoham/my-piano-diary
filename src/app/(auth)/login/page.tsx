@@ -31,7 +31,6 @@ export default function Login() {
               <div className="flex items-center justify-center gap-2 text-rose-400">
                 <span className="text-2xl">✨</span>
                 <span className="text-2xl">🎹</span>
-                <span className="text-2xl">💕</span>
               </div>
             </div>
             <p className="text-xl text-rose-500">

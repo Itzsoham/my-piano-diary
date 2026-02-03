@@ -68,7 +68,6 @@ export default function Register() {
               <div className="flex items-center justify-center gap-2 text-purple-400">
                 <span className="text-2xl">🎶</span>
                 <span className="text-2xl">📖</span>
-                <span className="text-2xl">✨</span>
               </div>
             </div>
             <p className="text-xl text-rose-500">
