@@ -63,6 +63,7 @@ export function NavUser() {
       ? {
           name: session?.user?.name ?? "User",
           email: session?.user?.email ?? "",
+          image: session?.user?.image ?? null,
         }
       : null);
 

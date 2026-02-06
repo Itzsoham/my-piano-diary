@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { AppLoader } from "@/components/ui/app-loader";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -20,7 +21,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-var(--header-height))] items-center justify-center">
-        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        <AppLoader />
       </div>
     );
   }
@@ -34,58 +35,103 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and preferences
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          Profile Settings
+        </h1>
+        <p className="text-lg text-slate-500">
+          Your personal space and preferences
         </p>
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="password">Password</TabsTrigger>
-          <TabsTrigger value="teacher">Teacher Settings</TabsTrigger>
+        <TabsList className="mb-8 h-auto w-full justify-start gap-2 rounded-none border-b border-transparent bg-transparent p-0">
+          <TabsTrigger
+            value="profile"
+            className="rounded-full border-0 px-6 py-2.5 font-medium text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none"
+          >
+            Profile
+          </TabsTrigger>
+          <TabsTrigger
+            value="password"
+            className="rounded-full border-0 px-6 py-2.5 font-medium text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none"
+          >
+            Password
+          </TabsTrigger>
+          <TabsTrigger
+            value="teacher"
+            className="rounded-full border-0 px-6 py-2.5 font-medium text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none"
+          >
+            Teacher Settings
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your personal information and profile picture
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <TabsContent value="profile" className="mt-0">
+          <Card className="overflow-hidden rounded-2xl border-slate-100 p-0 shadow-xl ring-1 shadow-slate-200/40 ring-slate-900/5">
+            <div className="border-b border-rose-100/50 bg-rose-50/50 p-8 pb-6">
+              <div className="flex flex-col items-center space-y-4 text-center">
+                <Avatar className="h-24 w-24 border-4 border-white shadow-sm">
+                  <AvatarImage
+                    src={profile.image ?? ""}
+                    alt={profile.name ?? ""}
+                  />
+                  <AvatarFallback className="bg-rose-100 text-2xl font-semibold text-rose-500">
+                    {profile.name?.[0]?.toUpperCase() ?? "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-1">
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    {profile.name}
+                  </h2>
+                  <p className="text-sm font-medium text-rose-500">
+                    This is how students see you
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Profile Information
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Update your personal information
+                </p>
+              </div>
               <ProfileForm profile={profile} />
-            </CardContent>
+            </div>
           </Card>
         </TabsContent>
 
-        <TabsContent value="password" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your password to keep your account secure
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <TabsContent value="password" className="mt-0">
+          <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-xl ring-1 shadow-slate-200/40 ring-slate-900/5">
+            <div className="p-8">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Keep your account safe
+                </h3>
+                <p className="text-sm text-slate-500">
+                  A strong password keeps your piano diary safe.
+                </p>
+              </div>
               <PasswordForm />
-            </CardContent>
+            </div>
           </Card>
         </TabsContent>
 
-        <TabsContent value="teacher" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Teacher Settings</CardTitle>
-              <CardDescription>
-                Manage your teaching profile and rates
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <TabsContent value="teacher" className="mt-0">
+          <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-xl ring-1 shadow-slate-200/40 ring-slate-900/5">
+            <div className="p-8">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Teacher Settings
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Manage your teaching profile and rates
+                </p>
+              </div>
               <TeacherSettingsForm
                 hourlyRate={profile.teacher?.hourlyRate ?? 200000}
                 stats={{
@@ -93,7 +139,7 @@ export default function ProfilePage() {
                   lessons: profile.teacher?._count.lessons ?? 0,
                 }}
               />
-            </CardContent>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>

@@ -84,12 +84,16 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel className="text-slate-700">Name</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your name" {...field} />
+                <Input
+                  placeholder="Enter your name"
+                  {...field}
+                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
+                />
               </FormControl>
-              <FormDescription>
-                This is your display name across the application
+              <FormDescription className="text-slate-500">
+                Shown to your students and in lessons
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -101,11 +105,16 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-slate-700">Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="Enter your email" {...field} />
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  {...field}
+                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
+                />
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-slate-500">
                 Your email address for login and notifications
               </FormDescription>
               <FormMessage />
@@ -118,14 +127,15 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           name="image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Profile Picture URL</FormLabel>
+              <FormLabel className="text-slate-700">Profile picture</FormLabel>
               <FormControl>
                 <Input
                   placeholder="https://example.com/avatar.jpg"
                   {...field}
+                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
                 />
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-slate-500">
                 Enter a URL to an image for your profile picture
               </FormDescription>
               <FormMessage />
@@ -134,7 +144,11 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         />
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={updateProfile.isPending}>
+          <Button
+            type="submit"
+            disabled={updateProfile.isPending}
+            className="rounded-lg bg-rose-500 px-6 text-white hover:bg-rose-600"
+          >
             {updateProfile.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

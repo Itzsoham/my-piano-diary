@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AppLoader } from "@/components/ui/app-loader";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,8 +80,8 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex h-[50vh] items-center justify-center p-8">
+        <AppLoader />
       </div>
     );
   }

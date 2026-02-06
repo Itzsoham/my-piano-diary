@@ -37,6 +37,7 @@ type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 export function PasswordForm() {
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
+    mode: "onChange",
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -69,15 +70,16 @@ export function PasswordForm() {
           name="currentPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Current Password</FormLabel>
+              <FormLabel className="text-slate-700">Current Password</FormLabel>
               <FormControl>
                 <Input
                   type="password"
                   placeholder="Enter current password"
                   {...field}
+                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
                 />
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-slate-500">
                 Enter your current password to verify your identity
               </FormDescription>
               <FormMessage />
@@ -90,15 +92,16 @@ export function PasswordForm() {
           name="newPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>New Password</FormLabel>
+              <FormLabel className="text-slate-700">New Password</FormLabel>
               <FormControl>
                 <Input
                   type="password"
                   placeholder="Enter new password"
                   {...field}
+                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
                 />
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-slate-500">
                 Must be at least 6 characters long
               </FormDescription>
               <FormMessage />
@@ -111,15 +114,18 @@ export function PasswordForm() {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm New Password</FormLabel>
+              <FormLabel className="text-slate-700">
+                Confirm New Password
+              </FormLabel>
               <FormControl>
                 <Input
                   type="password"
                   placeholder="Confirm new password"
                   {...field}
+                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
                 />
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-slate-500">
                 Re-enter your new password to confirm
               </FormDescription>
               <FormMessage />
@@ -128,7 +134,11 @@ export function PasswordForm() {
         />
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={updatePassword.isPending}>
+          <Button
+            type="submit"
+            disabled={updatePassword.isPending || !form.formState.isValid}
+            className="rounded-lg bg-rose-500 px-6 text-white hover:bg-rose-600"
+          >
             {updatePassword.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
