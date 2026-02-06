@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CreditCard, LogOut, User } from "lucide-react";
+import { Bell, LogOut, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -148,8 +148,14 @@ export function NavUser() {
                 <Bell className="size-4" />
                 Notifications
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex cursor-pointer items-center gap-2">
-                <CreditCard className="size-4" />
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/updates"
+                  className="flex cursor-pointer items-center gap-2"
+                >
+                  <Sparkles className="size-4" />
+                  Updates
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
