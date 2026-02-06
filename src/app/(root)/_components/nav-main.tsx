@@ -1,69 +1,61 @@
 "use client";
 
-import { useState } from "react";
-import { CirclePlus, Mail, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { LessonDialog } from "@/components/lessons/lesson-dialog";
-import { api } from "@/trpc/react";
 
 export function NavMain({
   items,
+  label,
 }: {
   items: {
     title: string;
     url: string;
     icon?: LucideIcon;
   }[];
+  label?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const { data: students = [] } = api.student.getAll.useQuery();
+  const pathname = usePathname();
 
   return (
-    <>
-      <SidebarGroup>
-        <SidebarGroupContent className="flex flex-col gap-2">
-          <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2">
-              <SidebarMenuButton
-                tooltip="Quick Create"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-                onClick={() => setOpen(true)}
-              >
-                <CirclePlus />
-                <span>Quick Create</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-          <SidebarMenu>
-            {items.map((item) => (
+    <SidebarGroup>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-2">
+          {items.map((item) => {
+            const isActive =
+              pathname === item.url || pathname.startsWith(`${item.url}/`);
+            return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link href={item.url} className="flex items-center gap-2">
-                    {item.icon && <item.icon />}
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={isActive}
+                  className={cn(
+                    "hover:bg-primary/5 text-muted-foreground h-9 transition-colors",
+                    "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium",
+                  )}
+                >
+                  <Link href={item.url} className="flex items-center gap-3">
+                    {item.icon && <item.icon className="size-4" />}
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
-      <LessonDialog
-        open={open}
-        onOpenChange={setOpen}
-        students={students.map((s) => ({ id: s.id, name: s.name }))}
-        initialDate={new Date()}
-      />
-    </>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

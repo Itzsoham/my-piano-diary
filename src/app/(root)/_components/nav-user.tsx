@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  CreditCard,
-  EllipsisVertical,
-  LogOut,
-  Bell,
-  UserCircle,
-} from "lucide-react";
+import { Bell, CreditCard, LogOut, User } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,10 +44,10 @@ export function NavUser() {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+          <div className="bg-muted/40 flex items-center gap-2 rounded-xl px-2 py-2 text-left text-sm">
             <div className="bg-sidebar-accent h-8 w-8 animate-pulse rounded-lg" />
             <div className="grid flex-1 gap-1 text-left text-sm leading-tight">
-              <div className="bg-sidebar-accent h-4 w-24 animate-pulse rounded" />
+              <div className="bg-sidebar-accent h-3.5 w-24 animate-pulse rounded" />
               <div className="bg-sidebar-accent h-3 w-32 animate-pulse rounded" />
             </div>
           </div>
@@ -90,6 +84,7 @@ export function NavUser() {
   const userDisplayName = effectiveUser.name ?? "User";
   const userEmail = effectiveUser.email ?? "";
   const userImage = "image" in effectiveUser ? (effectiveUser.image ?? "") : "";
+  const initials = userDisplayName.slice(0, 2).toUpperCase();
 
   return (
     <SidebarMenu>
@@ -98,35 +93,34 @@ export function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="bg-muted/40 data-[state=open]:bg-muted/50 hover:bg-muted/50 h-auto rounded-xl px-2 py-2 transition-all"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
+              <Avatar className="h-8 w-8 rounded-lg border-transparent">
                 <AvatarImage src={userImage} alt={userDisplayName} />
-                <AvatarFallback className="rounded-lg">
-                  {userDisplayName.slice(0, 2).toUpperCase()}
+                <AvatarFallback className="bg-primary/10 text-primary rounded-lg font-medium">
+                  {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate font-medium">{userDisplayName}</span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span className="text-muted-foreground truncate text-xs font-normal">
                   {userEmail}
                 </span>
               </div>
-              <EllipsisVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
+            className="border-border/50 w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl shadow-sm"
+            side={isMobile ? "bottom" : "top"}
+            align="start"
+            sideOffset={8}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={userImage} alt={userDisplayName} />
-                  <AvatarFallback className="rounded-lg">
-                    {userDisplayName.slice(0, 2).toUpperCase()}
+                  <AvatarFallback className="bg-primary/10 text-primary rounded-lg">
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -142,24 +136,29 @@ export function NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/profile">
-                  <UserCircle />
+                <Link
+                  href="/profile"
+                  className="flex cursor-pointer items-center gap-2"
+                >
+                  <User className="size-4" />
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
+              <DropdownMenuItem className="flex cursor-pointer items-center gap-2">
+                <Bell className="size-4" />
                 Notifications
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex cursor-pointer items-center gap-2">
+                <CreditCard className="size-4" />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut />
-              Log out
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="flex cursor-pointer items-center gap-2 text-red-500 hover:text-red-500"
+            >
+              <LogOut className="size-4 text-red-500" />
+              <span className="text-red-500 hover:text-red-600">Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
