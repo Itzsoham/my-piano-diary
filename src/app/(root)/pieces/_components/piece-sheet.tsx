@@ -38,10 +38,10 @@ export function PieceSheet({
     ? controlledOnOpenChange
     : setUncontrolledOpen;
 
-  const title = mode === "create" ? "Add Piece" : "Edit Piece";
+  const title = mode === "create" ? "Add a new piece 🎶" : "Edit Piece";
   const description =
     mode === "create"
-      ? "Add a new piece to your repertoire."
+      ? "This will appear in your teaching repertoire"
       : "Update piece details and information.";
 
   return (

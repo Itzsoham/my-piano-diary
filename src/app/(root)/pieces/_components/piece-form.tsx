@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -10,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { AppLoader } from "@/components/ui/app-loader";
 import {
   Form,
   FormControl,
@@ -113,88 +113,103 @@ export function PieceForm({
 
   if (pieceId && isLoading) {
     return (
-      <div className="flex h-50 items-center justify-center">
-        <Loader2 className="text-muted-foreground size-8 animate-spin" />
-      </div>
+      <AppLoader
+        size="sm"
+        className="min-h-48"
+        text="Fetching piece details..."
+      />
     );
   }
 
   return (
     <div className="space-y-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter piece title" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+          <div className="space-y-6">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter piece title"
+                      className="h-11"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="level"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Level</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="e.g., Beginner, Intermediate, Advanced"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  The difficulty level of this piece
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="level"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Level</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., Beginner, Intermediate, Advanced"
+                      className="h-11"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    The difficulty level of this piece
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Add details about the piece..."
-                    className="min-h-25"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Add notes about the composer, style, or key details
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="space-y-6">
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add details about the piece..."
+                      className="min-h-32 resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Add notes about the composer, style, or key details
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3 pt-6">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              className="rounded-full"
               onClick={() => onSuccess?.()}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  {pieceId ? "Saving..." : "Creating..."}
-                </>
-              ) : (
-                <>{pieceId ? "Save Changes" : "Add Piece"}</>
-              )}
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="rounded-full bg-pink-500 font-medium text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-pink-600 hover:shadow-md"
+            >
+              {isPending
+                ? pieceId
+                  ? "Saving..."
+                  : "Adding..."
+                : pieceId
+                  ? "Save Changes"
+                  : "Add to Diary"}
             </Button>
           </div>
         </form>

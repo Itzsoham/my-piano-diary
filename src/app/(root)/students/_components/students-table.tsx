@@ -171,7 +171,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
       accessorKey: "notes",
       header: "Notes",
       cell: ({ row }) => (
-        <span className="text-muted-foreground line-clamp-1">
+        <span className="text-muted-foreground block max-w-[240px] truncate font-light">
           {row.original.notes ?? "—"}
         </span>
       ),
@@ -254,22 +254,22 @@ export function StudentsTable({ data }: StudentsTableProps) {
           className="max-w-sm"
         />
         <div className="flex items-center gap-2">
-          <div className="bg-background flex items-center rounded-lg border p-1">
+          <div className="bg-muted/40 flex items-center gap-1 rounded-lg p-1">
             <Button
-              variant={viewMode === "table" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("table")}
-              className="h-7 px-2"
-            >
-              <TableIcon className="size-4" />
-            </Button>
-            <Button
-              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              variant="ghost"
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="h-7 px-2"
+              className={`h-7 rounded-md px-2.5 transition-all ${viewMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               <LayoutGrid className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className={`h-7 rounded-md px-2.5 transition-all ${viewMode === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <TableIcon className="size-4" />
             </Button>
           </div>
           <StudentSheet mode="create" />
@@ -335,63 +335,48 @@ export function StudentsTable({ data }: StudentsTableProps) {
               return (
                 <div
                   key={student.id}
-                  className="group bg-card relative overflow-hidden rounded-xl border p-5 shadow-sm transition-all hover:shadow-md"
+                  className="group bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
                 >
-                  <div className="flex flex-col items-center space-y-4">
+                  <div className="flex flex-col items-center text-center">
                     {student.avatar ? (
-                      <Image
-                        src={student.avatar}
-                        alt={student.name}
-                        width={80}
-                        height={80}
-                        className="ring-primary/10 size-20 rounded-full object-cover ring-2"
-                      />
+                      <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 transition-all group-hover:from-rose-500/20 group-hover:to-pink-500/20 group-hover:ring-rose-500/30">
+                        <Image
+                          src={student.avatar}
+                          alt={student.name}
+                          width={96}
+                          height={96}
+                          className="size-20 rounded-full object-cover shadow-sm transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
                     ) : (
-                      <div className="ring-primary/10 flex size-20 items-center justify-center rounded-full bg-linear-to-br from-rose-100 to-pink-100 ring-2">
-                        <span className="text-3xl font-medium text-rose-500">
+                      <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 transition-all group-hover:from-rose-500/20 group-hover:to-pink-500/20 group-hover:ring-rose-500/30">
+                        <span className="text-3xl font-bold text-rose-500/80 transition-transform duration-300 group-hover:scale-110">
                           {student.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
 
-                    <div className="w-full space-y-2 text-center">
-                      <h3 className="text-lg leading-none font-semibold">
-                        {student.name}
-                      </h3>
-                      <p className="text-muted-foreground text-sm">
-                        {student.teacher.user.name ??
-                          student.teacher.user.email}
-                      </p>
-                    </div>
+                    <h3 className="text-foreground mb-1 text-xl font-bold tracking-tight">
+                      {student.name}
+                    </h3>
 
-                    <div className="flex w-full items-center justify-center gap-4 pt-2">
-                      <div className="text-center">
-                        <div className="text-primary text-2xl font-bold">
-                          {student._count.lessons}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          Lessons
-                        </div>
-                      </div>
+                    <p className="text-muted-foreground/60 mb-4 text-xs font-medium">
+                      Teacher:{" "}
+                      {student.teacher.user.name ?? student.teacher.user.email}
+                    </p>
+
+                    <div className="bg-primary/5 text-primary/70 border-primary/10 mb-4 inline-flex rounded-full border px-3 py-1 text-xs font-medium">
+                      {student._count.lessons} lessons recorded
                     </div>
 
                     {student.notes && (
-                      <p className="text-muted-foreground line-clamp-2 w-full text-center text-xs">
-                        {student.notes}
+                      <p className="text-muted-foreground/80 line-clamp-2 text-sm leading-relaxed font-light italic">
+                        "{student.notes}"
                       </p>
                     )}
-
-                    <div className="text-muted-foreground text-xs">
-                      Joined{" "}
-                      {new Date(student.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </div>
                   </div>
 
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-3 right-3 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                     <StudentSheet
                       mode="edit"
                       studentId={student.id}
@@ -402,7 +387,11 @@ export function StudentsTable({ data }: StudentsTableProps) {
                     />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-background/80 size-8 rounded-full"
+                        >
                           <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="size-4" />
                         </Button>

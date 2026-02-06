@@ -137,7 +137,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (
-        <span className="text-muted-foreground line-clamp-1">
+        <span className="text-muted-foreground block max-w-[240px] truncate font-light">
           {row.original.description ?? "—"}
         </span>
       ),
@@ -225,22 +225,22 @@ export function PiecesTable({ data }: PiecesTableProps) {
           className="max-w-sm"
         />
         <div className="flex items-center gap-2">
-          <div className="bg-background flex items-center rounded-lg border p-1">
+          <div className="bg-muted/40 flex items-center gap-1 rounded-lg p-1">
             <Button
-              variant={viewMode === "table" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("table")}
-              className="h-7 px-2"
-            >
-              <TableIcon className="size-4" />
-            </Button>
-            <Button
-              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              variant="ghost"
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="h-7 px-2"
+              className={`h-7 rounded-md px-2.5 transition-all ${viewMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               <LayoutGrid className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className={`h-7 rounded-md px-2.5 transition-all ${viewMode === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <TableIcon className="size-4" />
             </Button>
           </div>
           <PieceSheet mode="create" />
@@ -306,55 +306,45 @@ export function PiecesTable({ data }: PiecesTableProps) {
               return (
                 <div
                   key={piece.id}
-                  className="group bg-card relative overflow-hidden rounded-xl border p-5 shadow-sm transition-all hover:shadow-md"
+                  className="group bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
                 >
-                  <div className="flex flex-col items-center space-y-4">
-                    <div className="ring-primary/10 flex size-20 items-center justify-center rounded-full bg-linear-to-br from-purple-100 to-pink-100 ring-2">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/10 to-purple-500/10 ring-1 ring-indigo-500/20 transition-all group-hover:from-indigo-500/20 group-hover:to-purple-500/20 group-hover:ring-indigo-500/30">
                       <Music
-                        className="size-10 text-purple-500"
+                        className="size-10 text-indigo-600/80 transition-transform duration-300 group-hover:scale-110"
                         strokeWidth={1.5}
                       />
                     </div>
 
-                    <div className="w-full space-y-2 text-center">
-                      <h3 className="text-lg leading-none font-semibold">
-                        {piece.title}
-                      </h3>
-                      {piece.level && (
-                        <p className="text-muted-foreground text-sm">
-                          {piece.level}
-                        </p>
-                      )}
-                    </div>
+                    <h3 className="text-foreground mb-1 text-xl font-bold tracking-tight">
+                      {piece.title}
+                    </h3>
 
-                    <div className="flex w-full items-center justify-center gap-4 pt-2">
-                      <div className="text-center">
-                        <div className="text-primary text-2xl font-bold">
-                          {piece._count.lessons}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          Lessons
-                        </div>
+                    {piece.level && (
+                      <div className="mt-2 mb-4 inline-flex rounded-full border border-indigo-500/10 bg-indigo-500/5 px-3 py-1 text-xs font-medium text-indigo-600/70">
+                        {piece.level}
                       </div>
-                    </div>
-
-                    {piece.description && (
-                      <p className="text-muted-foreground line-clamp-2 w-full text-center text-xs">
-                        {piece.description}
-                      </p>
                     )}
 
-                    <div className="text-muted-foreground text-xs">
-                      Added{" "}
-                      {new Date(piece.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </div>
+                    <p className="text-muted-foreground/60 mb-4 text-xs font-medium">
+                      {piece._count.lessons === 0
+                        ? "Not yet played in lessons"
+                        : `Played in ${piece._count.lessons} ${piece._count.lessons === 1 ? "lesson" : "lessons"}`}
+                    </p>
+
+                    {piece.description && (
+                      <div className="w-full">
+                        <p className="text-muted-foreground/50 mb-1 text-xs font-medium">
+                          Teaching notes
+                        </p>
+                        <p className="text-muted-foreground/80 line-clamp-2 text-sm leading-relaxed font-light italic">
+                          "{piece.description}"
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-3 right-3 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                     <PieceSheet
                       mode="edit"
                       pieceId={piece.id}
@@ -365,7 +355,11 @@ export function PiecesTable({ data }: PiecesTableProps) {
                     />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-background/80 size-8 rounded-full"
+                        >
                           <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="size-4" />
                         </Button>

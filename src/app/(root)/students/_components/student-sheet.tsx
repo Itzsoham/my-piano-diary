@@ -38,10 +38,10 @@ export function StudentSheet({
     ? controlledOnOpenChange
     : setUncontrolledOpen;
 
-  const title = mode === "create" ? "Add Student" : "Edit Student";
+  const title = mode === "create" ? "Add a new student 🎹" : "Edit Student";
   const description =
     mode === "create"
-      ? "Add a new student to your roster. They will be linked to your account."
+      ? "This will add them to your teaching roster"
       : "Update student details and view their information.";
 
   return (

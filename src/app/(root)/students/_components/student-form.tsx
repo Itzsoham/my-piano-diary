@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -10,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { AppLoader } from "@/components/ui/app-loader";
 import {
   Form,
   FormControl,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
 const studentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   avatar: z.string().url("Must be a valid URL").optional().or(z.literal("")),
@@ -112,88 +113,103 @@ export function StudentForm({
 
   if (studentId && isLoading) {
     return (
-      <div className="flex h-50 items-center justify-center">
-        <Loader2 className="text-muted-foreground size-8 animate-spin" />
-      </div>
+      <AppLoader
+        size="sm"
+        className="min-h-48"
+        text="Fetching student details..."
+      />
     );
   }
 
   return (
     <div className="space-y-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter student name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+          <div className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter student name"
+                      className="h-11"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="avatar"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Avatar URL</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://example.com/avatar.jpg"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Enter a URL to an image for the student avatar
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="avatar"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Avatar URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://example.com/avatar.jpg"
+                      className="h-11"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Enter a URL to an image for the student avatar
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Notes</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Add any notes about the student..."
-                    className="min-h-25"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Track important information about the student
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="space-y-6">
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Additional Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any notes about the student..."
+                      className="min-h-32 resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Track important information about the student
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3 pt-6">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              className="rounded-full"
               onClick={() => onSuccess?.()}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  {studentId ? "Saving..." : "Creating..."}
-                </>
-              ) : (
-                <>{studentId ? "Save Changes" : "Add Student"}</>
-              )}
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="rounded-full bg-pink-500 font-medium text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-pink-600 hover:shadow-md"
+            >
+              {isPending
+                ? studentId
+                  ? "Saving..."
+                  : "Creating..."
+                : studentId
+                  ? "Save Changes"
+                  : "Add to Roster"}
             </Button>
           </div>
         </form>
