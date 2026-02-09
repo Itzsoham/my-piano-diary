@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
+import { useCurrency } from "@/lib/currency";
 
 interface TodayLesson {
   id: string;
@@ -61,6 +63,7 @@ interface TodayLesson {
 
 export function TodayLessonsTable() {
   const [date, setDate] = useState<Date>(new Date());
+  const { currency } = useCurrency();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const query: any = (api as any).earnings.getTodayLessons.useQuery({ date });
@@ -81,15 +84,6 @@ export function TodayLessonsTable() {
     note: string | null;
     date: Date;
   } | null>(null);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString("en-US", {
@@ -151,7 +145,7 @@ export function TodayLessonsTable() {
                 {isSameDay(date, new Date()) ? "Today's Total" : "Day's Total"}
               </div>
               <div className="font-semibold">
-                {formatCurrency(totalEarnings)}
+                {formatCurrency(totalEarnings, currency)}
               </div>
             </div>
           </div>
@@ -240,11 +234,11 @@ export function TodayLessonsTable() {
                     <TableCell className="text-right font-semibold">
                       {lesson.status === "CANCELLED" ? (
                         <span className="text-destructive">
-                          {formatCurrency(lesson.earnings)}
+                          {formatCurrency(lesson.earnings, currency)}
                         </span>
                       ) : (
                         <span className="text-green-600">
-                          {formatCurrency(lesson.earnings)}
+                          {formatCurrency(lesson.earnings, currency)}
                         </span>
                       )}
                     </TableCell>

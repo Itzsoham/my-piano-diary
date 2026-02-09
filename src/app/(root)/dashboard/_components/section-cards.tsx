@@ -18,6 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/format";
+import { useCurrency } from "@/lib/currency";
 
 export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
@@ -30,15 +32,7 @@ export function SectionCards() {
   const { data: studentEarnings } = api.earnings.getByStudent.useQuery() as {
     data: StudentEarningsOutput | undefined;
   };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const { currency } = useCurrency();
 
   const totalStudents = studentEarnings?.length ?? 0;
 
@@ -48,7 +42,9 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Total Earnings</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading ? "..." : formatCurrency(earnings?.totalEarnings ?? 0)}
+            {isLoading
+              ? "..."
+              : formatCurrency(earnings?.totalEarnings ?? 0, currency)}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -73,7 +69,7 @@ export function SectionCards() {
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {isLoading
               ? "..."
-              : formatCurrency(earnings?.currentMonthEarnings ?? 0)}
+              : formatCurrency(earnings?.currentMonthEarnings ?? 0, currency)}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -99,7 +95,7 @@ export function SectionCards() {
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {isLoading
               ? "..."
-              : formatCurrency(earnings?.currentMonthLoss ?? 0)}
+              : formatCurrency(earnings?.currentMonthLoss ?? 0, currency)}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="text-destructive">

@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { getWeekOfMonth, getDate, format } from "date-fns";
 import { Loader2, Save, Printer } from "lucide-react";
 import { api } from "@/trpc/react";
+import { formatCurrency, formatCurrencyNumber } from "@/lib/format";
+import { useCurrency } from "@/lib/currency";
 
 interface ReportViewProps {
   studentId: string;
@@ -25,6 +27,7 @@ interface ReportViewProps {
 
 export function ReportView({ studentId, month, year }: ReportViewProps) {
   const router = useRouter();
+  const { currency } = useCurrency();
 
   const { data, isLoading } = api.report.getStudentReport.useQuery({
     studentId,
@@ -95,10 +98,13 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
   }
 
   const { student, lessons } = data;
+  const teacherName = data?.teacherName ?? "";
+  const perSessionRate = data?.teacherHourlyRate ?? 0;
 
   // Calculate Stats
   const validLessons = lessons.filter((l) => l.status === "COMPLETE");
   const totalSessions = validLessons.length;
+  const totalTuition = totalSessions * perSessionRate;
 
   // Attendance Grid Logic
   const weeksData: Record<number, { day: number; status: string }[]> = {
@@ -173,49 +179,49 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
       {/* Report Paper */}
       <div className="mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black shadow-lg print:m-0 print:w-full print:p-0 print:shadow-none">
         {/* Header */}
-        <div className="mb-8 text-center">
+        <div className="mb-6 text-center">
           <h1 className="mb-2 text-xl font-bold uppercase">
-            MONTHLY REPORT {month}/{year}
+            TỔNG KẾT THÁNG {month}/{year}
           </h1>
-          <p className="font-semibold">Student Name: {student.name}</p>
+          <p className="font-semibold">Tên học sinh: {student.name}</p>
         </div>
 
         {/* Sections */}
         <div className="space-y-6">
           <section>
-            <h2 className="mb-2 text-lg font-bold">I. Monthly Summary</h2>
+            <h2 className="mb-2 text-lg font-bold">I. Tổng kết tháng.</h2>
             <Textarea
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
-              placeholder="- Student completed..."
+              placeholder="- Con hoàn thành..."
             />
           </section>
 
           <section>
-            <h2 className="mb-2 text-lg font-bold">II. Comments</h2>
+            <h2 className="mb-2 text-lg font-bold">II. Nhận xét.</h2>
             <Textarea
               value={comments}
               onChange={(e) => setComments(e.target.value)}
               className="min-h-37.5 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
-              placeholder="- Technique..."
+              placeholder="- Nhận xét..."
             />
           </section>
 
           <section>
-            <h2 className="mb-2 text-lg font-bold">III. Next Month Plan</h2>
+            <h2 className="mb-2 text-lg font-bold">III. Hoạt động tháng tới</h2>
             <Textarea
               value={nextMonthPlan}
               onChange={(e) => setNextMonthPlan(e.target.value)}
               className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
-              placeholder="- Learn new piece..."
+              placeholder="- Học bài mới..."
             />
           </section>
 
           {/* Attendance Table */}
           <section className="pt-4">
             <h2 className="mb-4 text-center text-lg font-bold">
-              ATTENDANCE TABLE FOR MONTH {month}
+              BẢNG ĐIỂM DANH THÁNG {month}
             </h2>
 
             <div className="border border-black">
@@ -226,13 +232,11 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
                   gridTemplateColumns: `50px 100px repeat(${weeks.length}, 1fr)`,
                 }}
               >
-                <div className="flex items-center justify-center p-2">NO</div>
-                <div className="flex items-center justify-center p-2">
-                  STUDENT
-                </div>
+                <div className="flex items-center justify-center p-2">STT</div>
+                <div className="flex items-center justify-center p-2">TÊN HS</div>
                 {weeks.map((w) => (
                   <div key={w} className="p-2">
-                    Week {w}
+                    Tuần {w}
                   </div>
                 ))}
               </div>
@@ -258,7 +262,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
                         key={idx}
                         className={`inline-flex h-8 w-8 items-center justify-center border border-black text-sm font-semibold ${
                           item.status === "CANCELLED" ? "bg-yellow-300" : ""
-                        } ${item.status === "COMPLETE" ? "bg-white" : ""} ${
+                        } ${item.status === "COMPLETE" ? "bg-blue-300" : ""} ${
                           item.status === "PENDING"
                             ? "bg-gray-100 text-gray-400"
                             : ""
@@ -276,26 +280,35 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
             <div className="mt-4 space-y-2">
               <div className="flex gap-6 text-sm">
                 <div className="flex items-center gap-2">
-                  <span>Legend: Cancelled:</span>
+                  <span>Ghi chú: buổi vắng:</span>
                   <div className="h-4 w-4 border border-black bg-yellow-300"></div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Completed:</span>
-                  <div className="h-4 w-4 border border-black bg-white"></div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>Pending:</span>
-                  <div className="h-4 w-4 border border-black bg-gray-100"></div>
+                  <span>buổi đầy đủ:</span>
+                  <div className="h-4 w-4 border border-black bg-blue-300"></div>
                 </div>
               </div>
 
               <div className="mt-4 text-lg font-bold italic">
-                TOTAL: {totalSessions} SESSIONS
+                TỔNG: {totalSessions} BUỔI
               </div>
             </div>
 
-            <div className="mt-12 mb-12 text-right italic">
-              Date: {format(new Date(), "dd/MM/yyyy")}
+            <div className="mt-2 text-sm italic">
+              Học phí {totalSessions} buổi x{" "}
+              {formatCurrencyNumber(perSessionRate, currency)} ={" "}
+              {formatCurrency(totalTuition, currency)}
+            </div>
+
+            <div className="mt-6 text-right italic">
+              Đà Nẵng, Ngày {format(new Date(), "dd/MM/yyyy")}
+            </div>
+
+            <div className="mt-10 text-right">
+              <div className="font-semibold">Giáo Viên</div>
+              <div className="mt-8 font-semibold">
+                {teacherName || "__________________"}
+              </div>
             </div>
           </section>
         </div>

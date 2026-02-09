@@ -16,6 +16,7 @@ export const reportRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
+        include: { user: true },
       });
 
       if (!teacher) {
@@ -65,6 +66,8 @@ export const reportRouter = createTRPCRouter({
         report,
         lessons,
         student,
+        teacherHourlyRate: teacher.hourlyRate,
+        teacherName: teacher.user?.name ?? null,
       };
     }),
 

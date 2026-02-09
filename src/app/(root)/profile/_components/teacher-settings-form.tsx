@@ -20,6 +20,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { currencyOptions, useCurrency } from "@/lib/currency";
 
 const teacherSettingsSchema = z.object({
   hourlyRate: z.coerce.number().min(0, "Hourly rate must be positive"),
@@ -40,6 +48,7 @@ export function TeacherSettingsForm({
   stats,
 }: TeacherSettingsFormProps) {
   const utils = api.useUtils();
+  const { currency, setCurrency } = useCurrency();
 
   const form = useForm<TeacherSettingsValues>({
     resolver: zodResolver(teacherSettingsSchema),
@@ -108,27 +117,50 @@ export function TeacherSettingsForm({
       {/* Hourly Rate Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="hourlyRate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-slate-700">Hourly Rate</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="200000"
-                    {...field}
-                    className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
-                  />
-                </FormControl>
-                <FormDescription className="text-slate-500">
-                  Used to calculate your monthly earnings
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="hourlyRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-700">Hourly Rate</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="200000"
+                      {...field}
+                      className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-slate-500">
+                    Used to calculate your monthly earnings
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormItem>
+              <FormLabel className="text-slate-700">Currency</FormLabel>
+              <FormControl>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger className="rounded-lg border-slate-200 focus-visible:ring-rose-500 focus-visible:ring-offset-0">
+                    <SelectValue placeholder="VND" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencyOptions.map((option) => (
+                      <SelectItem key={option.code} value={option.code}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormDescription className="text-slate-500">
+                Used to format currency across the system
+              </FormDescription>
+            </FormItem>
+          </div>
 
           <div className="flex items-center justify-end gap-4">
             <Button
