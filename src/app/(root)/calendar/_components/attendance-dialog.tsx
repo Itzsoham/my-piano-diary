@@ -21,16 +21,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/trpc/react";
+import { format } from "date-fns";
+import { Check, X, Clock, Music2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 const AttendanceFormSchema = z.object({
   status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
@@ -52,6 +49,7 @@ interface AttendanceDialogProps {
     actualMin: number | null;
     cancelReason: string | null;
     note: string | null;
+    date: Date;
   };
   onSuccess?: () => void;
 }
@@ -62,10 +60,11 @@ export function AttendanceDialog({
   lesson,
   onSuccess,
 }: AttendanceDialogProps) {
+  const { data: session } = useSession();
   const utils = api.useUtils();
   const markAttendance = api.lesson.markAttendance.useMutation({
     onSuccess: () => {
-      toast.success("Attendance marked successfully!");
+      toast.success("Attendance marked successfully! 💗");
       void utils.lesson.invalidate();
       onOpenChange(false);
       onSuccess?.();
@@ -99,118 +98,226 @@ export function AttendanceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
-          <DialogTitle>Mark Attendance</DialogTitle>
-          <DialogDescription>
-            Mark attendance for {lesson.studentName}
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader className="space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40">
+            <Music2 className="h-6 w-6 text-pink-600" />
+          </div>
+          <DialogTitle className="text-center text-2xl font-bold text-pink-950">
+            Lesson with {session?.user?.name ?? "you"} 🎹
+          </DialogTitle>
+          <DialogDescription className="text-center font-medium text-pink-800/60">
+            {format(lesson.date, "EEEE · h:mm a")} · {lesson.duration} min
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="PENDING">⏳ Pending</SelectItem>
-                      <SelectItem value="COMPLETE">✓ Complete</SelectItem>
-                      <SelectItem value="CANCELLED">✗ Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {selectedStatus === "COMPLETE" && (
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4 rounded-xl bg-gradient-to-br from-pink-50/50 to-purple-50/50 p-4">
               <FormField
                 control={form.control}
-                name="actualMin"
+                name="status"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Actual Duration (minutes)</FormLabel>
+                  <FormItem className="space-y-3">
+                    <FormLabel className="text-sm font-semibold text-pink-900/70">
+                      Attendance Status
+                    </FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder={lesson.duration.toString()}
-                        {...field}
-                      />
+                      <div className="grid grid-cols-3 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => field.onChange("COMPLETE")}
+                          className={cn(
+                            "group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all duration-200",
+                            field.value === "COMPLETE"
+                              ? "border-green-500 bg-green-50 shadow-sm ring-2 shadow-green-100 ring-green-500/10"
+                              : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95",
+                              field.value === "COMPLETE"
+                                ? "scale-110 bg-green-100 text-green-600"
+                                : "bg-gray-100 text-gray-400",
+                            )}
+                          >
+                            <Check className="h-5 w-5" />
+                          </div>
+                          <span
+                            className={cn(
+                              "text-xs font-bold",
+                              field.value === "COMPLETE"
+                                ? "text-green-700"
+                                : "text-gray-500",
+                            )}
+                          >
+                            Present
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => field.onChange("CANCELLED")}
+                          className={cn(
+                            "group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all duration-200",
+                            field.value === "CANCELLED"
+                              ? "border-rose-500 bg-rose-50 shadow-sm ring-2 shadow-rose-100 ring-rose-500/10"
+                              : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95",
+                              field.value === "CANCELLED"
+                                ? "scale-110 bg-rose-100 text-rose-600"
+                                : "bg-gray-100 text-gray-400",
+                            )}
+                          >
+                            <X className="h-5 w-5" />
+                          </div>
+                          <span
+                            className={cn(
+                              "text-xs font-bold",
+                              field.value === "CANCELLED"
+                                ? "text-rose-700"
+                                : "text-gray-500",
+                            )}
+                          >
+                            Cancelled
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => field.onChange("PENDING")}
+                          className={cn(
+                            "group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all duration-200",
+                            field.value === "PENDING"
+                              ? "border-amber-500 bg-amber-50 shadow-sm ring-2 shadow-amber-100 ring-amber-500/10"
+                              : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95",
+                              field.value === "PENDING"
+                                ? "scale-110 bg-amber-100 text-amber-600"
+                                : "bg-gray-100 text-gray-400",
+                            )}
+                          >
+                            <Clock className="h-5 w-5" />
+                          </div>
+                          <span
+                            className={cn(
+                              "text-xs font-bold",
+                              field.value === "PENDING"
+                                ? "text-amber-700"
+                                : "text-gray-500",
+                            )}
+                          >
+                            Pending
+                          </span>
+                        </button>
+                      </div>
                     </FormControl>
-                    <FormDescription>
-                      Scheduled: {lesson.duration} minutes
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
 
-            {selectedStatus === "CANCELLED" && (
-              <FormField
-                control={form.control}
-                name="cancelReason"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Reason for Absence</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Sick, Family emergency"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <FormField
-              control={form.control}
-              name="note"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Any additional notes..."
-                      className="min-h-20"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              {selectedStatus === "COMPLETE" && (
+                <FormField
+                  control={form.control}
+                  name="actualMin"
+                  render={({ field }) => (
+                    <FormItem className="animate-in fade-in slide-in-from-top-2 duration-300">
+                      <FormLabel className="text-sm font-semibold text-pink-900/70">
+                        Actual Duration (minutes)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder={lesson.duration.toString()}
+                          className="rounded-xl border-pink-100 focus:border-pink-300 focus:ring-pink-200"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-pink-800/40">
+                        Scheduled: {lesson.duration} minutes
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
 
-            <div className="flex gap-3 pt-4">
+              {selectedStatus === "CANCELLED" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="cancelReason"
+                    render={({ field }) => (
+                      <FormItem className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <FormLabel className="text-sm font-semibold text-pink-900/70">
+                          Reason for Absence
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., Sick, Family emergency"
+                            className="rounded-xl border-pink-100 focus:border-pink-300 focus:ring-pink-200"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="note"
+                    render={({ field }) => (
+                      <FormItem className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <FormLabel className="text-sm font-semibold text-pink-900/70">
+                          Additional Note 💭
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Optional note for yourself..."
+                            className="min-h-20 rounded-xl border-pink-100 bg-white focus:border-pink-300 focus:ring-pink-200"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="flex-1"
+                className="flex-1 rounded-xl"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={markAttendance.isPending}
-                className="flex-1"
+                className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md shadow-pink-200 transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-lg active:scale-[0.98]"
               >
-                {markAttendance.isPending ? "Saving..." : "Save"}
+                {markAttendance.isPending
+                  ? "Saving..."
+                  : selectedStatus === "COMPLETE"
+                    ? "Mark Present"
+                    : selectedStatus === "CANCELLED"
+                      ? "Cancel Lesson"
+                      : "Save"}
               </Button>
             </div>
           </form>

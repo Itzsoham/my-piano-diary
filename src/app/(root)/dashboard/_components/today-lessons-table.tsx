@@ -79,6 +79,7 @@ export function TodayLessonsTable() {
     actualMin: number | null;
     cancelReason: string | null;
     note: string | null;
+    date: Date;
   } | null>(null);
 
   const formatCurrency = (amount: number) => {
@@ -228,6 +229,7 @@ export function TodayLessonsTable() {
                             actualMin: lesson.actualMin,
                             cancelReason: lesson.cancelReason,
                             note: lesson.note,
+                            date: lesson.date,
                           });
                           setOpen(true);
                         }}

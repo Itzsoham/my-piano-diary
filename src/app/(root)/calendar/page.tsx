@@ -102,6 +102,7 @@ export default function CalendarPage() {
             actualMin: selectedLesson.actualMin,
             cancelReason: selectedLesson.cancelReason,
             note: selectedLesson.note,
+            date: selectedLesson.date,
           }}
           onSuccess={handleSuccess}
         />
