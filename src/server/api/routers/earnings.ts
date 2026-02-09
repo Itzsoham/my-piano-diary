@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 // Type definitions for return values
@@ -141,8 +142,9 @@ export const earningsRouter = createTRPCRouter({
   ),
 
   // Get today's lessons with earnings
-  getTodayLessons: protectedProcedure.query(
-    async ({ ctx }): Promise<TodayLesson[]> => {
+  getTodayLessons: protectedProcedure
+    .input(z.object({ date: z.date().optional() }).optional())
+    .query(async ({ ctx, input }): Promise<TodayLesson[]> => {
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
       });
@@ -151,19 +153,19 @@ export const earningsRouter = createTRPCRouter({
         return [];
       }
 
-      const now = new Date();
+      const referenceDate = input?.date ?? new Date();
       const todayStart = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
+        referenceDate.getFullYear(),
+        referenceDate.getMonth(),
+        referenceDate.getDate(),
         0,
         0,
         0,
       );
       const todayEnd = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
+        referenceDate.getFullYear(),
+        referenceDate.getMonth(),
+        referenceDate.getDate(),
         23,
         59,
         59,
@@ -203,8 +205,7 @@ export const earningsRouter = createTRPCRouter({
             ? (lesson.duration / 60) * teacher.hourlyRate
             : 0,
       }));
-    },
-  ),
+    }),
 
   // Get earnings by student for current month
   getByStudent: protectedProcedure.query(

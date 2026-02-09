@@ -20,8 +20,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Clock, DollarSign } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  DollarSign,
+  CalendarDays,
+} from "lucide-react";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
+import { format, isSameDay } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface TodayLesson {
   id: string;
@@ -47,8 +60,10 @@ interface TodayLesson {
 }
 
 export function TodayLessonsTable() {
+  const [date, setDate] = useState<Date>(new Date());
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const query: any = (api as any).earnings.getTodayLessons.useQuery();
+  const query: any = (api as any).earnings.getTodayLessons.useQuery({ date });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   const lessonsData: unknown = query.data;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -103,23 +118,36 @@ export function TodayLessonsTable() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="size-5" />
-              Today&apos;s Lessons
+              <CalendarIcon className="size-5" />
+              {isSameDay(date, new Date())
+                ? "Today's Lessons"
+                : "Lessons Schedule"}
             </CardTitle>
-            <CardDescription>
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </CardDescription>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-foreground h-8 px-0 font-normal hover:bg-transparent"
+                >
+                  {format(date, "EEEE, MMMM do, yyyy")}
+                  <CalendarDays className="ml-2 h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => d && setDate(d)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="bg-muted/50 flex items-center gap-2 rounded-lg border px-3 py-2">
             <DollarSign className="text-primary size-5" />
             <div>
               <div className="text-muted-foreground text-xs">
-                Today&apos;s Total
+                {isSameDay(date, new Date()) ? "Today's Total" : "Day's Total"}
               </div>
               <div className="font-semibold">
                 {formatCurrency(totalEarnings)}
@@ -226,8 +254,11 @@ export function TodayLessonsTable() {
         ) : (
           <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
             <div className="text-muted-foreground text-center">
-              <Calendar className="mx-auto mb-2 size-8 opacity-50" />
-              <p>No lessons scheduled for today</p>
+              <CalendarIcon className="mx-auto mb-2 size-8 opacity-50" />
+              <p>
+                No lessons scheduled for{" "}
+                {isSameDay(date, new Date()) ? "today" : format(date, "MMM do")}
+              </p>
             </div>
           </div>
         )}

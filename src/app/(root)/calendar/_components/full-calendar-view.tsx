@@ -337,8 +337,9 @@ export function FullCalendarView({
         dayCellContent={renderDayCellContent}
         navLinks={true}
         height="100%"
-        slotMinTime="08:00:00"
-        slotMaxTime="20:00:00"
+        slotMinTime="00:00:00"
+        slotMaxTime="24:00:00"
+        scrollTime="08:00:00"
         allDaySlot={false}
         nowIndicator={true}
         slotLabelFormat={{
