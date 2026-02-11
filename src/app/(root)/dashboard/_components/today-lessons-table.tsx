@@ -12,13 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Calendar as CalendarIcon,
@@ -34,51 +28,35 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 
-interface TodayLesson {
-  id: string;
-  studentId: string;
-  teacherId: string;
-  date: Date;
-  duration: number;
-  status: "PENDING" | "COMPLETE" | "CANCELLED";
-  cancelReason: string | null;
-  pieceId: string | null;
-  createdAt: Date;
-  earnings: number;
-  actualMin: number | null;
-  note: string | null;
-  piece: {
-    title: string;
-  } | null;
-  student: {
-    id: string;
-    name: string;
-    avatar: string | null;
-  };
-}
+type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
+
+const toLessonStatus = (status: string): LessonStatus => {
+  if (status === "COMPLETE" || status === "CANCELLED" || status === "PENDING") {
+    return status;
+  }
+
+  return "PENDING";
+};
 
 export function TodayLessonsTable() {
   const [date, setDate] = useState<Date>(new Date());
   const { currency } = useCurrency();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const query: any = (api as any).earnings.getTodayLessons.useQuery({ date });
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const lessonsData: unknown = query.data;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const isLoading: unknown = query.isLoading;
-  const lessons = (lessonsData ?? []) as TodayLesson[];
+  const {
+    data: lessons = [],
+    isLoading,
+    refetch,
+  } = api.earnings.getTodayLessons.useQuery({ date });
 
   const [open, setOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<{
     id: string;
     studentName: string;
     duration: number;
-    status: "PENDING" | "COMPLETE" | "CANCELLED";
+    status: LessonStatus;
     actualMin: number | null;
     cancelReason: string | null;
     note: string | null;
@@ -93,7 +71,7 @@ export function TodayLessonsTable() {
     });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: LessonStatus) => {
     switch (status) {
       case "COMPLETE":
         return "default";
@@ -203,7 +181,9 @@ export function TodayLessonsTable() {
                     </TableCell>
                     <TableCell>{lesson.duration} min</TableCell>
                     <TableCell>
-                      <Badge variant={getStatusColor(lesson.status)}>
+                      <Badge
+                        variant={getStatusColor(toLessonStatus(lesson.status))}
+                      >
                         {lesson.status.toLowerCase()}
                       </Badge>
                     </TableCell>
@@ -219,7 +199,7 @@ export function TodayLessonsTable() {
                             id: lesson.id,
                             studentName: lesson.student.name,
                             duration: lesson.duration,
-                            status: lesson.status,
+                            status: toLessonStatus(lesson.status),
                             actualMin: lesson.actualMin,
                             cancelReason: lesson.cancelReason,
                             note: lesson.note,
@@ -265,8 +245,7 @@ export function TodayLessonsTable() {
             onOpenChange={(o) => setOpen(o)}
             lesson={selectedLesson}
             onSuccess={() => {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              void query.refetch?.();
+              void refetch();
             }}
           />
         )}

@@ -137,7 +137,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (
-        <span className="text-muted-foreground block max-w-[240px] truncate font-light">
+        <span className="text-muted-foreground block max-w-60 truncate font-light">
           {row.original.description ?? "—"}
         </span>
       ),
@@ -309,7 +309,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
                   className="group bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
                 >
                   <div className="flex flex-col items-center text-center">
-                    <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/10 to-purple-500/10 ring-1 ring-indigo-500/20 transition-all group-hover:from-indigo-500/20 group-hover:to-purple-500/20 group-hover:ring-indigo-500/30">
+                    <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-linear-to-br from-indigo-500/10 to-purple-500/10 ring-1 ring-indigo-500/20 transition-all group-hover:from-indigo-500/20 group-hover:to-purple-500/20 group-hover:ring-indigo-500/30">
                       <Music
                         className="size-10 text-indigo-600/80 transition-transform duration-300 group-hover:scale-110"
                         strokeWidth={1.5}
@@ -338,7 +338,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
                           Teaching notes
                         </p>
                         <p className="text-muted-foreground/80 line-clamp-2 text-sm leading-relaxed font-light italic">
-                          "{piece.description}"
+                          &ldquo;{piece.description}&rdquo;
                         </p>
                       </div>
                     )}

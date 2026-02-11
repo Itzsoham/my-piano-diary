@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
 import { logError } from "@/lib/error-handler";
 import { Music, RotateCcw, Home } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function Error({
   error,
@@ -14,8 +13,6 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const router = useRouter();
-
   useEffect(() => {
     // Log the error to monitoring service
     logError(error.message, error, {
@@ -61,7 +58,7 @@ export default function Error({
               <summary className="hover:text-foreground cursor-pointer font-medium">
                 Developer Details
               </summary>
-              <pre className="mt-2 max-h-[200px] overflow-auto text-xs whitespace-pre-wrap opacity-70">
+              <pre className="mt-2 max-h-50 overflow-auto text-xs whitespace-pre-wrap opacity-70">
                 {error.stack}
               </pre>
             </details>

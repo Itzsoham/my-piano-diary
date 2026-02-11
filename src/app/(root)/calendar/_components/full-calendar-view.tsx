@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import {
-  type DateSelectArg,
   type EventClickArg,
   type EventDropArg,
   type DayCellContentArg,
@@ -15,7 +14,6 @@ import { type EventResizeDoneArg } from "@fullcalendar/interaction";
 import { format, isSameDay } from "date-fns";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface Lesson {
   id: string;
@@ -112,8 +110,9 @@ export function FullCalendarView({
 
       toast.success(`Lesson duration updated to ${durationMinutes} min`);
       onRefresh();
-    } catch (_) {
+    } catch (error) {
       toast.error("Failed to update duration");
+      console.error(error);
       revert();
     }
   };
@@ -184,7 +183,7 @@ export function FullCalendarView({
   });
 
   return (
-    <div className="bg-card text-card-foreground h-[calc(100vh-200px)] min-h-[600px] w-full overflow-hidden rounded-xl border shadow-sm">
+    <div className="bg-card text-card-foreground h-[calc(100vh-200px)] min-h-150 w-full overflow-hidden rounded-xl border shadow-sm">
       <style jsx global>{`
         .fc {
           --fc-border-color: var(--border);
@@ -351,7 +350,6 @@ export function FullCalendarView({
         views={{
           dayGridMonth: {
             dayMaxEvents: false,
-            // @ts-ignore
             eventDisplay: "none",
             fixedWeekCount: false,
           },

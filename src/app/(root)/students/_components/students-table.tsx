@@ -171,7 +171,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
       accessorKey: "notes",
       header: "Notes",
       cell: ({ row }) => (
-        <span className="text-muted-foreground block max-w-[240px] truncate font-light">
+        <span className="text-muted-foreground block max-w-60 truncate font-light">
           {row.original.notes ?? "—"}
         </span>
       ),
@@ -339,7 +339,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                 >
                   <div className="flex flex-col items-center text-center">
                     {student.avatar ? (
-                      <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 transition-all group-hover:from-rose-500/20 group-hover:to-pink-500/20 group-hover:ring-rose-500/30">
+                      <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-linear-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 transition-all group-hover:from-rose-500/20 group-hover:to-pink-500/20 group-hover:ring-rose-500/30">
                         <Image
                           src={student.avatar}
                           alt={student.name}
@@ -349,7 +349,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                         />
                       </div>
                     ) : (
-                      <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 transition-all group-hover:from-rose-500/20 group-hover:to-pink-500/20 group-hover:ring-rose-500/30">
+                      <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-linear-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 transition-all group-hover:from-rose-500/20 group-hover:to-pink-500/20 group-hover:ring-rose-500/30">
                         <span className="text-3xl font-bold text-rose-500/80 transition-transform duration-300 group-hover:scale-110">
                           {student.name.charAt(0).toUpperCase()}
                         </span>
@@ -371,7 +371,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
 
                     {student.notes && (
                       <p className="text-muted-foreground/80 line-clamp-2 text-sm leading-relaxed font-light italic">
-                        "{student.notes}"
+                        &ldquo;{student.notes}&rdquo;
                       </p>
                     )}
                   </div>

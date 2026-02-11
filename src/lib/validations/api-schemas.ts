@@ -109,6 +109,7 @@ export const updateLessonSchema = z.object({
     .max(480, "Duration must be less than 8 hours")
     .optional(),
   status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]).optional(),
+  pieceId: z.union([z.string().cuid("Invalid piece ID"), z.null()]).optional(),
   cancelReason: z
     .string()
     .max(500, "Cancel reason must be less than 500 characters")

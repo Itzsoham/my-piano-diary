@@ -114,6 +114,7 @@ export const updateLessonSchema = z.object({
     .max(480, "Lesson must be at most 480 minutes")
     .optional(),
   status: lessonStatusSchema.optional(),
+  pieceId: idSchema.optional().nullable(),
 });
 
 // Piece validation

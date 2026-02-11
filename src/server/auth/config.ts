@@ -53,13 +53,13 @@ export const authConfig = {
           where: { email: credentials.email as string },
         });
 
-        if (!user || !user.password) {
+        if (!user?.password) {
           return null;
         }
 
         const isPasswordValid = await compare(
           credentials.password as string,
-          user?.password,
+          user.password,
         );
 
         if (!isPasswordValid) {

@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { LayoutDashboard, ListOrdered, Users, Music } from "lucide-react";
+import {
+  LayoutDashboard,
+  ListOrdered,
+  Users,
+  Music,
+  CalendarDays,
+  FileText,
+} from "lucide-react";
 
 import { NavMain } from "@/app/(root)/_components/nav-main";
 import { NavUser } from "@/app/(root)/_components/nav-user";
@@ -34,6 +41,11 @@ const data = {
   ],
   manage: [
     {
+      title: "Lessons",
+      url: "/lessons",
+      icon: CalendarDays,
+    },
+    {
       title: "Students",
       url: "/students",
       icon: Users,
@@ -42,6 +54,11 @@ const data = {
       title: "Pieces",
       url: "/pieces",
       icon: Music,
+    },
+    {
+      title: "Reports",
+      url: "/reports",
+      icon: FileText,
     },
   ],
 };
@@ -70,10 +87,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   />
                 </div>
                 <div className="grid flex-1 text-left leading-tight">
-                  <span className="text-primary truncate text-base font-bold">
+                  <span className="text-primary truncate text-base font-semibold">
                     {APP_CONFIG.name}
                   </span>
-                  <span className="text-muted-foreground truncate text-xs font-normal">
+                  <span className="text-muted-foreground truncate text-xs font-medium">
                     personal teaching space
                   </span>
                 </div>

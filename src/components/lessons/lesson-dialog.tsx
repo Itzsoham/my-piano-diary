@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -32,13 +31,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import { api } from "@/trpc/react";
-import { format } from "date-fns";
 
 const LessonFormSchema = z.object({
   studentId: z.string().min(1, { message: "Student is required." }),
   pieceId: z.string().optional(),
-  date: z.string().min(1, { message: "Date is required." }),
+  date: z.date({ required_error: "Date is required." }),
   time: z.string().min(1, { message: "Time is required." }),
   duration: z.string().min(1, { message: "Duration is required." }),
   isRecurring: z.boolean(),
@@ -101,9 +100,7 @@ export function LessonDialog({
     defaultValues: {
       studentId: "",
       pieceId: "none",
-      date: initialDate
-        ? format(initialDate, "yyyy-MM-dd")
-        : format(new Date(), "yyyy-MM-dd"),
+      date: initialDate ?? new Date(),
       time: "10:00",
       duration: "60",
       isRecurring: false,
@@ -117,9 +114,7 @@ export function LessonDialog({
       form.reset({
         studentId: "",
         pieceId: "none",
-        date: initialDate
-          ? format(initialDate, "yyyy-MM-dd")
-          : format(new Date(), "yyyy-MM-dd"),
+        date: initialDate ?? new Date(),
         time: "10:00",
         duration: "60",
         isRecurring: false,
@@ -138,7 +133,9 @@ export function LessonDialog({
 
       if (data.isRecurring) {
         // Create recurring lessons
-        const startDate = new Date(`${data.date}T${data.time}`);
+        const [hours = "0", minutes = "0"] = data.time.split(":");
+        const startDate = new Date(data.date);
+        startDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
         createRecurring.mutate({
           studentId: data.studentId,
@@ -151,7 +148,9 @@ export function LessonDialog({
         });
       } else {
         // Create single lesson
-        const dateTime = new Date(`${data.date}T${data.time}`);
+        const [hours = "0", minutes = "0"] = data.time.split(":");
+        const dateTime = new Date(data.date);
+        dateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
         createLesson.mutate({
           studentId: data.studentId,
@@ -167,10 +166,10 @@ export function LessonDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px]">
+      <DialogContent className="sm:max-w-112.5">
         {/* Header with icon */}
         <DialogHeader className="space-y-3">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40">
             <Music2 className="h-6 w-6 text-pink-600" />
           </div>
           <DialogTitle className="text-center text-2xl">
@@ -183,7 +182,7 @@ export function LessonDialog({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               {/* Basic lesson details section */}
-              <div className="space-y-4 rounded-xl bg-gradient-to-br from-pink-50/50 to-purple-50/50 p-4">
+              <div className="space-y-4 rounded-xl bg-linear-to-br from-pink-50/50 to-purple-50/50 p-4">
                 <div className="grid grid-cols-2 gap-3">
                   <FormField
                     control={form.control}
@@ -248,13 +247,13 @@ export function LessonDialog({
                     control={form.control}
                     name="date"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Date</FormLabel>
                         <FormControl>
-                          <Input
-                            type="date"
-                            className="rounded-xl"
-                            {...field}
+                          <DatePicker
+                            date={field.value}
+                            onDateChange={field.onChange}
+                            className="w-full"
                           />
                         </FormControl>
                         <FormMessage />
@@ -313,7 +312,7 @@ export function LessonDialog({
                         Recurring lesson
                       </FormLabel>
                       <FormDescription className="text-sm">
-                        We'll take care of scheduling for you ✨
+                        We&apos;ll take care of scheduling for you ✨
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -332,7 +331,7 @@ export function LessonDialog({
                   isRecurring ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                 }`}
               >
-                <div className="space-y-4 rounded-xl bg-gradient-to-br from-purple-50/50 to-pink-50/50 p-4">
+                <div className="space-y-4 rounded-xl bg-linear-to-br from-purple-50/50 to-pink-50/50 p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-medium text-purple-700">
                     <Sparkles className="h-4 w-4" />
                     <span>Recurring schedule</span>
@@ -415,7 +414,7 @@ export function LessonDialog({
                 <Button
                   type="submit"
                   disabled={createLesson.isPending || createRecurring.isPending}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+                  className="flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
                 >
                   {createLesson.isPending || createRecurring.isPending
                     ? "Creating..."

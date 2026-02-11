@@ -4,6 +4,7 @@ import {
   createLessonSchema,
   updateLessonSchema,
   idSchema,
+  lessonStatusSchema,
 } from "@/lib/validations/common-schemas";
 import {
   markAttendanceSchema,
@@ -11,6 +12,49 @@ import {
 } from "@/lib/validations/api-schemas";
 
 export const lessonRouter = createTRPCRouter({
+  // Get all lessons with filters
+  getAll: protectedProcedure
+    .input(
+      z.object({
+        studentId: idSchema.optional(),
+        from: z.date().optional(),
+        to: z.date().optional(),
+        status: lessonStatusSchema.optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        return [];
+      }
+
+      const dateFilter =
+        input.from || input.to
+          ? {
+              date: {
+                ...(input.from && { gte: input.from }),
+                ...(input.to && { lte: input.to }),
+              },
+            }
+          : {};
+
+      return ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          ...(input.studentId && { studentId: input.studentId }),
+          ...(input.status && { status: input.status }),
+          ...dateFilter,
+        },
+        include: {
+          student: true,
+          piece: true,
+        },
+        orderBy: { date: "desc" },
+      });
+    }),
   // Get lessons for a specific month
   getForMonth: protectedProcedure
     .input(
@@ -168,6 +212,7 @@ export const lessonRouter = createTRPCRouter({
           ...(data.date && { date: data.date }),
           ...(data.duration && { duration: data.duration }),
           ...(data.status && { status: data.status }),
+          ...(data.pieceId !== undefined && { pieceId: data.pieceId }),
         },
         include: {
           student: true,
@@ -279,13 +324,13 @@ export const lessonRouter = createTRPCRouter({
       endDate.setMonth(endDate.getMonth() + recurrenceMonths);
 
       // Parse time
-      const [hours, minutes] = input.time.split(":").map(Number);
+      const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
 
       // 1. Find the first matching weekday
       // input.dayOfWeek: 0 (Sunday) - 6 (Saturday)
       const currentDate = new Date(startDate);
       // Reset time to the desired time
-      currentDate.setHours(hours!, minutes!, 0, 0);
+      currentDate.setHours(hours, minutes, 0, 0);
 
       // If currentDate day is not the target day, move forward
       while (currentDate.getDay() !== input.dayOfWeek) {

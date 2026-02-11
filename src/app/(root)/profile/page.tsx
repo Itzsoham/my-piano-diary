@@ -3,13 +3,7 @@
 import { AppLoader } from "@/components/ui/app-loader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { api } from "@/trpc/react";
 import { ProfileForm } from "./_components/profile-form";
 import { PasswordForm } from "./_components/password-form";
