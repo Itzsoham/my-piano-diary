@@ -50,7 +50,7 @@ export function SectionCards() {
           <div className="mt-2">
             <p className="text-2xl font-semibold text-rose-600 tabular-nums sm:text-3xl">
               {isLoading
-                ? "..."
+                ? "Almost ready…"
                 : formatCurrency(earnings?.totalEarnings ?? 0, currency)}
             </p>
             <p className="text-muted-foreground/80 mt-2 flex items-center gap-1 text-xs">
@@ -72,7 +72,7 @@ export function SectionCards() {
           <div className="mt-2">
             <p className="text-2xl font-semibold text-rose-600 tabular-nums sm:text-3xl">
               {isLoading
-                ? "..."
+                ? "Almost ready…"
                 : formatCurrency(earnings?.currentMonthEarnings ?? 0, currency)}
             </p>
 
@@ -104,7 +104,7 @@ export function SectionCards() {
           <div className="mt-2">
             <p className="text-2xl font-semibold text-rose-600/80 tabular-nums sm:text-3xl">
               {isLoading
-                ? "..."
+                ? "Almost ready…"
                 : formatCurrency(earnings?.currentMonthLoss ?? 0, currency)}
             </p>
 
