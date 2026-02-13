@@ -229,7 +229,10 @@ export function ReportView({
   const totalTuition = totalSessions * perSessionRate;
 
   // Attendance Grid Logic
-  const weeksData: Record<number, { day: number; status: string }[]> = {
+  const weeksData: Record<
+    number,
+    { day: number; status: string; cancelReason?: string | null }[]
+  > = {
     1: [],
     2: [],
     3: [],
@@ -242,8 +245,9 @@ export function ReportView({
     const week = getWeekOfMonth(lesson.date, { weekStartsOn: 1 });
     const day = getDate(lesson.date);
     const status = lesson.status ?? "PENDING";
+    const cancelReason = lesson.cancelReason;
     if (weeksData[week]) {
-      weeksData[week].push({ day, status });
+      weeksData[week].push({ day, status, cancelReason });
     }
   });
 
@@ -550,25 +554,41 @@ export function ReportView({
                   <div className="flex items-center justify-center p-2 font-bold uppercase">
                     {student.name}
                   </div>
-                  {weeks.map((w) => (
-                    <div
-                      key={w}
-                      className="flex h-full flex-wrap content-center items-center justify-center gap-2 p-2"
-                    >
-                      {weeksData[w]?.map((item, idx) => (
-                        <span
-                          key={idx}
-                          className={cn(
-                            "inline-flex h-8 w-8 items-center justify-center border text-sm font-semibold",
-                            prettyMode ? "rounded-md" : "border-black",
-                            statusClass(item.status),
-                          )}
-                        >
-                          {item.day}
-                        </span>
-                      ))}
-                    </div>
-                  ))}
+                  {weeks.map((w) => {
+                    const rowLessons = weeksData[w] ?? [];
+                    const lessonCount = rowLessons.length;
+                    return (
+                      <div
+                        key={w}
+                        className={cn(
+                          "grid h-full min-h-[85px] divide-x",
+                          prettyMode ? "divide-rose-200/70" : "divide-black",
+                        )}
+                        style={{
+                          gridTemplateColumns: `repeat(${lessonCount || 1}, 1fr)`,
+                        }}
+                      >
+                        {rowLessons.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              "flex h-full flex-col items-center justify-center p-1 font-semibold transition-all",
+                              statusClass(item.status),
+                            )}
+                          >
+                            <span className="text-[14px]">{item.day}</span>
+                            {item.status === "CANCELLED" &&
+                              item.cancelReason && (
+                                <span className="mt-0.5 max-w-full px-1 text-center text-[10px] leading-[1.1] font-normal break-words uppercase">
+                                  {item.cancelReason}
+                                </span>
+                              )}
+                          </div>
+                        ))}
+                        {lessonCount === 0 && <div className="h-full" />}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
