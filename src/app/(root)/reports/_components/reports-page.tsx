@@ -78,7 +78,7 @@ export function ReportsPage({ students, initialStudentId }: ReportsPageProps) {
 
   return (
     <div className="flex flex-1 flex-col gap-4 sm:gap-6">
-      <div>
+      <div className="print:hidden">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           Reports
         </h1>

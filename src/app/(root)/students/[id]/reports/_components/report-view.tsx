@@ -255,7 +255,7 @@ export function ReportView({
   const weeks = hasWeek6 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
 
   const reportCardClass = cn(
-    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none",
+    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact]",
     prettyMode
       ? "rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0"
       : "shadow-lg",
@@ -426,6 +426,7 @@ export function ReportView({
           <div className="space-y-6">
             <section
               className={cn(
+                "print:break-inside-avoid",
                 prettyMode
                   ? "rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:border-neutral-300 print:bg-white"
                   : "",
@@ -439,16 +440,22 @@ export function ReportView({
                 )}
                 <h2>{t.sections.summary}</h2>
               </div>
-              <Textarea
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
-                placeholder={t.placeholders.summary}
-              />
+              <div className="relative">
+                <Textarea
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0 print:hidden"
+                  placeholder={t.placeholders.summary}
+                />
+                <div className="hidden font-serif text-base leading-relaxed whitespace-pre-wrap print:block">
+                  {summary || t.placeholders.summary}
+                </div>
+              </div>
             </section>
 
             <section
               className={cn(
+                "print:break-inside-avoid",
                 prettyMode
                   ? "rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:border-neutral-300 print:bg-white"
                   : "",
@@ -462,16 +469,22 @@ export function ReportView({
                 )}
                 <h2>{t.sections.comments}</h2>
               </div>
-              <Textarea
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                className="min-h-37.5 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
-                placeholder={t.placeholders.comments}
-              />
+              <div className="relative">
+                <Textarea
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  className="min-h-37.5 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0 print:hidden"
+                  placeholder={t.placeholders.comments}
+                />
+                <div className="hidden font-serif text-base leading-relaxed whitespace-pre-wrap print:block">
+                  {comments || t.placeholders.comments}
+                </div>
+              </div>
             </section>
 
             <section
               className={cn(
+                "print:break-inside-avoid",
                 prettyMode
                   ? "rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:border-neutral-300 print:bg-white"
                   : "",
@@ -485,16 +498,21 @@ export function ReportView({
                 )}
                 <h2>{t.sections.nextPlan}</h2>
               </div>
-              <Textarea
-                value={nextMonthPlan}
-                onChange={(e) => setNextMonthPlan(e.target.value)}
-                className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0"
-                placeholder={t.placeholders.nextPlan}
-              />
+              <div className="relative">
+                <Textarea
+                  value={nextMonthPlan}
+                  onChange={(e) => setNextMonthPlan(e.target.value)}
+                  className="min-h-25 w-full resize-none border-none bg-transparent p-0 font-serif text-base leading-relaxed shadow-none focus-visible:ring-0 print:hidden"
+                  placeholder={t.placeholders.nextPlan}
+                />
+                <div className="hidden font-serif text-base leading-relaxed whitespace-pre-wrap print:block">
+                  {nextMonthPlan || t.placeholders.nextPlan}
+                </div>
+              </div>
             </section>
 
             {/* Attendance Table */}
-            <section className="pt-4">
+            <section className="pt-4 print:break-inside-avoid">
               <h2 className="mb-4 text-center text-lg font-bold">
                 {t.attendanceTitle(month)}
               </h2>
@@ -514,6 +532,7 @@ export function ReportView({
                     prettyMode
                       ? "divide-x divide-rose-200/70 border-b border-rose-200/70 bg-rose-50 print:divide-neutral-300 print:border-neutral-300"
                       : "divide-x divide-black border-b border-black",
+                    "[&>*+*]:border-l",
                   )}
                   style={{
                     gridTemplateColumns: `40px 100px repeat(${weeks.length}, 1fr)`,
@@ -545,6 +564,7 @@ export function ReportView({
                     prettyMode
                       ? "divide-x divide-rose-200/70 print:divide-neutral-300"
                       : "divide-x divide-black",
+                    "[&>*+*]:border-l",
                   )}
                   style={{
                     gridTemplateColumns: `40px 100px repeat(${weeks.length}, 1fr)`,
@@ -563,6 +583,8 @@ export function ReportView({
                         className={cn(
                           "grid h-full min-h-[85px] divide-x",
                           prettyMode ? "divide-rose-200/70" : "divide-black",
+                          // Force vertical lines to show on print
+                          "[&>*+*]:border-l",
                         )}
                         style={{
                           gridTemplateColumns: `repeat(${lessonCount || 1}, 1fr)`,
@@ -593,7 +615,7 @@ export function ReportView({
               </div>
 
               {/* Legend & Stats */}
-              <div className="mt-4 space-y-2">
+              <div className="mt-2 space-y-2">
                 {prettyMode ? (
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1">
@@ -629,7 +651,30 @@ export function ReportView({
                     <div className="text-base font-bold italic">
                       {t.totalLabel}: {t.totalLessons(totalSessions)}
                     </div>
-                    <div className="mt-2 italic">
+                    <div className="mt-1 italic">
+                      {t.tuitionLabel}{" "}
+                      {t.tuitionLine(
+                        totalSessions,
+                        formatCurrencyNumber(perSessionRate, currency),
+                        formatCurrency(totalTuition, currency),
+                      )}
+                    </div>
+                    <div className="mt-3 text-right italic">
+                      {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
+                    </div>
+                    <div className="mt-4 text-right">
+                      <div className="font-semibold">{t.teacherLabel}</div>
+                      <div className="mt-3 font-semibold">
+                        {teacherName || "__________________"}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="mt-2 text-lg font-bold italic">
+                      {t.totalLabel}: {t.totalLessons(totalSessions)}
+                    </div>
+                    <div className="mt-1 text-sm italic">
                       {t.tuitionLabel}{" "}
                       {t.tuitionLine(
                         totalSessions,
@@ -640,32 +685,9 @@ export function ReportView({
                     <div className="mt-4 text-right italic">
                       {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
                     </div>
-                    <div className="mt-6 text-right">
+                    <div className="mt-3 text-right">
                       <div className="font-semibold">{t.teacherLabel}</div>
-                      <div className="mt-6 font-semibold">
-                        {teacherName || "__________________"}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="mt-4 text-lg font-bold italic">
-                      {t.totalLabel}: {t.totalLessons(totalSessions)}
-                    </div>
-                    <div className="mt-2 text-sm italic">
-                      {t.tuitionLabel}{" "}
-                      {t.tuitionLine(
-                        totalSessions,
-                        formatCurrencyNumber(perSessionRate, currency),
-                        formatCurrency(totalTuition, currency),
-                      )}
-                    </div>
-                    <div className="mt-6 text-right italic">
-                      {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
-                    </div>
-                    <div className="mt-10 text-right">
-                      <div className="font-semibold">{t.teacherLabel}</div>
-                      <div className="mt-8 font-semibold">
+                      <div className="mt-3 font-semibold">
                         {teacherName || "__________________"}
                       </div>
                     </div>
