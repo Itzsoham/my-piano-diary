@@ -118,7 +118,7 @@ export const updateLessonSchema = z.object({
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration must be less than 8 hours")
     .optional(),
-  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]).optional(),
+  status: z.enum(["PENDING", "COMPLETE", "CANCELLED", "MAKEUP"]).optional(),
   pieceId: z.union([z.string().cuid("Invalid piece ID"), z.null()]).optional(),
   cancelReason: z
     .string()
@@ -176,7 +176,7 @@ export const getMonthLessonsSchema = z.object({
  */
 export const markAttendanceSchema = z.object({
   lessonId: z.string().cuid("Invalid lesson ID"),
-  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
+  status: z.enum(["PENDING", "COMPLETE", "CANCELLED", "MAKEUP"]),
   actualMin: z
     .number()
     .int()

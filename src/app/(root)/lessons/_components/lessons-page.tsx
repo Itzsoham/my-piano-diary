@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { format, startOfWeek, endOfWeek } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import {
   CheckCircle2,
   Edit,
@@ -59,6 +59,9 @@ const statusClasses: Record<LessonStatus, string> = {
 
 type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
 
+const INITIAL_FROM = startOfMonth(new Date());
+const INITIAL_TO = endOfMonth(new Date());
+
 type Lesson = RouterOutputs["lesson"]["getAll"][number];
 
 type StudentOption = {
@@ -75,12 +78,8 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const utils = api.useUtils();
   const [studentId, setStudentId] = useState("all");
   const [status, setStatus] = useState<LessonStatus | "all">("all");
-  const [fromDate, setFromDate] = useState<Date | undefined>(
-    startOfWeek(new Date(), { weekStartsOn: 0 }),
-  );
-  const [toDate, setToDate] = useState<Date | undefined>(
-    endOfWeek(new Date(), { weekStartsOn: 0 }),
-  );
+  const [fromDate, setFromDate] = useState<Date | undefined>(INITIAL_FROM);
+  const [toDate, setToDate] = useState<Date | undefined>(INITIAL_TO);
   const [editLesson, setEditLesson] = useState<Lesson | null>(null);
   const [attendanceLesson, setAttendanceLesson] = useState<Lesson | null>(null);
   const [deleteLesson, setDeleteLesson] = useState<Lesson | null>(null);
@@ -98,8 +97,8 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const isDefaultFilters =
     studentId === "all" &&
     status === "all" &&
-    fromDate === undefined &&
-    toDate === undefined;
+    fromDate === INITIAL_FROM &&
+    toDate === INITIAL_TO;
 
   const { data: lessons = [], isLoading } = api.lesson.getAll.useQuery(
     filters,
@@ -122,12 +121,12 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const resetFilters = () => {
     setStudentId("all");
     setStatus("all");
-    setFromDate(startOfWeek(new Date(), { weekStartsOn: 0 }));
-    setToDate(endOfWeek(new Date(), { weekStartsOn: 0 }));
+    setFromDate(INITIAL_FROM);
+    setToDate(INITIAL_TO);
   };
 
   return (
-    <div className="container mx-auto ">
+    <div className="container mx-auto">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           Lessons & Attendance
@@ -211,7 +210,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md">
         <Table>
           <TableHeader className="bg-rose-50/60">
             <TableRow>
@@ -229,7 +228,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
               <TableRow>
                 <TableCell colSpan={7}>
                   <div className="flex h-32 items-center justify-center">
-                    <AppLoader />
+                    <AppLoader size="sm" />
                   </div>
                 </TableCell>
               </TableRow>
@@ -265,8 +264,10 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                   <TableCell>{lesson.piece?.title ?? "None"}</TableCell>
                   <TableCell>{lesson.duration} min</TableCell>
                   <TableCell>
-                    <Badge className={statusClasses[lesson.status]}>
-                      {statusLabels[lesson.status]}
+                    <Badge
+                      className={statusClasses[lesson.status as LessonStatus]}
+                    >
+                      {statusLabels[lesson.status as LessonStatus]}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -330,7 +331,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
             studentName: editLesson.student.name,
             date: new Date(editLesson.date),
             duration: editLesson.duration,
-            status: editLesson.status,
+            status: editLesson.status as LessonStatus,
             pieceId: editLesson.piece?.id ?? editLesson.pieceId ?? null,
           }}
         />
@@ -344,7 +345,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
             id: attendanceLesson.id,
             studentName: attendanceLesson.student.name,
             duration: attendanceLesson.duration,
-            status: attendanceLesson.status,
+            status: attendanceLesson.status as LessonStatus,
             actualMin: attendanceLesson.actualMin,
             cancelReason: attendanceLesson.cancelReason,
             note: attendanceLesson.note,

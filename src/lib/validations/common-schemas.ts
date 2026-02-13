@@ -68,7 +68,6 @@ export const searchSchema = z.object({
     .optional(),
 });
 
-// Status enums
 export const lessonStatusSchema = z.enum(["PENDING", "COMPLETE", "CANCELLED"], {
   errorMap: () => ({ message: "Invalid lesson status" }),
 });

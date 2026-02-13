@@ -12,6 +12,7 @@ import {
   LayoutGrid,
   Table as TableIcon,
   Music,
+  Search,
 } from "lucide-react";
 import {
   flexRender,
@@ -271,14 +272,17 @@ export function PiecesTable({ data }: PiecesTableProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <Input
-          placeholder="Filter pieces..."
-          value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("title")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+        <div className="relative max-w-sm">
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            placeholder="Filter pieces..."
+            value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("title")?.setFilterValue(event.target.value)
+            }
+            className="w-[300px] rounded-2xl pl-9"
+          />
+        </div>
         <div className="flex items-center gap-2">
           <div className="bg-muted/40 flex items-center gap-1 rounded-lg p-1">
             <Button
