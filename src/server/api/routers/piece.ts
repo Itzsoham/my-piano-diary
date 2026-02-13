@@ -55,7 +55,7 @@ export const pieceRouter = createTRPCRouter({
       return ctx.db.piece.create({
         data: {
           title: input.title,
-          level: input.level,
+          difficulty: input.difficulty,
           description: input.description,
         },
       });

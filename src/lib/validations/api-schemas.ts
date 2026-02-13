@@ -52,7 +52,12 @@ export const createPieceSchema = z.object({
     .string()
     .max(1000, "Description must be less than 1000 characters")
     .optional(),
-  level: z.string().max(50, "Level must be less than 50 characters").optional(),
+  difficulty: z
+    .number()
+    .int("Difficulty must be an integer")
+    .min(1, "Difficulty must be at least 1")
+    .max(5, "Difficulty must be at most 5")
+    .optional(),
 });
 
 export const updatePieceSchema = z.object({
@@ -67,7 +72,12 @@ export const updatePieceSchema = z.object({
     .string()
     .max(1000, "Description must be less than 1000 characters")
     .optional(),
-  level: z.string().max(50, "Level must be less than 50 characters").optional(),
+  difficulty: z
+    .number()
+    .int("Difficulty must be an integer")
+    .min(1, "Difficulty must be at least 1")
+    .max(5, "Difficulty must be at most 5")
+    .optional(),
 });
 
 export const deletePieceSchema = z.object({

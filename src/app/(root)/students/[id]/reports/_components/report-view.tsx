@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { AppLoader } from "@/components/ui/app-loader";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,17 @@ interface ReportViewProps {
   studentId: string;
   month: number;
   year: number;
+  includeStudentIdInQuery?: boolean;
+  studentControl?: ReactNode;
 }
 
-export function ReportView({ studentId, month, year }: ReportViewProps) {
+export function ReportView({
+  studentId,
+  month,
+  year,
+  includeStudentIdInQuery = false,
+  studentControl,
+}: ReportViewProps) {
   const router = useRouter();
   const { currency } = useCurrency();
 
@@ -179,11 +187,19 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
 
   const handleMonthChange = (val: string) => {
     const newMonth = parseInt(val);
+    if (includeStudentIdInQuery) {
+      router.push(`?studentId=${studentId}&month=${newMonth}&year=${year}`);
+      return;
+    }
     router.push(`?month=${newMonth}&year=${year}`);
   };
 
   const handleYearChange = (val: string) => {
     const newYear = parseInt(val);
+    if (includeStudentIdInQuery) {
+      router.push(`?studentId=${studentId}&month=${month}&year=${newYear}`);
+      return;
+    }
     router.push(`?month=${month}&year=${newYear}`);
   };
 
@@ -265,6 +281,7 @@ export function ReportView({ studentId, month, year }: ReportViewProps) {
       {/* Controls - Hidden on Print */}
       <div className="bg-card flex flex-col items-center justify-between gap-4 rounded-lg border p-4 shadow-sm sm:flex-row print:hidden">
         <div className="flex flex-wrap items-center gap-2">
+          {studentControl}
           <Select value={month.toString()} onValueChange={handleMonthChange}>
             <SelectTrigger className="w-30">
               <SelectValue placeholder={t.monthPlaceholder} />

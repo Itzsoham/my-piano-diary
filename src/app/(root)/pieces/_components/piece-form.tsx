@@ -21,11 +21,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { StarRating, difficultyScale } from "@/components/ui/star-rating";
 
 const pieceFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  level: z.string().optional(),
+  difficulty: z
+    .number()
+    .int("Difficulty must be an integer")
+    .min(1, "Difficulty must be at least 1")
+    .max(5, "Difficulty must be at most 5")
+    .optional(),
 });
 
 type PieceFormValues = z.infer<typeof pieceFormSchema>;
@@ -78,7 +84,7 @@ export function PieceForm({
     defaultValues: {
       title: "",
       description: "",
-      level: "",
+      difficulty: 1,
     },
   });
 
@@ -87,7 +93,7 @@ export function PieceForm({
       form.reset({
         title: piece.title,
         description: piece.description ?? "",
-        level: piece.level ?? "",
+        difficulty: piece.difficulty ?? 1,
       });
     }
   }, [piece, form]);
@@ -98,13 +104,13 @@ export function PieceForm({
         id: pieceId,
         ...data,
         description: data.description ?? undefined,
-        level: data.level ?? undefined,
+        difficulty: data.difficulty ?? undefined,
       });
     } else {
       createMutation.mutate({
         ...data,
         description: data.description ?? undefined,
-        level: data.level ?? undefined,
+        difficulty: data.difficulty ?? undefined,
       });
     }
   };
@@ -146,19 +152,23 @@ export function PieceForm({
 
             <FormField
               control={form.control}
-              name="level"
+              name="difficulty"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Level</FormLabel>
+                  <FormLabel>Difficulty</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="e.g., Beginner, Intermediate, Advanced"
-                      className="h-11"
-                      {...field}
-                    />
+                    <div className="mb-2 flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-4">
+                      <StarRating
+                        value={field.value ?? 1}
+                        onChange={field.onChange}
+                        size="lg"
+                        align="center"
+                        showLabel
+                      />
+                    </div>
                   </FormControl>
                   <FormDescription>
-                    The difficulty level of this piece
+                    {difficultyScale[field.value ?? 1]?.title}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -192,8 +202,8 @@ export function PieceForm({
           <div className="flex justify-end gap-3 pt-6">
             <Button
               type="button"
-              variant="ghost"
               className="rounded-full"
+              variant="ghost"
               onClick={() => onSuccess?.()}
             >
               Cancel

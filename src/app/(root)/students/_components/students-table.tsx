@@ -78,6 +78,17 @@ export function StudentsTable({ data }: StudentsTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const reportYear =
+    currentMonth === 1 ? now.getFullYear() - 1 : now.getFullYear();
+
+  const reportLink = React.useCallback(
+    (studentId: string) =>
+      `/reports?studentId=${studentId}&month=${lastMonth}&year=${reportYear}`,
+    [lastMonth, reportYear],
+  );
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -204,7 +215,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={`/students/${student.id}/reports`}>
+                  <Link href={reportLink(student.id)}>
                     <FileText className="mr-2 size-4" />
                     View Reports
                   </Link>
@@ -277,9 +288,9 @@ export function StudentsTable({ data }: StudentsTableProps) {
       </div>
 
       {viewMode === "table" ? (
-        <div className="rounded-md border">
+        <div className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-rose-50/60">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -303,6 +314,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className="transition-colors hover:bg-pink-50"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -335,7 +347,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
               return (
                 <div
                   key={student.id}
-                  className="group bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                  className="group bg-card relative overflow-hidden rounded-2xl border p-6 shadow-[0_10px_24px_-18px_rgba(244,114,182,0.55)] transition-all hover:-translate-y-1 hover:shadow-[0_14px_28px_-18px_rgba(244,114,182,0.6)]"
                 >
                   <div className="flex flex-col items-center text-center">
                     {student.avatar ? (
@@ -404,7 +416,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/students/${student.id}/reports`}>
+                          <Link href={reportLink(student.id)}>
                             <FileText className="mr-2 size-4" />
                             View Reports
                           </Link>

@@ -82,6 +82,7 @@ model Piece {
   title       String
   description String?
   level       String?
+  difficulty  Int?
   createdAt   DateTime @default(now())
   lessons     Lesson[]
 }
@@ -110,6 +111,7 @@ enum LessonStatus {
   PENDING
   COMPLETE
   CANCELLED
+  MAKEUP
 }
 
 model MonthlyReport {

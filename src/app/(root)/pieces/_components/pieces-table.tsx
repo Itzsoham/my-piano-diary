@@ -44,16 +44,71 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { StarRating } from "@/components/ui/star-rating";
 import { PieceSheet } from "./piece-sheet";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const difficultyCardStyles: Record<
+  number,
+  {
+    border: string;
+    ring: string;
+    background: string;
+    text: string;
+    shadow: string;
+    hoverShadow: string;
+  }
+> = {
+  1: {
+    border: "border-rose-300",
+    ring: "ring-rose-300",
+    background: "bg-rose-50",
+    text: "text-rose-300",
+    shadow: "shadow-[0_10px_24px_-18px_rgba(253,164,175,0.55)]",
+    hoverShadow: "hover:shadow-[0_14px_28px_-18px_rgba(253,164,175,0.6)]",
+  },
+  2: {
+    border: "border-orange-300",
+    ring: "ring-orange-300",
+    background: "bg-orange-50",
+    text: "text-orange-300",
+    shadow: "shadow-[0_10px_24px_-18px_rgba(253,186,116,0.55)]",
+    hoverShadow: "hover:shadow-[0_14px_28px_-18px_rgba(253,186,116,0.6)]",
+  },
+  3: {
+    border: "border-violet-300",
+    ring: "ring-violet-300",
+    background: "bg-violet-50",
+    text: "text-violet-300",
+    shadow: "shadow-[0_10px_24px_-18px_rgba(196,181,253,0.55)]",
+    hoverShadow: "hover:shadow-[0_14px_28px_-18px_rgba(196,181,253,0.6)]",
+  },
+  4: {
+    border: "border-pink-400",
+    ring: "ring-pink-400",
+    background: "bg-pink-50",
+    text: "text-pink-400",
+    shadow: "shadow-[0_10px_24px_-18px_rgba(244,114,182,0.55)]",
+    hoverShadow: "hover:shadow-[0_14px_28px_-18px_rgba(244,114,182,0.6)]",
+  },
+  5: {
+    border: "border-fuchsia-500",
+    ring: "ring-fuchsia-500",
+    background: "bg-fuchsia-100",
+    text: "text-fuchsia-500",
+    shadow: "shadow-[0_10px_24px_-18px_rgba(217,70,239,0.55)]",
+    hoverShadow: "hover:shadow-[0_14px_28px_-18px_rgba(217,70,239,0.6)]",
+  },
+};
 
 type Piece = {
   id: string;
   title: string;
   description: string | null;
-  level: string | null;
+  difficulty: number | null;
   createdAt: Date;
   _count: {
     lessons: number;
@@ -118,12 +173,12 @@ export function PiecesTable({ data }: PiecesTableProps) {
       ),
     },
     {
-      accessorKey: "level",
-      header: "Level",
+      accessorKey: "difficulty",
+      header: "Difficulty",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">
-          {row.original.level ?? "—"}
-        </span>
+        <div className="flex items-center">
+          <StarRating value={row.original.difficulty ?? 1} readOnly size="md" />
+        </div>
       ),
     },
     {
@@ -248,9 +303,9 @@ export function PiecesTable({ data }: PiecesTableProps) {
       </div>
 
       {viewMode === "table" ? (
-        <div className="rounded-md border">
+        <div className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-rose-50/60">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -274,6 +329,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className="transition-colors hover:bg-pink-50"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -303,15 +359,32 @@ export function PiecesTable({ data }: PiecesTableProps) {
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => {
               const piece = row.original;
+              const difficulty = piece.difficulty ?? 1;
+              const fallbackCardStyle = difficultyCardStyles[1]!;
+              const cardStyle =
+                difficultyCardStyles[difficulty] ?? fallbackCardStyle;
               return (
                 <div
                   key={piece.id}
-                  className="group bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                  className={cn(
+                    "group bg-card relative overflow-hidden rounded-2xl border p-6 transition-all hover:-translate-y-1",
+                    cardStyle.shadow,
+                    cardStyle.hoverShadow,
+                  )}
                 >
                   <div className="flex flex-col items-center text-center">
-                    <div className="mb-5 flex size-24 items-center justify-center rounded-full bg-linear-to-br from-indigo-500/10 to-purple-500/10 ring-1 ring-indigo-500/20 transition-all group-hover:from-indigo-500/20 group-hover:to-purple-500/20 group-hover:ring-indigo-500/30">
+                    <div
+                      className={cn(
+                        "mb-5 flex size-24 items-center justify-center rounded-full ring-1 transition-all",
+                        cardStyle.background,
+                        cardStyle.ring,
+                      )}
+                    >
                       <Music
-                        className="size-10 text-indigo-600/80 transition-transform duration-300 group-hover:scale-110"
+                        className={cn(
+                          "size-10 transition-transform duration-300 group-hover:scale-110",
+                          cardStyle.text,
+                        )}
                         strokeWidth={1.5}
                       />
                     </div>
@@ -320,11 +393,13 @@ export function PiecesTable({ data }: PiecesTableProps) {
                       {piece.title}
                     </h3>
 
-                    {piece.level && (
-                      <div className="mt-2 mb-4 inline-flex rounded-full border border-indigo-500/10 bg-indigo-500/5 px-3 py-1 text-xs font-medium text-indigo-600/70">
-                        {piece.level}
-                      </div>
-                    )}
+                    <div className="mt-2 mb-4 flex flex-col items-center gap-1">
+                      <StarRating
+                        value={piece.difficulty ?? 1}
+                        readOnly
+                        size="md"
+                      />
+                    </div>
 
                     <p className="text-muted-foreground/60 mb-4 text-xs font-medium">
                       {piece._count.lessons === 0
