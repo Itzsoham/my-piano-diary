@@ -255,7 +255,7 @@ export function ReportView({
   const weeks = hasWeek6 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
 
   const reportCardClass = cn(
-    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact]",
+    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact] print:min-h-0",
     prettyMode
       ? "rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0"
       : "shadow-lg",
@@ -448,7 +448,7 @@ export function ReportView({
                   placeholder={t.placeholders.summary}
                 />
                 <div className="hidden font-serif text-base leading-relaxed whitespace-pre-wrap print:block">
-                  {summary || t.placeholders.summary}
+                  {summary}
                 </div>
               </div>
             </section>
@@ -477,7 +477,7 @@ export function ReportView({
                   placeholder={t.placeholders.comments}
                 />
                 <div className="hidden font-serif text-base leading-relaxed whitespace-pre-wrap print:block">
-                  {comments || t.placeholders.comments}
+                  {comments}
                 </div>
               </div>
             </section>
@@ -506,7 +506,7 @@ export function ReportView({
                   placeholder={t.placeholders.nextPlan}
                 />
                 <div className="hidden font-serif text-base leading-relaxed whitespace-pre-wrap print:block">
-                  {nextMonthPlan || t.placeholders.nextPlan}
+                  {nextMonthPlan}
                 </div>
               </div>
             </section>
