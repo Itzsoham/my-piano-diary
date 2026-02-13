@@ -77,10 +77,12 @@ export function ReportsPage({ students, initialStudentId }: ReportsPageProps) {
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
+    <div className="flex flex-1 flex-col gap-4 sm:gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          Reports
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm sm:mt-2 sm:text-base">
           Select a student to view their monthly report
         </p>
       </div>
@@ -94,9 +96,11 @@ export function ReportsPage({ students, initialStudentId }: ReportsPageProps) {
           studentControl={studentControl}
         />
       ) : (
-        <div className="text-muted-foreground rounded-2xl border border-dashed p-10 text-center text-sm">
+        <div className="text-muted-foreground rounded-2xl border border-dashed p-6 text-center text-sm sm:p-10">
           Choose a student to load the report.
-          <div className="mt-4 flex justify-center">{studentControl}</div>
+          <div className="mt-3 flex justify-center sm:mt-4">
+            {studentControl}
+          </div>
         </div>
       )}
     </div>

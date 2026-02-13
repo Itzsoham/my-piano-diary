@@ -183,7 +183,7 @@ export function FullCalendarView({
   });
 
   return (
-    <div className="bg-card text-card-foreground h-[calc(100vh-200px)] min-h-150 w-full overflow-hidden rounded-xl border shadow-sm">
+    <div className="bg-card text-card-foreground h-[calc(100vh-200px)] min-h-[500px] w-full overflow-hidden rounded-xl border shadow-sm">
       <style jsx global>{`
         .fc {
           --fc-border-color: var(--border);
@@ -200,15 +200,36 @@ export function FullCalendarView({
 
         /* Toolbar Styling */
         .fc-header-toolbar {
-          margin-bottom: 1.5rem !important;
-          padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+          margin-bottom: 1rem !important;
+          padding: 1rem 1rem 0.5rem 1rem;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        @media (min-width: 640px) {
+          .fc-header-toolbar {
+            margin-bottom: 1.5rem !important;
+            padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+          }
+        }
+
+        .fc-toolbar-chunk {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .fc-toolbar-title {
-          font-size: 1.5rem !important;
+          font-size: 1.125rem !important;
           font-weight: 700 !important;
           color: var(--foreground);
           letter-spacing: -0.025em;
+        }
+
+        @media (min-width: 640px) {
+          .fc-toolbar-title {
+            font-size: 1.5rem !important;
+          }
         }
 
         /* Buttons */
@@ -219,9 +240,16 @@ export function FullCalendarView({
           font-weight: 500 !important;
           text-transform: capitalize !important;
           border-radius: var(--radius-md) !important;
-          padding: 0.5rem 1rem !important;
+          padding: 0.375rem 0.75rem !important;
           transition: all 0.2s ease !important;
           box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+          font-size: 0.875rem !important;
+        }
+
+        @media (min-width: 640px) {
+          .fc-button {
+            padding: 0.5rem 1rem !important;
+          }
         }
 
         .fc-button:hover {
@@ -321,6 +349,12 @@ export function FullCalendarView({
           left: "prev,next today",
           center: "title",
           right: "dayGridMonth,timeGridWeek,timeGridDay",
+        }}
+        buttonText={{
+          today: "Today",
+          month: "Month",
+          week: "Week",
+          day: "Day",
         }}
         editable={true}
         selectable={true}

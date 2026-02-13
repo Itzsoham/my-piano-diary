@@ -19,6 +19,7 @@ import {
   Clock,
   DollarSign,
   CalendarDays,
+  Music,
 } from "lucide-react";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { format, isSameDay } from "date-fns";
@@ -30,6 +31,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 
 type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
 
@@ -71,14 +73,29 @@ export function TodayLessonsTable() {
     });
   };
 
-  const getStatusColor = (status: LessonStatus) => {
+  const getStatusBadge = (status: LessonStatus) => {
     switch (status) {
       case "COMPLETE":
-        return "default";
+        return (
+          <Badge className="border-none bg-green-100 text-green-700 shadow-none hover:bg-green-200">
+            complete
+          </Badge>
+        );
       case "CANCELLED":
-        return "destructive";
+        return (
+          <Badge className="border-none bg-rose-100 text-rose-600 shadow-none hover:bg-rose-200">
+            cancelled
+          </Badge>
+        );
       default:
-        return "outline";
+        return (
+          <Badge
+            variant="outline"
+            className="text-muted-foreground border-pink-200 bg-white/50"
+          >
+            pending
+          </Badge>
+        );
     }
   };
 
@@ -86,24 +103,20 @@ export function TodayLessonsTable() {
     lessons?.reduce((sum, lesson) => sum + lesson.earnings, 0) ?? 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="size-5" />
-              {isSameDay(date, new Date())
-                ? "Today's Lessons"
-                : "Lessons Schedule"}
+    <Card className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-sm backdrop-blur">
+      <CardHeader className="bg-transparent pb-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-lg text-rose-950 sm:text-xl">
+              Today's Focus <span className="text-lg sm:text-xl">🎹</span>
             </CardTitle>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="text-muted-foreground hover:text-foreground h-8 px-0 font-normal hover:bg-transparent"
+                  className="h-auto p-0 text-sm font-normal text-rose-600/80 italic hover:bg-transparent hover:text-rose-700 sm:text-base"
                 >
-                  {format(date, "EEEE, MMMM do, yyyy")}
-                  <CalendarDays className="ml-2 h-4 w-4 opacity-50" />
+                  {format(date, "EEEE, MMMM do")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -116,126 +129,161 @@ export function TodayLessonsTable() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="bg-muted/50 flex items-center gap-2 rounded-lg border px-3 py-2">
-            <DollarSign className="text-primary size-5" />
+          <div className="flex items-center gap-2 self-start rounded-2xl border border-pink-100 bg-white/60 px-3 py-2 shadow-sm backdrop-blur sm:gap-3 sm:self-auto sm:px-4">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pink-100 text-pink-500 sm:h-8 sm:w-8">
+              <DollarSign className="size-3 sm:size-4" />
+            </div>
             <div>
-              <div className="text-muted-foreground text-xs">
+              <div className="text-muted-foreground text-[9px] font-medium tracking-wider uppercase sm:text-[10px]">
                 {isSameDay(date, new Date()) ? "Today's Total" : "Day's Total"}
               </div>
-              <div className="font-semibold">
+              <div className="text-sm font-semibold text-rose-950 sm:text-base">
                 {formatCurrency(totalEarnings, currency)}
               </div>
             </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 sm:p-6 sm:pt-2">
         {isLoading ? (
-          <div className="text-muted-foreground flex h-32 items-center justify-center">
-            Loading lessons...
+          <div className="text-muted-foreground flex h-32 items-center justify-center px-4 text-rose-400 italic">
+            Gathering your lessons...
           </div>
         ) : lessons && lessons.length > 0 ? (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Piece</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Attendance</TableHead>
-                  <TableHead className="text-right">Earnings</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lessons.map((lesson) => (
-                  <TableRow key={lesson.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Clock className="text-muted-foreground size-4" />
-                        {formatTime(lesson.date)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-8">
-                          <AvatarImage
-                            src={lesson.student.avatar ?? undefined}
-                          />
-                          <AvatarFallback>
-                            {lesson.student.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{lesson.student.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {lesson.piece?.title ?? (
-                        <span className="text-muted-foreground">No piece</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{lesson.duration} min</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={getStatusColor(toLessonStatus(lesson.status))}
+          <div className="-mx-4 overflow-x-auto sm:mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <div className="mx-4 overflow-hidden rounded-xl border border-pink-100 bg-white/60 shadow-sm backdrop-blur sm:mx-0">
+                <Table>
+                  <TableHeader className="bg-pink-50/50">
+                    <TableRow className="border-pink-100 hover:bg-transparent">
+                      <TableHead className="whitespace-nowrap text-rose-900/70">
+                        Time
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-rose-900/70">
+                        Student
+                      </TableHead>
+                      <TableHead className="hidden whitespace-nowrap text-rose-900/70 sm:table-cell">
+                        Piece
+                      </TableHead>
+                      <TableHead className="hidden whitespace-nowrap text-rose-900/70 md:table-cell">
+                        Duration
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-rose-900/70">
+                        Status
+                      </TableHead>
+                      <TableHead className="hidden whitespace-nowrap text-rose-900/70 lg:table-cell">
+                        Attendance
+                      </TableHead>
+                      <TableHead className="text-right whitespace-nowrap text-rose-900/70">
+                        Earnings
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lessons.map((lesson) => (
+                      <TableRow
+                        key={lesson.id}
+                        className="border-pink-50 hover:bg-pink-50/30"
                       >
-                        {lesson.status.toLowerCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant={
-                          lesson.status !== "PENDING" ? "default" : "outline"
-                        }
-                        disabled={lesson.status === "CANCELLED"}
-                        onClick={() => {
-                          setSelectedLesson({
-                            id: lesson.id,
-                            studentName: lesson.student.name,
-                            duration: lesson.duration,
-                            status: toLessonStatus(lesson.status),
-                            actualMin: lesson.actualMin,
-                            cancelReason: lesson.cancelReason,
-                            note: lesson.note,
-                            date: lesson.date,
-                          });
-                          setOpen(true);
-                        }}
-                      >
-                        {lesson.status !== "PENDING" ? "Update" : "Mark"}
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {lesson.status === "CANCELLED" ? (
-                        <span className="text-destructive">
-                          {formatCurrency(lesson.earnings, currency)}
-                        </span>
-                      ) : (
-                        <span className="text-green-600">
-                          {formatCurrency(lesson.earnings, currency)}
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        <TableCell className="font-medium whitespace-nowrap text-rose-950">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <Clock className="size-3 flex-shrink-0 text-rose-400 sm:size-4" />
+                            <span className="text-xs sm:text-sm">
+                              {formatTime(lesson.date)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <Avatar className="size-6 flex-shrink-0 border border-pink-100 sm:size-8">
+                              <AvatarImage
+                                src={lesson.student.avatar ?? undefined}
+                              />
+                              <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
+                                {lesson.student.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs font-medium text-rose-950 sm:text-sm">
+                              {lesson.student.name}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {lesson.piece?.title ? (
+                            <span className="text-xs text-rose-800 sm:text-sm">
+                              {lesson.piece.title}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">
+                              No piece
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground hidden text-xs sm:text-sm md:table-cell">
+                          {lesson.duration} min
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(toLessonStatus(lesson.status))}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap sm:px-4",
+                              lesson.status !== "PENDING"
+                                ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
+                                : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
+                            )}
+                            disabled={lesson.status === "CANCELLED"}
+                            onClick={() => {
+                              setSelectedLesson({
+                                id: lesson.id,
+                                studentName: lesson.student.name,
+                                duration: lesson.duration,
+                                status: toLessonStatus(lesson.status),
+                                actualMin: lesson.actualMin,
+                                cancelReason: lesson.cancelReason,
+                                note: lesson.note,
+                                date: lesson.date,
+                              });
+                              setOpen(true);
+                            }}
+                          >
+                            {lesson.status !== "PENDING" ? "Update" : "Mark"}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold whitespace-nowrap">
+                          {lesson.status === "CANCELLED" ? (
+                            <span className="text-xs text-rose-400 line-through opacity-70 sm:text-sm">
+                              {formatCurrency(lesson.earnings, currency)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-rose-600 sm:text-sm">
+                              {formatCurrency(lesson.earnings, currency)}
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
-            <div className="text-muted-foreground text-center">
-              <CalendarIcon className="mx-auto mb-2 size-8 opacity-50" />
-              <p>
-                No lessons scheduled for{" "}
-                {isSameDay(date, new Date()) ? "today" : format(date, "MMM do")}
-              </p>
-            </div>
+          <div className="py-12 text-center">
+            <Music className="mx-auto mb-4 size-10 animate-bounce text-pink-400" />
+            <p className="text-muted-foreground font-medium">
+              No lessons today 🎀
+            </p>
+            <p className="text-muted-foreground/70 mt-1 text-xs">
+              Maybe it's a rest day?
+            </p>
           </div>
         )}
 

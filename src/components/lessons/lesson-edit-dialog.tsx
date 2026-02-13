@@ -124,22 +124,25 @@ export function LessonEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-115">
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-115">
         <DialogHeader className="space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-            <PencilLine className="h-6 w-6" />
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-600 sm:h-12 sm:w-12">
+            <PencilLine className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <DialogTitle className="text-center text-2xl">
+          <DialogTitle className="text-center text-xl sm:text-2xl">
             Edit lesson
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center text-sm sm:text-base">
             Update lesson details for {lesson.studentName}.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            <div className="grid grid-cols-2 gap-3">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 sm:space-y-5"
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="date"
@@ -164,7 +167,7 @@ export function LessonEditDialog({
                   <FormItem>
                     <FormLabel>Time</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <Input className="bg-card" type="time" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -172,7 +175,7 @@ export function LessonEditDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="duration"
@@ -180,7 +183,13 @@ export function LessonEditDialog({
                   <FormItem>
                     <FormLabel>Duration (min)</FormLabel>
                     <FormControl>
-                      <Input type="number" min={15} max={480} {...field} />
+                      <Input
+                        className="bg-card"
+                        type="number"
+                        min={15}
+                        max={480}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -194,7 +203,7 @@ export function LessonEditDialog({
                     <FormLabel>Status</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-card">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                       </FormControl>
@@ -218,7 +227,7 @@ export function LessonEditDialog({
                   <FormLabel>Piece</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-card">
                         <SelectValue placeholder="Choose a piece" />
                       </SelectTrigger>
                     </FormControl>
@@ -236,15 +245,20 @@ export function LessonEditDialog({
               )}
             />
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                className="h-10 sm:h-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateLesson.isPending}>
+              <Button
+                type="submit"
+                disabled={updateLesson.isPending}
+                className="h-10 sm:h-auto"
+              >
                 {updateLesson.isPending ? "Saving..." : "Save changes"}
               </Button>
             </div>

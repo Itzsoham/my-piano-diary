@@ -166,24 +166,27 @@ export function LessonDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-112.5">
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] sm:max-w-[425px] md:max-w-[500px]">
         {/* Header with icon */}
-        <DialogHeader className="space-y-3">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40">
-            <Music2 className="h-6 w-6 text-pink-600" />
+        <DialogHeader className="space-y-2 sm:space-y-3">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">
+            <Music2 className="h-5 w-5 text-pink-600 sm:h-6 sm:w-6" />
           </div>
-          <DialogTitle className="text-center text-2xl">
+          <DialogTitle className="text-center text-xl sm:text-2xl">
             Schedule a lesson 💗
           </DialogTitle>
         </DialogHeader>
 
         {/* Scrollable form content */}
-        <div className="max-h-[calc(85vh-180px)] overflow-y-auto pr-2">
+        <div className="max-h-[calc(90vh-180px)] overflow-y-auto pr-1 sm:pr-2">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4 sm:space-y-5"
+            >
               {/* Basic lesson details section */}
-              <div className="space-y-4 rounded-xl bg-linear-to-br from-pink-50/50 to-purple-50/50 p-4">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3 rounded-xl bg-linear-to-br from-pink-50/50 to-purple-50/50 p-3 sm:space-y-4 sm:p-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="studentId"
@@ -195,7 +198,7 @@ export function LessonDialog({
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="rounded-xl">
+                            <SelectTrigger className="bg-card rounded-xl">
                               <SelectValue placeholder="Which student?" />
                             </SelectTrigger>
                           </FormControl>
@@ -223,7 +226,7 @@ export function LessonDialog({
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="rounded-xl">
+                            <SelectTrigger className="bg-card rounded-xl">
                               <SelectValue placeholder="Any piece?" />
                             </SelectTrigger>
                           </FormControl>
@@ -242,7 +245,7 @@ export function LessonDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="date"
@@ -270,7 +273,7 @@ export function LessonDialog({
                         <FormControl>
                           <Input
                             type="time"
-                            className="rounded-xl"
+                            className="bg-card rounded-xl"
                             {...field}
                           />
                         </FormControl>
@@ -291,7 +294,7 @@ export function LessonDialog({
                           type="number"
                           min="15"
                           step="15"
-                          className="rounded-xl"
+                          className="bg-card rounded-xl"
                           {...field}
                         />
                       </FormControl>
@@ -402,19 +405,19 @@ export function LessonDialog({
               </div>
 
               {/* Action buttons */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:gap-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => onOpenChange(false)}
-                  className="flex-1 rounded-xl"
+                  className="h-10 flex-1 rounded-xl sm:h-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={createLesson.isPending || createRecurring.isPending}
-                  className="flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+                  className="h-10 flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 sm:h-auto"
                 >
                   {createLesson.isPending || createRecurring.isPending
                     ? "Creating..."

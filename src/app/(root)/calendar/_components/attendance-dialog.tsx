@@ -98,37 +98,40 @@ export function AttendanceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader className="space-y-3">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40">
-            <Music2 className="h-6 w-6 text-pink-600" />
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] sm:max-w-[425px]">
+        <DialogHeader className="space-y-2 sm:space-y-3">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">
+            <Music2 className="h-5 w-5 text-pink-600 sm:h-6 sm:w-6" />
           </div>
-          <DialogTitle className="text-center text-2xl font-bold text-pink-950">
+          <DialogTitle className="text-center text-xl font-bold text-pink-950 sm:text-2xl">
             Lesson with {session?.user?.name ?? "you"} 🎹
           </DialogTitle>
-          <DialogDescription className="text-center font-medium text-pink-800/60">
+          <DialogDescription className="text-center text-sm font-medium text-pink-800/60 sm:text-base">
             {format(lesson.date, "EEEE · h:mm a")} · {lesson.duration} min
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4 rounded-xl bg-gradient-to-br from-pink-50/50 to-purple-50/50 p-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 sm:space-y-6"
+          >
+            <div className="space-y-3 rounded-xl bg-gradient-to-br from-pink-50/50 to-purple-50/50 p-3 sm:space-y-4 sm:p-4">
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel className="text-sm font-semibold text-pink-900/70">
+                    <FormLabel className="text-xs font-semibold text-pink-900/70 sm:text-sm">
                       Attendance Status
                     </FormLabel>
                     <FormControl>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
                         <button
                           type="button"
                           onClick={() => field.onChange("COMPLETE")}
                           className={cn(
-                            "group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all duration-200",
+                            "group flex min-h-[80px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "COMPLETE"
                               ? "border-green-500 bg-green-50 shadow-sm ring-2 shadow-green-100 ring-green-500/10"
                               : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
@@ -136,17 +139,17 @@ export function AttendanceDialog({
                         >
                           <div
                             className={cn(
-                              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95",
+                              "flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95 sm:h-10 sm:w-10",
                               field.value === "COMPLETE"
                                 ? "scale-110 bg-green-100 text-green-600"
                                 : "bg-gray-100 text-gray-400",
                             )}
                           >
-                            <Check className="h-5 w-5" />
+                            <Check className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
                           <span
                             className={cn(
-                              "text-xs font-bold",
+                              "text-[10px] font-bold sm:text-xs",
                               field.value === "COMPLETE"
                                 ? "text-green-700"
                                 : "text-gray-500",
@@ -160,7 +163,7 @@ export function AttendanceDialog({
                           type="button"
                           onClick={() => field.onChange("CANCELLED")}
                           className={cn(
-                            "group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all duration-200",
+                            "group flex min-h-[80px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "CANCELLED"
                               ? "border-rose-500 bg-rose-50 shadow-sm ring-2 shadow-rose-100 ring-rose-500/10"
                               : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
@@ -168,17 +171,17 @@ export function AttendanceDialog({
                         >
                           <div
                             className={cn(
-                              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95",
+                              "flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95 sm:h-10 sm:w-10",
                               field.value === "CANCELLED"
                                 ? "scale-110 bg-rose-100 text-rose-600"
                                 : "bg-gray-100 text-gray-400",
                             )}
                           >
-                            <X className="h-5 w-5" />
+                            <X className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
                           <span
                             className={cn(
-                              "text-xs font-bold",
+                              "text-[10px] font-bold sm:text-xs",
                               field.value === "CANCELLED"
                                 ? "text-rose-700"
                                 : "text-gray-500",
@@ -192,7 +195,7 @@ export function AttendanceDialog({
                           type="button"
                           onClick={() => field.onChange("PENDING")}
                           className={cn(
-                            "group flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all duration-200",
+                            "group flex min-h-[80px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "PENDING"
                               ? "border-amber-500 bg-amber-50 shadow-sm ring-2 shadow-amber-100 ring-amber-500/10"
                               : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
@@ -200,17 +203,17 @@ export function AttendanceDialog({
                         >
                           <div
                             className={cn(
-                              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95",
+                              "flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95 sm:h-10 sm:w-10",
                               field.value === "PENDING"
                                 ? "scale-110 bg-amber-100 text-amber-600"
                                 : "bg-gray-100 text-gray-400",
                             )}
                           >
-                            <Clock className="h-5 w-5" />
+                            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
                           <span
                             className={cn(
-                              "text-xs font-bold",
+                              "text-[10px] font-bold sm:text-xs",
                               field.value === "PENDING"
                                 ? "text-amber-700"
                                 : "text-gray-500",
@@ -297,19 +300,19 @@ export function AttendanceDialog({
               )}
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="flex-1 rounded-xl"
+                className="h-10 flex-1 rounded-xl sm:h-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={markAttendance.isPending}
-                className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md shadow-pink-200 transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-lg active:scale-[0.98]"
+                className="h-10 flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md shadow-pink-200 transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-lg active:scale-[0.98] sm:h-auto"
               >
                 {markAttendance.isPending
                   ? "Saving..."

@@ -136,15 +136,15 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-pink-100 bg-white/80 p-4 shadow-sm">
+      <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-          <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-pink-700">
+          <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-xs font-medium text-pink-700 sm:text-sm">
                 Student
               </label>
               <Select value={studentId} onValueChange={setStudentId}>
-                <SelectTrigger className="border-pink-200 bg-pink-50 focus:ring-pink-400">
+                <SelectTrigger className="h-9 border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
                   <SelectValue placeholder="All students" />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,28 +158,32 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-pink-700">From</label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-xs font-medium text-pink-700 sm:text-sm">
+                From
+              </label>
               <DatePicker
                 date={fromDate}
                 onDateChange={setFromDate}
                 placeholder="Start date"
-                className="w-full"
+                className="h-9 w-full text-sm sm:h-10"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-pink-700">To</label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-xs font-medium text-pink-700 sm:text-sm">
+                To
+              </label>
               <DatePicker
                 date={toDate}
                 onDateChange={setToDate}
                 placeholder="End date"
-                className="w-full"
+                className="h-9 w-full text-sm sm:h-10"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-pink-700">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-xs font-medium text-pink-700 sm:text-sm">
                 Status
               </label>
               <Select
@@ -188,7 +192,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                   setStatus(value as LessonStatus | "all")
                 }
               >
-                <SelectTrigger className="border-pink-200 bg-pink-50 focus:ring-pink-400">
+                <SelectTrigger className="h-9 border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -203,24 +207,26 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
           <Button
             variant="outline"
             onClick={resetFilters}
-            className="rounded-xl text-pink-600 hover:bg-pink-100"
+            className="h-9 rounded-xl text-pink-600 hover:bg-pink-100 sm:h-10"
           >
             Reset
           </Button>
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md">
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-pink-100 bg-white shadow-md">
         <Table>
           <TableHeader className="bg-rose-50/60">
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Student</TableHead>
-              <TableHead>Piece</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="whitespace-nowrap">Date</TableHead>
+              <TableHead className="whitespace-nowrap">Time</TableHead>
+              <TableHead className="whitespace-nowrap">Student</TableHead>
+              <TableHead className="whitespace-nowrap">Piece</TableHead>
+              <TableHead className="whitespace-nowrap">Duration</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="text-right whitespace-nowrap">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -252,17 +258,24 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                   key={lesson.id}
                   className="transition-colors hover:bg-pink-50"
                 >
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {format(new Date(lesson.date), "MMM d, yyyy")}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     {format(new Date(lesson.date), "h:mm a")}
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium whitespace-nowrap">
                     {lesson.student.name}
                   </TableCell>
-                  <TableCell>{lesson.piece?.title ?? "None"}</TableCell>
-                  <TableCell>{lesson.duration} min</TableCell>
+                  <TableCell
+                    className="max-w-[150px] truncate whitespace-nowrap"
+                    title={lesson.piece?.title ?? ""}
+                  >
+                    {lesson.piece?.title ?? "None"}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {lesson.duration} min
+                  </TableCell>
                   <TableCell>
                     <Badge
                       className={statusClasses[lesson.status as LessonStatus]}

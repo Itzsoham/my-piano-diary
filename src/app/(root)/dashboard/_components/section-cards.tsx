@@ -3,138 +3,141 @@
 import {
   TrendingDown,
   TrendingUp,
-  DollarSign,
   CreditCard,
-  XCircle,
+  Heart,
+  Users,
+  Sparkles,
 } from "lucide-react";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 
 export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
   type StudentEarningsOutput = RouterOutputs["earnings"]["getByStudent"];
 
-  const { data: earnings, isLoading } = api.earnings.getDashboard.useQuery() as {
-    data: DashboardOutput | undefined;
-    isLoading: boolean;
-  };
+  const { data: earnings, isLoading } =
+    api.earnings.getDashboard.useQuery() as {
+      data: DashboardOutput | undefined;
+      isLoading: boolean;
+    };
   const { data: studentEarnings } = api.earnings.getByStudent.useQuery() as {
     data: StudentEarningsOutput | undefined;
+    isLoading: boolean;
   };
   const { currency } = useCurrency();
 
   const totalStudents = studentEarnings?.length ?? 0;
 
+  // Placeholder progress - logic could be more dynamic if we had a goal
+  // For now, let's just make it look nice
+  const progressPercentage = 65;
+
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Total Earnings</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading
-              ? "..."
-              : formatCurrency(earnings?.totalEarnings ?? 0, currency)}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <DollarSign className="size-4" />
-              All Time
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Total revenue earned
+    <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 lg:px-6 xl:grid-cols-4">
+      {/* Total Earnings */}
+      <Card className="group relative overflow-hidden rounded-2xl border bg-white/70 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
+        <div className="p-4 sm:p-6">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
+            <Heart className="size-3 fill-pink-500/20 text-pink-500 sm:size-4" />
+            Total Earnings
           </div>
-          <div className="text-muted-foreground">
-            From all completed lessons
+
+          <div className="mt-2">
+            <p className="text-2xl font-semibold text-rose-600 tabular-nums sm:text-3xl">
+              {isLoading
+                ? "..."
+                : formatCurrency(earnings?.totalEarnings ?? 0, currency)}
+            </p>
+            <p className="text-muted-foreground/80 mt-2 flex items-center gap-1 text-xs">
+              Earned from your beautiful teaching{" "}
+              <Sparkles className="size-3 text-amber-400" />
+            </p>
           </div>
-        </CardFooter>
+        </div>
       </Card>
 
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Current Month Earnings</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading
-              ? "..."
-              : formatCurrency(earnings?.currentMonthEarnings ?? 0, currency)}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <TrendingUp className="size-4" />
-              This Month
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Monthly income <CreditCard className="size-4" />
+      {/* Current Month Earnings */}
+      <Card className="group relative overflow-hidden rounded-2xl border bg-white/70 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
+        <div className="p-4 sm:p-6">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
+            <CreditCard className="size-3 text-purple-500 sm:size-4" />
+            Current Month
           </div>
-          <div className="text-muted-foreground">
-            Revenue for{" "}
-            {new Date().toLocaleString("default", { month: "long" })}
+
+          <div className="mt-2">
+            <p className="text-2xl font-semibold text-rose-600 tabular-nums sm:text-3xl">
+              {isLoading
+                ? "..."
+                : formatCurrency(earnings?.currentMonthEarnings ?? 0, currency)}
+            </p>
+
+            <div className="mt-3">
+              <div className="h-2 overflow-hidden rounded-full bg-pink-100">
+                <div
+                  className="h-full rounded-full bg-pink-400 transition-all duration-1000 ease-out"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <p className="text-muted-foreground/80 mt-2 text-xs">
+              Revenue for{" "}
+              {new Date().toLocaleString("default", { month: "long" })}
+            </p>
           </div>
-        </CardFooter>
+        </div>
       </Card>
 
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Loss from Cancellations</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading
-              ? "..."
-              : formatCurrency(earnings?.currentMonthLoss ?? 0, currency)}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline" className="text-destructive">
-              <XCircle className="size-4" />
-              This Month
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="text-destructive line-clamp-1 flex gap-2 font-medium">
-            Cancelled lessons <TrendingDown className="size-4" />
+      {/* Cancellations */}
+      <Card className="group relative overflow-hidden rounded-2xl border bg-rose-50/50 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center gap-2 text-xs font-medium text-rose-600/80 sm:text-sm">
+            <TrendingDown className="size-3 sm:size-4" />
+            Missed Opportunities
           </div>
-          <div className="text-muted-foreground">
-            Potential revenue lost this month
+
+          <div className="mt-2">
+            <p className="text-2xl font-semibold text-rose-600/80 tabular-nums sm:text-3xl">
+              {isLoading
+                ? "..."
+                : formatCurrency(earnings?.currentMonthLoss ?? 0, currency)}
+            </p>
+
+            <div className="mt-auto pt-2">
+              <Badge
+                variant="secondary"
+                className="border-none bg-rose-100 text-xs font-normal text-rose-600 hover:bg-rose-200"
+              >
+                Potential lost this month
+              </Badge>
+            </div>
           </div>
-        </CardFooter>
+        </div>
       </Card>
 
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Active Students</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {totalStudents}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <TrendingUp className="size-4" />
-              This Month
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Students with lessons
+      {/* Active Students */}
+      <Card className="group relative overflow-hidden rounded-2xl border bg-white/70 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
+        <div className="p-4 sm:p-6">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
+            <Users className="size-3 text-pink-500 sm:size-4" />
+            Active Students
           </div>
-          <div className="text-muted-foreground">
-            Active students this month
+
+          <div className="mt-2">
+            <p className="text-2xl font-semibold text-rose-600 tabular-nums sm:text-3xl">
+              {totalStudents}
+            </p>
+            <p className="text-muted-foreground/80 mt-2 flex items-center gap-1 text-xs">
+              Students learning with you{" "}
+              <Heart className="size-3 fill-pink-400 text-pink-400" />
+            </p>
           </div>
-        </CardFooter>
+        </div>
       </Card>
     </div>
   );

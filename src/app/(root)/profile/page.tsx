@@ -40,30 +40,34 @@ export default function ProfilePage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-8 h-auto w-full justify-start gap-2 rounded-none border-b border-transparent bg-transparent p-0">
-          <TabsTrigger
-            value="profile"
-            className="rounded-full border-0 px-6 py-2.5 font-medium text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none"
-          >
-            Profile
-          </TabsTrigger>
-          <TabsTrigger
-            value="password"
-            className="rounded-full border-0 px-6 py-2.5 font-medium text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none"
-          >
-            Password
-          </TabsTrigger>
-          <TabsTrigger
-            value="teacher"
-            className="rounded-full border-0 px-6 py-2.5 font-medium text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none"
-          >
-            Teacher Settings
-          </TabsTrigger>
-        </TabsList>
+        {/* Scrollable container for mobile tabs */}
+        <div className="no-scrollbar -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
+          <TabsList className="mb-2 h-auto w-auto min-w-full justify-start gap-2 rounded-none border-b border-transparent bg-transparent p-0 sm:mb-8">
+            <TabsTrigger
+              value="profile"
+              className="shrink-0 rounded-full border-0 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none sm:px-6 sm:py-2.5 sm:text-base"
+            >
+              Profile
+            </TabsTrigger>
+            <TabsTrigger
+              value="password"
+              className="shrink-0 rounded-full border-0 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none sm:px-6 sm:py-2.5 sm:text-base"
+            >
+              Password
+            </TabsTrigger>
+            <TabsTrigger
+              value="teacher"
+              className="shrink-0 rounded-full border-0 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 data-[state=active]:bg-rose-50 data-[state=active]:font-semibold data-[state=active]:text-rose-700 data-[state=active]:shadow-none sm:px-6 sm:py-2.5 sm:text-base"
+            >
+              <span className="sm:hidden">Teacher</span>
+              <span className="hidden sm:inline">Teacher Settings</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="profile" className="mt-0">
           <Card className="overflow-hidden rounded-2xl border-slate-100 p-0 shadow-xl ring-1 shadow-slate-200/40 ring-slate-900/5">
-            <div className="border-b border-rose-100/50 bg-rose-50/50 p-8 pb-6">
+            <div className="border-b border-rose-100/50 bg-rose-50/50 p-6 pb-6 sm:p-8">
               <div className="flex flex-col items-center space-y-4 text-center">
                 <Avatar className="h-24 w-24 border-4 border-white shadow-sm">
                   <AvatarImage
@@ -85,7 +89,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="p-8">
+            <div className="p-6 sm:p-8">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Profile Information
@@ -101,7 +105,7 @@ export default function ProfilePage() {
 
         <TabsContent value="password" className="mt-0">
           <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-xl ring-1 shadow-slate-200/40 ring-slate-900/5">
-            <div className="p-8">
+            <div className="p-6 sm:p-8">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Keep your account safe
@@ -117,7 +121,7 @@ export default function ProfilePage() {
 
         <TabsContent value="teacher" className="mt-0">
           <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-xl ring-1 shadow-slate-200/40 ring-slate-900/5">
-            <div className="p-8">
+            <div className="p-6 sm:p-8">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Teacher Settings

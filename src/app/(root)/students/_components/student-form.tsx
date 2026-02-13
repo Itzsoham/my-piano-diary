@@ -122,10 +122,13 @@ export function StudentForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
-          <div className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-6 sm:space-y-10"
+        >
+          <div className="space-y-4 sm:space-y-6">
             <FormField
               control={form.control}
               name="name"
@@ -166,7 +169,7 @@ export function StudentForm({
             />
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <FormField
               control={form.control}
               name="notes"
@@ -189,11 +192,11 @@ export function StudentForm({
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-6">
+          <div className="flex flex-col justify-end gap-2 pt-4 sm:flex-row sm:gap-3 sm:pt-6">
             <Button
               type="button"
               variant="ghost"
-              className="rounded-full"
+              className="h-10 rounded-full sm:h-auto"
               onClick={() => onSuccess?.()}
             >
               Cancel
@@ -201,7 +204,7 @@ export function StudentForm({
             <Button
               type="submit"
               disabled={isPending}
-              className="rounded-full bg-pink-500 font-medium text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-pink-600 hover:shadow-md"
+              className="h-10 rounded-full bg-pink-500 font-medium text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-pink-600 hover:shadow-md sm:h-auto"
             >
               {isPending
                 ? studentId
@@ -216,7 +219,7 @@ export function StudentForm({
       </Form>
 
       {student && (
-        <div className="space-y-4 rounded-lg border p-4">
+        <div className="space-y-3 rounded-lg border p-3 sm:space-y-4 sm:p-4">
           <h4 className="font-semibold">Student Information</h4>
           <div className="space-y-4">
             <div className="grid gap-2">

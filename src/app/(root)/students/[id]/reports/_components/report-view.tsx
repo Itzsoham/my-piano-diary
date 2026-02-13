@@ -279,60 +279,70 @@ export function ReportView({
   return (
     <div className="space-y-8 print:space-y-4">
       {/* Controls - Hidden on Print */}
-      <div className="bg-card flex flex-col items-center justify-between gap-4 rounded-lg border p-4 shadow-sm sm:flex-row print:hidden">
-        <div className="flex flex-wrap items-center gap-2">
-          {studentControl}
-          <Select value={month.toString()} onValueChange={handleMonthChange}>
-            <SelectTrigger className="w-30">
-              <SelectValue placeholder={t.monthPlaceholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <SelectItem key={m} value={m.toString()}>
-                  {t.monthOption(m)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="bg-card flex flex-col justify-between gap-4 rounded-lg border p-3 shadow-sm sm:p-4 xl:flex-row print:hidden">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex flex-wrap items-center gap-2">
+            {studentControl}
+            <Select value={month.toString()} onValueChange={handleMonthChange}>
+              <SelectTrigger className="w-24 sm:w-30">
+                <SelectValue placeholder={t.monthPlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <SelectItem key={m} value={m.toString()}>
+                    {t.monthOption(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={year.toString()} onValueChange={handleYearChange}>
-            <SelectTrigger className="w-25">
-              <SelectValue placeholder={t.yearPlaceholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {[2024, 2025, 2026].map((y) => (
-                <SelectItem key={y} value={y.toString()}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={year.toString()} onValueChange={handleYearChange}>
+              <SelectTrigger className="w-20 sm:w-25">
+                <SelectValue placeholder={t.yearPlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {[2024, 2025, 2026].map((y) => (
+                  <SelectItem key={y} value={y.toString()}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select
-            value={language}
-            onValueChange={(val: "vi" | "en") => setLanguage(val)}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue placeholder={t.language} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="vi">VI</SelectItem>
-              <SelectItem value="en">EN</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={language}
+              onValueChange={(val: "vi" | "en") => setLanguage(val)}
+            >
+              <SelectTrigger className="w-24 sm:w-28">
+                <SelectValue placeholder={t.language} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vi">VI</SelectItem>
+                <SelectItem value="en">EN</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <div className="flex items-center gap-2 rounded-full border px-3 py-1">
-            <Label className="text-muted-foreground text-xs">{t.pretty}</Label>
-            <Switch
-              checked={prettyMode}
-              onCheckedChange={(val) => setPrettyMode(val)}
-            />
+            <div className="flex items-center gap-2 rounded-full border px-3 py-1">
+              <Label className="text-muted-foreground text-xs whitespace-nowrap">
+                {t.pretty}
+              </Label>
+              <Switch
+                checked={prettyMode}
+                onCheckedChange={(val) => setPrettyMode(val)}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <div className="flex items-center gap-1">
-            <Button variant="outline" onClick={() => window.print()}>
+            <Button
+              variant="outline"
+              onClick={() => window.print()}
+              className="flex-1 sm:flex-none"
+            >
               <Printer className="mr-2 h-4 w-4" />
               {t.print}
             </Button>
@@ -340,7 +350,7 @@ export function ReportView({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200/30 text-rose-400 transition-all duration-200 hover:border-rose-300/50 hover:bg-rose-500/10 hover:text-rose-300"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rose-200/30 text-rose-400 transition-all duration-200 hover:border-rose-300/50 hover:bg-rose-500/10 hover:text-rose-300"
                   aria-label={t.printHelp}
                 >
                   <Info className="h-4 w-4" />
@@ -355,7 +365,11 @@ export function ReportView({
               </TooltipContent>
             </Tooltip>
           </div>
-          <Button onClick={handleSave} disabled={upsertReport.isPending}>
+          <Button
+            onClick={handleSave}
+            disabled={upsertReport.isPending}
+            className="flex-1 sm:flex-none"
+          >
             {upsertReport.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -370,11 +384,12 @@ export function ReportView({
       <div
         className={cn(
           prettyMode
-            ? "rounded-3xl bg-rose-50/70 p-6 sm:p-8 print:bg-white print:p-0"
+            ? "rounded-3xl bg-rose-50/70 p-4 sm:p-6 lg:p-8 print:bg-white print:p-0"
             : "",
+          "overflow-x-auto",
         )}
       >
-        <div className={reportCardClass}>
+        <div className={cn(reportCardClass, "min-w-[600px] sm:min-w-0")}>
           {/* Header */}
           <div className="mb-6 text-center">
             {prettyMode ? (
@@ -497,7 +512,7 @@ export function ReportView({
                       : "divide-x divide-black border-b border-black",
                   )}
                   style={{
-                    gridTemplateColumns: `50px 100px repeat(${weeks.length}, 1fr)`,
+                    gridTemplateColumns: `40px 100px repeat(${weeks.length}, 1fr)`,
                   }}
                 >
                   <div className="flex items-center justify-center p-2">
@@ -528,7 +543,7 @@ export function ReportView({
                       : "divide-x divide-black",
                   )}
                   style={{
-                    gridTemplateColumns: `50px 100px repeat(${weeks.length}, 1fr)`,
+                    gridTemplateColumns: `40px 100px repeat(${weeks.length}, 1fr)`,
                   }}
                 >
                   <div className="flex items-center justify-center p-2">1</div>
