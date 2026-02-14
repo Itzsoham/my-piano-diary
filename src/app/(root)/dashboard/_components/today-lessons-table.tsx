@@ -15,10 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Calendar as CalendarIcon,
   Clock,
   DollarSign,
-  CalendarDays,
   Music,
 } from "lucide-react";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
@@ -108,7 +106,7 @@ export function TodayLessonsTable() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-lg text-rose-950 sm:text-xl">
-              Today's Focus <span className="text-lg sm:text-xl">🎹</span>
+              Today&apos;s Focus <span className="text-lg sm:text-xl">🎹</span>
             </CardTitle>
             <Popover>
               <PopoverTrigger asChild>
@@ -135,7 +133,9 @@ export function TodayLessonsTable() {
             </div>
             <div>
               <div className="text-muted-foreground text-[9px] font-medium tracking-wider uppercase sm:text-[10px]">
-                {isSameDay(date, new Date()) ? "Today's Total" : "Day's Total"}
+                {isSameDay(date, new Date())
+                  ? "Today&apos;s Total"
+                  : "Day&apos;s Total"}
               </div>
               <div className="text-sm font-semibold text-rose-950 sm:text-base">
                 {formatCurrency(totalEarnings, currency)}
@@ -282,7 +282,7 @@ export function TodayLessonsTable() {
               No lessons today 🎀
             </p>
             <p className="text-muted-foreground/70 mt-1 text-xs">
-              Maybe it's a rest day?
+              Maybe it&apos;s a rest day?
             </p>
           </div>
         )}

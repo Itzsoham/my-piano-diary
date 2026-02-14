@@ -2,7 +2,6 @@
 
 import {
   TrendingDown,
-  TrendingUp,
   CreditCard,
   Heart,
   Users,
@@ -14,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
-import { cn } from "@/lib/utils";
 
 export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
