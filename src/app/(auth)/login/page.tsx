@@ -1,10 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Music } from "lucide-react";
 
 import { LoginForm } from "../_components/login-form";
+import { getServerAuthSession } from "@/server/auth";
 
-export default function Login() {
+export default async function Login() {
+  const session = await getServerAuthSession();
+
+  if (session) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="flex h-dvh overflow-hidden">
       {/* Left Side – Piano Diary Mood */}

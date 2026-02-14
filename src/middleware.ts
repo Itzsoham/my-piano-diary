@@ -1,9 +1,18 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/server/auth";
+const AUTH_COOKIES = [
+  "authjs.session-token",
+  "__Secure-authjs.session-token",
+  "next-auth.session-token",
+  "__Secure-next-auth.session-token",
+];
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
+function hasSessionCookie(req: NextRequest) {
+  return AUTH_COOKIES.some((name) => req.cookies.has(name));
+}
+
+export function middleware(req: NextRequest) {
+  const isLoggedIn = hasSessionCookie(req);
   const isAuthPage =
     req.nextUrl.pathname.startsWith("/login") ||
     req.nextUrl.pathname.startsWith("/register");
@@ -17,7 +26,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [

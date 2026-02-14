@@ -1,10 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Music2 } from "lucide-react";
 
 import { RegisterForm } from "../_components/register-form";
+import { getServerAuthSession } from "@/server/auth";
 
-export default function Register() {
+export default async function Register() {
+  const session = await getServerAuthSession();
+
+  if (session) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="flex h-dvh overflow-hidden">
       {/* Left Side – Register Form */}
