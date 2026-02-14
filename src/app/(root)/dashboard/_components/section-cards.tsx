@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  TrendingDown,
-  CreditCard,
-  Heart,
-  Users,
-  Sparkles,
-} from "lucide-react";
+import { TrendingDown, CreditCard, Heart, Users, Sparkles } from "lucide-react";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
 import { Badge } from "@/components/ui/badge";

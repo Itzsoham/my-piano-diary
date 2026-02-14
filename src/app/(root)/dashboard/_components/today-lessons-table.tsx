@@ -14,11 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Clock,
-  DollarSign,
-  Music,
-} from "lucide-react";
+import { Clock, DollarSign, Music } from "lucide-react";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { format, isSameDay } from "date-fns";
 import {
@@ -146,7 +142,7 @@ export function TodayLessonsTable() {
       </CardHeader>
       <CardContent className="p-0 sm:p-6 sm:pt-2">
         {isLoading ? (
-          <div className="text-muted-foreground flex h-32 items-center justify-center px-4 text-rose-400 italic">
+          <div className="flex h-32 items-center justify-center px-4 text-rose-400 italic">
             Gathering your lessons...
           </div>
         ) : lessons && lessons.length > 0 ? (
@@ -187,7 +183,7 @@ export function TodayLessonsTable() {
                       >
                         <TableCell className="font-medium whitespace-nowrap text-rose-950">
                           <div className="flex items-center gap-1.5 sm:gap-2">
-                            <Clock className="size-3 flex-shrink-0 text-rose-400 sm:size-4" />
+                            <Clock className="size-3 shrink-0 text-rose-400 sm:size-4" />
                             <span className="text-xs sm:text-sm">
                               {formatTime(lesson.date)}
                             </span>
@@ -195,7 +191,7 @@ export function TodayLessonsTable() {
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           <div className="flex items-center gap-2 sm:gap-3">
-                            <Avatar className="size-6 flex-shrink-0 border border-pink-100 sm:size-8">
+                            <Avatar className="size-6 shrink-0 border border-pink-100 sm:size-8">
                               <AvatarImage
                                 src={lesson.student.avatar ?? undefined}
                               />
