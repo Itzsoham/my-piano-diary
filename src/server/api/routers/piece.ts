@@ -8,8 +8,19 @@ import {
 } from "@/lib/validations/common-schemas";
 
 export const pieceRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(({ ctx }) => {
+  getAll: protectedProcedure.query(async ({ ctx }) => {
+    const teacher = await ctx.db.teacher.findUnique({
+      where: { userId: ctx.session.user.id },
+    });
+
+    if (!teacher) {
+      return [];
+    }
+
     return ctx.db.piece.findMany({
+      where: {
+        teacherId: teacher.id,
+      },
       orderBy: { createdAt: "desc" },
       include: {
         _count: {
@@ -24,8 +35,19 @@ export const pieceRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: idSchema }))
     .query(async ({ ctx, input }) => {
-      const piece = await ctx.db.piece.findUnique({
-        where: { id: input.id },
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        throw new Error("Teacher not found");
+      }
+
+      const piece = await ctx.db.piece.findFirst({
+        where: {
+          id: input.id,
+          teacherId: teacher.id,
+        },
         include: {
           lessons: {
             orderBy: { date: "desc" },
@@ -52,8 +74,17 @@ export const pieceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createPieceSchema)
     .mutation(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        throw new Error("Teacher not found");
+      }
+
       return ctx.db.piece.create({
         data: {
+          teacher: { connect: { id: teacher.id } },
           title: input.title,
           difficulty: input.difficulty,
           description: input.description,
@@ -66,6 +97,26 @@ export const pieceRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        throw new Error("Teacher not found");
+      }
+
+      // Verify piece belongs to teacher
+      const piece = await ctx.db.piece.findFirst({
+        where: {
+          id,
+          teacherId: teacher.id,
+        },
+      });
+
+      if (!piece) {
+        throw new Error("Piece not found");
+      }
+
       return ctx.db.piece.update({
         where: { id },
         data,
@@ -75,6 +126,26 @@ export const pieceRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: idSchema }))
     .mutation(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        throw new Error("Teacher not found");
+      }
+
+      // Verify piece belongs to teacher
+      const piece = await ctx.db.piece.findFirst({
+        where: {
+          id: input.id,
+          teacherId: teacher.id,
+        },
+      });
+
+      if (!piece) {
+        throw new Error("Piece not found");
+      }
+
       return ctx.db.piece.delete({
         where: { id: input.id },
       });

@@ -165,6 +165,20 @@ export const lessonRouter = createTRPCRouter({
         throw new Error("Student not found");
       }
 
+      // Verify piece belongs to teacher if pieceId is provided
+      if (input.pieceId) {
+        const piece = await ctx.db.piece.findFirst({
+          where: {
+            id: input.pieceId,
+            teacherId: teacher.id,
+          },
+        });
+
+        if (!piece) {
+          throw new Error("Piece not found");
+        }
+      }
+
       return ctx.db.lesson.create({
         data: {
           studentId: input.studentId,
@@ -204,6 +218,20 @@ export const lessonRouter = createTRPCRouter({
 
       if (!lesson) {
         throw new Error("Lesson not found");
+      }
+
+      // Verify piece belongs to teacher if pieceId is being updated
+      if (data.pieceId !== undefined && data.pieceId !== null) {
+        const piece = await ctx.db.piece.findFirst({
+          where: {
+            id: data.pieceId,
+            teacherId: teacher.id,
+          },
+        });
+
+        if (!piece) {
+          throw new Error("Piece not found");
+        }
       }
 
       return ctx.db.lesson.update({
@@ -313,6 +341,20 @@ export const lessonRouter = createTRPCRouter({
 
       if (!student) {
         throw new Error("Student not found");
+      }
+
+      // Verify piece belongs to teacher if pieceId is provided
+      if (input.pieceId) {
+        const piece = await ctx.db.piece.findFirst({
+          where: {
+            id: input.pieceId,
+            teacherId: teacher.id,
+          },
+        });
+
+        if (!piece) {
+          throw new Error("Piece not found");
+        }
       }
 
       const lessonsToCreate = [];

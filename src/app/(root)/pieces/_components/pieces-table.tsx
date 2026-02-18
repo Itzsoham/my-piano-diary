@@ -111,7 +111,7 @@ type Piece = {
   description: string | null;
   difficulty: number | null;
   createdAt: Date;
-  _count: {
+  _count?: {
     lessons: number;
   };
 };
@@ -186,7 +186,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
       accessorKey: "_count.lessons",
       header: "Lessons",
       cell: ({ row }) => (
-        <Badge variant="secondary">{row.original._count.lessons}</Badge>
+        <Badge variant="secondary">{row.original._count?.lessons ?? 0}</Badge>
       ),
     },
     {
@@ -416,9 +416,9 @@ export function PiecesTable({ data }: PiecesTableProps) {
                     </div>
 
                     <p className="text-muted-foreground/60 mb-4 text-xs font-medium">
-                      {piece._count.lessons === 0
+                      {(piece._count?.lessons ?? 0) === 0
                         ? "Not yet played in lessons"
-                        : `Played in ${piece._count.lessons} ${piece._count.lessons === 1 ? "lesson" : "lessons"}`}
+                        : `Played in ${piece._count?.lessons ?? 0} ${(piece._count?.lessons ?? 0) === 1 ? "lesson" : "lessons"}`}
                     </p>
 
                     {piece.description && (
