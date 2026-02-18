@@ -60,7 +60,7 @@ export function StudentSheet({
         )
       )}
       <SheetContent className="overflow-y-auto sm:max-w-150">
-        <SheetHeader>
+        <SheetHeader className="border-b pb-4">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>

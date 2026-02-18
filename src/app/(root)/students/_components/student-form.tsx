@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 
 const studentFormSchema = z.object({
@@ -88,6 +89,18 @@ export function StudentForm({
     },
   });
 
+  const avatarUrl = form.watch("avatar");
+  const nameValue = form.watch("name");
+
+  const getInitials = (value: string) =>
+    value
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "?";
+
   React.useEffect(() => {
     if (student) {
       form.reset({
@@ -137,74 +150,91 @@ export function StudentForm({
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-6 sm:space-y-10"
         >
-          <div className="space-y-4 sm:space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter student name"
-                      className="h-11"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="flex flex-col items-center gap-4 text-center md:col-span-1 md:items-start md:text-left">
+              <div className="flex w-full items-center justify-center gap-4">
+                <Avatar className="size-24 rounded-full shadow-md ring-4 ring-pink-200">
+                  <AvatarImage src={avatarUrl} alt={nameValue || "Avatar"} />
+                  <AvatarFallback>{getInitials(nameValue)}</AvatarFallback>
+                </Avatar>
+                {/* <div>
+                  <p className="text-muted-foreground text-sm">Preview</p>
+                </div> */}
+              </div>
 
-            <FormField
-              control={form.control}
-              name="avatar"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Avatar URL</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="https://example.com/avatar.jpg"
-                      className="h-11"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Enter a URL to an image for the student avatar
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="avatar"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel className="mx-auto">Avatar URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://example.com/avatar.jpg"
+                        className="h-11 rounded-2xl focus-visible:ring-pink-400"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>Enter a URL for an image</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <FormField
-              control={form.control}
-              name="lessonRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rate Per Lesson</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="0"
-                      type="number"
-                      className="h-11"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(parseInt(e.target.value) || 0)
-                      }
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Charge amount per completed lesson
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4 md:col-span-2">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter student name"
+                        className="h-11 rounded-2xl focus-visible:ring-pink-400"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lessonRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rate Per Lesson</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2">
+                          đ
+                        </span>
+                        <Input
+                          placeholder="0"
+                          type="number"
+                          className="h-11 rounded-2xl bg-pink-50 pl-8 text-base font-semibold focus-visible:ring-pink-400"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
+                          value={field.value || ""}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Charge amount per completed lesson
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 rounded-xl bg-pink-50/50 p-4 shadow-sm sm:space-y-6">
             <FormField
               control={form.control}
               name="notes"
@@ -214,7 +244,7 @@ export function StudentForm({
                   <FormControl>
                     <Textarea
                       placeholder="Add any notes about the student..."
-                      className="min-h-32 resize-none"
+                      className="min-h-32 resize-none rounded-2xl focus-visible:ring-pink-400"
                       {...field}
                     />
                   </FormControl>
@@ -239,7 +269,7 @@ export function StudentForm({
             <Button
               type="submit"
               disabled={isPending}
-              className="h-10 rounded-full bg-pink-500 font-medium text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-pink-600 hover:shadow-md sm:h-auto"
+              className="h-11 rounded-full bg-pink-500 px-6 font-medium text-white shadow-sm transition hover:scale-[1.02] hover:bg-pink-600 hover:shadow-lg sm:h-auto"
             >
               {isPending
                 ? studentId
