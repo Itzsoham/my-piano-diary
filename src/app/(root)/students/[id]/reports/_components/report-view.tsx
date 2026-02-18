@@ -221,7 +221,7 @@ export function ReportView({
 
   const { student, lessons } = data;
   const teacherName = data?.teacherName ?? "";
-  const perSessionRate = data?.teacherHourlyRate ?? 0;
+  const perSessionRate = data?.studentLessonRate ?? 0;
 
   // Calculate Stats
   const validLessons = lessons.filter((l) => l.status === "COMPLETE");
@@ -393,7 +393,7 @@ export function ReportView({
           "overflow-x-auto",
         )}
       >
-        <div className={cn(reportCardClass, "min-w-[600px] sm:min-w-0")}>
+        <div className={cn(reportCardClass, "min-w-150 sm:min-w-0")}>
           {/* Header */}
           <div className="mb-6 text-center">
             {prettyMode ? (
@@ -581,7 +581,7 @@ export function ReportView({
                       <div
                         key={w}
                         className={cn(
-                          "grid h-full min-h-[85px] divide-x",
+                          "grid h-full min-h-21.25 divide-x",
                           prettyMode ? "divide-rose-200/70" : "divide-black",
                           // Force vertical lines to show on print
                           "[&>*+*]:border-l",
@@ -601,7 +601,7 @@ export function ReportView({
                             <span className="text-[14px]">{item.day}</span>
                             {item.status === "CANCELLED" &&
                               item.cancelReason && (
-                                <span className="mt-0.5 max-w-full px-1 text-center text-[10px] leading-[1.1] font-normal break-words uppercase">
+                                <span className="mt-0.5 max-w-full px-1 text-center text-[10px] leading-[1.1] font-normal wrap-break-word uppercase">
                                   {item.cancelReason}
                                 </span>
                               )}

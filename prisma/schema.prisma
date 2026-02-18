@@ -56,26 +56,26 @@ model VerificationToken {
 }
 
 model Teacher {
-  id         String    @id @default(cuid())
-  userId     String    @unique
-  hourlyRate Int       @default(200000)
-  createdAt  DateTime  @default(now())
-  lessons    Lesson[]
-  students   Student[]
-  pieces     Piece[]
-  user       User      @relation(fields: [userId], references: [id])
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  createdAt DateTime  @default(now())
+  lessons   Lesson[]
+  students  Student[]
+  pieces    Piece[]
+  user      User      @relation(fields: [userId], references: [id])
 }
 
 model Student {
-  id        String          @id @default(cuid())
-  teacherId String
-  name      String
-  avatar    String?
-  notes     String?
-  createdAt DateTime        @default(now())
-  lessons   Lesson[]
-  teacher   Teacher         @relation(fields: [teacherId], references: [id])
-  reports   MonthlyReport[]
+  id         String          @id @default(cuid())
+  teacherId  String
+  name       String
+  avatar     String?
+  notes      String?
+  lessonRate Int             @default(0)
+  createdAt  DateTime        @default(now())
+  lessons    Lesson[]
+  teacher    Teacher         @relation(fields: [teacherId], references: [id])
+  reports    MonthlyReport[]
 }
 
 model Piece {

@@ -5,17 +5,15 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 interface DashboardData {
   totalEarnings: number;
   currentMonthEarnings: number;
-  currentMonthLoss: number;
-  hourlyRate: number;
 }
 
 interface StudentEarningsData {
   studentId: string;
   studentName: string;
   avatar: string | null;
-  totalMinutes: number;
-  earnings: number;
   lessonCount: number;
+  earnings: number;
+  lessonRate: number;
 }
 
 interface TodayLesson {
@@ -38,6 +36,7 @@ interface TodayLesson {
     id: string;
     name: string;
     avatar: string | null;
+    lessonRate: number;
   };
 }
 
@@ -53,8 +52,6 @@ export const earningsRouter = createTRPCRouter({
         return {
           totalEarnings: 0,
           currentMonthEarnings: 0,
-          currentMonthLoss: 0,
-          hourlyRate: 0,
         };
       }
 
@@ -69,18 +66,22 @@ export const earningsRouter = createTRPCRouter({
         59,
       );
 
-      // Get all completed and makeup lessons
+      // Get all completed lessons with student data
       const completedLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
           status: "COMPLETE",
         },
-        select: {
-          duration: true,
+        include: {
+          student: {
+            select: {
+              lessonRate: true,
+            },
+          },
         },
       });
 
-      // Get current month completed and makeup lessons
+      // Get current month completed lessons with student data
       const currentMonthCompletedLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
@@ -90,53 +91,30 @@ export const earningsRouter = createTRPCRouter({
           },
           status: "COMPLETE",
         },
-        select: {
-          duration: true,
-        },
-      });
-
-      // Get current month cancelled lessons
-      const currentMonthCancelledLessons = await ctx.db.lesson.findMany({
-        where: {
-          teacherId: teacher.id,
-          date: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd,
+        include: {
+          student: {
+            select: {
+              lessonRate: true,
+            },
           },
-          status: "CANCELLED",
-        },
-        select: {
-          duration: true,
         },
       });
 
       // Calculate total earnings (all time)
-      const totalMinutes = completedLessons.reduce(
-        (sum, lesson) => sum + lesson.duration,
+      const totalEarnings = completedLessons.reduce(
+        (sum, lesson) => sum + lesson.student.lessonRate,
         0,
       );
-      const totalEarnings = (totalMinutes / 60) * teacher.hourlyRate;
 
       // Calculate current month earnings
-      const currentMonthMinutes = currentMonthCompletedLessons.reduce(
-        (sum, lesson) => sum + lesson.duration,
+      const currentMonthEarnings = currentMonthCompletedLessons.reduce(
+        (sum, lesson) => sum + lesson.student.lessonRate,
         0,
       );
-      const currentMonthEarnings =
-        (currentMonthMinutes / 60) * teacher.hourlyRate;
-
-      // Calculate current month loss from cancelled lessons
-      const cancelledMinutes = currentMonthCancelledLessons.reduce(
-        (sum, lesson) => sum + lesson.duration,
-        0,
-      );
-      const currentMonthLoss = (cancelledMinutes / 60) * teacher.hourlyRate;
 
       return {
         totalEarnings,
         currentMonthEarnings,
-        currentMonthLoss,
-        hourlyRate: teacher.hourlyRate,
       };
     },
   ),
@@ -185,6 +163,7 @@ export const earningsRouter = createTRPCRouter({
               id: true,
               name: true,
               avatar: true,
+              lessonRate: true,
             },
           },
           piece: {
@@ -200,10 +179,7 @@ export const earningsRouter = createTRPCRouter({
 
       return lessons.map((lesson) => ({
         ...lesson,
-        earnings:
-          lesson.status !== "CANCELLED"
-            ? (lesson.duration / 60) * teacher.hourlyRate
-            : 0,
+        earnings: lesson.status !== "CANCELLED" ? lesson.student.lessonRate : 0,
       }));
     }),
 
@@ -244,6 +220,7 @@ export const earningsRouter = createTRPCRouter({
               id: true,
               name: true,
               avatar: true,
+              lessonRate: true,
             },
           },
         },
@@ -253,18 +230,17 @@ export const earningsRouter = createTRPCRouter({
       const studentEarnings = lessons.reduce(
         (acc, lesson) => {
           const studentId = lesson.student.id;
-          const earnings = (lesson.duration / 60) * teacher.hourlyRate;
+          const earnings = lesson.student.lessonRate;
 
           acc[studentId] ??= {
             studentId,
             studentName: lesson.student.name,
             avatar: lesson.student.avatar,
-            totalMinutes: 0,
-            earnings: 0,
             lessonCount: 0,
+            earnings: 0,
+            lessonRate: lesson.student.lessonRate,
           };
 
-          acc[studentId].totalMinutes += lesson.duration;
           acc[studentId].earnings += earnings;
           acc[studentId].lessonCount += 1;
 
@@ -276,9 +252,9 @@ export const earningsRouter = createTRPCRouter({
             studentId: string;
             studentName: string;
             avatar: string | null;
-            totalMinutes: number;
-            earnings: number;
             lessonCount: number;
+            earnings: number;
+            lessonRate: number;
           }
         >,
       );

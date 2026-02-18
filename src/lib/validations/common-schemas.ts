@@ -84,6 +84,12 @@ export const createStudentSchema = z.object({
   levelId: idSchema.optional(),
   notes: descriptionSchema,
   avatar: z.string().url().optional(),
+  lessonRate: z
+    .number()
+    .int("Lesson rate must be an integer")
+    .min(0, "Lesson rate must be 0 or greater")
+    .max(10000000, "Lesson rate seems unreasonably high")
+    .default(0),
 });
 
 export const updateStudentSchema = createStudentSchema.partial().extend({

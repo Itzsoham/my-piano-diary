@@ -266,13 +266,6 @@ export const updatePasswordSchema = z.object({
     ),
 });
 
-export const updateTeacherRateSchema = z.object({
-  hourlyRate: z
-    .number()
-    .min(0, "Hourly rate must be positive")
-    .max(10000, "Hourly rate seems unreasonably high"),
-});
-
 /**
  * TypeScript types inferred from schemas
  */
@@ -298,4 +291,3 @@ export type UpsertReportInput = z.infer<typeof upsertReportSchema>;
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
-export type UpdateTeacherRateInput = z.infer<typeof updateTeacherRateSchema>;

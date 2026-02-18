@@ -22,7 +22,6 @@ export const userRouter = createTRPCRouter({
         teacher: {
           select: {
             id: true,
-            hourlyRate: true,
             _count: {
               select: {
                 students: true,
@@ -110,38 +109,5 @@ export const userRouter = createTRPCRouter({
         where: { id: ctx.session.user.id },
         data: { password: hashedPassword },
       });
-    }),
-
-  // Update teacher hourly rate
-  updateHourlyRate: protectedProcedure
-    .input(
-      z.object({
-        hourlyRate: z
-          .number()
-          .positive("Hourly rate must be greater than 0")
-          .multipleOf(0.01, "Hourly rate must have max 2 decimal places"),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Get or create teacher profile
-      let teacher = await ctx.db.teacher.findUnique({
-        where: { userId: ctx.session.user.id },
-      });
-
-      if (!teacher) {
-        teacher = await ctx.db.teacher.create({
-          data: {
-            userId: ctx.session.user.id,
-            hourlyRate: input.hourlyRate,
-          },
-        });
-      } else {
-        teacher = await ctx.db.teacher.update({
-          where: { userId: ctx.session.user.id },
-          data: { hourlyRate: input.hourlyRate },
-        });
-      }
-
-      return teacher;
     }),
 });

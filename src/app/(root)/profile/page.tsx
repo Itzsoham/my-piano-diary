@@ -131,7 +131,6 @@ export default function ProfilePage() {
                 </p>
               </div>
               <TeacherSettingsForm
-                hourlyRate={profile.teacher?.hourlyRate ?? 200000}
                 stats={{
                   students: profile.teacher?._count.students ?? 0,
                   lessons: profile.teacher?._count.lessons ?? 0,

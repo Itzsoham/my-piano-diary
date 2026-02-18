@@ -101,6 +101,9 @@ export const studentRouter = createTRPCRouter({
           name: input.name,
           ...(input.notes && { notes: input.notes }),
           ...(input.avatar && { avatar: input.avatar }),
+          ...(input.lessonRate !== undefined && {
+            lessonRate: input.lessonRate,
+          }),
           teacher: { connect: { id: teacher.id } },
         },
       });

@@ -4,11 +4,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Users, BookOpen } from "lucide-react";
+import { Users, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-
-import { api } from "@/trpc/react";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -16,9 +13,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -27,54 +22,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { currencyOptions, useCurrency } from "@/lib/currency";
+import {
+  currencyOptions,
+  useCurrency,
+  type CurrencyCode,
+} from "@/lib/currency";
 
-const teacherSettingsSchema = z.object({
-  hourlyRate: z.coerce.number().min(0, "Hourly rate must be positive"),
+const currencySettingsSchema = z.object({
+  currency: z.string(),
 });
 
-type TeacherSettingsValues = z.infer<typeof teacherSettingsSchema>;
+type CurrencySettingsValues = z.infer<typeof currencySettingsSchema>;
 
 interface TeacherSettingsFormProps {
-  hourlyRate: number;
   stats: {
     students: number;
     lessons: number;
   };
 }
 
-export function TeacherSettingsForm({
-  hourlyRate,
-  stats,
-}: TeacherSettingsFormProps) {
-  const utils = api.useUtils();
+export function TeacherSettingsForm({ stats }: TeacherSettingsFormProps) {
   const { currency, setCurrency } = useCurrency();
 
-  const form = useForm<TeacherSettingsValues>({
-    resolver: zodResolver(teacherSettingsSchema),
+  const form = useForm<CurrencySettingsValues>({
+    resolver: zodResolver(currencySettingsSchema),
     defaultValues: {
-      hourlyRate: hourlyRate,
-    },
-  });
-
-  const updateHourlyRate = api.user.updateHourlyRate.useMutation({
-    onSuccess: () => {
-      toast.success("Hourly rate updated successfully");
-      void utils.user.getProfile.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to update hourly rate");
+      currency: currency,
     },
   });
 
   useEffect(() => {
-    form.reset({ hourlyRate });
-  }, [hourlyRate, form]);
+    form.reset({ currency });
+  }, [currency, form]);
 
-  const onSubmit = (data: TeacherSettingsValues) => {
-    updateHourlyRate.mutate({
-      hourlyRate: data.hourlyRate,
-    });
+  const handleCurrencyChange = (newCurrency: string) => {
+    setCurrency(newCurrency as CurrencyCode);
+    toast.success("Currency updated successfully");
   };
 
   return (
@@ -114,69 +97,39 @@ export function TeacherSettingsForm({
         </Card>
       </div>
 
-      {/* Hourly Rate Form */}
+      {/* Currency Settings Form */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
-              name="hourlyRate"
-              render={({ field }) => (
+              name="currency"
+              render={() => (
                 <FormItem>
-                  <FormLabel className="text-slate-700">Hourly Rate</FormLabel>
+                  <FormLabel className="text-slate-700">Currency</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="200000"
-                      {...field}
-                      className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
-                    />
+                    <Select
+                      value={currency}
+                      onValueChange={handleCurrencyChange}
+                    >
+                      <SelectTrigger className="rounded-lg border-slate-200 focus-visible:ring-rose-500 focus-visible:ring-offset-0">
+                        <SelectValue placeholder="VND" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencyOptions.map((option) => (
+                          <SelectItem key={option.code} value={option.code}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormDescription className="text-slate-500">
-                    Used to calculate your monthly earnings
+                    Used to format currency across the system
                   </FormDescription>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-
-            <FormItem>
-              <FormLabel className="text-slate-700">Currency</FormLabel>
-              <FormControl>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger className="rounded-lg border-slate-200 focus-visible:ring-rose-500 focus-visible:ring-offset-0">
-                    <SelectValue placeholder="VND" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currencyOptions.map((option) => (
-                      <SelectItem key={option.code} value={option.code}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormDescription className="text-slate-500">
-                Used to format currency across the system
-              </FormDescription>
-            </FormItem>
-          </div>
-
-          <div className="flex items-center justify-end gap-4">
-            <Button
-              type="submit"
-              disabled={updateHourlyRate.isPending}
-              className="rounded-lg bg-rose-500 px-6 text-white hover:bg-rose-600"
-            >
-              {updateHourlyRate.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </Button>
           </div>
         </form>
       </Form>

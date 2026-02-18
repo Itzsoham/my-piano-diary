@@ -52,13 +52,13 @@ export const reportRouter = createTRPCRouter({
       });
 
       const totalLessons = lessons.length;
-      const totalFee = totalLessons * teacher.hourlyRate;
+      const totalFee = totalLessons * student.lessonRate;
 
       return {
         lessons,
         totalLessons,
         totalFee,
-        teacherHourlyRate: teacher.hourlyRate,
+        studentLessonRate: student.lessonRate,
       };
     }),
   // Get student report for a specific month
@@ -123,7 +123,7 @@ export const reportRouter = createTRPCRouter({
         report,
         lessons,
         student,
-        teacherHourlyRate: teacher.hourlyRate,
+        studentLessonRate: student.lessonRate,
         teacherName: teacher.user?.name ?? null,
       };
     }),

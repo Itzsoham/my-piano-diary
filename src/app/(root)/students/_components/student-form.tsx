@@ -26,6 +26,11 @@ const studentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   avatar: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   notes: z.string().optional(),
+  lessonRate: z
+    .number()
+    .int("Lesson rate must be an integer")
+    .min(0, "Lesson rate must be 0 or greater")
+    .max(10000000, "Lesson rate seems unreasonably high"),
 });
 
 type StudentFormValues = z.infer<typeof studentFormSchema>;
@@ -79,6 +84,7 @@ export function StudentForm({
       name: "",
       avatar: "",
       notes: "",
+      lessonRate: 0,
     },
   });
 
@@ -88,6 +94,7 @@ export function StudentForm({
         name: student.name,
         avatar: student.avatar ?? "",
         notes: student.notes ?? "",
+        lessonRate: student.lessonRate ?? 0,
       });
     }
   }, [student, form]);
@@ -99,12 +106,14 @@ export function StudentForm({
         ...data,
         avatar: data.avatar ?? undefined,
         notes: data.notes ?? undefined,
+        lessonRate: data.lessonRate,
       });
     } else {
       createMutation.mutate({
         ...data,
         avatar: data.avatar ?? undefined,
         notes: data.notes ?? undefined,
+        lessonRate: data.lessonRate,
       });
     }
   };
@@ -162,6 +171,32 @@ export function StudentForm({
                   </FormControl>
                   <FormDescription>
                     Enter a URL to an image for the student avatar
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="lessonRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rate Per Lesson</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="0"
+                      type="number"
+                      className="h-11"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(parseInt(e.target.value) || 0)
+                      }
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Charge amount per completed lesson
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
