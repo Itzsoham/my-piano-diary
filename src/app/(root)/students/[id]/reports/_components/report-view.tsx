@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { AppLoader } from "@/components/ui/app-loader";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
@@ -53,7 +53,6 @@ export function ReportView({
   const router = useRouter();
   const { currency } = useCurrency();
 
-  const [prettyMode, setPrettyMode] = useState(false);
   const [language, setLanguage] = useState<"vi" | "en">("vi");
   const [summary, setSummary] = useState("");
   const [comments, setComments] = useState("");
@@ -255,27 +254,18 @@ export function ReportView({
   const weeks = hasWeek6 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
 
   const reportCardClass = cn(
-    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact] print:min-h-0",
-    prettyMode
-      ? "rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0"
-      : "shadow-lg",
+    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact] print:min-h-0 rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0",
   );
 
   const statusClass = (status: string) => {
     if (status === "CANCELLED") {
-      return prettyMode
-        ? "bg-amber-200 text-amber-900 border-amber-300"
-        : "bg-yellow-300";
+      return "bg-amber-200 text-amber-900 border-amber-300";
     }
     if (status === "COMPLETE") {
-      return prettyMode
-        ? "bg-sky-200 text-sky-900 border-sky-300"
-        : "bg-blue-300";
+      return "bg-sky-200 text-sky-900 border-sky-300";
     }
     if (status === "PENDING") {
-      return prettyMode
-        ? "bg-rose-50 text-rose-300 border-rose-100"
-        : "bg-gray-100 text-gray-400";
+      return "bg-rose-50 text-rose-300 border-rose-100";
     }
     return "";
   };
@@ -327,16 +317,6 @@ export function ReportView({
                 <SelectItem value="en">EN</SelectItem>
               </SelectContent>
             </Select>
-
-            <div className="flex items-center gap-2 rounded-full border px-3 py-1">
-              <Label className="text-muted-foreground text-xs whitespace-nowrap">
-                {t.pretty}
-              </Label>
-              <Switch
-                checked={prettyMode}
-                onCheckedChange={(val) => setPrettyMode(val)}
-              />
-            </div>
           </div>
         </div>
 
@@ -385,59 +365,32 @@ export function ReportView({
       </div>
 
       {/* Report Paper */}
-      <div
-        className={cn(
-          prettyMode
-            ? "rounded-3xl bg-rose-50/70 p-4 sm:p-6 lg:p-8 print:bg-white print:p-0"
-            : "",
-          "overflow-x-auto",
-        )}
-      >
+      <div className="overflow-x-auto rounded-3xl bg-rose-50/70 p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
         <div className={cn(reportCardClass, "min-w-150 sm:min-w-0")}>
           {/* Header */}
           <div className="mb-6 text-center">
-            {prettyMode ? (
-              <div className="flex flex-col items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-wide uppercase">
-                  {t.reportTitlePretty(month, year)}
-                </h1>
-                <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-                  <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 font-semibold text-rose-700">
-                    {t.studentBadge}: {student.name}
-                  </span>
-                  <span className="rounded-full border border-rose-200 bg-white px-3 py-1 text-rose-700">
-                    {t.monthBadge(month, year)}
-                  </span>
-                </div>
+            <div className="flex flex-col items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-wide uppercase">
+                {t.reportTitlePretty(month, year)}
+              </h1>
+              <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+                <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 font-semibold text-rose-700">
+                  {t.studentBadge}: {student.name}
+                </span>
+                <span className="rounded-full border border-rose-200 bg-white px-3 py-1 text-rose-700">
+                  {t.monthBadge(month, year)}
+                </span>
               </div>
-            ) : (
-              <div>
-                <h1 className="mb-2 text-xl font-bold uppercase">
-                  {t.reportTitle(month, year)}
-                </h1>
-                <p className="font-semibold">
-                  {t.studentLabel}: {student.name}
-                </p>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Sections */}
           <div className="space-y-6">
-            <section
-              className={cn(
-                "print:break-inside-avoid",
-                prettyMode
-                  ? "rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:border-neutral-300 print:bg-white"
-                  : "",
-              )}
-            >
+            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-white">
               <div className="mb-2 flex items-center gap-2 text-lg font-bold">
-                {prettyMode && (
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
-                    <Music className="h-4 w-4" />
-                  </span>
-                )}
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                  <Music className="h-4 w-4" />
+                </span>
                 <h2>{t.sections.summary}</h2>
               </div>
               <div className="relative">
@@ -453,20 +406,11 @@ export function ReportView({
               </div>
             </section>
 
-            <section
-              className={cn(
-                "print:break-inside-avoid",
-                prettyMode
-                  ? "rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:border-neutral-300 print:bg-white"
-                  : "",
-              )}
-            >
+            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-white">
               <div className="mb-2 flex items-center gap-2 text-lg font-bold">
-                {prettyMode && (
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
-                    <MessageSquare className="h-4 w-4" />
-                  </span>
-                )}
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                  <MessageSquare className="h-4 w-4" />
+                </span>
                 <h2>{t.sections.comments}</h2>
               </div>
               <div className="relative">
@@ -482,20 +426,11 @@ export function ReportView({
               </div>
             </section>
 
-            <section
-              className={cn(
-                "print:break-inside-avoid",
-                prettyMode
-                  ? "rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:border-neutral-300 print:bg-white"
-                  : "",
-              )}
-            >
+            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-white">
               <div className="mb-2 flex items-center gap-2 text-lg font-bold">
-                {prettyMode && (
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
-                    <Target className="h-4 w-4" />
-                  </span>
-                )}
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                  <Target className="h-4 w-4" />
+                </span>
                 <h2>{t.sections.nextPlan}</h2>
               </div>
               <div className="relative">
@@ -517,23 +452,10 @@ export function ReportView({
                 {t.attendanceTitle(month)}
               </h2>
 
-              <div
-                className={cn(
-                  "overflow-hidden",
-                  prettyMode
-                    ? "rounded-2xl border border-rose-200/70 bg-white/90 shadow-sm print:border-neutral-300"
-                    : "border border-black",
-                )}
-              >
+              <div className="overflow-hidden rounded-2xl border border-rose-200/70 bg-white/90 shadow-sm print:border-neutral-300">
                 {/* Header Row */}
                 <div
-                  className={cn(
-                    "grid text-center font-bold",
-                    prettyMode
-                      ? "divide-x divide-rose-200/70 border-b border-rose-200/70 bg-rose-50 print:divide-neutral-300 print:border-neutral-300"
-                      : "divide-x divide-black border-b border-black",
-                    "[&>*+*]:border-l",
-                  )}
+                  className="grid divide-x divide-rose-200/70 border-b border-rose-200/70 bg-rose-50 text-center font-bold print:divide-neutral-300 print:border-neutral-300 [&>*+*]:border-l"
                   style={{
                     gridTemplateColumns: `40px 100px repeat(${weeks.length}, 1fr)`,
                   }}
@@ -545,13 +467,7 @@ export function ReportView({
                     {t.tableStudent}
                   </div>
                   {weeks.map((w) => (
-                    <div
-                      key={w}
-                      className={cn(
-                        "p-2",
-                        prettyMode ? "text-base" : "text-sm",
-                      )}
-                    >
+                    <div key={w} className="p-2 text-base">
                       {t.weekLabel(w)}
                     </div>
                   ))}
@@ -559,13 +475,7 @@ export function ReportView({
 
                 {/* Data Row */}
                 <div
-                  className={cn(
-                    "grid min-h-15 text-center",
-                    prettyMode
-                      ? "divide-x divide-rose-200/70 print:divide-neutral-300"
-                      : "divide-x divide-black",
-                    "[&>*+*]:border-l",
-                  )}
+                  className="grid min-h-15 divide-x divide-rose-200/70 text-center print:divide-neutral-300 [&>*+*]:border-l"
                   style={{
                     gridTemplateColumns: `40px 100px repeat(${weeks.length}, 1fr)`,
                   }}
@@ -580,12 +490,7 @@ export function ReportView({
                     return (
                       <div
                         key={w}
-                        className={cn(
-                          "grid h-full min-h-21.25 divide-x",
-                          prettyMode ? "divide-rose-200/70" : "divide-black",
-                          // Force vertical lines to show on print
-                          "[&>*+*]:border-l",
-                        )}
+                        className="grid h-full min-h-21.25 divide-x divide-rose-200/70 [&>*+*]:border-l"
                         style={{
                           gridTemplateColumns: `repeat(${lessonCount || 1}, 1fr)`,
                         }}
@@ -616,83 +521,43 @@ export function ReportView({
 
               {/* Legend & Stats */}
               <div className="mt-2 space-y-2">
-                {prettyMode ? (
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1">
-                      <span className="h-3 w-3 rounded-sm border border-amber-300 bg-amber-200" />
-                      {t.legendAbsent}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1">
-                      <span className="h-3 w-3 rounded-sm border border-sky-300 bg-sky-200" />
-                      {t.legendPresent}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1">
-                      <span className="h-3 w-3 rounded-sm border border-rose-200 bg-rose-50" />
-                      {t.legendPending}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span>
-                        {t.legendTitle}: {t.legendAbsent}:
-                      </span>
-                      <div className="h-4 w-4 border border-black bg-yellow-300"></div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span>{t.legendPresent}:</span>
-                      <div className="h-4 w-4 border border-black bg-blue-300"></div>
-                    </div>
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1">
+                    <span className="h-3 w-3 rounded-sm border border-amber-300 bg-amber-200" />
+                    {t.legendAbsent}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1">
+                    <span className="h-3 w-3 rounded-sm border border-sky-300 bg-sky-200" />
+                    {t.legendPresent}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1">
+                    <span className="h-3 w-3 rounded-sm border border-rose-200 bg-rose-50" />
+                    {t.legendPending}
+                  </span>
+                </div>
 
-                {prettyMode ? (
-                  <div className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 text-sm print:border-neutral-300 print:bg-white">
-                    <div className="text-base font-bold italic">
-                      {t.totalLabel}: {t.totalLessons(totalSessions)}
-                    </div>
-                    <div className="mt-1 italic">
-                      {t.tuitionLabel}{" "}
-                      {t.tuitionLine(
-                        totalSessions,
-                        formatCurrencyNumber(perSessionRate, currency),
-                        formatCurrency(totalTuition, currency),
-                      )}
-                    </div>
-                    <div className="mt-3 text-right italic">
-                      {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
-                    </div>
-                    <div className="mt-4 text-right">
-                      <div className="font-semibold">{t.teacherLabel}</div>
-                      <div className="mt-3 font-semibold">
-                        {teacherName || "__________________"}
-                      </div>
+                <div className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 text-sm print:border-neutral-300 print:bg-white">
+                  <div className="text-base font-bold italic">
+                    {t.totalLabel}: {t.totalLessons(totalSessions)}
+                  </div>
+                  <div className="mt-1 italic">
+                    {t.tuitionLabel}{" "}
+                    {t.tuitionLine(
+                      totalSessions,
+                      formatCurrencyNumber(perSessionRate, currency),
+                      formatCurrency(totalTuition, currency),
+                    )}
+                  </div>
+                  <div className="mt-3 text-right italic">
+                    {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
+                  </div>
+                  <div className="mt-4 text-right">
+                    <div className="font-semibold">{t.teacherLabel}</div>
+                    <div className="mt-3 font-semibold">
+                      {teacherName || "__________________"}
                     </div>
                   </div>
-                ) : (
-                  <div>
-                    <div className="mt-2 text-lg font-bold italic">
-                      {t.totalLabel}: {t.totalLessons(totalSessions)}
-                    </div>
-                    <div className="mt-1 text-sm italic">
-                      {t.tuitionLabel}{" "}
-                      {t.tuitionLine(
-                        totalSessions,
-                        formatCurrencyNumber(perSessionRate, currency),
-                        formatCurrency(totalTuition, currency),
-                      )}
-                    </div>
-                    <div className="mt-4 text-right italic">
-                      {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
-                    </div>
-                    <div className="mt-3 text-right">
-                      <div className="font-semibold">{t.teacherLabel}</div>
-                      <div className="mt-3 font-semibold">
-                        {teacherName || "__________________"}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             </section>
           </div>
