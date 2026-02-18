@@ -5,6 +5,7 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 interface DashboardData {
   totalEarnings: number;
   currentMonthEarnings: number;
+  currentMonthLoss: number;
 }
 
 interface StudentEarningsData {
@@ -52,6 +53,7 @@ export const earningsRouter = createTRPCRouter({
         return {
           totalEarnings: 0,
           currentMonthEarnings: 0,
+          currentMonthLoss: 0,
         };
       }
 
@@ -100,6 +102,25 @@ export const earningsRouter = createTRPCRouter({
         },
       });
 
+      // Get current month cancelled lessons with student data
+      const currentMonthCancelledLessons = await ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          date: {
+            gte: currentMonthStart,
+            lte: currentMonthEnd,
+          },
+          status: "CANCELLED",
+        },
+        include: {
+          student: {
+            select: {
+              lessonRate: true,
+            },
+          },
+        },
+      });
+
       // Calculate total earnings (all time)
       const totalEarnings = completedLessons.reduce(
         (sum, lesson) => sum + lesson.student.lessonRate,
@@ -112,9 +133,16 @@ export const earningsRouter = createTRPCRouter({
         0,
       );
 
+      // Calculate current month loss from cancelled lessons
+      const currentMonthLoss = currentMonthCancelledLessons.reduce(
+        (sum, lesson) => sum + lesson.student.lessonRate,
+        0,
+      );
+
       return {
         totalEarnings,
         currentMonthEarnings,
+        currentMonthLoss,
       };
     },
   ),

@@ -1,8 +1,9 @@
 "use client";
 
-import { CreditCard, Heart, Users, Sparkles } from "lucide-react";
+import { TrendingDown, CreditCard, Heart, Users, Sparkles } from "lucide-react";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
@@ -84,6 +85,33 @@ export function SectionCards() {
         </div>
       </Card>
 
+      {/* Cancellations */}
+      <Card className="group relative overflow-hidden rounded-2xl border bg-rose-50/50 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center gap-2 text-xs font-medium text-rose-600/80 sm:text-sm">
+            <TrendingDown className="size-3 sm:size-4" />
+            Missed Opportunities
+          </div>
+
+          <div className="mt-2">
+            <p className="text-2xl font-semibold text-rose-600/80 tabular-nums sm:text-3xl">
+              {isLoading
+                ? "Almost ready…"
+                : formatCurrency(earnings?.currentMonthLoss ?? 0, currency)}
+            </p>
+
+            <div className="mt-auto pt-2">
+              <Badge
+                variant="secondary"
+                className="border-none bg-rose-100 text-xs font-normal text-rose-600 hover:bg-rose-200"
+              >
+                Potential lost this month
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Active Students */}
       <Card className="group relative overflow-hidden rounded-2xl border bg-white/70 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
         <div className="p-4 sm:p-6">
@@ -94,7 +122,7 @@ export function SectionCards() {
 
           <div className="mt-2">
             <p className="text-2xl font-semibold text-rose-600 tabular-nums sm:text-3xl">
-              {totalStudents}
+              {isLoading ? "Almost ready…" : totalStudents}
             </p>
             <p className="text-muted-foreground/80 mt-2 flex items-center gap-1 text-xs">
               Students learning with you{" "}
