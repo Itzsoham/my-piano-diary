@@ -131,6 +131,38 @@ export function PiecesTable({ data }: PiecesTableProps) {
   });
   const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"table" | "grid">("grid");
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  const STORAGE_KEY = "pieces-list-view";
+
+  // Load state from sessionStorage on mount
+  React.useEffect(() => {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as {
+          viewMode?: "table" | "grid";
+          columnFilters?: ColumnFiltersState;
+        };
+        if (parsed.viewMode) setViewMode(parsed.viewMode);
+        if (parsed.columnFilters) setColumnFilters(parsed.columnFilters);
+      } catch (e) {
+        console.error("Failed to parse saved piece filters", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save state to sessionStorage whenever it changes
+  React.useEffect(() => {
+    if (!isLoaded) return;
+
+    const stateToSave = {
+      viewMode,
+      columnFilters,
+    };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+  }, [viewMode, columnFilters, isLoaded]);
   const [deleteConfirm, setDeleteConfirm] = React.useState<{
     id: string;
     title: string;

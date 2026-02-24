@@ -36,6 +36,34 @@ export function ReportsPage({ students, initialStudentId }: ReportsPageProps) {
   const [selectedStudentId, setSelectedStudentId] = useState(
     initialStudentId ?? "",
   );
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const STORAGE_KEY = "reports-student-id";
+
+  // Load from sessionStorage on mount if not in URL
+  useEffect(() => {
+    const urlStudentId = searchParams.get("studentId");
+    if (!urlStudentId) {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setSelectedStudentId(saved);
+        // Also update URL to match saved state if we want it to be fully persistent
+        const query = new URLSearchParams(searchParams.toString());
+        query.set("studentId", saved);
+        // We don't have month/year here easily without duplicating logic,
+        // but ReportView will handle defaults if missing
+        router.replace(`?${query.toString()}`);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save to sessionStorage when it changes
+  useEffect(() => {
+    if (isLoaded && selectedStudentId) {
+      sessionStorage.setItem(STORAGE_KEY, selectedStudentId);
+    }
+  }, [selectedStudentId, isLoaded]);
 
   useEffect(() => {
     const urlStudentId = searchParams.get("studentId");

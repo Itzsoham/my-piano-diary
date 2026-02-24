@@ -1,14 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import {
-  CheckCircle2,
-  Edit,
-  MoreHorizontal,
-  Music2,
-  Trash2,
-} from "lucide-react";
+import { CheckCircle2, Edit, MoreHorizontal, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { api, type RouterOutputs } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +35,6 @@ import { AppLoader } from "@/components/ui/app-loader";
 import { LessonEditDialog } from "@/components/lessons/lesson-edit-dialog";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
-import { toast } from "sonner";
 
 const statusLabels: Record<LessonStatus, string> = {
   COMPLETE: "Complete",
@@ -62,6 +56,8 @@ type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
 const INITIAL_FROM = startOfMonth(new Date());
 const INITIAL_TO = endOfMonth(new Date());
 
+const STORAGE_KEY = "lessons-filters";
+
 type Lesson = RouterOutputs["lesson"]["getAll"][number];
 
 type StudentOption = {
@@ -80,9 +76,45 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const [status, setStatus] = useState<LessonStatus | "all">("all");
   const [fromDate, setFromDate] = useState<Date | undefined>(INITIAL_FROM);
   const [toDate, setToDate] = useState<Date | undefined>(INITIAL_TO);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [editLesson, setEditLesson] = useState<Lesson | null>(null);
   const [attendanceLesson, setAttendanceLesson] = useState<Lesson | null>(null);
   const [deleteLesson, setDeleteLesson] = useState<Lesson | null>(null);
+
+  // Load filters from sessionStorage on mount
+  useEffect(() => {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as {
+          studentId?: string;
+          status?: LessonStatus | "all";
+          from?: string;
+          to?: string;
+        };
+        if (parsed.studentId) setStudentId(parsed.studentId);
+        if (parsed.status) setStatus(parsed.status);
+        if (parsed.from) setFromDate(new Date(parsed.from));
+        if (parsed.to) setToDate(new Date(parsed.to));
+      } catch (e) {
+        console.error("Failed to parse saved filters", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save filters to sessionStorage whenever they change
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const filtersToSave = {
+      studentId,
+      status,
+      from: fromDate?.toISOString(),
+      to: toDate?.toISOString(),
+    };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filtersToSave));
+  }, [studentId, status, fromDate, toDate, isLoaded]);
 
   const filters = useMemo(
     () => ({
@@ -302,13 +334,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => setEditLesson(lesson)}
-                          className="rounded-lg hover:bg-pink-50"
-                        >
-                          <Music2 className="mr-2 h-4 w-4" />
-                          Change piece
-                        </DropdownMenuItem>
+
                         <DropdownMenuItem
                           onSelect={() => setAttendanceLesson(lesson)}
                           className="rounded-lg hover:bg-pink-50"
