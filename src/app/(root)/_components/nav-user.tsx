@@ -24,7 +24,7 @@ import { signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
 
 export function NavUser() {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { user: storeUser, clearUser } = useUserStore();
   const { data: session, status } = useSession();
 
@@ -140,6 +140,7 @@ export function NavUser() {
                 <Link
                   href="/profile"
                   className="flex cursor-pointer items-center gap-2"
+                  onClick={() => isMobile && setOpenMobile(false)}
                 >
                   <User className="size-4" />
                   Profile
@@ -153,6 +154,7 @@ export function NavUser() {
                 <Link
                   href="/updates"
                   className="flex cursor-pointer items-center gap-2"
+                  onClick={() => isMobile && setOpenMobile(false)}
                 >
                   <Sparkles className="size-4" />
                   Updates

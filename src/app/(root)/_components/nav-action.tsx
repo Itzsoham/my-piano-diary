@@ -9,12 +9,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { api } from "@/trpc/react";
 
 export function NavAction() {
   const [open, setOpen] = useState(false);
+  const { isMobile, setOpenMobile } = useSidebar();
   const { data: students = [] } = api.student.getAll.useQuery();
 
   return (
@@ -25,7 +27,10 @@ export function NavAction() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary active:bg-primary/25 active:text-primary border-primary/10 h-10 cursor-pointer justify-start rounded-xl border shadow-none transition-all"
-                onClick={() => setOpen(true)}
+                onClick={() => {
+                  setOpen(true);
+                  if (isMobile) setOpenMobile(false);
+                }}
                 tooltip="Add lesson"
               >
                 <CirclePlus className="size-4 shrink-0" />

@@ -21,6 +21,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import { APP_CONFIG } from "@/config/app-config";
@@ -64,6 +65,8 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { isMobile, setOpenMobile } = useSidebar();
+
   return (
     <Sidebar
       className="border-r border-pink-100 bg-white backdrop-blur print:hidden"
@@ -78,7 +81,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="transition-none hover:bg-transparent md:h-14"
             >
-              <Link href="/dashboard">
+              <Link
+                href="/dashboard"
+                onClick={() => isMobile && setOpenMobile(false)}
+              >
                 <div className="bg-primary/10 text-primary flex aspect-square size-10 items-center justify-center rounded-lg">
                   <Image
                     src="/logo.png"

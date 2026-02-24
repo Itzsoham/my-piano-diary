@@ -12,6 +12,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 export function NavMain({
@@ -26,6 +27,13 @@ export function NavMain({
   label?: string;
 }) {
   const pathname = usePathname();
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const handleItemClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <SidebarGroup>
@@ -46,7 +54,11 @@ export function NavMain({
                     "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium",
                   )}
                 >
-                  <Link href={item.url} className="flex items-center gap-3">
+                  <Link
+                    href={item.url}
+                    className="flex items-center gap-3"
+                    onClick={handleItemClick}
+                  >
                     {item.icon && <item.icon className="size-4" />}
                     <span>{item.title}</span>
                   </Link>
