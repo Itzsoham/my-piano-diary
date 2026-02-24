@@ -35,6 +35,8 @@ import { AppLoader } from "@/components/ui/app-loader";
 import { LessonEditDialog } from "@/components/lessons/lesson-edit-dialog";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 const statusLabels: Record<LessonStatus, string> = {
   COMPLETE: "Complete",
@@ -44,11 +46,11 @@ const statusLabels: Record<LessonStatus, string> = {
 
 const statusClasses: Record<LessonStatus, string> = {
   COMPLETE:
-    "bg-emerald-100 text-emerald-700 rounded-full px-3 py-1 text-xs font-medium",
+    "bg-emerald-100 text-emerald-700 rounded-full px-3 py-1.5 text-xs md:text-sm font-medium",
   CANCELLED:
-    "bg-rose-100 text-rose-700 rounded-full px-3 py-1 text-xs font-medium",
+    "bg-rose-100 text-rose-700 rounded-full px-3 py-1.5 text-xs md:text-sm font-medium",
   PENDING:
-    "bg-amber-100 text-amber-700 rounded-full px-3 py-1 text-xs font-medium",
+    "bg-amber-100 text-amber-700 rounded-full px-3 py-1.5 text-xs md:text-sm font-medium",
 };
 
 type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
@@ -168,15 +170,15 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm sm:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-          <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1.5 sm:space-y-2">
+      <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm md:p-6">
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="grid grid-cols-1 gap-2.5 md:flex md:items-end md:gap-3">
+            <div className="space-y-1 md:flex-1 md:space-y-1.5">
               <label className="text-xs font-medium text-pink-700 sm:text-sm">
                 Student
               </label>
               <Select value={studentId} onValueChange={setStudentId}>
-                <SelectTrigger className="h-9 border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
+                <SelectTrigger className="h-9 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
                   <SelectValue placeholder="All students" />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,136 +192,232 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
               </Select>
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs font-medium text-pink-700 sm:text-sm">
-                From
-              </label>
-              <DatePicker
-                date={fromDate}
-                onDateChange={setFromDate}
-                placeholder="Start date"
-                className="h-9 w-full text-sm sm:h-10"
-              />
+            <div className="grid grid-cols-1 gap-2.5 md:flex md:flex-[2] md:gap-3">
+              <div className="space-y-1 md:flex-1 md:space-y-1.5">
+                <label className="text-xs font-medium text-pink-700 sm:text-sm">
+                  From
+                </label>
+                <DatePicker
+                  date={fromDate}
+                  onDateChange={setFromDate}
+                  placeholder="Start date"
+                  className="h-9 w-full text-sm sm:h-10"
+                />
+              </div>
+
+              <div className="space-y-1 md:flex-1 md:space-y-1.5">
+                <label className="text-xs font-medium text-pink-700 sm:text-sm">
+                  To
+                </label>
+                <DatePicker
+                  date={toDate}
+                  onDateChange={setToDate}
+                  placeholder="End date"
+                  className="h-9 w-full text-sm sm:h-10"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs font-medium text-pink-700 sm:text-sm">
-                To
-              </label>
-              <DatePicker
-                date={toDate}
-                onDateChange={setToDate}
-                placeholder="End date"
-                className="h-9 w-full text-sm sm:h-10"
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="text-xs font-medium text-pink-700 sm:text-sm">
-                Status
-              </label>
-              <Select
-                value={status}
-                onValueChange={(value) =>
-                  setStatus(value as LessonStatus | "all")
-                }
+            <div className="grid grid-cols-1 gap-2.5 md:flex md:flex-[1.5] md:items-end md:gap-3">
+              <div className="space-y-1 md:flex-1 md:space-y-1.5">
+                <label className="text-xs font-medium text-pink-700 sm:text-sm">
+                  Status
+                </label>
+                <Select
+                  value={status}
+                  onValueChange={(value) =>
+                    setStatus(value as LessonStatus | "all")
+                  }
+                >
+                  <SelectTrigger className="h-9 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="COMPLETE">Complete</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                onClick={resetFilters}
+                className="h-9 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 sm:h-10 md:w-auto"
               >
-                <SelectTrigger className="h-9 border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="COMPLETE">Complete</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                </SelectContent>
-              </Select>
+                Reset
+              </Button>
             </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={resetFilters}
-            className="h-9 rounded-xl text-pink-600 hover:bg-pink-100 sm:h-10"
-          >
-            Reset
-          </Button>
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-2xl border border-pink-100 bg-white shadow-md">
-        <Table>
-          <TableHeader className="bg-rose-50/60">
-            <TableRow>
-              <TableHead className="whitespace-nowrap">Date</TableHead>
-              <TableHead className="whitespace-nowrap">Time</TableHead>
-              <TableHead className="whitespace-nowrap">Student</TableHead>
-              <TableHead className="whitespace-nowrap">Piece</TableHead>
-              <TableHead className="whitespace-nowrap">Duration</TableHead>
-              <TableHead className="whitespace-nowrap">Status</TableHead>
-              <TableHead className="text-right whitespace-nowrap">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <div className="flex h-32 items-center justify-center">
-                    <AppLoader size="sm" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : lessons.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="mb-3 text-4xl">🎹</div>
-                    <div className="text-lg font-medium text-pink-700">
-                      No lessons scheduled yet
-                    </div>
-                    <div className="mt-1 text-sm text-pink-600/70">
-                      Your piano week is waiting for music.
-                    </div>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              lessons.map((lesson) => (
-                <TableRow
+      <div className="mt-6 border-t pt-6">
+        {isLoading ? (
+          <div className="flex h-32 items-center justify-center">
+            <AppLoader size="sm" />
+          </div>
+        ) : lessons.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-3 text-4xl">🎹</div>
+            <div className="text-lg font-medium text-pink-700">
+              No lessons scheduled yet
+            </div>
+            <div className="mt-1 text-sm text-pink-600/70">
+              Your piano week is waiting for music.
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden overflow-x-auto rounded-2xl border border-pink-100 bg-white shadow-md md:block">
+              <Table>
+                <TableHeader className="bg-rose-50/60">
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Time</TableHead>
+                    <TableHead className="whitespace-nowrap">Student</TableHead>
+                    <TableHead className="whitespace-nowrap">Piece</TableHead>
+                    <TableHead className="whitespace-nowrap">
+                      Duration
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lessons.map((lesson) => (
+                    <TableRow
+                      key={lesson.id}
+                      className="transition-colors hover:bg-pink-50"
+                    >
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(lesson.date), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(lesson.date), "h:mm a")}
+                      </TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {lesson.student.name}
+                      </TableCell>
+                      <TableCell
+                        className="max-w-[150px] truncate whitespace-nowrap"
+                        title={lesson.piece?.title ?? ""}
+                      >
+                        {lesson.piece?.title ?? "None"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {lesson.duration} min
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            statusClasses[lesson.status as LessonStatus]
+                          }
+                        >
+                          {statusLabels[lesson.status as LessonStatus]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="rounded-xl border-pink-100 bg-white shadow-lg"
+                          >
+                            <DropdownMenuItem
+                              onSelect={() => setEditLesson(lesson)}
+                              className="rounded-lg hover:bg-pink-50"
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onSelect={() => setAttendanceLesson(lesson)}
+                              className="rounded-lg hover:bg-pink-50"
+                            >
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Mark attendance
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => setDeleteLesson(lesson)}
+                              className="rounded-lg text-rose-500 hover:bg-rose-50"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+              {lessons.map((lesson) => (
+                <div
                   key={lesson.id}
-                  className="transition-colors hover:bg-pink-50"
+                  className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
                 >
-                  <TableCell className="whitespace-nowrap">
-                    {format(new Date(lesson.date), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {format(new Date(lesson.date), "h:mm a")}
-                  </TableCell>
-                  <TableCell className="font-medium whitespace-nowrap">
-                    {lesson.student.name}
-                  </TableCell>
-                  <TableCell
-                    className="max-w-[150px] truncate whitespace-nowrap"
-                    title={lesson.piece?.title ?? ""}
-                  >
-                    {lesson.piece?.title ?? "None"}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {lesson.duration} min
-                  </TableCell>
-                  <TableCell>
+                  <div className="mb-4 flex items-start justify-between">
+                    <span className="rounded-full bg-pink-100 px-3 py-1 text-[11px] font-medium text-pink-600">
+                      {format(new Date(lesson.date), "MMM d • h:mm a")}
+                    </span>
                     <Badge
-                      className={statusClasses[lesson.status as LessonStatus]}
+                      className={cn(
+                        statusClasses[lesson.status as LessonStatus],
+                        "px-2 py-0.5 text-[10px] md:text-[10px]",
+                      )}
                     >
                       {statusLabels[lesson.status as LessonStatus]}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </div>
+
+                  <div className="mb-4 flex items-center gap-3">
+                    <Avatar className="size-7 border border-pink-100">
+                      {/* @ts-ignore - student.image might not be in types but could be in data */}
+                      <AvatarImage src={lesson.student.image ?? ""} />
+                      <AvatarFallback className="bg-pink-50 text-[10px] font-bold text-pink-600">
+                        {lesson.student.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-[15px] font-semibold text-gray-900">
+                        {lesson.student.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {lesson.piece?.title ?? "No piece"} • {lesson.duration}{" "}
+                        min
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-3">
+                    <Button
+                      className="flex-1 rounded-xl bg-pink-500 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-pink-600 active:scale-[0.98]"
+                      onClick={() => setAttendanceLesson(lesson)}
+                    >
+                      Mark Attendance
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
+                        <Button
+                          variant="ghost"
+                          className="size-10 rounded-xl border border-pink-100 text-pink-600 hover:bg-pink-50"
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -353,12 +451,12 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {editLesson && (
