@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { FileText } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -56,6 +58,7 @@ export function ReportsPage({ students, initialStudentId }: ReportsPageProps) {
       }
     }
     setIsLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save to sessionStorage when it changes
@@ -79,8 +82,12 @@ export function ReportsPage({ students, initialStudentId }: ReportsPageProps) {
 
   const handleStudentChange = (value: string) => {
     setSelectedStudentId(value);
+  };
+
+  const handleGenerateReport = () => {
+    if (!selectedStudentId) return;
     const query = new URLSearchParams(searchParams.toString());
-    query.set("studentId", value);
+    query.set("studentId", selectedStudentId);
     query.set("month", month.toString());
     query.set("year", year.toString());
     router.push(`?${query.toString()}`);
@@ -124,10 +131,48 @@ export function ReportsPage({ students, initialStudentId }: ReportsPageProps) {
           studentControl={studentControl}
         />
       ) : (
-        <div className="text-muted-foreground rounded-2xl border border-dashed p-6 text-center text-sm sm:p-10">
-          Choose a student to load the report.
-          <div className="mt-3 flex justify-center sm:mt-4">
-            {studentControl}
+        <div className="mt-4 w-full space-y-6">
+          <div className="space-y-4 rounded-xl border border-pink-100 bg-white/60 p-6 shadow-sm backdrop-blur">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
+                <FileText className="h-5 w-5 text-pink-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Generate Monthly Report
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  Select a student to view their monthly report
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Student</Label>
+                <Select
+                  value={selectedStudentId}
+                  onValueChange={handleStudentChange}
+                >
+                  <SelectTrigger className="w-full max-w-sm">
+                    <SelectValue placeholder="Select student" />
+                  </SelectTrigger>
+                  <SelectContent>{studentOptions}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  disabled={!selectedStudentId}
+                  onClick={handleGenerateReport}
+                >
+                  Generate Report
+                </Button>
+                <p className="text-muted-foreground text-xs">
+                  Includes lessons, cancellations and earnings
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -72,13 +72,13 @@ export function TodayLessonsTable() {
       case "COMPLETE":
         return (
           <Badge className="border-none bg-green-100 text-green-700 shadow-none hover:bg-green-200">
-            complete
+            Complete
           </Badge>
         );
       case "CANCELLED":
         return (
           <Badge className="border-none bg-rose-100 text-rose-600 shadow-none hover:bg-rose-200">
-            cancelled
+            Cancelled
           </Badge>
         );
       default:
@@ -87,7 +87,7 @@ export function TodayLessonsTable() {
             variant="outline"
             className="text-muted-foreground border-pink-200 bg-white/50"
           >
-            pending
+            Pending
           </Badge>
         );
     }

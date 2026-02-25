@@ -53,25 +53,25 @@ export function SiteHeader() {
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b border-pink-100/80 bg-white/70 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) print:hidden">
-      <div className="flex w-full items-center gap-1 px-3 sm:px-4 lg:gap-2 lg:px-6">
-        {/* Left: Sidebar trigger + separator */}
-        <SidebarTrigger className="-ml-1 text-pink-400 transition-colors hover:text-pink-600" />
-        <Separator
-          orientation="vertical"
-          className="mx-1 bg-pink-100 data-[orientation=vertical]:h-4 sm:mx-2"
-        />
+      <div className="flex w-full items-center justify-between gap-2 px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center gap-1 lg:gap-2">
+          <SidebarTrigger className="-ml-1 text-pink-400 transition-colors hover:text-pink-600" />
+          <Separator
+            orientation="vertical"
+            className="mx-1 bg-pink-100 data-[orientation=vertical]:h-4 sm:mx-2"
+          />
+          <div className="flex flex-col leading-tight">
+            <span className="bg-linear-to-r from-pink-500 to-purple-500 bg-clip-text text-sm font-semibold text-transparent">
+              {greeting}, {firstName} 🌸
+            </span>
+          </div>
+        </div>
 
-        {/* Greeting & Mood - Both on the Left Side */}
-        <div className="flex flex-col leading-tight">
-          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-sm font-semibold text-transparent">
-            {greeting}, {firstName} 🌸
-          </span>
-          <span className="text-muted-foreground text-[11px] font-medium">
+        <div className="text-right">
+          <span className="text-muted-foreground text-xl text-[11px] italic">
             {mood}
           </span>
         </div>
-
-        {/* Right side is intentionally empty now as per request (removed avatar and lesson count) */}
       </div>
     </header>
   );

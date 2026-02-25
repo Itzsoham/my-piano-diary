@@ -4,13 +4,20 @@ import { useState, useEffect, type ReactNode } from "react";
 import { AppLoader } from "@/components/ui/app-loader";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -58,6 +65,28 @@ export function ReportView({
   const [comments, setComments] = useState("");
   const [nextMonthPlan, setNextMonthPlan] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Lesson metadata tracking for custom reasons and colors
+  const [lessonMetadata, setLessonMetadata] = useState<
+    Record<
+      string,
+      {
+        reason: string;
+        customReason: string;
+        isSpecial: boolean;
+        color: string;
+      }
+    >
+  >({});
+  const [selectedLesson, setSelectedLesson] = useState<{
+    key: string;
+    day: number;
+    status: string;
+    originalReason?: string;
+  } | null>(null);
+  const [editReason, setEditReason] = useState("");
+  const [isSpecial, setIsSpecial] = useState(false);
+  const [showLessonDialog, setShowLessonDialog] = useState(false);
 
   const { data, isLoading } = api.report.getStudentReport.useQuery({
     studentId,
@@ -202,6 +231,48 @@ export function ReportView({
     router.push(`?month=${month}&year=${newYear}`);
   };
 
+  const handleLessonClick = (
+    lessonKey: string,
+    day: number,
+    status: string,
+    originalReason?: string,
+  ) => {
+    setSelectedLesson({ key: lessonKey, day, status, originalReason });
+    const metadata = lessonMetadata[lessonKey];
+    setEditReason(metadata?.customReason ?? originalReason ?? "");
+    setIsSpecial(metadata?.isSpecial ?? false);
+    setShowLessonDialog(true);
+  };
+
+  const handleSaveLesson = () => {
+    if (!selectedLesson) return;
+
+    const newMetadata = {
+      reason: selectedLesson.originalReason ?? "",
+      customReason: editReason,
+      isSpecial,
+      color: isSpecial ? "purple" : "",
+    };
+
+    setLessonMetadata((prev) => ({
+      ...prev,
+      [selectedLesson.key]: newMetadata,
+    }));
+
+    setShowLessonDialog(false);
+    toast.success(
+      language === "vi" ? "Đã cập nhật buổi học" : "Lesson updated",
+    );
+  };
+
+  const handleClearLessonMetadata = (key: string) => {
+    setLessonMetadata((prev) => {
+      const updated = { ...prev };
+      delete updated[key];
+      return updated;
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center p-8">
@@ -257,17 +328,20 @@ export function ReportView({
     "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact] print:min-h-0 rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0",
   );
 
-  const statusClass = (status: string) => {
+  const statusClass = (status: string, isSpecial?: boolean) => {
+    if (isSpecial) {
+      return "bg-purple-200 text-purple-900 border-purple-300 cursor-pointer hover:opacity-90";
+    }
     if (status === "CANCELLED") {
-      return "bg-amber-200 text-amber-900 border-amber-300";
+      return "bg-amber-200 text-amber-900 border-amber-300 cursor-pointer hover:opacity-90";
     }
     if (status === "COMPLETE") {
-      return "bg-sky-200 text-sky-900 border-sky-300";
+      return "bg-sky-200 text-sky-900 border-sky-300 cursor-pointer hover:opacity-90";
     }
     if (status === "PENDING") {
-      return "bg-rose-50 text-rose-300 border-rose-100";
+      return "bg-rose-50 text-rose-300 border-rose-100 cursor-pointer hover:opacity-90";
     }
-    return "";
+    return "cursor-pointer hover:opacity-90";
   };
 
   return (
@@ -495,23 +569,36 @@ export function ReportView({
                           gridTemplateColumns: `repeat(${lessonCount || 1}, 1fr)`,
                         }}
                       >
-                        {rowLessons.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className={cn(
-                              "flex h-full flex-col items-center justify-center p-1 font-semibold transition-all",
-                              statusClass(item.status),
-                            )}
-                          >
-                            <span className="text-[14px]">{item.day}</span>
-                            {item.status === "CANCELLED" &&
-                              item.cancelReason && (
+                        {rowLessons.map((item, idx) => {
+                          const lessonKey = `${w}-${idx}-${item.day}`;
+                          const metadata = lessonMetadata[lessonKey];
+                          const displayReason =
+                            metadata?.customReason ?? item.cancelReason;
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() =>
+                                handleLessonClick(
+                                  lessonKey,
+                                  item.day,
+                                  item.status,
+                                  item.cancelReason ?? undefined,
+                                )
+                              }
+                              className={cn(
+                                "flex h-full flex-col items-center justify-center p-1 font-semibold transition-all print:cursor-default",
+                                statusClass(item.status, metadata?.isSpecial),
+                              )}
+                            >
+                              <span className="text-[14px]">{item.day}</span>
+                              {displayReason && (
                                 <span className="mt-0.5 max-w-full px-1 text-center text-[10px] leading-[1.1] font-normal wrap-break-word uppercase">
-                                  {item.cancelReason}
+                                  {displayReason}
                                 </span>
                               )}
-                          </div>
-                        ))}
+                            </div>
+                          );
+                        })}
                         {lessonCount === 0 && <div className="h-full" />}
                       </div>
                     );
@@ -533,6 +620,10 @@ export function ReportView({
                   <span className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1">
                     <span className="h-3 w-3 rounded-sm border border-rose-200 bg-rose-50" />
                     {t.legendPending}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-3 py-1">
+                    <span className="h-3 w-3 rounded-sm border border-purple-300 bg-purple-200" />
+                    {language === "vi" ? "Lý do đặc biệt" : "Special reason"}
                   </span>
                 </div>
 
@@ -563,6 +654,94 @@ export function ReportView({
           </div>
         </div>
       </div>
+
+      {/* Lesson Edit Dialog */}
+      <Dialog open={showLessonDialog} onOpenChange={setShowLessonDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span>
+                {language === "vi" ? "Chỉnh sửa buổi học" : "Edit Lesson"}
+              </span>
+              <span className="text-lg font-bold">{selectedLesson?.day}</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason" className="text-sm font-medium">
+                {language === "vi" ? "Lý do" : "Reason"}
+              </Label>
+              <Input
+                id="reason"
+                placeholder={
+                  language === "vi" ? "Nhập lý do..." : "Enter reason..."
+                }
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-3 rounded-lg border border-purple-200 bg-purple-50 p-3">
+              <input
+                type="checkbox"
+                id="isSpecial"
+                checked={isSpecial}
+                onChange={(e) => setIsSpecial(e.target.checked)}
+                className="h-4 w-4 rounded border-purple-300 text-purple-600"
+              />
+              <Label
+                htmlFor="isSpecial"
+                className="flex-1 cursor-pointer text-sm font-medium"
+              >
+                {language === "vi"
+                  ? "✨ Đánh dấu là lý do đặc biệt (màu tím)"
+                  : "✨ Mark as special reason (purple)"}
+              </Label>
+            </div>
+
+            {isSpecial && (
+              <div className="flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50/50 px-3 py-2 text-xs text-purple-700">
+                <span>💜</span>
+                <span>
+                  {language === "vi"
+                    ? "Buổi này sẽ được hiển thị bằng màu tím trong bảng."
+                    : "This lesson will be displayed in purple in the table."}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (selectedLesson) {
+                  handleClearLessonMetadata(selectedLesson.key);
+                }
+                setShowLessonDialog(false);
+              }}
+            >
+              {language === "vi" ? "Xóa" : "Clear"}
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowLessonDialog(false)}
+              >
+                {language === "vi" ? "Hủy" : "Cancel"}
+              </Button>
+              <Button
+                onClick={handleSaveLesson}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {language === "vi" ? "Lưu" : "Save"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
