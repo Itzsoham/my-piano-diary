@@ -117,7 +117,7 @@ export function FullCalendarView({
     }
   };
 
-  // Custom render for day cell content (Month View)
+  // Custom render for day cell content (Month View) — upgraded badge
   const renderDayCellContent = (arg: DayCellContentArg) => {
     const count = lessons.filter((l) =>
       isSameDay(new Date(l.date), arg.date),
@@ -129,8 +129,11 @@ export function FullCalendarView({
           {arg.dayNumberText}
         </span>
         {count > 0 && (
-          <div className="bg-primary/10 text-primary hover:bg-primary/20 mt-auto self-center rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm transition-all">
-            {count} {count === 1 ? "Lesson" : "Lessons"}
+          <div className="mt-auto self-start">
+            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-600 shadow-sm backdrop-blur-sm transition-all hover:bg-pink-200">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-pink-400" />
+              {count} {count === 1 ? "lesson" : "lessons"}
+            </span>
           </div>
         )}
       </div>
@@ -183,7 +186,7 @@ export function FullCalendarView({
   });
 
   return (
-    <div className="bg-card text-card-foreground h-[calc(100vh-200px)] min-h-[500px] w-full overflow-hidden rounded-xl border shadow-sm">
+    <div className="bg-card text-card-foreground w-full overflow-hidden rounded-xl border border-pink-100/60 shadow-sm">
       <style jsx global>{`
         .fc {
           --fc-border-color: var(--border);
@@ -193,23 +196,42 @@ export function FullCalendarView({
           --fc-today-bg-color: color-mix(
             in srgb,
             var(--primary),
-            transparent 95%
+            transparent 93%
           );
           font-family: var(--font-sans), system-ui, sans-serif;
         }
 
         /* Toolbar Styling */
         .fc-header-toolbar {
-          margin-bottom: 1rem !important;
+          margin-bottom: 0.75rem !important;
           padding: 1rem 1rem 0.5rem 1rem;
           flex-wrap: wrap;
           gap: 0.5rem;
+          align-items: center;
         }
 
         @media (min-width: 640px) {
           .fc-header-toolbar {
-            margin-bottom: 1.5rem !important;
+            margin-bottom: 1.25rem !important;
             padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+          }
+        }
+
+        /* Mobile: stack toolbar rows */
+        @media (max-width: 639px) {
+          .fc-header-toolbar {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0.625rem !important;
+          }
+          .fc-toolbar-chunk {
+            display: flex;
+            justify-content: center;
+          }
+          .fc-toolbar-chunk:last-child {
+            display: flex;
+            justify-content: center;
+            gap: 0.25rem;
           }
         }
 
@@ -219,17 +241,28 @@ export function FullCalendarView({
           gap: 0.5rem;
         }
 
+        /* 🎵 Month Title — Gradient + Music Icon effect via pseudo */
         .fc-toolbar-title {
           font-size: 1.125rem !important;
           font-weight: 700 !important;
-          color: var(--foreground);
           letter-spacing: -0.025em;
+          background: linear-gradient(135deg, #ec4899, #a855f7);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         @media (min-width: 640px) {
           .fc-toolbar-title {
-            font-size: 1.5rem !important;
+            font-size: 1.4rem !important;
           }
+        }
+
+        /* Add a music emoji before the title using CSS */
+        .fc-toolbar-title::before {
+          content: "🎵 ";
+          -webkit-text-fill-color: initial;
+          font-size: 0.9em;
         }
 
         /* Buttons */
@@ -242,8 +275,16 @@ export function FullCalendarView({
           border-radius: var(--radius-md) !important;
           padding: 0.375rem 0.75rem !important;
           transition: all 0.2s ease !important;
-          box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+          box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
           font-size: 0.875rem !important;
+        }
+
+        @media (max-width: 639px) {
+          .fc-button {
+            padding: 0.5rem 0.875rem !important;
+            font-size: 0.875rem !important;
+            min-height: 2.5rem !important;
+          }
         }
 
         @media (min-width: 640px) {
@@ -253,19 +294,22 @@ export function FullCalendarView({
         }
 
         .fc-button:hover {
-          background-color: var(--accent) !important;
-          border-color: var(--accent) !important;
+          background-color: #fdf2f8 !important;
+          border-color: #fce7f3 !important;
+          color: #ec4899 !important;
         }
 
-        .fc-button-active {
-          background-color: var(--primary) !important;
-          border-color: var(--primary) !important;
-          color: var(--primary-foreground) !important;
+        .fc-button-active,
+        .fc-button-primary:not(:disabled).fc-button-active {
+          background: linear-gradient(135deg, #ec4899, #a855f7) !important;
+          border-color: transparent !important;
+          color: white !important;
+          box-shadow: 0 2px 8px 0 rgb(236 72 153 / 0.3) !important;
         }
 
         .fc-button-primary:not(:disabled).fc-button-active:focus,
         .fc-button-primary:not(:disabled):active:focus {
-          box-shadow: 0 0 0 2px var(--ring) !important;
+          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3) !important;
         }
 
         /* Grid & Cells */
@@ -274,7 +318,7 @@ export function FullCalendarView({
           border-color: color-mix(
             in srgb,
             var(--border),
-            transparent 40%
+            transparent 50%
           ) !important;
         }
 
@@ -283,16 +327,24 @@ export function FullCalendarView({
           font-weight: 600;
           text-transform: uppercase;
           font-size: 0.75rem;
-          padding: 1rem 0 !important;
+          padding: 0.75rem 0 !important;
           letter-spacing: 0.05em;
         }
 
+        /* 💎 Calendar Cell Hover — life & warmth */
         .fc-daygrid-day-frame {
           padding: 4px;
-          transition: background-color 0.2s;
+          transition:
+            background-color 0.18s ease,
+            transform 0.18s ease,
+            box-shadow 0.18s ease;
+          border-radius: 6px;
         }
+
         .fc-daygrid-day:hover .fc-daygrid-day-frame {
-          background-color: color-mix(in srgb, var(--accent), transparent 70%);
+          background-color: #fdf2f8 !important;
+          box-shadow: 0 1px 8px 0 rgb(236 72 153 / 0.08);
+          transform: scale(1.01);
         }
 
         /* Hide events in month view */
@@ -332,63 +384,101 @@ export function FullCalendarView({
         }
 
         .fc-timegrid-now-indicator-line {
-          border-color: var(--destructive);
+          border-color: #ec4899;
           border-width: 2px;
         }
 
         .fc-timegrid-now-indicator-arrow {
-          border-color: var(--destructive);
+          border-color: #ec4899;
           border-width: 6px;
         }
+
+        /* Mobile: horizontal scroll for all views (month, week, day) */
+        @media (max-width: 639px) {
+          .fc-daygrid-body {
+            min-width: 560px;
+          }
+          .fc-scrollgrid-sync-table {
+            min-width: 560px;
+          }
+          .fc-col-header {
+            min-width: 560px;
+          }
+          /* Week & Day timegrid views */
+          .fc-timegrid-body {
+            min-width: 560px;
+          }
+          .fc-timegrid-slot {
+            min-width: 560px;
+          }
+          .fc-scrollgrid {
+            min-width: 560px;
+          }
+        }
       `}</style>
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
-        }}
-        buttonText={{
-          today: "Today",
-          month: "Month",
-          week: "Week",
-          day: "Day",
-        }}
-        editable={true}
-        selectable={true}
-        selectMirror={true}
-        dayMaxEvents={true}
-        weekends={true}
-        events={events}
-        datesSet={handleDatesSet}
-        eventClick={handleEventClick}
-        dateClick={handleDateClick}
-        eventDrop={handleEventDrop}
-        eventResize={handleEventResize}
-        dayCellContent={renderDayCellContent}
-        navLinks={true}
-        height="100%"
-        slotMinTime="00:00:00"
-        slotMaxTime="24:00:00"
-        scrollTime="08:00:00"
-        allDaySlot={false}
-        nowIndicator={true}
-        slotLabelFormat={{
-          hour: "numeric",
-          minute: "2-digit",
-          omitZeroMinute: false,
-          meridiem: "short",
-        }}
-        views={{
-          dayGridMonth: {
-            dayMaxEvents: false,
-            eventDisplay: "none",
-            fixedWeekCount: false,
-          },
-        }}
-      />
+
+      {/* Outer: fixed height container */}
+      <div
+        style={{ height: "calc(100vh - 220px)", minHeight: "500px" }}
+        className="relative"
+      >
+        {/* Inner: horizontal scroll on mobile */}
+        <div
+          className="h-full overflow-x-auto"
+          style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+        >
+          <div className="h-full min-w-[600px] sm:min-w-0">
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }}
+              buttonText={{
+                today: "Today",
+                month: "Month",
+                week: "Week",
+                day: "Day",
+              }}
+              editable={true}
+              selectable={true}
+              selectMirror={true}
+              dayMaxEvents={true}
+              weekends={true}
+              events={events}
+              datesSet={handleDatesSet}
+              eventClick={handleEventClick}
+              dateClick={handleDateClick}
+              eventDrop={handleEventDrop}
+              eventResize={handleEventResize}
+              dayCellContent={renderDayCellContent}
+              navLinks={true}
+              height="100%"
+              slotMinTime="00:00:00"
+              slotMaxTime="24:00:00"
+              scrollTime="08:00:00"
+              allDaySlot={false}
+              nowIndicator={true}
+              slotLabelFormat={{
+                hour: "numeric",
+                minute: "2-digit",
+                omitZeroMinute: false,
+                meridiem: "short",
+              }}
+              views={{
+                dayGridMonth: {
+                  dayMaxEvents: false,
+                  eventDisplay: "none",
+                  fixedWeekCount: false,
+                },
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

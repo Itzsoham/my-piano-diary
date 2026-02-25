@@ -172,13 +172,14 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
 
       <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm md:p-6">
         <div className="flex flex-col gap-3 md:gap-4">
-          <div className="grid grid-cols-1 gap-2.5 md:flex md:items-end md:gap-3">
-            <div className="space-y-1 md:flex-1 md:space-y-1.5">
-              <label className="text-xs font-medium text-pink-700 sm:text-sm">
+          {/* Mobile: 2-column grid for Student + Status; Desktop: flex row */}
+          <div className="grid grid-cols-2 gap-2.5 md:flex md:items-end md:gap-3">
+            <div className="col-span-1 space-y-1 md:flex-1 md:space-y-1.5">
+              <label className="text-xs font-medium text-pink-700">
                 Student
               </label>
               <Select value={studentId} onValueChange={setStudentId}>
-                <SelectTrigger className="h-9 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
+                <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
                   <SelectValue placeholder="All students" />
                 </SelectTrigger>
                 <SelectContent>
@@ -192,62 +193,58 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5 md:flex md:flex-[2] md:gap-3">
-              <div className="space-y-1 md:flex-1 md:space-y-1.5">
-                <label className="text-xs font-medium text-pink-700 sm:text-sm">
-                  From
-                </label>
-                <DatePicker
-                  date={fromDate}
-                  onDateChange={setFromDate}
-                  placeholder="Start date"
-                  className="h-9 w-full text-sm sm:h-10"
-                />
-              </div>
-
-              <div className="space-y-1 md:flex-1 md:space-y-1.5">
-                <label className="text-xs font-medium text-pink-700 sm:text-sm">
-                  To
-                </label>
-                <DatePicker
-                  date={toDate}
-                  onDateChange={setToDate}
-                  placeholder="End date"
-                  className="h-9 w-full text-sm sm:h-10"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2.5 md:flex md:flex-[1.5] md:items-end md:gap-3">
-              <div className="space-y-1 md:flex-1 md:space-y-1.5">
-                <label className="text-xs font-medium text-pink-700 sm:text-sm">
-                  Status
-                </label>
-                <Select
-                  value={status}
-                  onValueChange={(value) =>
-                    setStatus(value as LessonStatus | "all")
-                  }
-                >
-                  <SelectTrigger className="h-9 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 sm:h-10">
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="COMPLETE">Complete</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                variant="outline"
-                onClick={resetFilters}
-                className="h-9 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 sm:h-10 md:w-auto"
+            <div className="col-span-1 space-y-1 md:flex-1 md:space-y-1.5">
+              <label className="text-xs font-medium text-pink-700">
+                Status
+              </label>
+              <Select
+                value={status}
+                onValueChange={(value) =>
+                  setStatus(value as LessonStatus | "all")
+                }
               >
-                Reset
-              </Button>
+                <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="COMPLETE">Complete</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          {/* Date row — 2-column on mobile, flex on desktop */}
+          <div className="grid grid-cols-2 gap-2.5 md:flex md:items-end md:gap-3">
+            <div className="col-span-1 space-y-1 md:flex-1 md:space-y-1.5">
+              <label className="text-xs font-medium text-pink-700">From</label>
+              <DatePicker
+                date={fromDate}
+                onDateChange={setFromDate}
+                placeholder="Start date"
+                className="h-11 w-full text-sm md:h-10"
+              />
+            </div>
+
+            <div className="col-span-1 space-y-1 md:flex-1 md:space-y-1.5">
+              <label className="text-xs font-medium text-pink-700">To</label>
+              <DatePicker
+                date={toDate}
+                onDateChange={setToDate}
+                placeholder="End date"
+                className="h-11 w-full text-sm md:h-10"
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={resetFilters}
+              className="col-span-2 h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:col-span-1 md:h-10 md:w-auto md:self-end"
+            >
+              Reset
+            </Button>
           </div>
         </div>
       </div>
