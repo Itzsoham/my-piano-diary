@@ -376,36 +376,38 @@ export const lessonRouter = createTRPCRouter({
       }
 
       const lessonsToCreate = [];
-      // Use only the date part, ignore any time from input.startDate
-      const startDate = new Date(input.startDate);
-      startDate.setHours(0, 0, 0, 0); // Reset to midnight to avoid timezone issues
 
-      const recurrenceMonths = input.recurrenceMonths; // 1 or 2
-
-      // Calculate end date (1 or 2 months from start)
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + recurrenceMonths);
-
-      // Parse time from the time field
+      // Parse date string manually to avoid timezone issues
+      const [year = 0, month = 1, day = 1] = input.startDate
+        .split("-")
+        .map(Number);
       const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
 
-      // 1. Find the first matching weekday
+      // Construct UTC-based date - no timezone shift
+      const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+      const recurrenceMonths = input.recurrenceMonths; // 1 or 2
+
+      // Calculate end date using UTC (1 or 2 months from start)
+      const endDate = new Date(startDate);
+      endDate.setUTCMonth(endDate.getUTCMonth() + recurrenceMonths);
+
+      // 1. Find the first matching weekday using UTC
       // input.dayOfWeek: 0 (Sunday) - 6 (Saturday)
       const currentDate = new Date(startDate);
-      // Set the desired time
-      currentDate.setHours(hours, minutes, 0, 0);
+      // Set the desired time in UTC
+      currentDate.setUTCHours(hours, minutes, 0, 0);
 
       // If currentDate day is not the target day, move forward
-      while (currentDate.getDay() !== input.dayOfWeek) {
-        currentDate.setDate(currentDate.getDate() + 1);
+      while (currentDate.getUTCDay() !== input.dayOfWeek) {
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       // 2. Loop week by week and collect all potential dates
       const potentialDates: Date[] = [];
       while (currentDate < endDate) {
         potentialDates.push(new Date(currentDate));
-        // Move to next week
-        currentDate.setDate(currentDate.getDate() + 7);
+        // Move to next week using UTC
+        currentDate.setUTCDate(currentDate.getUTCDate() + 7);
       }
 
       // Check for existing lessons at these dates

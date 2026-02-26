@@ -146,14 +146,16 @@ export function LessonDialog({
 
       if (data.isRecurring) {
         // Create recurring lessons
-        const [hours = "0", minutes = "0"] = data.time.split(":");
-        const startDate = new Date(data.date);
-        startDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+        // Send plain date string (YYYY-MM-DD) to avoid timezone issues
+        const year = data.date.getFullYear();
+        const month = String(data.date.getMonth() + 1).padStart(2, "0");
+        const day = String(data.date.getDate()).padStart(2, "0");
+        const dateString = `${year}-${month}-${day}`;
 
         createRecurring.mutate({
           studentId: data.studentId,
           pieceId,
-          startDate,
+          startDate: dateString,
           dayOfWeek: parseInt(data.dayOfWeek ?? "0"),
           time: data.time,
           duration: parseInt(data.duration),

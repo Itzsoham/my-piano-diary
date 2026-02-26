@@ -129,10 +129,8 @@ export const updateLessonSchema = z.object({
 export const createRecurringLessonSchema = z.object({
   studentId: z.string().cuid("Invalid student ID"),
   startDate: z
-    .date()
-    .refine((date) => date instanceof Date && !isNaN(date.getTime()), {
-      message: "Invalid date",
-    }),
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Expected YYYY-MM-DD"),
   dayOfWeek: z
     .number()
     .int()
