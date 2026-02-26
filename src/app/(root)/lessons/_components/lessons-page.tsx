@@ -300,7 +300,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                         {lesson.student.name}
                       </TableCell>
                       <TableCell
-                        className="max-w-[150px] truncate whitespace-nowrap"
+                        className="max-w-37.5 truncate whitespace-nowrap"
                         title={lesson.piece?.title ?? ""}
                       >
                         {lesson.piece?.title ?? "None"}
@@ -385,8 +385,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
 
                   <div className="mb-4 flex items-center gap-3">
                     <Avatar className="size-7 border border-pink-100">
-                      {/* @ts-ignore - student.image might not be in types but could be in data */}
-                      <AvatarImage src={lesson.student.image ?? ""} />
+                      <AvatarImage src={lesson.student.avatar ?? ""} />
                       <AvatarFallback className="bg-pink-50 text-[10px] font-bold text-pink-600">
                         {lesson.student.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
