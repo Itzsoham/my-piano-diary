@@ -111,20 +111,33 @@ export function LessonDialog({
 
   useEffect(() => {
     if (open) {
+      const date = initialDate ?? new Date();
       form.reset({
         studentId: "",
         pieceId: "none",
-        date: initialDate ?? new Date(),
+        date: date,
         time: "10:00",
         duration: "60",
         isRecurring: false,
-        dayOfWeek: "0",
+        dayOfWeek: date.getDay().toString(),
         recurrenceMonths: "1",
       });
     }
   }, [open, initialDate, form]);
 
   const isRecurring = form.watch("isRecurring");
+  const selectedDate = form.watch("date");
+
+  // Auto-update day of week when date changes OR when recurring is toggled on
+  useEffect(() => {
+    if (selectedDate) {
+      const dayOfWeek = selectedDate.getDay().toString();
+      // Always keep dayOfWeek in sync with selected date
+      if (form.getValues("dayOfWeek") !== dayOfWeek) {
+        form.setValue("dayOfWeek", dayOfWeek);
+      }
+    }
+  }, [selectedDate, form]);
 
   const onSubmit = async (data: LessonFormValues) => {
     try {
@@ -166,7 +179,7 @@ export function LessonDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] sm:max-w-[425px] md:max-w-[500px]">
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] sm:max-w-md md:max-w-lg">
         {/* Header with icon */}
         <DialogHeader className="space-y-2 sm:space-y-3">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">

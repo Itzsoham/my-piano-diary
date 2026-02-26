@@ -179,6 +179,24 @@ export const lessonRouter = createTRPCRouter({
         }
       }
 
+      // Check for duplicate lesson at the same date/time for this student
+      const existingLesson = await ctx.db.lesson.findFirst({
+        where: {
+          studentId: input.studentId,
+          date: input.date,
+        },
+      });
+
+      if (existingLesson) {
+        const lessonTime = input.date.toLocaleString("en-US", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+        throw new Error(
+          `A lesson already exists for this student on ${lessonTime}. Please choose a different date or time.`,
+        );
+      }
+
       return ctx.db.lesson.create({
         data: {
           studentId: input.studentId,
@@ -358,20 +376,23 @@ export const lessonRouter = createTRPCRouter({
       }
 
       const lessonsToCreate = [];
+      // Use only the date part, ignore any time from input.startDate
       const startDate = new Date(input.startDate);
+      startDate.setHours(0, 0, 0, 0); // Reset to midnight to avoid timezone issues
+
       const recurrenceMonths = input.recurrenceMonths; // 1 or 2
 
       // Calculate end date (1 or 2 months from start)
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + recurrenceMonths);
 
-      // Parse time
+      // Parse time from the time field
       const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
 
       // 1. Find the first matching weekday
       // input.dayOfWeek: 0 (Sunday) - 6 (Saturday)
       const currentDate = new Date(startDate);
-      // Reset time to the desired time
+      // Set the desired time
       currentDate.setHours(hours, minutes, 0, 0);
 
       // If currentDate day is not the target day, move forward
@@ -379,37 +400,59 @@ export const lessonRouter = createTRPCRouter({
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      // 2. Loop week by week
+      // 2. Loop week by week and collect all potential dates
+      const potentialDates: Date[] = [];
       while (currentDate < endDate) {
-        // Create lesson date object
-        const lessonDate = new Date(currentDate);
-
-        // Check if lesson already exists for this student at this time
-        // We'll skip if it exists to avoid duplicates/errors
-        const existingLesson = await ctx.db.lesson.findFirst({
-          where: {
-            studentId: input.studentId,
-            date: lessonDate,
-          },
-        });
-
-        if (!existingLesson) {
-          lessonsToCreate.push({
-            studentId: input.studentId,
-            teacherId: teacher.id,
-            date: lessonDate,
-            duration: input.duration,
-            status: "PENDING" as const,
-            pieceId: input.pieceId,
-          });
-        }
-
+        potentialDates.push(new Date(currentDate));
         // Move to next week
         currentDate.setDate(currentDate.getDate() + 7);
       }
 
+      // Check for existing lessons at these dates
+      const existingLessons = await ctx.db.lesson.findMany({
+        where: {
+          studentId: input.studentId,
+          date: {
+            in: potentialDates,
+          },
+        },
+        select: {
+          date: true,
+        },
+      });
+
+      // If there are conflicts, throw an error with details
+      if (existingLessons.length > 0) {
+        const conflictDates = existingLessons
+          .map((lesson) =>
+            lesson.date.toLocaleString("en-US", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }),
+          )
+          .join(", ");
+
+        throw new Error(
+          `Cannot create recurring lessons. ${existingLessons.length} lesson(s) already exist at: ${conflictDates}. Please choose a different day or time.`,
+        );
+      }
+
+      // No conflicts, create all lessons
+      for (const lessonDate of potentialDates) {
+        lessonsToCreate.push({
+          studentId: input.studentId,
+          teacherId: teacher.id,
+          date: lessonDate,
+          duration: input.duration,
+          status: "PENDING" as const,
+          pieceId: input.pieceId,
+        });
+      }
+
       if (lessonsToCreate.length === 0) {
-        return { count: 0 };
+        throw new Error(
+          "No lessons to create. The date range may be too short or invalid.",
+        );
       }
 
       // Bulk create
