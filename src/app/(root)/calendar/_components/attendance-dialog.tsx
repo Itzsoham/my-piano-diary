@@ -98,9 +98,9 @@ export function AttendanceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] sm:max-w-106.25">
         <DialogHeader className="space-y-2 sm:space-y-3">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">
             <Music2 className="h-5 w-5 text-pink-600 sm:h-6 sm:w-6" />
           </div>
           <DialogTitle className="text-center text-xl font-bold text-pink-950 sm:text-2xl">
@@ -116,7 +116,7 @@ export function AttendanceDialog({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 sm:space-y-6"
           >
-            <div className="space-y-3 rounded-xl bg-gradient-to-br from-pink-50/50 to-purple-50/50 p-3 sm:space-y-4 sm:p-4">
+            <div className="space-y-3 rounded-xl bg-linear-to-br from-pink-50/50 to-purple-50/50 p-3 sm:space-y-4 sm:p-4">
               <FormField
                 control={form.control}
                 name="status"
@@ -131,7 +131,7 @@ export function AttendanceDialog({
                           type="button"
                           onClick={() => field.onChange("COMPLETE")}
                           className={cn(
-                            "group flex min-h-[80px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
+                            "group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "COMPLETE"
                               ? "border-green-500 bg-green-50 shadow-sm ring-2 shadow-green-100 ring-green-500/10"
                               : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
@@ -163,7 +163,7 @@ export function AttendanceDialog({
                           type="button"
                           onClick={() => field.onChange("CANCELLED")}
                           className={cn(
-                            "group flex min-h-[80px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
+                            "group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "CANCELLED"
                               ? "border-rose-500 bg-rose-50 shadow-sm ring-2 shadow-rose-100 ring-rose-500/10"
                               : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
@@ -195,7 +195,7 @@ export function AttendanceDialog({
                           type="button"
                           onClick={() => field.onChange("PENDING")}
                           className={cn(
-                            "group flex min-h-[80px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
+                            "group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "PENDING"
                               ? "border-amber-500 bg-amber-50 shadow-sm ring-2 shadow-amber-100 ring-amber-500/10"
                               : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
@@ -312,7 +312,7 @@ export function AttendanceDialog({
               <Button
                 type="submit"
                 disabled={markAttendance.isPending}
-                className="h-10 flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md shadow-pink-200 transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-lg active:scale-[0.98] sm:h-auto"
+                className="h-10 flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 text-white shadow-md shadow-pink-200 transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-lg active:scale-[0.98] sm:h-auto"
               >
                 {markAttendance.isPending
                   ? "Saving..."

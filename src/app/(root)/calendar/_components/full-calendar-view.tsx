@@ -427,7 +427,7 @@ export function FullCalendarView({
           className="h-full overflow-x-auto"
           style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
         >
-          <div className="h-full min-w-[600px] sm:min-w-0">
+          <div className="h-full min-w-150 sm:min-w-0">
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
