@@ -377,37 +377,34 @@ export const lessonRouter = createTRPCRouter({
 
       const lessonsToCreate = [];
 
-      // Parse date string manually to avoid timezone issues
+      // Parse date string manually
       const [year = 0, month = 1, day = 1] = input.startDate
         .split("-")
         .map(Number);
       const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
 
-      // Construct UTC-based date - no timezone shift
-      const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-      const recurrenceMonths = input.recurrenceMonths; // 1 or 2
+      // Construct date using LOCAL timezone
+      const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const recurrenceMonths = input.recurrenceMonths;
 
-      // Calculate end date using UTC (1 or 2 months from start)
+      // Calculate end date (1 or 2 months from start)
       const endDate = new Date(startDate);
-      endDate.setUTCMonth(endDate.getUTCMonth() + recurrenceMonths);
+      endDate.setMonth(endDate.getMonth() + recurrenceMonths);
 
-      // 1. Find the first matching weekday using UTC
-      // input.dayOfWeek: 0 (Sunday) - 6 (Saturday)
+      // 1. Find the first matching weekday
       const currentDate = new Date(startDate);
-      // Set the desired time in UTC
-      currentDate.setUTCHours(hours, minutes, 0, 0);
+      currentDate.setHours(hours, minutes, 0, 0);
 
       // If currentDate day is not the target day, move forward
-      while (currentDate.getUTCDay() !== input.dayOfWeek) {
-        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+      while (currentDate.getDay() !== input.dayOfWeek) {
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
       // 2. Loop week by week and collect all potential dates
       const potentialDates: Date[] = [];
       while (currentDate < endDate) {
         potentialDates.push(new Date(currentDate));
-        // Move to next week using UTC
-        currentDate.setUTCDate(currentDate.getUTCDate() + 7);
+        currentDate.setDate(currentDate.getDate() + 7);
       }
 
       // Check for existing lessons at these dates
