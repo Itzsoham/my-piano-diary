@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { formatNumberWithSeparators } from "@/lib/format";
 
 const studentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -214,13 +215,22 @@ export function StudentForm({
                         </span>
                         <Input
                           placeholder="0"
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
                           className="h-11 rounded-2xl bg-pink-50 pl-8 text-base font-semibold focus-visible:ring-pink-400"
                           {...field}
-                          onChange={(e) =>
-                            field.onChange(parseInt(e.target.value) || 0)
+                          onChange={(e) => {
+                            const numValue =
+                              parseInt(
+                                e.target.value.replace(/\./g, "") || "0",
+                              ) || 0;
+                            field.onChange(numValue);
+                          }}
+                          value={
+                            field.value
+                              ? formatNumberWithSeparators(field.value)
+                              : ""
                           }
-                          value={field.value || ""}
                         />
                       </div>
                     </FormControl>

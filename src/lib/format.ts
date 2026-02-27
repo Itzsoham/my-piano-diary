@@ -34,3 +34,13 @@ export const formatCurrencyNumber = (
     maximumFractionDigits: fractionDigits,
   }).format(amount);
 };
+
+export const formatNumberWithSeparators = (
+  amount: number,
+  locale = "vi-VN",
+) => {
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
