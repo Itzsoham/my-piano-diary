@@ -383,43 +383,99 @@ export const lessonRouter = createTRPCRouter({
         .map(Number);
       const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
 
-      console.log("[DEBUG] Recurring lesson input:");
+      console.log("[SERVER DEBUG] Recurring lesson input:");
       console.log("  startDate:", input.startDate);
       console.log("  time:", input.time, "parsed:", { hours, minutes });
       console.log("  dayOfWeek:", input.dayOfWeek);
+      console.log(
+        "  timezoneOffset (client's offset from UTC):",
+        input.timezoneOffset,
+      );
+      console.log(
+        "  server timezone:",
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+      );
 
-      // Construct date using LOCAL timezone
-      const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      // Create date in UTC, then adjust for client's timezone
+      // The client's timezoneOffset is in minutes (e.g., -330 for IST means UTC+5:30)
+      // We need to create the date as if it were in the client's timezone
+      //
+      // Example: User in IST selects Wednesday 7:00 PM
+      // - timezoneOffset = -330 (IST is UTC+5:30, so offset is -330)
+      // - We want to store: Wednesday 7:00 PM IST = Wednesday 1:30 PM UTC
+      // - UTC time = local time - offset = 19:00 - (-330 min) = 19:00 + 330 min = 13:30 UTC ✓
+
+      // Create a UTC date string and parse it
+      const utcDateString = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00.000Z`;
+
+      // Parse as UTC, then adjust for client's timezone offset
+      const utcDate = new Date(utcDateString);
+      // Add the timezone offset to convert from "client local time interpreted as UTC" to "actual UTC"
+      // timezoneOffset is negative for east of UTC (e.g., -330 for IST)
+      // So we ADD the offset to get UTC time
+      utcDate.setMinutes(utcDate.getMinutes() + input.timezoneOffset);
+
+      console.log("  utcDateString:", utcDateString);
+      console.log("  utcDate after offset adjustment:", utcDate.toISOString());
+
+      // For day-of-week calculation, we need to work in client's local timezone
+      // Create dates that represent the client's local time
+      const clientLocalStartOfDay = new Date(utcDateString);
+      clientLocalStartOfDay.setUTCHours(0, 0, 0, 0);
+
       const recurrenceMonths = input.recurrenceMonths;
 
-      // Calculate end date (1 or 2 months from start)
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + recurrenceMonths);
+      // Calculate end date in client's local context (add months)
+      const clientLocalEndDate = new Date(clientLocalStartOfDay);
+      clientLocalEndDate.setUTCMonth(
+        clientLocalEndDate.getUTCMonth() + recurrenceMonths,
+      );
 
-      // 1. Find the first matching weekday
-      const currentDate = new Date(startDate);
-      currentDate.setHours(hours, minutes, 0, 0);
+      // Start from the selected date/time in client's local context
+      const currentClientLocal = new Date(utcDateString);
 
-      console.log("  startDate(local):", startDate.toString());
-      console.log("  currentDate(local):", currentDate.toString());
+      console.log(
+        "  clientLocalStartOfDay:",
+        clientLocalStartOfDay.toISOString(),
+      );
+      console.log("  clientLocalEndDate:", clientLocalEndDate.toISOString());
+      console.log("  currentClientLocal:", currentClientLocal.toISOString());
 
-      // If currentDate day is not the target day, move forward
-      while (currentDate.getDay() !== input.dayOfWeek) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      console.log("  firstMatch(local):", currentDate.toString());
-
-      // 2. Loop week by week and collect all potential dates
-      const potentialDates: Date[] = [];
-      while (currentDate < endDate) {
-        potentialDates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 7);
+      // If currentDate day is not the target day, move forward (in client's local context)
+      // Note: getUTCDay() gives us the day in UTC, which matches client's local day for the date string
+      while (currentClientLocal.getUTCDay() !== input.dayOfWeek) {
+        currentClientLocal.setUTCDate(currentClientLocal.getUTCDate() + 1);
       }
 
       console.log(
-        "  potentialDates(local):",
-        potentialDates.map((date) => date.toString()),
+        "  firstMatch (client local context):",
+        currentClientLocal.toISOString(),
+      );
+
+      // 2. Loop week by week and collect all potential dates (in client's local context)
+      const potentialDates: Date[] = [];
+      while (currentClientLocal < clientLocalEndDate) {
+        // Convert from client local context to actual UTC by adding timezone offset
+        const actualUtcDate = new Date(currentClientLocal);
+        actualUtcDate.setMinutes(
+          actualUtcDate.getMinutes() + input.timezoneOffset,
+        );
+        potentialDates.push(actualUtcDate);
+        currentClientLocal.setUTCDate(currentClientLocal.getUTCDate() + 7);
+      }
+
+      console.log(
+        "  potentialDates (UTC):",
+        potentialDates.map((date) => date.toISOString()),
+      );
+      console.log(
+        "  potentialDates (client local display):",
+        potentialDates.map((date) => {
+          // Show what these dates look like in client's timezone
+          const localDate = new Date(date);
+          localDate.setMinutes(localDate.getMinutes() - input.timezoneOffset);
+          return `${localDate.toISOString()} (UTC) -> day ${localDate.getUTCDay()}`;
+        }),
       );
 
       // Check for existing lessons at these dates
