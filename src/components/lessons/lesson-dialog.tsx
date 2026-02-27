@@ -152,6 +152,12 @@ export function LessonDialog({
         const day = String(data.date.getDate()).padStart(2, "0");
         const dateString = `${year}-${month}-${day}`;
 
+        console.log("[CLIENT DEBUG] Recurring lesson payload:");
+        console.log("  selectedDate(local):", data.date.toString());
+        console.log("  dateString:", dateString);
+        console.log("  dayOfWeek:", data.dayOfWeek);
+        console.log("  time:", data.time);
+
         createRecurring.mutate({
           studentId: data.studentId,
           pieceId,

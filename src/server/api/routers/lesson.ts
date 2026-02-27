@@ -383,6 +383,11 @@ export const lessonRouter = createTRPCRouter({
         .map(Number);
       const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
 
+      console.log("[DEBUG] Recurring lesson input:");
+      console.log("  startDate:", input.startDate);
+      console.log("  time:", input.time, "parsed:", { hours, minutes });
+      console.log("  dayOfWeek:", input.dayOfWeek);
+
       // Construct date using LOCAL timezone
       const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
       const recurrenceMonths = input.recurrenceMonths;
@@ -395,10 +400,15 @@ export const lessonRouter = createTRPCRouter({
       const currentDate = new Date(startDate);
       currentDate.setHours(hours, minutes, 0, 0);
 
+      console.log("  startDate(local):", startDate.toString());
+      console.log("  currentDate(local):", currentDate.toString());
+
       // If currentDate day is not the target day, move forward
       while (currentDate.getDay() !== input.dayOfWeek) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
+
+      console.log("  firstMatch(local):", currentDate.toString());
 
       // 2. Loop week by week and collect all potential dates
       const potentialDates: Date[] = [];
@@ -406,6 +416,11 @@ export const lessonRouter = createTRPCRouter({
         potentialDates.push(new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 7);
       }
+
+      console.log(
+        "  potentialDates(local):",
+        potentialDates.map((date) => date.toString()),
+      );
 
       // Check for existing lessons at these dates
       const existingLessons = await ctx.db.lesson.findMany({
