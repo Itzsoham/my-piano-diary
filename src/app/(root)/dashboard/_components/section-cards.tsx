@@ -17,13 +17,9 @@ export function SectionCards() {
       data: DashboardOutput | undefined;
       isLoading: boolean;
     };
-  const { data: studentEarnings } = api.earnings.getByStudent.useQuery() as {
-    data: StudentEarningsOutput | undefined;
-    isLoading: boolean;
-  };
   const { currency } = useCurrency();
 
-  const totalStudents = studentEarnings?.length ?? 0;
+  const totalStudents = earnings?.totalStudents ?? 0;
 
   // Placeholder progress - logic could be more dynamic if we had a goal
   // For now, let's just make it look nice

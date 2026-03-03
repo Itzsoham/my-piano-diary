@@ -6,6 +6,7 @@ interface DashboardData {
   totalEarnings: number;
   currentMonthEarnings: number;
   currentMonthLoss: number;
+  totalStudents: number;
 }
 
 interface StudentEarningsData {
@@ -54,6 +55,7 @@ export const earningsRouter = createTRPCRouter({
           totalEarnings: 0,
           currentMonthEarnings: 0,
           currentMonthLoss: 0,
+          totalStudents: 0,
         };
       }
 
@@ -139,10 +141,16 @@ export const earningsRouter = createTRPCRouter({
         0,
       );
 
+      // Get count of all students for this teacher
+      const totalStudents = await ctx.db.student.count({
+        where: { teacherId: teacher.id },
+      });
+
       return {
         totalEarnings,
         currentMonthEarnings,
         currentMonthLoss,
+        totalStudents,
       };
     },
   ),

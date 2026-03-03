@@ -146,131 +146,211 @@ export function TodayLessonsTable() {
             Gathering your lessons...
           </div>
         ) : lessons && lessons.length > 0 ? (
-          <div className="-mx-4 overflow-x-auto sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <div className="mx-4 overflow-hidden rounded-xl border border-pink-100 bg-white/60 shadow-sm backdrop-blur sm:mx-0">
-                <Table>
-                  <TableHeader className="bg-pink-50/50">
-                    <TableRow className="border-pink-100 hover:bg-transparent">
-                      <TableHead className="whitespace-nowrap text-rose-900/70">
-                        Time
-                      </TableHead>
-                      <TableHead className="whitespace-nowrap text-rose-900/70">
-                        Student
-                      </TableHead>
-                      <TableHead className="hidden whitespace-nowrap text-rose-900/70 sm:table-cell">
-                        Piece
-                      </TableHead>
-                      <TableHead className="hidden whitespace-nowrap text-rose-900/70 md:table-cell">
-                        Duration
-                      </TableHead>
-                      <TableHead className="whitespace-nowrap text-rose-900/70">
-                        Status
-                      </TableHead>
-                      <TableHead className="hidden whitespace-nowrap text-rose-900/70 lg:table-cell">
-                        Attendance
-                      </TableHead>
-                      <TableHead className="text-right whitespace-nowrap text-rose-900/70">
-                        Earnings
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lessons.map((lesson) => (
-                      <TableRow
-                        key={lesson.id}
-                        className="border-pink-50 hover:bg-pink-50/30"
-                      >
-                        <TableCell className="font-medium whitespace-nowrap text-rose-950">
-                          <div className="flex items-center gap-1.5 sm:gap-2">
-                            <Clock className="size-3 shrink-0 text-rose-400 sm:size-4" />
-                            <span className="text-xs sm:text-sm">
-                              {formatTime(lesson.date)}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <Avatar className="size-6 shrink-0 border border-pink-100 sm:size-8">
-                              <AvatarImage
-                                src={lesson.student.avatar ?? undefined}
-                              />
-                              <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
-                                {lesson.student.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs font-medium text-rose-950 sm:text-sm">
-                              {lesson.student.name}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          {lesson.piece?.title ? (
-                            <span className="text-xs text-rose-800 sm:text-sm">
-                              {lesson.piece.title}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-xs italic">
-                              No piece
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground hidden text-xs sm:text-sm md:table-cell">
-                          {lesson.duration} min
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(toLessonStatus(lesson.status))}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className={cn(
-                              "h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap sm:px-4",
-                              lesson.status !== "PENDING"
-                                ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
-                                : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
-                            )}
-                            disabled={lesson.status === "CANCELLED"}
-                            onClick={() => {
-                              setSelectedLesson({
-                                id: lesson.id,
-                                studentName: lesson.student.name,
-                                duration: lesson.duration,
-                                status: toLessonStatus(lesson.status),
-                                actualMin: lesson.actualMin,
-                                cancelReason: lesson.cancelReason,
-                                note: lesson.note,
-                                date: lesson.date,
-                              });
-                              setOpen(true);
-                            }}
-                          >
-                            {lesson.status !== "PENDING" ? "Update" : "Mark"}
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold whitespace-nowrap">
-                          {lesson.status === "CANCELLED" ? (
-                            <span className="text-xs text-rose-400 line-through opacity-70 sm:text-sm">
-                              {formatCurrency(lesson.earnings, currency)}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-rose-600 sm:text-sm">
-                              {formatCurrency(lesson.earnings, currency)}
-                            </span>
-                          )}
-                        </TableCell>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden sm:-mx-0 sm:-mx-4 sm:block sm:overflow-x-auto">
+              <div className="inline-block min-w-full align-middle">
+                <div className="mx-4 overflow-hidden rounded-xl border border-pink-100 bg-white/60 shadow-sm backdrop-blur sm:mx-0">
+                  <Table>
+                    <TableHeader className="bg-pink-50/50">
+                      <TableRow className="border-pink-100 hover:bg-transparent">
+                        <TableHead className="whitespace-nowrap text-rose-900/70">
+                          Time
+                        </TableHead>
+                        <TableHead className="whitespace-nowrap text-rose-900/70">
+                          Student
+                        </TableHead>
+                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 sm:table-cell">
+                          Piece
+                        </TableHead>
+                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 md:table-cell">
+                          Duration
+                        </TableHead>
+                        <TableHead className="whitespace-nowrap text-rose-900/70">
+                          Status
+                        </TableHead>
+                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 lg:table-cell">
+                          Attendance
+                        </TableHead>
+                        <TableHead className="text-right whitespace-nowrap text-rose-900/70">
+                          Earnings
+                        </TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {lessons.map((lesson) => (
+                        <TableRow
+                          key={lesson.id}
+                          className="border-pink-50 hover:bg-pink-50/30"
+                        >
+                          <TableCell className="font-medium whitespace-nowrap text-rose-950">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              <Clock className="size-3 shrink-0 text-rose-400 sm:size-4" />
+                              <span className="text-xs sm:text-sm">
+                                {formatTime(lesson.date)}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <Avatar className="size-6 shrink-0 border border-pink-100 sm:size-8">
+                                <AvatarImage
+                                  src={lesson.student.avatar ?? undefined}
+                                />
+                                <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
+                                  {lesson.student.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs font-medium text-rose-950 sm:text-sm">
+                                {lesson.student.name}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {lesson.piece?.title ? (
+                              <span className="text-xs text-rose-800 sm:text-sm">
+                                {lesson.piece.title}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs italic">
+                                No piece
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground hidden text-xs sm:text-sm md:table-cell">
+                            {lesson.duration} min
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(toLessonStatus(lesson.status))}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={cn(
+                                "h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap sm:px-4",
+                                lesson.status !== "PENDING"
+                                  ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
+                                  : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
+                              )}
+                              onClick={() => {
+                                setSelectedLesson({
+                                  id: lesson.id,
+                                  studentName: lesson.student.name,
+                                  duration: lesson.duration,
+                                  status: toLessonStatus(lesson.status),
+                                  actualMin: lesson.actualMin,
+                                  cancelReason: lesson.cancelReason,
+                                  note: lesson.note,
+                                  date: lesson.date,
+                                });
+                                setOpen(true);
+                              }}
+                            >
+                              {lesson.status !== "PENDING" ? "Update" : "Mark"}
+                            </Button>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold whitespace-nowrap">
+                            {lesson.status === "CANCELLED" ? (
+                              <span className="text-xs text-rose-400 line-through opacity-70 sm:text-sm">
+                                {formatCurrency(lesson.earnings, currency)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-rose-600 sm:text-sm">
+                                {formatCurrency(lesson.earnings, currency)}
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
-          </div>
+
+            {/* Mobile Card View */}
+            <div className="mb-4 grid grid-cols-1 gap-3 px-4 sm:hidden">
+              {lessons.map((lesson) => (
+                <div
+                  key={lesson.id}
+                  className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
+                >
+                  <div className="mb-3 flex items-start justify-between">
+                    <div className="flex items-center gap-1.5 rounded-full border border-pink-100/50 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-600">
+                      <Clock className="size-3" />
+                      {formatTime(lesson.date)}
+                    </div>
+                    {getStatusBadge(toLessonStatus(lesson.status))}
+                  </div>
+
+                  <div className="mb-4 flex items-center gap-3">
+                    <Avatar className="size-9 border border-pink-100">
+                      <AvatarImage src={lesson.student.avatar ?? ""} />
+                      <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
+                        {lesson.student.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-[15px] font-semibold text-rose-950">
+                        {lesson.student.name}
+                      </span>
+                      <span className="text-muted-foreground truncate text-xs">
+                        {lesson.piece?.title ?? "No piece"} • {lesson.duration}{" "}
+                        min
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between gap-3 border-t border-pink-50 pt-3">
+                    <div className="flex items-center gap-1">
+                      <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                        Earned
+                      </span>
+                      <span
+                        className={cn(
+                          "text-sm font-semibold",
+                          lesson.status === "CANCELLED"
+                            ? "text-rose-400 line-through opacity-70"
+                            : "text-rose-600",
+                        )}
+                      >
+                        {formatCurrency(lesson.earnings, currency)}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className={cn(
+                        "h-8 rounded-full px-4 text-xs font-medium shadow-none transition-all active:scale-[0.98]",
+                        lesson.status !== "PENDING"
+                          ? "bg-pink-100 text-pink-700 hover:bg-pink-200"
+                          : "bg-pink-500 text-white hover:bg-pink-600",
+                      )}
+                      onClick={() => {
+                        setSelectedLesson({
+                          id: lesson.id,
+                          studentName: lesson.student.name,
+                          duration: lesson.duration,
+                          status: toLessonStatus(lesson.status),
+                          actualMin: lesson.actualMin,
+                          cancelReason: lesson.cancelReason,
+                          note: lesson.note,
+                          date: lesson.date,
+                        });
+                        setOpen(true);
+                      }}
+                    >
+                      {lesson.status !== "PENDING" ? "Update" : "Mark"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="py-12 text-center">
             <Music className="mx-auto mb-4 size-10 animate-bounce text-pink-400" />
