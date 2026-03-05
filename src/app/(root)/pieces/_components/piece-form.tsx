@@ -53,29 +53,43 @@ export function PieceForm({
   );
 
   const createMutation = api.piece.create.useMutation({
+    onMutate: async () => {
+      toast.success("Piece created successfully", { id: "piece-create" });
+      onSuccess?.(); // Close modal immediately
+    },
     onSuccess: () => {
-      toast.success("Piece created successfully");
-      void utils.piece.getAll.invalidate();
-      router.refresh();
-      onSuccess?.();
+      // Modal already closed
     },
     onError: (error) => {
-      toast.error(error.message ?? "Failed to create piece");
+      toast.error(error.message ?? "Failed to create piece", {
+        id: "piece-create",
+      });
+    },
+    onSettled: () => {
+      void utils.piece.getAll.invalidate();
+      router.refresh();
     },
   });
 
   const updateMutation = api.piece.update.useMutation({
+    onMutate: async () => {
+      toast.success("Piece updated successfully", { id: "piece-update" });
+      onSuccess?.(); // Close modal immediately
+    },
     onSuccess: () => {
-      toast.success("Piece updated successfully");
+      // Modal already closed
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to update piece", {
+        id: "piece-update",
+      });
+    },
+    onSettled: () => {
       void utils.piece.getAll.invalidate();
-      router.refresh();
       if (pieceId) {
         void utils.piece.getById.invalidate({ id: pieceId });
       }
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to update piece");
+      router.refresh();
     },
   });
 

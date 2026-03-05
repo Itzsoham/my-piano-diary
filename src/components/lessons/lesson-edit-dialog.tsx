@@ -71,14 +71,32 @@ export function LessonEditDialog({
   });
 
   const updateLesson = api.lesson.update.useMutation({
-    onSuccess: () => {
-      toast.success("Lesson updated successfully");
-      void utils.lesson.invalidate();
+    onMutate: async () => {
+      // Cancel any outgoing refetches so they don't overwrite during mutation
+      await utils.lesson.getAll.cancel({});
+
+      // ✅ Close dialog and show toast INSTANTLY — don't wait for server
+      toast.success("Lesson updated successfully", { id: "lesson-update" });
       onOpenChange(false);
       onSuccess?.();
     },
+
+    onSuccess: () => {
+      // Modal already closed and toast already shown
+    },
+
     onError: (error) => {
-      toast.error(error.message ?? "Failed to update lesson");
+      // Server failed — replace the success toast with an error
+      toast.error(error.message ?? "Failed to update lesson", {
+        id: "lesson-update",
+      });
+      // Re-open so user can try again
+      onOpenChange(true);
+    },
+
+    onSettled: () => {
+      // Always re-sync with real server data
+      void utils.lesson.invalidate();
     },
   });
 

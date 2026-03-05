@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { CheckCircle2, Edit, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { keepPreviousData } from "@tanstack/react-query";
 
 import { api, type RouterOutputs } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -134,21 +135,52 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
     fromDate === INITIAL_FROM &&
     toDate === INITIAL_TO;
 
-  const { data: lessons = [], isLoading } = api.lesson.getAll.useQuery(
+  const { data: lessons = [], isPending } = api.lesson.getAll.useQuery(
     filters,
     {
       initialData: isDefaultFilters ? initialLessons : undefined,
+      placeholderData: keepPreviousData,
     },
   );
 
+  const isLoading = isPending && lessons.length === 0;
+
   const deleteMutation = api.lesson.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Lesson deleted");
-      void utils.lesson.invalidate();
+    onMutate: async ({ id }) => {
+      // Cancel any outgoing refetches
+      await utils.lesson.getAll.cancel({});
+
+      // Snapshot current cached data (with current filters)
+      const previousData = utils.lesson.getAll.getData(filters);
+
+      // Optimistically close modal and show toast instantly
+      toast.success("Lesson deleted", { id: "lesson-delete" });
       setDeleteLesson(null);
+
+      // Optimistically remove the deleted lesson from cache
+      utils.lesson.getAll.setData(filters, (old) =>
+        old ? old.filter((l) => l.id !== id) : old,
+      );
+
+      return { previousData };
     },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to delete lesson");
+
+    onSuccess: () => {
+      // Handled in onMutate
+    },
+
+    onError: (error, _input, context) => {
+      toast.error(error.message ?? "Failed to delete lesson", {
+        id: "lesson-delete",
+      });
+      // Rollback on error
+      if (context?.previousData) {
+        utils.lesson.getAll.setData(filters, context.previousData);
+      }
+    },
+
+    onSettled: () => {
+      void utils.lesson.invalidate();
     },
   });
 

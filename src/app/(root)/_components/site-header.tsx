@@ -6,6 +6,7 @@ import { api } from "@/trpc/react";
 import { useSession } from "next-auth/react";
 import { useUserStore } from "@/store/use-user-store";
 import { useState, useEffect, useCallback } from "react";
+import { startOfDay, endOfDay } from "date-fns";
 
 // Mood data structure with categories
 const moods = {
@@ -99,28 +100,14 @@ export function SiteHeader() {
   const user = storeUser ?? session?.user ?? null;
   const userName = user?.name ?? "Teacher";
 
-  const today = new Date();
-  const startOfDay = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
-  const endOfDay = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-    23,
-    59,
-    59,
-  );
+  const greeting = getGreeting();
 
   const { data: todayLessons = [] } = api.lesson.getAll.useQuery({
-    from: startOfDay,
-    to: endOfDay,
+    from: startOfDay(new Date()),
+    to: endOfDay(new Date()),
   });
 
   const todayCount = todayLessons.length;
-  const greeting = getGreeting();
   const category = getMoodCategory(todayCount);
 
   const [moodIndex, setMoodIndex] = useState(0);

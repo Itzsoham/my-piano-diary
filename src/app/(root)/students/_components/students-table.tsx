@@ -136,14 +136,23 @@ export function StudentsTable({ data }: StudentsTableProps) {
   const utils = api.useUtils();
   const router = useRouter();
   const deleteStudent = api.student.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Student deleted successfully");
-      void utils.student.getAll.invalidate();
-      router.refresh();
+    onMutate: async (vars) => {
+      toast.success("Student deleted successfully", { id: "student-delete" });
       setDeleteConfirm(null);
+
+      // Optionally could patch cache here, but invalidation will fire soon
+    },
+    onSuccess: () => {
+      // Handled in onMutate
     },
     onError: (error) => {
-      toast.error(error.message ?? "Failed to delete student");
+      toast.error(error.message ?? "Failed to delete student", {
+        id: "student-delete",
+      });
+    },
+    onSettled: () => {
+      void utils.student.getAll.invalidate();
+      router.refresh();
     },
   });
 

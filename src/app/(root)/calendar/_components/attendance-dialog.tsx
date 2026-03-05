@@ -51,6 +51,9 @@ interface AttendanceDialogProps {
     note: string | null;
     date: Date;
   };
+  /** The exact { start, end } range the Calendar is currently viewing.
+   * Pass this from calendar/page.tsx so week/day view is patched correctly. */
+  dateRange?: { start: Date; end: Date };
   onSuccess?: () => void;
 }
 
@@ -58,19 +61,106 @@ export function AttendanceDialog({
   open,
   onOpenChange,
   lesson,
+  dateRange,
   onSuccess,
 }: AttendanceDialogProps) {
   const { data: session } = useSession();
   const utils = api.useUtils();
   const markAttendance = api.lesson.markAttendance.useMutation({
-    onSuccess: () => {
-      toast.success("Attendance marked successfully! 💗");
-      void utils.lesson.invalidate();
+    // Step 1: Before request fires — patch ALL caches that show lesson data
+    onMutate: async (input) => {
+      // Cancel any in-flight refetches across all queries that show lessons
+      await utils.lesson.getAll.cancel({});
+      await utils.lesson.getInRange.cancel();
+      await utils.earnings.getTodayLessons.cancel();
+
+      // Helper: apply the status patch to any list of lessons
+      const applyPatch = <
+        T extends {
+          id: string;
+          status: string;
+          actualMin: number | null;
+          cancelReason: string | null;
+          note: string | null;
+        },
+      >(
+        list: T[] | undefined,
+      ): T[] | undefined => {
+        if (!list) return list;
+        return list.map((l) =>
+          l.id === input.lessonId
+            ? {
+                ...l,
+                status: input.status,
+                actualMin: input.actualMin ?? l.actualMin,
+                cancelReason: input.cancelReason ?? l.cancelReason,
+                note: input.note ?? l.note,
+              }
+            : l,
+        );
+      };
+
+      // 1. Patch lesson.getAll (Lessons page) — no-filter variant
+      utils.lesson.getAll.setData({}, (old) => applyPatch(old));
+
+      // 2. Patch lesson.getInRange (Calendar page)
+      // Use the exact dateRange from the Calendar if provided (correct for week/day/month view).
+      // Otherwise fall back to deriving the lesson's month range.
+      const lessonDate = new Date(lesson.date);
+      const rangeKey = dateRange ?? {
+        start: new Date(lessonDate.getFullYear(), lessonDate.getMonth(), 1),
+        end: new Date(lessonDate.getFullYear(), lessonDate.getMonth() + 1, 0),
+      };
+      utils.lesson.getInRange.setData(rangeKey, (old) => applyPatch(old));
+
+      // 3. Patch earnings.getTodayLessons (Dashboard)
+      // Key is the startOfDay of the lesson's date (matches Dashboard's useState)
+      const todayKey = {
+        date: new Date(
+          lessonDate.getFullYear(),
+          lessonDate.getMonth(),
+          lessonDate.getDate(),
+        ),
+      };
+      utils.earnings.getTodayLessons.setData(todayKey, (old) => {
+        if (!old) return old;
+        return old.map((l) => {
+          if (l.id !== input.lessonId) return l;
+          const newStatus = input.status;
+          return {
+            ...l,
+            status: newStatus,
+            actualMin: input.actualMin ?? l.actualMin,
+            cancelReason: input.cancelReason ?? l.cancelReason,
+            note: input.note ?? l.note,
+            // Recalculate earnings: cancelled lessons earn 0
+            earnings: newStatus === "CANCELLED" ? 0 : l.student.lessonRate,
+          };
+        });
+      });
+      // ✅ Close modal and show success toast IMMEDIATELY — don't wait for server
+      toast.success("Attendance marked successfully! 💗", { id: "attendance" });
       onOpenChange(false);
       onSuccess?.();
     },
+
+    onSuccess: () => {
+      // Modal already closed, nothing to do here
+    },
+
     onError: (error) => {
-      toast.error(error.message ?? "Failed to mark attendance");
+      // Server failed — replace the optimistic toast with an error
+      toast.error(error.message ?? "Failed to mark attendance", {
+        id: "attendance",
+      });
+      // Re-open the dialog so the user can try again
+      onOpenChange(true);
+    },
+
+    // Always re-sync with real server data after mutation
+    onSettled: () => {
+      void utils.lesson.invalidate();
+      void utils.earnings.getTodayLessons.invalidate();
     },
   });
 

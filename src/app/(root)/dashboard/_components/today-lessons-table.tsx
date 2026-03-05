@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Clock, DollarSign, Music } from "lucide-react";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, startOfDay } from "date-fns";
 import {
   Popover,
   PopoverContent,
@@ -38,7 +38,7 @@ const toLessonStatus = (status: string): LessonStatus => {
 };
 
 export function TodayLessonsTable() {
-  const [date, setDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<Date>(() => startOfDay(new Date()));
   const { currency } = useCurrency();
 
   const {

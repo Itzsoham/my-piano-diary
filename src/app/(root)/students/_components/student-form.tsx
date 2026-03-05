@@ -54,29 +54,46 @@ export function StudentForm({
   );
 
   const createMutation = api.student.create.useMutation({
-    onSuccess: () => {
-      toast.success("Student created successfully");
-      void utils.student.getAll.invalidate();
-      router.refresh();
+    onMutate: async () => {
+      // ✅ Close dialog and show toast INSTANTLY — don't wait for server
+      toast.success("Student created successfully", { id: "student-create" });
       onSuccess?.();
     },
+    onSuccess: () => {
+      // Modal already closed
+    },
     onError: (error) => {
-      toast.error(error.message ?? "Failed to create student");
+      toast.error(error.message ?? "Failed to create student", {
+        id: "student-create",
+      });
+      // Error handling UI can't reopen if not passed a setter,
+      // but onSuccess?.() might trigger a close, so we just show error
+    },
+    onSettled: () => {
+      void utils.student.getAll.invalidate();
+      router.refresh();
     },
   });
 
   const updateMutation = api.student.update.useMutation({
+    onMutate: async () => {
+      toast.success("Student updated successfully", { id: "student-update" });
+      onSuccess?.();
+    },
     onSuccess: () => {
-      toast.success("Student updated successfully");
+      // Modal already closed
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to update student", {
+        id: "student-update",
+      });
+    },
+    onSettled: () => {
       void utils.student.getAll.invalidate();
-      router.refresh();
       if (studentId) {
         void utils.student.getByGuid.invalidate({ id: studentId });
       }
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to update student");
+      router.refresh();
     },
   });
 

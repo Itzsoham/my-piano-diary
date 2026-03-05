@@ -70,28 +70,48 @@ export function LessonDialog({
   });
 
   const createLesson = api.lesson.create.useMutation({
-    onSuccess: () => {
-      toast.success("Lesson created successfully! 💗");
-      void utils.lesson.invalidate();
+    onMutate: async () => {
+      // ✅ Close dialog and show toast INSTANTLY — don't wait for server
+      toast.success("Lesson created successfully! 💗", { id: "lesson-create" });
       onOpenChange(false);
       form.reset();
       onSuccess?.();
     },
+    onSuccess: () => {
+      // Modal already closed
+    },
     onError: (error) => {
-      toast.error(error.message ?? "Failed to create lesson");
+      toast.error(error.message ?? "Failed to create lesson", {
+        id: "lesson-create",
+      });
+      onOpenChange(true); // Re-open on error
+    },
+    onSettled: () => {
+      void utils.lesson.invalidate();
     },
   });
 
   const createRecurring = api.lesson.createRecurring.useMutation({
-    onSuccess: (data) => {
-      toast.success(`${data.count} lessons scheduled beautifully! ✨`);
-      void utils.lesson.invalidate();
+    onMutate: async () => {
+      // Optimistic close
+      toast.loading("Scheduling lessons...", { id: "lesson-recurring" });
       onOpenChange(false);
       form.reset();
       onSuccess?.();
     },
+    onSuccess: (data) => {
+      toast.success(`${data.count} lessons scheduled beautifully! ✨`, {
+        id: "lesson-recurring",
+      });
+    },
     onError: (error) => {
-      toast.error(error.message ?? "Failed to create recurring lessons");
+      toast.error(error.message ?? "Failed to create recurring lessons", {
+        id: "lesson-recurring",
+      });
+      onOpenChange(true);
+    },
+    onSettled: () => {
+      void utils.lesson.invalidate();
     },
   });
 
@@ -155,17 +175,6 @@ export function LessonDialog({
         // Get client's timezone offset (negative of getTimezoneOffset because
         // getTimezoneOffset returns the difference from UTC, e.g., IST returns -330)
         const timezoneOffset = new Date().getTimezoneOffset();
-
-        console.log("[CLIENT DEBUG] Recurring lesson payload:");
-        console.log("  selectedDate(local):", data.date.toString());
-        console.log("  dateString:", dateString);
-        console.log("  dayOfWeek:", data.dayOfWeek);
-        console.log("  time:", data.time);
-        console.log("  timezoneOffset (minutes from UTC):", timezoneOffset);
-        console.log(
-          "  client timezone:",
-          Intl.DateTimeFormat().resolvedOptions().timeZone,
-        );
 
         createRecurring.mutate({
           studentId: data.studentId,

@@ -171,14 +171,21 @@ export function PiecesTable({ data }: PiecesTableProps) {
   const utils = api.useUtils();
   const router = useRouter();
   const deletePiece = api.piece.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Piece deleted successfully");
-      void utils.piece.getAll.invalidate();
-      router.refresh();
+    onMutate: async (vars) => {
+      toast.success("Piece deleted successfully", { id: "piece-delete" });
       setDeleteConfirm(null);
     },
+    onSuccess: () => {
+      // Handled in onMutate
+    },
     onError: (error) => {
-      toast.error(error.message ?? "Failed to delete piece");
+      toast.error(error.message ?? "Failed to delete piece", {
+        id: "piece-delete",
+      });
+    },
+    onSettled: () => {
+      void utils.piece.getAll.invalidate();
+      router.refresh();
     },
   });
 

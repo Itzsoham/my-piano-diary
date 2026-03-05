@@ -33,7 +33,8 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
-  const { data: lessons = [], refetch } = api.lesson.getInRange.useQuery({
+  const utils = api.useUtils();
+  const { data: lessons = [] } = api.lesson.getInRange.useQuery({
     start: dateRange.start,
     end: dateRange.end,
   });
@@ -54,7 +55,8 @@ export default function CalendarPage() {
   };
 
   const handleSuccess = () => {
-    void refetch();
+    // Silently re-sync all lesson caches in the background
+    void utils.lesson.invalidate();
   };
 
   return (
@@ -104,6 +106,7 @@ export default function CalendarPage() {
             note: selectedLesson.note,
             date: selectedLesson.date,
           }}
+          dateRange={dateRange}
           onSuccess={handleSuccess}
         />
       )}
