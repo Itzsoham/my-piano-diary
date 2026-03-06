@@ -10,8 +10,8 @@ import {
   markAttendanceSchema,
   createRecurringLessonSchema,
 } from "@/lib/validations/api-schemas";
-import { toUTC, getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
+import { fromZonedTime } from "date-fns-tz";
 
 export const lessonRouter = createTRPCRouter({
   // Get all lessons with filters
@@ -419,7 +419,7 @@ export const lessonRouter = createTRPCRouter({
       );
 
       // Start tracking from the given date
-      let currentDateInTimezone = new Date(startingDateInTimezone);
+      const currentDateInTimezone = new Date(startingDateInTimezone);
 
       // If today is not the target day, find the next occurrence of that day
       if (actualDayOfWeek !== input.dayOfWeek) {
