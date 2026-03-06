@@ -168,22 +168,13 @@ export const earningsRouter = createTRPCRouter({
       }
 
       const referenceDate = input?.date ?? new Date();
-      const todayStart = new Date(
-        referenceDate.getFullYear(),
-        referenceDate.getMonth(),
-        referenceDate.getDate(),
-        0,
-        0,
-        0,
-      );
-      const todayEnd = new Date(
-        referenceDate.getFullYear(),
-        referenceDate.getMonth(),
-        referenceDate.getDate(),
-        23,
-        59,
-        59,
-      );
+
+      // Preserve timezone context - don't reconstruct date
+      const todayStart = new Date(referenceDate);
+      todayStart.setHours(0, 0, 0, 0);
+
+      const todayEnd = new Date(referenceDate);
+      todayEnd.setHours(23, 59, 59, 999);
 
       const lessons = await ctx.db.lesson.findMany({
         where: {

@@ -148,7 +148,7 @@ export function TodayLessonsTable() {
         ) : lessons && lessons.length > 0 ? (
           <>
             {/* Desktop Table View */}
-            <div className="hidden sm:-mx-0 sm:-mx-4 sm:block sm:overflow-x-auto">
+            <div className="hidden sm:-mx-4 sm:block sm:overflow-x-auto">
               <div className="inline-block min-w-full align-middle">
                 <div className="mx-4 overflow-hidden rounded-xl border border-pink-100 bg-white/60 shadow-sm backdrop-blur sm:mx-0">
                   <Table>
