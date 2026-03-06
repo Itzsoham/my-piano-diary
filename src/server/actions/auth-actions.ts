@@ -99,14 +99,30 @@ export async function registerAction(formData: FormData) {
     // Hash password
     const hashedPassword = await hash(validatedData.password, 10);
 
+    // Get timezone for new user (defaults to UTC if detection fails)
+    let timezone = "UTC";
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      // Fallback to UTC if timezone detection fails
+      timezone = "UTC";
+    }
+
     // Create new user
     const newUser = await db.user.create({
       data: {
         name: validatedData.name,
         email: validatedData.email,
         password: hashedPassword,
+        timezone,
       },
-      select: { id: true, email: true, name: true, image: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        image: true,
+        timezone: true,
+      },
     });
 
     // Automatically sign in the new user

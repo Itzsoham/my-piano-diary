@@ -33,6 +33,14 @@ interface ProfileFormProps {
     name: string | null;
     email: string | null;
     image: string | null;
+    timezone: string;
+    teacher: {
+      id: string;
+      _count: {
+        students: number;
+        lessons: number;
+      };
+    } | null;
   };
 }
 
@@ -50,8 +58,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
   const updateProfile = api.user.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success("Profile updated successfully");
       void utils.user.getProfile.invalidate();
+      toast.success("Profile updated successfully");
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to update profile");
@@ -68,12 +76,16 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     }
   }, [profile, form]);
 
-  const onSubmit = (data: ProfileFormValues) => {
-    updateProfile.mutate({
-      name: data.name,
-      email: data.email,
-      image: data.image,
-    });
+  const onSubmit = async (data: ProfileFormValues) => {
+    try {
+      await updateProfile.mutateAsync({
+        name: data.name,
+        email: data.email,
+        image: data.image,
+      });
+    } catch {
+      // Errors are handled by mutation callbacks
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import {
   updateUserSchema,
   passwordSchema,
 } from "@/lib/validations/common-schemas";
+import { isValidTimezone } from "@/lib/timezone";
 
 export const userRouter = createTRPCRouter({
   // Get current user profile
@@ -18,6 +19,7 @@ export const userRouter = createTRPCRouter({
         name: true,
         email: true,
         image: true,
+        timezone: true,
         createdAt: true,
         teacher: {
           select: {
@@ -69,6 +71,29 @@ export const userRouter = createTRPCRouter({
           image: input.image === "" ? null : input.image,
         },
       });
+    }),
+
+  // Update timezone for User profile (single source of truth)
+  updateTimezone: protectedProcedure
+    .input(
+      z.object({
+        timezone: z.string().min(1, "Timezone is required"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isValidTimezone(input.timezone)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid timezone",
+        });
+      }
+
+      await ctx.db.user.update({
+        where: { id: ctx.session.user.id },
+        data: { timezone: input.timezone },
+      });
+
+      return { success: true };
     }),
 
   // Update password

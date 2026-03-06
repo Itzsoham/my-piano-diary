@@ -136,7 +136,7 @@ export function StudentsTable({ data }: StudentsTableProps) {
   const utils = api.useUtils();
   const router = useRouter();
   const deleteStudent = api.student.delete.useMutation({
-    onMutate: async (vars) => {
+    onMutate: async (_vars) => {
       toast.success("Student deleted successfully", { id: "student-delete" });
       setDeleteConfirm(null);
 

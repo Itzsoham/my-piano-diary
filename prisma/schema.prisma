@@ -12,10 +12,11 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
-  emailVerified DateTime?
+  emailVerified DateTime? @db.Timestamptz
   image         String?
   password      String?
-  createdAt     DateTime  @default(now())
+  timezone      String    @default("UTC")
+  createdAt     DateTime  @default(now()) @db.Timestamptz
   accounts      Account[]
   sessions      Session[]
   teacher       Teacher?
@@ -43,14 +44,14 @@ model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
-  expires      DateTime
+  expires      DateTime @db.Timestamptz
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
   identifier String
   token      String   @unique
-  expires    DateTime
+  expires    DateTime @db.Timestamptz
 
   @@unique([identifier, token])
 }
@@ -58,7 +59,7 @@ model VerificationToken {
 model Teacher {
   id        String    @id @default(cuid())
   userId    String    @unique
-  createdAt DateTime  @default(now())
+  createdAt DateTime  @default(now()) @db.Timestamptz
   lessons   Lesson[]
   students  Student[]
   pieces    Piece[]
@@ -72,7 +73,7 @@ model Student {
   avatar     String?
   notes      String?
   lessonRate Int             @default(0)
-  createdAt  DateTime        @default(now())
+  createdAt  DateTime        @default(now()) @db.Timestamptz
   lessons    Lesson[]
   teacher    Teacher         @relation(fields: [teacherId], references: [id])
   reports    MonthlyReport[]
@@ -85,7 +86,7 @@ model Piece {
   description String?
   level       String?
   difficulty  Int?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now()) @db.Timestamptz
   teacher     Teacher  @relation(fields: [teacherId], references: [id])
   lessons     Lesson[]
 }
@@ -94,14 +95,14 @@ model Lesson {
   id           String       @id @default(cuid())
   studentId    String
   teacherId    String
-  date         DateTime
+  date         DateTime     @db.Timestamptz
   duration     Int
   status       LessonStatus @default(PENDING)
   actualMin    Int?
   cancelReason String?
   note         String?
   pieceId      String?
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime     @default(now()) @db.Timestamptz
   piece        Piece?       @relation(fields: [pieceId], references: [id])
   student      Student      @relation(fields: [studentId], references: [id])
   teacher      Teacher      @relation(fields: [teacherId], references: [id])
@@ -126,8 +127,8 @@ model MonthlyReport {
   comments      String?
   nextMonthPlan String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 

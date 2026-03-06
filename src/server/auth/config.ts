@@ -14,6 +14,7 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      timezone: string;
       // ...other properties
       // role: UserRole;
     } & DefaultSession["user"];
@@ -22,12 +23,14 @@ declare module "next-auth" {
   interface JWT {
     id: string;
     image?: string | null;
+    timezone?: string;
   }
 
   interface User {
     // ...other properties
     // role: UserRole;
     image?: string | null;
+    timezone?: string;
   }
 }
 
@@ -71,6 +74,7 @@ export const authConfig = {
           email: user.email,
           name: user.name,
           image: user.image,
+          timezone: user.timezone,
         };
       },
     }),
@@ -95,6 +99,7 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.image = user.image;
+        token.timezone = user.timezone ?? "UTC";
       }
       return token;
     },
@@ -104,6 +109,7 @@ export const authConfig = {
         ...session.user,
         id: token.id as string,
         image: token.image as string | null | undefined,
+        timezone: (token.timezone as string | undefined) ?? "UTC",
       },
     }),
   },

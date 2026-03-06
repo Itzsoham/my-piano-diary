@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { endOfMonth } from "date-fns";
-import { startOfMonth } from "date-fns";
 import { idSchema } from "@/lib/validations/common-schemas";
+import { getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
 
 export const reportRouter = createTRPCRouter({
   // Generate monthly preview data
@@ -34,8 +33,9 @@ export const reportRouter = createTRPCRouter({
         throw new Error("Student not found");
       }
 
-      const startDate = startOfMonth(new Date(input.year, input.month - 1, 1));
-      const endDate = endOfMonth(startDate);
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const startDate = getStartOfMonthUTC(input.month, input.year, timezone);
+      const endDate = getEndOfMonthUTC(input.month, input.year, timezone);
 
       const lessons = await ctx.db.lesson.findMany({
         where: {
@@ -92,8 +92,9 @@ export const reportRouter = createTRPCRouter({
         throw new Error("Student not found");
       }
 
-      const startDate = new Date(input.year, input.month - 1, 1);
-      const endDate = endOfMonth(startDate);
+      const timezone = teacher.user.timezone ?? "UTC";
+      const startDate = getStartOfMonthUTC(input.month, input.year, timezone);
+      const endDate = getEndOfMonthUTC(input.month, input.year, timezone);
 
       const [report, lessons] = await Promise.all([
         ctx.db.monthlyReport.findUnique({

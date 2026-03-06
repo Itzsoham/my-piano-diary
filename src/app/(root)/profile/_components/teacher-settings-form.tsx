@@ -27,37 +27,71 @@ import {
   useCurrency,
   type CurrencyCode,
 } from "@/lib/currency";
+import { COMMON_TIMEZONES, getBrowserTimezone } from "@/lib/timezone";
+import { api } from "@/trpc/react";
+import { Loader2 } from "lucide-react";
 
-const currencySettingsSchema = z.object({
+const teacherSettingsSchema = z.object({
   currency: z.string(),
+  timezone: z.string().min(1, "Timezone is required"),
 });
 
-type CurrencySettingsValues = z.infer<typeof currencySettingsSchema>;
+type TeacherSettingsValues = z.infer<typeof teacherSettingsSchema>;
 
 interface TeacherSettingsFormProps {
   stats: {
     students: number;
     lessons: number;
   };
+  initialTimezone: string;
 }
 
-export function TeacherSettingsForm({ stats }: TeacherSettingsFormProps) {
+export function TeacherSettingsForm({
+  stats,
+  initialTimezone,
+}: TeacherSettingsFormProps) {
   const { currency, setCurrency } = useCurrency();
+  const utils = api.useUtils();
 
-  const form = useForm<CurrencySettingsValues>({
-    resolver: zodResolver(currencySettingsSchema),
+  const form = useForm<TeacherSettingsValues>({
+    resolver: zodResolver(teacherSettingsSchema),
     defaultValues: {
       currency: currency,
+      timezone: initialTimezone || "UTC",
+    },
+  });
+
+  const updateTimezone = api.user.updateTimezone.useMutation({
+    onSuccess: () => {
+      void utils.user.getProfile.invalidate();
+      toast.success("Settings updated successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to update timezone");
     },
   });
 
   useEffect(() => {
-    form.reset({ currency });
-  }, [currency, form]);
+    form.reset({
+      currency,
+      timezone: initialTimezone || getBrowserTimezone() || "UTC",
+    });
+  }, [currency, initialTimezone, form]);
 
   const handleCurrencyChange = (newCurrency: string) => {
     setCurrency(newCurrency as CurrencyCode);
     toast.success("Currency updated successfully");
+  };
+
+  const onTimezoneChange = async (newTimezone: string) => {
+    form.setValue("timezone", newTimezone);
+    try {
+      await updateTimezone.mutateAsync({
+        timezone: newTimezone,
+      });
+    } catch {
+      // Error handled by mutation
+    }
   };
 
   return (
@@ -97,10 +131,10 @@ export function TeacherSettingsForm({ stats }: TeacherSettingsFormProps) {
         </Card>
       </div>
 
-      {/* Currency Settings Form */}
+      {/* Settings Form */}
       <Form {...form}>
         <form className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
               name="currency"
@@ -116,16 +150,61 @@ export function TeacherSettingsForm({ stats }: TeacherSettingsFormProps) {
                         <SelectValue placeholder="VND" />
                       </SelectTrigger>
                       <SelectContent>
-                        {currencyOptions.map((option) => (
-                          <SelectItem key={option.code} value={option.code}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
+                        {currencyOptions.map(
+                          (option: { code: string; label: string }) => (
+                            <SelectItem key={option.code} value={option.code}>
+                              {option.label}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
                   </FormControl>
                   <FormDescription className="text-slate-500">
                     Used to format currency across the system
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="timezone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-700">Timezone</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={onTimezoneChange}
+                      disabled={updateTimezone.isPending}
+                    >
+                      <SelectTrigger className="rounded-lg border-slate-200 focus-visible:ring-rose-500 focus-visible:ring-offset-0">
+                        {updateTimezone.isPending ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Updating...</span>
+                          </div>
+                        ) : (
+                          <SelectValue placeholder="Select your timezone" />
+                        )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMMON_TIMEZONES.map(
+                          (timezone: { label: string; value: string }) => (
+                            <SelectItem
+                              key={timezone.value}
+                              value={timezone.value}
+                            >
+                              {timezone.label}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription className="text-slate-500">
+                    Your single timezone setting for all scheduling
                   </FormDescription>
                 </FormItem>
               )}

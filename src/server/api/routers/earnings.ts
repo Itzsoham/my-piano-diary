@@ -1,5 +1,12 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import {
+  getStartOfDayUTC,
+  getEndOfDayUTC,
+  getStartOfMonthUTC,
+  getEndOfMonthUTC,
+  fromUTC,
+} from "@/lib/timezone";
 
 // Type definitions for return values
 interface DashboardData {
@@ -59,15 +66,23 @@ export const earningsRouter = createTRPCRouter({
         };
       }
 
-      const now = new Date();
-      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const currentMonthEnd = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
+      const timezone = ctx.session.user.timezone ?? "UTC";
+
+      // Get current date/time in user's timezone to determine their "now" month/year
+      const nowInUserTz = fromUTC(new Date(), timezone);
+      const currentMonth = nowInUserTz.getMonth() + 1;
+      const currentYear = nowInUserTz.getFullYear();
+
+      // Use timezone-aware month boundaries
+      const currentMonthStart = getStartOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
+      );
+      const currentMonthEnd = getEndOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
       );
 
       // Get all completed lessons with student data
@@ -168,13 +183,11 @@ export const earningsRouter = createTRPCRouter({
       }
 
       const referenceDate = input?.date ?? new Date();
+      const timezone = ctx.session.user.timezone ?? "UTC";
 
-      // Preserve timezone context - don't reconstruct date
-      const todayStart = new Date(referenceDate);
-      todayStart.setHours(0, 0, 0, 0);
-
-      const todayEnd = new Date(referenceDate);
-      todayEnd.setHours(23, 59, 59, 999);
+      // Convert to proper UTC boundaries for the teacher's timezone
+      const todayStart = getStartOfDayUTC(referenceDate, timezone);
+      const todayEnd = getEndOfDayUTC(referenceDate, timezone);
 
       const lessons = await ctx.db.lesson.findMany({
         where: {
@@ -221,15 +234,23 @@ export const earningsRouter = createTRPCRouter({
         return [];
       }
 
-      const now = new Date();
-      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const currentMonthEnd = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
+      const timezone = ctx.session.user.timezone ?? "UTC";
+
+      // Get current date/time in user's timezone to determine their "now" month/year
+      const nowInUserTz = fromUTC(new Date(), timezone);
+      const currentMonth = nowInUserTz.getMonth() + 1;
+      const currentYear = nowInUserTz.getFullYear();
+
+      // Use timezone-aware month boundaries
+      const currentMonthStart = getStartOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
+      );
+      const currentMonthEnd = getEndOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
       );
 
       const lessons = await ctx.db.lesson.findMany({

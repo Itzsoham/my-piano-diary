@@ -172,9 +172,8 @@ export function LessonDialog({
         const day = String(data.date.getDate()).padStart(2, "0");
         const dateString = `${year}-${month}-${day}`;
 
-        // Get client's timezone offset (negative of getTimezoneOffset because
-        // getTimezoneOffset returns the difference from UTC, e.g., IST returns -330)
-        const timezoneOffset = new Date().getTimezoneOffset();
+        // Get the user's timezone from their session
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         createRecurring.mutate({
           studentId: data.studentId,
@@ -184,7 +183,7 @@ export function LessonDialog({
           time: data.time,
           duration: parseInt(data.duration),
           recurrenceMonths: parseInt(data.recurrenceMonths ?? "1"),
-          timezoneOffset,
+          timezone,
         });
       } else {
         // Create single lesson

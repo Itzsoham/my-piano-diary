@@ -135,6 +135,7 @@ export default function ProfilePage() {
                   students: profile.teacher?._count.students ?? 0,
                   lessons: profile.teacher?._count.lessons ?? 0,
                 }}
+                initialTimezone={profile.timezone}
               />
             </div>
           </Card>

@@ -10,7 +10,6 @@ import { useCurrency } from "@/lib/currency";
 
 export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
-  type StudentEarningsOutput = RouterOutputs["earnings"]["getByStudent"];
 
   const { data: earnings, isLoading } =
     api.earnings.getDashboard.useQuery() as {

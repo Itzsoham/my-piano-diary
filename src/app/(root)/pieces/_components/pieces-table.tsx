@@ -171,7 +171,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
   const utils = api.useUtils();
   const router = useRouter();
   const deletePiece = api.piece.delete.useMutation({
-    onMutate: async (vars) => {
+    onMutate: async (_vars) => {
       toast.success("Piece deleted successfully", { id: "piece-delete" });
       setDeleteConfirm(null);
     },

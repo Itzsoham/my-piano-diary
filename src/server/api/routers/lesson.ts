@@ -10,6 +10,8 @@ import {
   markAttendanceSchema,
   createRecurringLessonSchema,
 } from "@/lib/validations/api-schemas";
+import { toUTC, getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 
 export const lessonRouter = createTRPCRouter({
   // Get all lessons with filters
@@ -64,8 +66,9 @@ export const lessonRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const startDate = new Date(input.year, input.month - 1, 1);
-      const endDate = new Date(input.year, input.month, 0, 23, 59, 59);
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const startDate = getStartOfMonthUTC(input.month, input.year, timezone);
+      const endDate = getEndOfMonthUTC(input.month, input.year, timezone);
 
       // Get teacher
       const teacher = await ctx.db.teacher.findUnique({
@@ -201,7 +204,7 @@ export const lessonRouter = createTRPCRouter({
         data: {
           studentId: input.studentId,
           teacherId: teacher.id,
-          date: input.date,
+          date: input.date, // Date is already in UTC from client serialization
           duration: input.duration,
           status: "PENDING",
           pieceId: input.pieceId,
@@ -376,8 +379,9 @@ export const lessonRouter = createTRPCRouter({
       }
 
       const lessonsToCreate = [];
+      const timezone = input.timezone;
 
-      // Parse date string manually
+      // Parse date string and time
       const [year = 0, month = 1, day = 1] = input.startDate
         .split("-")
         .map(Number);
@@ -387,95 +391,71 @@ export const lessonRouter = createTRPCRouter({
       console.log("  startDate:", input.startDate);
       console.log("  time:", input.time, "parsed:", { hours, minutes });
       console.log("  dayOfWeek:", input.dayOfWeek);
-      console.log(
-        "  timezoneOffset (client's offset from UTC):",
-        input.timezoneOffset,
-      );
-      console.log(
-        "  server timezone:",
-        Intl.DateTimeFormat().resolvedOptions().timeZone,
-      );
+      console.log("  timezone:", timezone);
 
-      // Create date in UTC, then adjust for client's timezone
-      // The client's timezoneOffset is in minutes (e.g., -330 for IST means UTC+5:30)
-      // We need to create the date as if it were in the client's timezone
-      //
-      // Example: User in IST selects Wednesday 7:00 PM
-      // - timezoneOffset = -330 (IST is UTC+5:30, so offset is -330)
-      // - We want to store: Wednesday 7:00 PM IST = Wednesday 1:30 PM UTC
-      // - UTC time = local time - offset = 19:00 - (-330 min) = 19:00 + 330 min = 13:30 UTC ✓
-
-      // Create a UTC date string and parse it
-      const utcDateString = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00.000Z`;
-
-      // Parse as UTC, then adjust for client's timezone offset
-      const utcDate = new Date(utcDateString);
-      // Add the timezone offset to convert from "client local time interpreted as UTC" to "actual UTC"
-      // timezoneOffset is negative for east of UTC (e.g., -330 for IST)
-      // So we ADD the offset to get UTC time
-      utcDate.setMinutes(utcDate.getMinutes() + input.timezoneOffset);
-
-      console.log("  utcDateString:", utcDateString);
-      console.log("  utcDate after offset adjustment:", utcDate.toISOString());
-
-      // For day-of-week calculation, we need to work in client's local timezone
-      // Create dates that represent the client's local time
-      const clientLocalStartOfDay = new Date(utcDateString);
-      clientLocalStartOfDay.setUTCHours(0, 0, 0, 0);
-
-      const recurrenceMonths = input.recurrenceMonths;
-
-      // Calculate end date in client's local context (add months)
-      const clientLocalEndDate = new Date(clientLocalStartOfDay);
-      clientLocalEndDate.setUTCMonth(
-        clientLocalEndDate.getUTCMonth() + recurrenceMonths,
+      // Create the starting date/time in the user's timezone
+      const startingDateInTimezone = new Date(
+        year,
+        month - 1,
+        day,
+        hours,
+        minutes,
+        0,
       );
 
-      // Start from the selected date/time in client's local context
-      const currentClientLocal = new Date(utcDateString);
+      // Convert to UTC for storage
+      const startingDateUTC = fromZonedTime(startingDateInTimezone, timezone);
 
-      console.log(
-        "  clientLocalStartOfDay:",
-        clientLocalStartOfDay.toISOString(),
+      console.log("  startingDateTime (client local):", startingDateInTimezone);
+      console.log("  startingDateUTC:", startingDateUTC.toISOString());
+
+      // Get the day of week of the starting date in the user's timezone
+      const actualDayOfWeek = startingDateInTimezone.getUTCDay();
+
+      // Calculate the end date (in user's local timezone)
+      const endDateInTimezone = new Date(startingDateInTimezone);
+      endDateInTimezone.setUTCMonth(
+        endDateInTimezone.getUTCMonth() + input.recurrenceMonths,
       );
-      console.log("  clientLocalEndDate:", clientLocalEndDate.toISOString());
-      console.log("  currentClientLocal:", currentClientLocal.toISOString());
 
-      // If currentDate day is not the target day, move forward (in client's local context)
-      // Note: getUTCDay() gives us the day in UTC, which matches client's local day for the date string
-      while (currentClientLocal.getUTCDay() !== input.dayOfWeek) {
-        currentClientLocal.setUTCDate(currentClientLocal.getUTCDate() + 1);
+      // Start tracking from the given date
+      let currentDateInTimezone = new Date(startingDateInTimezone);
+
+      // If today is not the target day, find the next occurrence of that day
+      if (actualDayOfWeek !== input.dayOfWeek) {
+        // Days until target day
+        let daysUntilTarget = (input.dayOfWeek - actualDayOfWeek + 7) % 7;
+        if (daysUntilTarget === 0) daysUntilTarget = 7; // Move to next week if already past this week
+        currentDateInTimezone.setUTCDate(
+          currentDateInTimezone.getUTCDate() + daysUntilTarget,
+        );
       }
 
+      console.log("  endDateInTimezone:", endDateInTimezone.toISOString());
       console.log(
         "  firstMatch (client local context):",
-        currentClientLocal.toISOString(),
+        currentDateInTimezone.toISOString(),
       );
 
-      // 2. Loop week by week and collect all potential dates (in client's local context)
+      // Collect all lesson dates by walking week by week
       const potentialDates: Date[] = [];
-      while (currentClientLocal < clientLocalEndDate) {
-        // Convert from client local context to actual UTC by adding timezone offset
-        const actualUtcDate = new Date(currentClientLocal);
-        actualUtcDate.setMinutes(
-          actualUtcDate.getMinutes() + input.timezoneOffset,
+      while (currentDateInTimezone < endDateInTimezone) {
+        // Set time to the requested hours and minutes
+        currentDateInTimezone.setUTCHours(hours, minutes, 0, 0);
+
+        // Convert from timezone-naive representation to UTC
+        const utcDate = fromZonedTime(currentDateInTimezone, timezone);
+        potentialDates.push(utcDate);
+
+        // Move to next week
+        currentDateInTimezone.setUTCDate(
+          currentDateInTimezone.getUTCDate() + 7,
         );
-        potentialDates.push(actualUtcDate);
-        currentClientLocal.setUTCDate(currentClientLocal.getUTCDate() + 7);
       }
 
       console.log(
         "  potentialDates (UTC):",
         potentialDates.map((date) => date.toISOString()),
-      );
-      console.log(
-        "  potentialDates (client local display):",
-        potentialDates.map((date) => {
-          // Show what these dates look like in client's timezone
-          const localDate = new Date(date);
-          localDate.setMinutes(localDate.getMinutes() - input.timezoneOffset);
-          return `${localDate.toISOString()} (UTC) -> day ${localDate.getUTCDay()}`;
-        }),
       );
 
       // Check for existing lessons at these dates

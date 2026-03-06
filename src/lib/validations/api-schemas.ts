@@ -149,12 +149,11 @@ export const createRecurringLessonSchema = z.object({
     .min(1, "Recurrence must be at least 1 month")
     .max(2, "Recurrence cannot exceed 2 months"),
   pieceId: z.string().cuid("Invalid piece ID").optional(),
-  // Client's timezone offset in minutes (e.g., -330 for IST, -420 for Vietnam)
-  timezoneOffset: z
-    .number()
-    .int()
-    .min(-840, "Invalid timezone offset")
-    .max(840, "Invalid timezone offset"),
+  // IANA timezone string (e.g., "Asia/Kolkata", "America/New_York")
+  // Server will validate this is a valid timezone
+  timezone: z
+    .string()
+    .min(1, "Timezone is required"),
 });
 
 export const deleteLessonSchema = z.object({
