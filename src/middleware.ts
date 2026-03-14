@@ -11,15 +11,21 @@ function hasSessionCookie(req: NextRequest) {
   return AUTH_COOKIES.some((name) => req.cookies.has(name));
 }
 
+const PUBLIC_PATHS = ["/login", "/register", "/forever"];
+
 export function middleware(req: NextRequest) {
   const isLoggedIn = hasSessionCookie(req);
+  const isPublicPage = PUBLIC_PATHS.some((p) =>
+    req.nextUrl.pathname.startsWith(p),
+  );
+
+  if (!isLoggedIn && !isPublicPage) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
   const isAuthPage =
     req.nextUrl.pathname.startsWith("/login") ||
     req.nextUrl.pathname.startsWith("/register");
-
-  if (!isLoggedIn && !isAuthPage) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
 
   if (isLoggedIn && isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", req.url));

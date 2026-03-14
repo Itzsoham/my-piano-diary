@@ -26,6 +26,7 @@ import {
 import Image from "next/image";
 import { APP_CONFIG } from "@/config/app-config";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const data = {
   main: [
@@ -66,6 +67,28 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isMobile, setOpenMobile } = useSidebar();
+  const router = useRouter();
+  const logoClickRef = React.useRef(0);
+  const logoTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    logoClickRef.current += 1;
+
+    if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
+
+    if (logoClickRef.current >= 5) {
+      e.preventDefault();
+      logoClickRef.current = 0;
+      if (isMobile) setOpenMobile(false);
+      router.push("/forever");
+      return;
+    }
+
+    // Reset count if no new click within 3 seconds
+    logoTimerRef.current = setTimeout(() => {
+      logoClickRef.current = 0;
+    }, 3000);
+  };
 
   return (
     <Sidebar
@@ -83,7 +106,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Link
                 href="/dashboard"
-                onClick={() => isMobile && setOpenMobile(false)}
+                onClick={(e) => {
+                  handleLogoClick(e);
+                  if (isMobile) setOpenMobile(false);
+                }}
               >
                 <div className="bg-primary/10 text-primary flex aspect-square size-10 items-center justify-center rounded-lg">
                   <Image
