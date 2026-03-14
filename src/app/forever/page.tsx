@@ -523,7 +523,7 @@ export default function ForeverPage() {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.4, opacity: 0, y: 60 }}
                 transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                className="hide-scrollbar relative w-full overflow-x-hidden overflow-y-auto rounded-t-3xl rounded-b-none border border-pink-500/30 bg-linear-to-b from-[#1e0630] to-[#0d0010] px-4 pt-4 pb-6 text-center shadow-2xl shadow-pink-900/50 sm:max-w-sm sm:max-h-[90vh] sm:rounded-3xl sm:px-8 sm:pt-8 sm:pb-9"
+                className="hide-scrollbar relative w-full overflow-x-hidden overflow-y-auto rounded-t-3xl rounded-b-none border border-pink-500/30 bg-linear-to-b from-[#1e0630] to-[#0d0010] px-4 pt-4 pb-6 text-center shadow-2xl shadow-pink-900/50 sm:max-h-[90vh] sm:max-w-sm sm:rounded-3xl sm:px-8 sm:pt-8 sm:pb-9"
                 style={{ maxHeight: "92dvh" }}
                 onClick={(e) => e.stopPropagation()}
               >
