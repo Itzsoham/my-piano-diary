@@ -371,7 +371,7 @@ export default function ForeverPage() {
           >
             Every second with you
             <br />
-            has been my favorite melody.
+            has been my favorite moments of my life.
           </motion.p>
 
           {/* ─ RELATIONSHIP TIMER ────────────────────────────────────────────── */}
@@ -453,7 +453,7 @@ export default function ForeverPage() {
               </div>
             </div>
             <p className="mt-4 text-sm text-pink-300/60">
-              3,800+ km apart — but close in every way that matters 💫
+              3,800+ km apart — but close in every way that possible 💫
             </p>
           </motion.div>
 
@@ -470,7 +470,7 @@ export default function ForeverPage() {
                   6 months ago
                 </p>
                 <p className="mt-2 text-base leading-relaxed text-pink-100">
-                  two strangers started talking.
+                  two strangers started flirting.
                 </p>
               </div>
 
@@ -487,7 +487,7 @@ export default function ForeverPage() {
 
               <div className="pt-2 text-center">
                 <p className="glow-text text-xl font-bold text-pink-300">
-                  Happy 6 months ❤️
+                  Happy 6 months baby❤️
                 </p>
               </div>
             </div>
@@ -536,21 +536,6 @@ export default function ForeverPage() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
-
-          {/* ─ SURPRISE BUTTON ───────────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 1.15 }}
-            className="mb-8"
-          >
-            <button
-              onClick={handleSurprise}
-              className="w-full rounded-2xl bg-linear-to-r from-pink-600 to-rose-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-pink-900/50 transition-all duration-300 hover:scale-105 hover:from-pink-500 hover:to-rose-400 hover:shadow-xl hover:shadow-pink-500/40 active:scale-[0.97] sm:py-4 sm:text-lg"
-            >
-              Press me 🎹
-            </button>
           </motion.div>
 
           {/* ─ MUSIC PLAYER ──────────────────────────────────────────────────── */}
@@ -610,6 +595,11 @@ export default function ForeverPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        transition={{
+                          duration: 2,
+                          delay: 3.5,
+                          ease: "easeInOut",
+                        }}
                         className="space-y-2"
                       >
                         <p className="text-lg sm:text-xl">
@@ -629,6 +619,11 @@ export default function ForeverPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        transition={{
+                          duration: 2,
+                          delay: 3.5,
+                          ease: "easeInOut",
+                        }}
                         className="space-y-4"
                       >
                         <p className="text-lg sm:text-xl">
@@ -650,6 +645,11 @@ export default function ForeverPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        transition={{
+                          duration: 1.5,
+                          delay: 4.5,
+                          ease: "easeInOut",
+                        }}
                         onClick={nextCuteStep}
                         className="inline-block w-full rounded-full bg-linear-to-r from-indigo-600 to-violet-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-900/40 transition-all hover:scale-[1.02] hover:shadow-indigo-500/40 active:scale-[0.98] sm:text-base"
                       >
@@ -663,6 +663,11 @@ export default function ForeverPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        transition={{
+                          duration: 1.5,
+                          delay: 4.5,
+                          ease: "easeInOut",
+                        }}
                         onClick={nextCuteStep}
                         className="inline-block w-full rounded-full bg-linear-to-r from-indigo-600 to-violet-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-900/40 transition-all hover:scale-[1.02] hover:shadow-indigo-500/40 active:scale-[0.98] sm:text-base"
                       >
@@ -714,9 +719,24 @@ export default function ForeverPage() {
                 1 year together ❤️
               </p>
               <p className="mt-0.5 text-xs text-pink-400/50">
-                Halfway to our first year
+                Halfway to our first year and first meet
               </p>
             </div>
+          </motion.div>
+
+          {/* ─ SURPRISE BUTTON ───────────────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 1.6 }}
+            className="mb-8"
+          >
+            <button
+              onClick={handleSurprise}
+              className="w-full rounded-2xl bg-linear-to-r from-pink-600 to-rose-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-pink-900/50 transition-all duration-300 hover:scale-105 hover:from-pink-500 hover:to-rose-400 hover:shadow-xl hover:shadow-pink-500/40 active:scale-[0.97] sm:py-4 sm:text-lg"
+            >
+              Press me 🎹
+            </button>
           </motion.div>
 
           {/* ─ FOOTER ────────────────────────────────────────────────────────── */}
