@@ -64,7 +64,7 @@ export default function ForeverPage() {
       "color: #ff69b4; font-size: 13px; font-style: italic;",
     );
     console.log(
-      "%c I love you more than JavaScript loves bugs.",
+      "%c I love you more than anything in this world.",
       "color: #c084fc; font-size: 13px; font-style: italic;",
     );
   }, []);
