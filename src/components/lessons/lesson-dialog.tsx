@@ -455,12 +455,9 @@ export function LessonDialog({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createLesson.isPending || createRecurring.isPending}
                   className="h-10 flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 sm:h-auto"
                 >
-                  {createLesson.isPending || createRecurring.isPending
-                    ? "Creating..."
-                    : "Create lesson"}
+                  Create lesson
                 </Button>
               </div>
             </form>

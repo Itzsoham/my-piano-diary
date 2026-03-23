@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -174,6 +175,19 @@ export function AttendanceDialog({
     },
   });
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    form.reset({
+      status: lesson.status,
+      actualMin: lesson.actualMin?.toString() ?? lesson.duration.toString(),
+      cancelReason: lesson.cancelReason ?? "",
+      note: lesson.note ?? "",
+    });
+  }, [open, lesson, form]);
+
   const selectedStatus = form.watch("status");
 
   const onSubmit = async (data: AttendanceFormValues) => {
@@ -188,7 +202,7 @@ export function AttendanceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-106.25">
         <DialogHeader className="space-y-2 sm:space-y-3">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">
             <Music2 className="h-5 w-5 text-pink-600 sm:h-6 sm:w-6" />
@@ -401,16 +415,13 @@ export function AttendanceDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={markAttendance.isPending}
                 className="h-10 flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 text-white shadow-md shadow-pink-200 transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-lg active:scale-[0.98] sm:h-auto"
               >
-                {markAttendance.isPending
-                  ? "Saving..."
-                  : selectedStatus === "COMPLETE"
-                    ? "Mark Present"
-                    : selectedStatus === "CANCELLED"
-                      ? "Cancel Lesson"
-                      : "Save"}
+                {selectedStatus === "COMPLETE"
+                  ? "Mark Present"
+                  : selectedStatus === "CANCELLED"
+                    ? "Cancel Lesson"
+                    : "Save"}
               </Button>
             </div>
           </form>

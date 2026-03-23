@@ -274,10 +274,9 @@ export function LessonEditDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={updateLesson.isPending}
                 className="h-10 sm:h-auto"
               >
-                {updateLesson.isPending ? "Saving..." : "Save changes"}
+                Save changes
               </Button>
             </div>
           </form>
