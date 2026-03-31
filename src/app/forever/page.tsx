@@ -219,20 +219,27 @@ export default function ForeverPage() {
   }, []);
 
   // ── Music Toggle ───────────────────────────────────────────────────────────
-  const toggleMusic = () => {
+  const toggleMusic = async () => {
     if (!audioRef.current) {
       audioRef.current = new Audio("/music/our-song.mp3");
       audioRef.current.loop = true;
     }
+
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
-    } else {
-      void audioRef.current.play().catch((_err: unknown) => {
-        /* autoplay blocked */
-      });
+      return;
+    }
+
+    try {
+      await audioRef.current.play();
       setIsPlaying(true);
       setMusicStarted(true);
+      setAutoplayBlocked(false);
+    } catch (err) {
+      console.warn("Unable to play music", err);
+      setIsPlaying(false);
+      setAutoplayBlocked(true);
     }
   };
 
@@ -289,8 +296,12 @@ export default function ForeverPage() {
           100% { transform: translateY(-12vh) rotate(25deg); opacity: 0;   }
         }
         @keyframes heartbeat {
-          0%, 100% { transform: scale(1); }
-          50%       { transform: scale(1.25); }
+          0% { transform: scale(1); }
+          15% { transform: scale(1.2); }
+          30% { transform: scale(1); }
+          45% { transform: scale(1.15); }
+          60% { transform: scale(1); }
+          100% { transform: scale(1); }
         }
         @keyframes glow {
           0%, 100% { text-shadow: 0 0 8px #ff69b4, 0 0 18px #ff69b4; }
@@ -313,7 +324,7 @@ export default function ForeverPage() {
           user-select: none;
         }
         .glow-text   { animation: glow      2s   ease-in-out infinite; }
-        .beat-heart  { animation: heartbeat 1.2s ease-in-out infinite; }
+        .beat-heart  { animation: heartbeat 1s ease-in-out infinite; }
         .float-hero  { animation: float     4s   ease-in-out infinite; }
         .hide-scrollbar { overflow-y: auto; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -394,7 +405,10 @@ export default function ForeverPage() {
                   key={label}
                   className="rounded-xl bg-pink-900/30 px-1 py-3 sm:px-2 sm:py-4"
                 >
-                  <div className="glow-text text-lg font-bold break-all text-pink-300 tabular-nums sm:text-2xl">
+                  <div
+                    className="text-lg font-bold break-all text-pink-400 tabular-nums sm:text-2xl"
+                    style={{ textShadow: "0 0 8px rgba(255, 155, 220, 0.35)" }}
+                  >
                     {value}
                   </div>
                   <div className="mt-1 text-[10px] text-pink-400/70 sm:text-[11px]">
@@ -404,7 +418,11 @@ export default function ForeverPage() {
               ))}
             </div>
             <div className="mt-4 text-center">
-              <span className="glow-text text-2xl font-bold text-pink-200 tabular-nums sm:text-3xl">
+              <span
+                key={time.seconds}
+                className="beat-heart text-2xl font-bold text-pink-400 tabular-nums sm:text-3xl"
+                style={{ textShadow: "0 0 8px rgba(255, 155, 220, 0.35)" }}
+              >
                 {time.seconds.toLocaleString()}
               </span>
               <span className="ml-2 text-xs text-pink-400/60 sm:text-sm">
@@ -438,6 +456,7 @@ export default function ForeverPage() {
                   style={{ animation: "lineGrow 1.5s ease-out 1s both" }}
                 />
                 <span
+                  key={time.seconds}
                   className="beat-heart absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-base sm:text-lg"
                   style={{ top: "50%" }}
                 >
@@ -453,7 +472,7 @@ export default function ForeverPage() {
               </div>
             </div>
             <p className="mt-4 text-sm text-pink-300/60">
-              3,800+ km apart — but close in every way that possible 💫
+              3,800+ km apart — but close in every way that&apos;s possible 💫
             </p>
           </motion.div>
 
