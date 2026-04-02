@@ -439,7 +439,7 @@ export function ReportView({
       </div>
 
       {/* Report Paper */}
-      <div className="overflow-x-auto rounded-3xl bg-rose-50/70 p-4 sm:p-6 lg:p-8 print:bg-rose-50/70 print:p-0 [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+      <div className="overflow-x-auto rounded-3xl bg-rose-50/70 p-4 [-webkit-print-color-adjust:exact] [print-color-adjust:exact] sm:p-6 lg:p-8 print:bg-rose-50/70 print:p-0">
         <div className={cn(reportCardClass, "min-w-150 sm:min-w-0")}>
           {/* Header */}
           <div className="mb-6 text-center">
