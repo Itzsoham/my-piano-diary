@@ -66,7 +66,7 @@ export function BirthdayCountdownCard() {
   useEffect(() => {
     if (!mounted) return;
 
-    let timeouts: NodeJS.Timeout[] = [];
+    const cleanupTimers: Array<() => void> = [];
 
     const spawnOne = () => {
       const particle: Particle = {
@@ -79,7 +79,7 @@ export function BirthdayCountdownCard() {
       const removeTimeout = setTimeout(() => {
         setParticles((p) => p.filter((x) => x.id !== particle.id));
       }, 2400);
-      timeouts.push(removeTimeout);
+      cleanupTimers.push(() => clearTimeout(removeTimeout));
     };
 
     // Spawn first particle after 300ms
@@ -92,14 +92,12 @@ export function BirthdayCountdownCard() {
         },
         350 + Math.random() * 100,
       );
-      timeouts.push(spawnInterval as any);
+      cleanupTimers.push(() => clearInterval(spawnInterval));
     }, 300);
-    timeouts.push(firstSpawn);
+    cleanupTimers.push(() => clearTimeout(firstSpawn));
 
     return () => {
-      timeouts.forEach((t) =>
-        typeof t === "number" ? clearTimeout(t) : clearInterval(t),
-      );
+      cleanupTimers.forEach((cleanup) => cleanup());
     };
   }, [mounted]);
 
