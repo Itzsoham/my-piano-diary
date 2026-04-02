@@ -325,7 +325,7 @@ export function ReportView({
   const weeks = hasWeek6 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
 
   const reportCardClass = cn(
-    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact] print:min-h-0 rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0",
+    "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact] [-webkit-print-color-adjust:exact] print:min-h-0 rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0",
   );
 
   const statusClass = (status: string, isSpecial?: boolean) => {
@@ -439,7 +439,7 @@ export function ReportView({
       </div>
 
       {/* Report Paper */}
-      <div className="overflow-x-auto rounded-3xl bg-rose-50/70 p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
+      <div className="overflow-x-auto rounded-3xl bg-rose-50/70 p-4 sm:p-6 lg:p-8 print:bg-rose-50/70 print:p-0 [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
         <div className={cn(reportCardClass, "min-w-150 sm:min-w-0")}>
           {/* Header */}
           <div className="mb-6 text-center">
@@ -460,7 +460,7 @@ export function ReportView({
 
           {/* Sections */}
           <div className="space-y-6">
-            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-white">
+            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-rose-50/60">
               <div className="mb-2 flex items-center gap-2 text-lg font-bold">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
                   <Music className="h-4 w-4" />
@@ -480,7 +480,7 @@ export function ReportView({
               </div>
             </section>
 
-            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-white">
+            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-rose-50/60">
               <div className="mb-2 flex items-center gap-2 text-lg font-bold">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
                   <MessageSquare className="h-4 w-4" />
@@ -500,7 +500,7 @@ export function ReportView({
               </div>
             </section>
 
-            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-white">
+            <section className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 print:break-inside-avoid print:border-neutral-300 print:bg-rose-50/60">
               <div className="mb-2 flex items-center gap-2 text-lg font-bold">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-700">
                   <Target className="h-4 w-4" />
@@ -627,7 +627,7 @@ export function ReportView({
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 text-sm print:border-neutral-300 print:bg-white">
+                <div className="rounded-xl border border-rose-200/70 bg-rose-50/60 p-4 text-sm print:border-neutral-300 print:bg-rose-50/60">
                   <div className="text-base font-bold italic">
                     {t.totalLabel}: {t.totalLessons(totalSessions)}
                   </div>
