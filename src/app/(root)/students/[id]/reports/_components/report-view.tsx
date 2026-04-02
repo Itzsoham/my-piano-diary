@@ -64,7 +64,6 @@ export function ReportView({
   const [summary, setSummary] = useState("");
   const [comments, setComments] = useState("");
   const [nextMonthPlan, setNextMonthPlan] = useState("");
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Lesson metadata tracking for custom reasons and colors
   const [lessonMetadata, setLessonMetadata] = useState<
@@ -96,15 +95,22 @@ export function ReportView({
 
   const upsertReport = api.report.upsertReport.useMutation();
 
-  // Update state when data loads - only once
+  // Clear transient editor state whenever report context changes.
   useEffect(() => {
-    if (data?.report && !isInitialized) {
-      setSummary(data.report.summary ?? "");
-      setComments(data.report.comments ?? "");
-      setNextMonthPlan(data.report.nextMonthPlan ?? "");
-      setIsInitialized(true);
-    }
-  }, [data?.report, isInitialized]);
+    setSummary("");
+    setComments("");
+    setNextMonthPlan("");
+    setLessonMetadata({});
+  }, [studentId, month, year]);
+
+  // Hydrate editor state from fetched report for current student/month/year.
+  useEffect(() => {
+    if (isLoading) return;
+
+    setSummary(data?.report?.summary ?? "");
+    setComments(data?.report?.comments ?? "");
+    setNextMonthPlan(data?.report?.nextMonthPlan ?? "");
+  }, [data?.report, isLoading]);
 
   const copy = {
     vi: {
