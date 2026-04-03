@@ -1,3 +1,13 @@
+## Current State - April 2, 2026
+
+- Reports student switching is fixed.
+- Switching student now loads that student's own monthly report.
+- If the selected student has no report for the chosen month/year, the report fields stay empty.
+- Report form state now resets on `studentId`, `month`, or `year` change.
+- Saved report data is still persisted per `studentId + month + year` in `MonthlyReport`.
+
+---
+
 Alright King 👑… this is your **FULL Project Memory Brain** — clean, structured, reusable.
 You can paste this into any new chat and I’ll instantly understand everything about you + your system.
 
