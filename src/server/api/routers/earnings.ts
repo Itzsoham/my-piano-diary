@@ -197,7 +197,36 @@ export const earningsRouter = createTRPCRouter({
       const lastMonthCollected = lastMonthTransactions._sum.amount ?? 0;
 
       // Calculate outstanding for last month
-      // We need to look at PaymentMonth records for last month
+      // 1. Get all completed lessons for last month to know the expected amount
+      const lastMonthLessons = await ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          date: {
+            gte: lastMonthStart,
+            lte: lastMonthEnd,
+          },
+          status: "COMPLETE",
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              lessonRate: true,
+            },
+          },
+        },
+      });
+
+      const expectedByStudent = new Map<string, number>();
+      lastMonthLessons.forEach((lesson) => {
+        const current = expectedByStudent.get(lesson.studentId) ?? 0;
+        expectedByStudent.set(
+          lesson.studentId,
+          current + lesson.student.lessonRate,
+        );
+      });
+
+      // 2. Get all payment records for last month to know the received amount
       const lastMonthPayments = await ctx.db.paymentMonth.findMany({
         where: {
           teacherId: teacher.id,
@@ -209,11 +238,25 @@ export const earningsRouter = createTRPCRouter({
         },
       });
 
-      const lastMonthOutstanding = lastMonthPayments.reduce((sum, pm) => {
+      const receivedByStudent = new Map<string, number>();
+      lastMonthPayments.forEach((pm) => {
         const received = pm.transactions.reduce((s, t) => s + t.amount, 0);
-        const remaining = Math.max(0, pm.expectedAmount - received);
-        return sum + remaining;
-      }, 0);
+        receivedByStudent.set(pm.studentId, received);
+      });
+
+      // 3. Sum up the difference for each student
+      const allStudentIds = new Set([
+        ...expectedByStudent.keys(),
+        ...receivedByStudent.keys(),
+      ]);
+
+      let lastMonthOutstanding = 0;
+      allStudentIds.forEach((studentId) => {
+        const expected = expectedByStudent.get(studentId) ?? 0;
+        const received = receivedByStudent.get(studentId) ?? 0;
+        const remaining = Math.max(0, expected - received);
+        lastMonthOutstanding += remaining;
+      });
 
       return {
         totalEarnings,
