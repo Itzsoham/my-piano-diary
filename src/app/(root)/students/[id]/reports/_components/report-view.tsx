@@ -47,6 +47,7 @@ interface ReportViewProps {
   month: number;
   year: number;
   includeStudentIdInQuery?: boolean;
+  reportBasePath?: string;
   studentControl?: ReactNode;
 }
 
@@ -55,6 +56,7 @@ export function ReportView({
   month,
   year,
   includeStudentIdInQuery = false,
+  reportBasePath,
   studentControl,
 }: ReportViewProps) {
   const router = useRouter();
@@ -221,6 +223,10 @@ export function ReportView({
 
   const handleMonthChange = (val: string) => {
     const newMonth = parseInt(val);
+    if (reportBasePath) {
+      router.push(`${reportBasePath}?month=${newMonth}&year=${year}`);
+      return;
+    }
     if (includeStudentIdInQuery) {
       router.push(`?studentId=${studentId}&month=${newMonth}&year=${year}`);
       return;
@@ -230,6 +236,10 @@ export function ReportView({
 
   const handleYearChange = (val: string) => {
     const newYear = parseInt(val);
+    if (reportBasePath) {
+      router.push(`${reportBasePath}?month=${month}&year=${newYear}`);
+      return;
+    }
     if (includeStudentIdInQuery) {
       router.push(`?studentId=${studentId}&month=${month}&year=${newYear}`);
       return;
@@ -298,6 +308,11 @@ export function ReportView({
   const { student, lessons } = data;
   const teacherName = data?.teacherName ?? "";
   const perSessionRate = data?.studentLessonRate ?? 0;
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from(
+    { length: 5 },
+    (_, index) => currentYear - 2 + index,
+  );
 
   // Calculate Stats
   const validLessons = lessons.filter((l) => l.status === "COMPLETE");
@@ -375,7 +390,7 @@ export function ReportView({
                 <SelectValue placeholder={t.yearPlaceholder} />
               </SelectTrigger>
               <SelectContent>
-                {[2024, 2025, 2026].map((y) => (
+                {yearOptions.map((y) => (
                   <SelectItem key={y} value={y.toString()}>
                     {y}
                   </SelectItem>

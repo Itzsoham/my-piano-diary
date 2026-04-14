@@ -8,6 +8,7 @@ import {
   Music,
   CalendarDays,
   FileText,
+  WalletCards,
 } from "lucide-react";
 
 import { NavMain } from "@/app/(root)/_components/nav-main";
@@ -61,6 +62,11 @@ const data = {
       title: "Reports",
       url: "/reports",
       icon: FileText,
+    },
+    {
+      title: "Payments",
+      url: "/payments",
+      icon: WalletCards,
     },
   ],
 };

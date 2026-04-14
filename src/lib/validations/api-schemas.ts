@@ -151,9 +151,7 @@ export const createRecurringLessonSchema = z.object({
   pieceId: z.string().cuid("Invalid piece ID").optional(),
   // IANA timezone string (e.g., "Asia/Kolkata", "America/New_York")
   // Server will validate this is a valid timezone
-  timezone: z
-    .string()
-    .min(1, "Timezone is required"),
+  timezone: z.string().min(1, "Timezone is required"),
 });
 
 export const deleteLessonSchema = z.object({
@@ -213,6 +211,22 @@ export const getStudentReportSchema = z.object({
     .max(2100, "Year must be 2100 or earlier"),
 });
 
+export const getReportsSchema = z.object({
+  studentId: z.string().cuid("Invalid student ID").optional(),
+  month: z
+    .number()
+    .int()
+    .min(1, "Month must be between 1 and 12")
+    .max(12, "Month must be between 1 and 12")
+    .optional(),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Year must be 2000 or later")
+    .max(2100, "Year must be 2100 or earlier")
+    .optional(),
+});
+
 export const upsertReportSchema = z.object({
   studentId: z.string().cuid("Invalid student ID"),
   month: z
@@ -236,6 +250,106 @@ export const upsertReportSchema = z.object({
   nextMonthPlan: z
     .string()
     .max(2000, "Next month plan must be less than 2000 characters")
+    .optional(),
+});
+
+export const deleteReportSchema = z.object({
+  studentId: z.string().cuid("Invalid student ID"),
+  month: z
+    .number()
+    .int()
+    .min(1, "Month must be between 1 and 12")
+    .max(12, "Month must be between 1 and 12"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Year must be 2000 or later")
+    .max(2100, "Year must be 2100 or earlier"),
+});
+
+/**
+ * Payment validation schemas
+ */
+export const paymentStatusSchema = z.enum(["UNPAID", "PARTIAL", "PAID"]);
+
+export const getPaymentForMonthSchema = z.object({
+  month: z
+    .number()
+    .int()
+    .min(1, "Month must be between 1 and 12")
+    .max(12, "Month must be between 1 and 12"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Year must be 2000 or later")
+    .max(2100, "Year must be 2100 or earlier"),
+  studentId: z.string().cuid("Invalid student ID").optional(),
+  status: paymentStatusSchema.optional(),
+});
+
+export const getOrCreatePaymentMonthSchema = z.object({
+  studentId: z.string().cuid("Invalid student ID"),
+  month: z
+    .number()
+    .int()
+    .min(1, "Month must be between 1 and 12")
+    .max(12, "Month must be between 1 and 12"),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Year must be 2000 or later")
+    .max(2100, "Year must be 2100 or earlier"),
+});
+
+export const addPaymentTransactionSchema = z.object({
+  paymentMonthId: z.string().cuid("Invalid payment month ID"),
+  studentId: z.string().cuid("Invalid student ID"),
+  amount: z.number().int().min(1, "Amount must be at least 1"),
+  date: z.date().optional(),
+  method: z
+    .string()
+    .max(50, "Method must be less than 50 characters")
+    .optional(),
+  note: z.string().max(500, "Note must be less than 500 characters").optional(),
+});
+
+export const updatePaymentTransactionSchema = z.object({
+  transactionId: z.string().cuid("Invalid transaction ID"),
+  amount: z.number().int().min(1, "Amount must be at least 1").optional(),
+  date: z.date().optional(),
+  method: z
+    .string()
+    .max(50, "Method must be less than 50 characters")
+    .optional(),
+  note: z.string().max(500, "Note must be less than 500 characters").optional(),
+});
+
+export const deletePaymentTransactionSchema = z.object({
+  transactionId: z.string().cuid("Invalid transaction ID"),
+});
+
+export const getPaymentStudentHistorySchema = z.object({
+  studentId: z.string().cuid("Invalid student ID"),
+  limit: z
+    .number()
+    .int()
+    .min(1, "Limit must be at least 1")
+    .max(36, "Limit cannot exceed 36")
+    .default(12),
+});
+
+export const getPaymentUnpaidSummarySchema = z.object({
+  month: z
+    .number()
+    .int()
+    .min(1, "Month must be between 1 and 12")
+    .max(12, "Month must be between 1 and 12")
+    .optional(),
+  year: z
+    .number()
+    .int()
+    .min(2000, "Year must be 2000 or later")
+    .max(2100, "Year must be 2100 or earlier")
     .optional(),
 });
 
@@ -290,7 +404,30 @@ export type GetMonthLessonsInput = z.infer<typeof getMonthLessonsSchema>;
 export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
 
 export type GetStudentReportInput = z.infer<typeof getStudentReportSchema>;
+export type GetReportsInput = z.infer<typeof getReportsSchema>;
 export type UpsertReportInput = z.infer<typeof upsertReportSchema>;
+export type DeleteReportInput = z.infer<typeof deleteReportSchema>;
+
+export type PaymentStatusInput = z.infer<typeof paymentStatusSchema>;
+export type GetPaymentForMonthInput = z.infer<typeof getPaymentForMonthSchema>;
+export type GetOrCreatePaymentMonthInput = z.infer<
+  typeof getOrCreatePaymentMonthSchema
+>;
+export type AddPaymentTransactionInput = z.infer<
+  typeof addPaymentTransactionSchema
+>;
+export type UpdatePaymentTransactionInput = z.infer<
+  typeof updatePaymentTransactionSchema
+>;
+export type DeletePaymentTransactionInput = z.infer<
+  typeof deletePaymentTransactionSchema
+>;
+export type GetPaymentStudentHistoryInput = z.infer<
+  typeof getPaymentStudentHistorySchema
+>;
+export type GetPaymentUnpaidSummaryInput = z.infer<
+  typeof getPaymentUnpaidSummarySchema
+>;
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;

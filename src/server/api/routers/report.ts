@@ -1,9 +1,60 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { idSchema } from "@/lib/validations/common-schemas";
+import {
+  deleteReportSchema,
+  getReportsSchema,
+} from "@/lib/validations/api-schemas";
 import { getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
 
 export const reportRouter = createTRPCRouter({
+  getAll: protectedProcedure
+    .input(getReportsSchema.optional())
+    .query(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        return [];
+      }
+
+      if (input?.studentId) {
+        const student = await ctx.db.student.findFirst({
+          where: {
+            id: input.studentId,
+            teacherId: teacher.id,
+          },
+          select: { id: true },
+        });
+
+        if (!student) {
+          throw new Error("Student not found");
+        }
+      }
+
+      return ctx.db.monthlyReport.findMany({
+        where: {
+          student: {
+            teacherId: teacher.id,
+          },
+          ...(input?.studentId ? { studentId: input.studentId } : {}),
+          ...(input?.month ? { month: input.month } : {}),
+          ...(input?.year ? { year: input.year } : {}),
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+        },
+        orderBy: [{ year: "desc" }, { month: "desc" }, { updatedAt: "desc" }],
+      });
+    }),
+
   // Generate monthly preview data
   generatePreview: protectedProcedure
     .input(
@@ -159,6 +210,55 @@ export const reportRouter = createTRPCRouter({
       }
 
       return ctx.db.monthlyReport.findUnique({
+        where: {
+          studentId_month_year: {
+            studentId: input.studentId,
+            month: input.month,
+            year: input.year,
+          },
+        },
+      });
+    }),
+
+  delete: protectedProcedure
+    .input(deleteReportSchema)
+    .mutation(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        throw new Error("Teacher not found");
+      }
+
+      const student = await ctx.db.student.findFirst({
+        where: {
+          id: input.studentId,
+          teacherId: teacher.id,
+        },
+        select: { id: true },
+      });
+
+      if (!student) {
+        throw new Error("Student not found");
+      }
+
+      const report = await ctx.db.monthlyReport.findUnique({
+        where: {
+          studentId_month_year: {
+            studentId: input.studentId,
+            month: input.month,
+            year: input.year,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!report) {
+        throw new Error("Report not found");
+      }
+
+      return ctx.db.monthlyReport.delete({
         where: {
           studentId_month_year: {
             studentId: input.studentId,

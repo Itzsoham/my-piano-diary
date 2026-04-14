@@ -14,6 +14,8 @@ interface DashboardData {
   currentMonthEarnings: number;
   currentMonthLoss: number;
   totalStudents: number;
+  lastMonthCollected: number;
+  lastMonthOutstanding: number;
 }
 
 interface StudentEarningsData {
@@ -63,6 +65,8 @@ export const earningsRouter = createTRPCRouter({
           currentMonthEarnings: 0,
           currentMonthLoss: 0,
           totalStudents: 0,
+          lastMonthCollected: 0,
+          lastMonthOutstanding: 0,
         };
       }
 
@@ -161,11 +165,63 @@ export const earningsRouter = createTRPCRouter({
         where: { teacherId: teacher.id },
       });
 
+      // Get Last Month boundaries
+      const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+
+      const lastMonthStart = getStartOfMonthUTC(
+        lastMonth,
+        lastMonthYear,
+        timezone,
+      );
+      const lastMonthEnd = getEndOfMonthUTC(
+        lastMonth,
+        lastMonthYear,
+        timezone,
+      );
+
+      // Calculate total collected last month (sum of transactions)
+      const lastMonthTransactions = await ctx.db.paymentTransaction.aggregate({
+        where: {
+          teacherId: teacher.id,
+          date: {
+            gte: lastMonthStart,
+            lte: lastMonthEnd,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      });
+
+      const lastMonthCollected = lastMonthTransactions._sum.amount ?? 0;
+
+      // Calculate outstanding for last month
+      // We need to look at PaymentMonth records for last month
+      const lastMonthPayments = await ctx.db.paymentMonth.findMany({
+        where: {
+          teacherId: teacher.id,
+          month: lastMonth,
+          year: lastMonthYear,
+        },
+        include: {
+          transactions: true,
+        },
+      });
+
+      const lastMonthOutstanding = lastMonthPayments.reduce((sum, pm) => {
+        const received = pm.transactions.reduce((s, t) => s + t.amount, 0);
+        const remaining = Math.max(0, pm.expectedAmount - received);
+        return sum + remaining;
+      }, 0);
+
       return {
         totalEarnings,
         currentMonthEarnings,
         currentMonthLoss,
         totalStudents,
+        lastMonthCollected,
+        lastMonthOutstanding,
       };
     },
   ),

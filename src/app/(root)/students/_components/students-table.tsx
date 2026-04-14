@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   Table as TableIcon,
   Search,
+  WalletCards,
 } from "lucide-react";
 import {
   flexRender,
@@ -84,11 +85,17 @@ export function StudentsTable({ data }: StudentsTableProps) {
   const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
   const reportYear =
     currentMonth === 1 ? now.getFullYear() - 1 : now.getFullYear();
+  const currentYear = now.getFullYear();
 
   const reportLink = React.useCallback(
     (studentId: string) =>
-      `/reports?studentId=${studentId}&month=${lastMonth}&year=${reportYear}`,
+      `/reports/${studentId}?month=${lastMonth}&year=${reportYear}`,
     [lastMonth, reportYear],
+  );
+  const paymentLink = React.useCallback(
+    (studentId: string) =>
+      `/payments?studentId=${studentId}&month=${currentMonth}&year=${currentYear}`,
+    [currentMonth, currentYear],
   );
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -135,6 +142,18 @@ export function StudentsTable({ data }: StudentsTableProps) {
 
   const utils = api.useUtils();
   const router = useRouter();
+  const { data: paymentRows = [] } = api.payment.getForMonth.useQuery({
+    month: currentMonth,
+    year: currentYear,
+  });
+
+  const paymentStatusByStudent = React.useMemo(
+    () =>
+      new Map(
+        paymentRows.map((payment) => [payment.studentId, payment.status]),
+      ),
+    [paymentRows],
+  );
   const deleteStudent = api.student.delete.useMutation({
     onMutate: async (_vars) => {
       toast.success("Student deleted successfully", { id: "student-delete" });
@@ -208,6 +227,39 @@ export function StudentsTable({ data }: StudentsTableProps) {
       ),
     },
     {
+      id: "paymentStatus",
+      header: "Payment",
+      cell: ({ row }) => {
+        const paymentStatus = paymentStatusByStudent.get(row.original.id);
+
+        if (!paymentStatus) {
+          return <Badge variant="outline">-</Badge>;
+        }
+
+        if (paymentStatus === "PAID") {
+          return (
+            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+              PAID
+            </Badge>
+          );
+        }
+
+        if (paymentStatus === "PARTIAL") {
+          return (
+            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+              PARTIAL
+            </Badge>
+          );
+        }
+
+        return (
+          <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">
+            UNPAID
+          </Badge>
+        );
+      },
+    },
+    {
       accessorKey: "createdAt",
       header: "Joined",
       cell: ({ row }) => (
@@ -260,6 +312,12 @@ export function StudentsTable({ data }: StudentsTableProps) {
                   <Link href={reportLink(student.id)}>
                     <FileText className="mr-2 size-4" />
                     View Reports
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={paymentLink(student.id)}>
+                    <WalletCards className="mr-2 size-4" />
+                    View Payments
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -474,6 +532,12 @@ export function StudentsTable({ data }: StudentsTableProps) {
                           <Link href={reportLink(student.id)}>
                             <FileText className="mr-2 size-4" />
                             View Reports
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={paymentLink(student.id)}>
+                            <WalletCards className="mr-2 size-4" />
+                            View Payments
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
