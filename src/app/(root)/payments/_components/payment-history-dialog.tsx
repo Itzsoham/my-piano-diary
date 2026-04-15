@@ -62,8 +62,13 @@ export function PaymentHistoryDialog({
                 className="rounded-xl border border-pink-100 bg-white p-4"
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="font-semibold text-pink-900">
-                    {monthRecord.month}/{monthRecord.year}
+                  <div>
+                    <div className="text-xs font-medium tracking-wide text-pink-700/70 uppercase">
+                      Billing Month
+                    </div>
+                    <div className="font-semibold text-pink-900">
+                      {monthRecord.month}/{monthRecord.year}
+                    </div>
                   </div>
                   <Badge variant="outline">{monthRecord.status}</Badge>
                 </div>
@@ -102,6 +107,7 @@ export function PaymentHistoryDialog({
                       >
                         <div>
                           <div className="font-medium text-pink-900">
+                            Recorded date:{" "}
                             {format(new Date(transaction.date), "MMM d, yyyy")}
                           </div>
                           <div className="text-pink-700/70">

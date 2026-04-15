@@ -133,19 +133,8 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
       placeholderData: keepPreviousData,
     },
   );
-
-  const summary = useMemo(
-    () =>
-      payments.reduce(
-        (acc, payment) => ({
-          expected: acc.expected + payment.expectedAmount,
-          received: acc.received + payment.receivedAmount,
-          remaining: acc.remaining + payment.remainingAmount,
-        }),
-        { expected: 0, received: 0, remaining: 0 },
-      ),
-    [payments],
-  );
+  const { data: overallSummary, isPending: isOverallSummaryPending } =
+    api.payment.getOverallSummary.useQuery();
 
   const yearOptions = Array.from(
     { length: 5 },
@@ -165,31 +154,51 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium text-pink-700/80 uppercase">
-            Expected
+        <div className="rounded-2xl border border-pink-200 bg-linear-to-br from-rose-50 via-white to-pink-50 p-4 shadow-sm">
+          <p className="text-xs font-semibold tracking-wide text-pink-700/80 uppercase">
+            Total Expected
           </p>
           <p className="mt-2 text-2xl font-semibold text-pink-900">
-            {formatCurrency(summary.expected, currency)}
+            {isOverallSummaryPending
+              ? "Calculating..."
+              : formatCurrency(overallSummary?.totalExpected ?? 0, currency)}
+          </p>
+          <p className="mt-1 text-xs text-pink-700/70">
+            All completed lessons till now
           </p>
         </div>
-        <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium text-emerald-700/80 uppercase">
-            Received
+        <div className="rounded-2xl border border-emerald-200 bg-linear-to-br from-emerald-50 via-white to-teal-50 p-4 shadow-sm">
+          <p className="text-xs font-semibold tracking-wide text-emerald-700/80 uppercase">
+            Total Received
           </p>
           <p className="mt-2 text-2xl font-semibold text-emerald-700">
-            {formatCurrency(summary.received, currency)}
+            {isOverallSummaryPending
+              ? "Calculating..."
+              : formatCurrency(overallSummary?.totalReceived ?? 0, currency)}
+          </p>
+          <p className="mt-1 text-xs text-emerald-700/70">
+            All payment transactions till now
           </p>
         </div>
-        <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
-          <p className="text-xs font-medium text-amber-700/80 uppercase">
-            Outstanding
+        <div className="rounded-2xl border border-amber-200 bg-linear-to-br from-amber-50 via-white to-orange-50 p-4 shadow-sm">
+          <p className="text-xs font-semibold tracking-wide text-amber-700/80 uppercase">
+            Total Outstanding
           </p>
           <p className="mt-2 text-2xl font-semibold text-amber-700">
-            {formatCurrency(summary.remaining, currency)}
+            {isOverallSummaryPending
+              ? "Calculating..."
+              : formatCurrency(overallSummary?.totalOutstanding ?? 0, currency)}
+          </p>
+          <p className="mt-1 text-xs text-amber-700/70">
+            Remaining due across all students
           </p>
         </div>
       </div>
+
+      <p className="text-muted-foreground -mt-1 text-xs">
+        Top cards show all-time totals. Filters below apply to the monthly
+        table.
+      </p>
 
       <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm md:p-6">
         <div className="grid grid-cols-1 gap-2.5 md:grid-cols-5 md:items-end md:gap-3">

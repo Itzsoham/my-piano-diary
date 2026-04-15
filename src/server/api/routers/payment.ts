@@ -1,7 +1,12 @@
 ﻿import { type PrismaClient } from "@prisma/client";
 
 import { calculateRemaining, derivePaymentStatus } from "@/lib/payment";
-import { fromUTC, getEndOfMonthUTC, getStartOfMonthUTC } from "@/lib/timezone";
+import {
+  createDateInTimezone,
+  fromUTC,
+  getEndOfMonthUTC,
+  getStartOfMonthUTC,
+} from "@/lib/timezone";
 import {
   addPaymentTransactionSchema,
   deletePaymentTransactionSchema,
@@ -58,6 +63,31 @@ const getTeacherOrThrow = async (db: PrismaClient, userId: string) => {
   }
 
   return teacher;
+};
+
+const parseDateOnlyToUTC = (dateValue: string, timezone: string): Date => {
+  const [year, month, day] = dateValue.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    throw new Error("Invalid payment date format");
+  }
+
+  return createDateInTimezone(year, month - 1, day, 0, 0, timezone);
+};
+
+const normalizePaymentDateInput = (
+  dateInput: Date | string | undefined,
+  timezone: string,
+): Date | undefined => {
+  if (dateInput === undefined) {
+    return undefined;
+  }
+
+  if (typeof dateInput === "string") {
+    return parseDateOnlyToUTC(dateInput, timezone);
+  }
+
+  return dateInput;
 };
 
 const buildMonthPaymentRows = async ({
@@ -146,6 +176,7 @@ const buildMonthPaymentRows = async ({
   );
 
   const rows: PaymentRow[] = [];
+  const fallbackTimestamp = new Date(0);
 
   for (const student of students) {
     const completedLessonCount = lessonCountByStudent.get(student.id) ?? 0;
@@ -156,65 +187,24 @@ const buildMonthPaymentRows = async ({
       continue;
     }
 
-    let paymentMonth = existingPaymentMonth;
+    const transactions = existingPaymentMonth?.transactions ?? [];
 
-    if (!paymentMonth) {
-      paymentMonth = await db.paymentMonth.upsert({
-        where: {
-          studentId_month_year: {
-            studentId: student.id,
-            month,
-            year,
-          },
-        },
-        create: {
-          studentId: student.id,
-          teacherId,
-          month,
-          year,
-          expectedAmount,
-        },
-        update: {
-          expectedAmount,
-        },
-        include: {
-          transactions: {
-            orderBy: {
-              date: "desc",
-            },
-          },
-        },
-      });
-    } else if (paymentMonth.expectedAmount !== expectedAmount) {
-      paymentMonth = await db.paymentMonth.update({
-        where: { id: paymentMonth.id },
-        data: { expectedAmount },
-        include: {
-          transactions: {
-            orderBy: {
-              date: "desc",
-            },
-          },
-        },
-      });
-    }
-
-    const receivedAmount = paymentMonth.transactions.reduce(
+    const receivedAmount = transactions.reduce(
       (sum, transaction) => sum + transaction.amount,
       0,
     );
 
     rows.push({
-      id: paymentMonth.id,
-      studentId: paymentMonth.studentId,
-      teacherId: paymentMonth.teacherId,
-      month: paymentMonth.month,
-      year: paymentMonth.year,
+      id: existingPaymentMonth?.id ?? `${student.id}-${month}-${year}`,
+      studentId: student.id,
+      teacherId,
+      month,
+      year,
       expectedAmount,
-      createdAt: paymentMonth.createdAt,
-      updatedAt: paymentMonth.updatedAt,
+      createdAt: existingPaymentMonth?.createdAt ?? fallbackTimestamp,
+      updatedAt: existingPaymentMonth?.updatedAt ?? fallbackTimestamp,
       student,
-      transactions: paymentMonth.transactions,
+      transactions,
       receivedAmount,
       remainingAmount: calculateRemaining(expectedAmount, receivedAmount),
       status: derivePaymentStatus(expectedAmount, receivedAmount),
@@ -225,11 +215,81 @@ const buildMonthPaymentRows = async ({
 };
 
 export const paymentRouter = createTRPCRouter({
+  getOverallSummary: protectedProcedure.query(async ({ ctx }) => {
+    const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
+
+    const [students, completedLessonsByStudent, receivedByStudent] =
+      await Promise.all([
+        ctx.db.student.findMany({
+          where: {
+            teacherId: teacher.id,
+          },
+          select: {
+            id: true,
+            lessonRate: true,
+          },
+        }),
+        ctx.db.lesson.groupBy({
+          by: ["studentId"],
+          where: {
+            teacherId: teacher.id,
+            status: "COMPLETE",
+          },
+          _count: {
+            _all: true,
+          },
+        }),
+        ctx.db.paymentTransaction.groupBy({
+          by: ["studentId"],
+          where: {
+            teacherId: teacher.id,
+          },
+          _sum: {
+            amount: true,
+          },
+        }),
+      ]);
+
+    const lessonCountByStudent = new Map(
+      completedLessonsByStudent.map((entry) => [
+        entry.studentId,
+        entry._count._all,
+      ]),
+    );
+    const receivedAmountByStudent = new Map(
+      receivedByStudent.map((entry) => [
+        entry.studentId,
+        entry._sum.amount ?? 0,
+      ]),
+    );
+
+    let totalExpected = 0;
+    let totalReceived = 0;
+    let totalOutstanding = 0;
+
+    for (const student of students) {
+      const lessonCount = lessonCountByStudent.get(student.id) ?? 0;
+      const expected = lessonCount * student.lessonRate;
+      const received = receivedAmountByStudent.get(student.id) ?? 0;
+
+      totalExpected += expected;
+      totalReceived += received;
+      totalOutstanding += calculateRemaining(expected, received);
+    }
+
+    return {
+      totalExpected,
+      totalReceived,
+      totalOutstanding,
+      studentCount: students.length,
+    };
+  }),
+
   getForMonth: protectedProcedure
     .input(getPaymentForMonthSchema)
     .query(async ({ ctx, input }) => {
       const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
-      const timezone = teacher.user?.timezone ?? "UTC";
+      const timezone = ctx.session.user.timezone ?? "UTC";
 
       const rows = await buildMonthPaymentRows({
         db: ctx.db,
@@ -251,7 +311,7 @@ export const paymentRouter = createTRPCRouter({
     .input(getOrCreatePaymentMonthSchema)
     .query(async ({ ctx, input }) => {
       const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
-      const timezone = teacher.user?.timezone ?? "UTC";
+      const timezone = ctx.session.user.timezone ?? "UTC";
       const startDate = getStartOfMonthUTC(input.month, input.year, timezone);
       const endDate = getEndOfMonthUTC(input.month, input.year, timezone);
 
@@ -332,6 +392,7 @@ export const paymentRouter = createTRPCRouter({
     .input(addPaymentTransactionSchema)
     .mutation(async ({ ctx, input }) => {
       const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
+      const timezone = ctx.session.user.timezone ?? "UTC";
 
       const paymentMonth = await ctx.db.paymentMonth.findFirst({
         where: {
@@ -345,6 +406,8 @@ export const paymentRouter = createTRPCRouter({
         throw new Error("Payment month record not found");
       }
 
+      const normalizedDate = normalizePaymentDateInput(input.date, timezone);
+
       await ctx.db.paymentTransaction.create({
         data: {
           paymentMonthId: input.paymentMonthId,
@@ -353,7 +416,7 @@ export const paymentRouter = createTRPCRouter({
           amount: input.amount,
           method: input.method,
           note: input.note,
-          date: input.date ?? new Date(),
+          date: normalizedDate ?? new Date(),
         },
       });
 
@@ -400,6 +463,7 @@ export const paymentRouter = createTRPCRouter({
     .input(updatePaymentTransactionSchema)
     .mutation(async ({ ctx, input }) => {
       const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
+      const timezone = ctx.session.user.timezone ?? "UTC";
 
       const transaction = await ctx.db.paymentTransaction.findFirst({
         where: {
@@ -420,7 +484,9 @@ export const paymentRouter = createTRPCRouter({
           ...(input.amount !== undefined ? { amount: input.amount } : {}),
           ...(input.method !== undefined ? { method: input.method } : {}),
           ...(input.note !== undefined ? { note: input.note } : {}),
-          ...(input.date !== undefined ? { date: input.date } : {}),
+          ...(input.date !== undefined
+            ? { date: normalizePaymentDateInput(input.date, timezone) }
+            : {}),
         },
       });
     }),
@@ -470,6 +536,9 @@ export const paymentRouter = createTRPCRouter({
         where: {
           teacherId: teacher.id,
           studentId: input.studentId,
+          transactions: {
+            some: {},
+          },
         },
         include: {
           student: {
@@ -515,7 +584,7 @@ export const paymentRouter = createTRPCRouter({
     .input(getPaymentUnpaidSummarySchema)
     .query(async ({ ctx, input }) => {
       const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
-      const timezone = teacher.user?.timezone ?? "UTC";
+      const timezone = ctx.session.user.timezone ?? "UTC";
       const nowInTimezone = fromUTC(new Date(), timezone);
       const month = input.month ?? nowInTimezone.getMonth() + 1;
       const year = input.year ?? nowInTimezone.getFullYear();

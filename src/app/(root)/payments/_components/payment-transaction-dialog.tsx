@@ -81,8 +81,10 @@ export function PaymentTransactionDialog({
       setNote("");
       setDate(format(new Date(), "yyyy-MM-dd"));
       onOpenChange(false);
-      await utils.payment.getForMonth.invalidate({ month, year });
+      await utils.payment.getForMonth.invalidate();
       await utils.payment.getUnpaidSummary.invalidate();
+      await utils.payment.getOverallSummary.invalidate();
+      await utils.earnings.getDashboard.invalidate();
       if (studentId) {
         await utils.payment.getStudentHistory.invalidate({
           studentId,
@@ -118,7 +120,7 @@ export function PaymentTransactionDialog({
       amount: parsedAmount,
       method: method || undefined,
       note: note || undefined,
-      date: date ? new Date(`${date}T00:00:00`) : undefined,
+      date: date || undefined,
     });
   };
 

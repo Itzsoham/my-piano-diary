@@ -305,7 +305,17 @@ export const addPaymentTransactionSchema = z.object({
   paymentMonthId: z.string().cuid("Invalid payment month ID"),
   studentId: z.string().cuid("Invalid student ID"),
   amount: z.number().int().min(1, "Amount must be at least 1"),
-  date: z.date().optional(),
+  date: z
+    .union([
+      z.date(),
+      z
+        .string()
+        .regex(
+          /^\d{4}-\d{2}-\d{2}$/,
+          "Invalid date format. Expected YYYY-MM-DD",
+        ),
+    ])
+    .optional(),
   method: z
     .string()
     .max(50, "Method must be less than 50 characters")
@@ -316,7 +326,17 @@ export const addPaymentTransactionSchema = z.object({
 export const updatePaymentTransactionSchema = z.object({
   transactionId: z.string().cuid("Invalid transaction ID"),
   amount: z.number().int().min(1, "Amount must be at least 1").optional(),
-  date: z.date().optional(),
+  date: z
+    .union([
+      z.date(),
+      z
+        .string()
+        .regex(
+          /^\d{4}-\d{2}-\d{2}$/,
+          "Invalid date format. Expected YYYY-MM-DD",
+        ),
+    ])
+    .optional(),
   method: z
     .string()
     .max(50, "Method must be less than 50 characters")

@@ -1,17 +1,14 @@
 "use client";
 
-import {
-  TrendingDown,
-  CreditCard,
-  Sparkles,
-  WalletCards,
-} from "lucide-react";
+import { TrendingDown, CreditCard, Sparkles, WalletCards } from "lucide-react";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
+import { fromUTC } from "@/lib/timezone";
+import { useSession } from "next-auth/react";
 
 export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
@@ -22,9 +19,11 @@ export function SectionCards() {
       isLoading: boolean;
     };
   const { currency } = useCurrency();
+  const { data: session } = useSession();
+  const timezone = session?.user?.timezone ?? "UTC";
 
-  // Determine last month name
-  const now = new Date();
+  // Determine month labels using the same timezone basis as backend calculations
+  const now = fromUTC(new Date(), timezone);
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthName = lastMonthDate.toLocaleString("default", {
     month: "long",
@@ -60,8 +59,7 @@ export function SectionCards() {
             </div>
 
             <p className="text-muted-foreground/80 mt-2 text-xs">
-              Revenue for{" "}
-              {now.toLocaleString("default", { month: "long" })}
+              Revenue for {now.toLocaleString("default", { month: "long" })}
             </p>
           </div>
         </div>

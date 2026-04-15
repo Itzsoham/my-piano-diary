@@ -174,27 +174,26 @@ export const earningsRouter = createTRPCRouter({
         lastMonthYear,
         timezone,
       );
-      const lastMonthEnd = getEndOfMonthUTC(
-        lastMonth,
-        lastMonthYear,
-        timezone,
-      );
+      const lastMonthEnd = getEndOfMonthUTC(lastMonth, lastMonthYear, timezone);
 
-      // Calculate total collected last month (sum of transactions)
-      const lastMonthTransactions = await ctx.db.paymentTransaction.aggregate({
+      // Calculate total collected for last billing month (sum transactions under that month record)
+      const lastMonthPaymentsForCollected = await ctx.db.paymentMonth.findMany({
         where: {
           teacherId: teacher.id,
-          date: {
-            gte: lastMonthStart,
-            lte: lastMonthEnd,
-          },
+          month: lastMonth,
+          year: lastMonthYear,
         },
-        _sum: {
-          amount: true,
+        include: {
+          transactions: true,
         },
       });
 
-      const lastMonthCollected = lastMonthTransactions._sum.amount ?? 0;
+      const lastMonthCollected = lastMonthPaymentsForCollected.reduce(
+        (sum, paymentMonth) =>
+          sum +
+          paymentMonth.transactions.reduce((txSum, tx) => txSum + tx.amount, 0),
+        0,
+      );
 
       // Calculate outstanding for last month
       // 1. Get all completed lessons for last month to know the expected amount
@@ -226,7 +225,7 @@ export const earningsRouter = createTRPCRouter({
         );
       });
 
-      // 2. Get all payment records for last month to know the received amount
+      // 2. Get all payment month records for last month to know received amount by student
       const lastMonthPayments = await ctx.db.paymentMonth.findMany({
         where: {
           teacherId: teacher.id,
