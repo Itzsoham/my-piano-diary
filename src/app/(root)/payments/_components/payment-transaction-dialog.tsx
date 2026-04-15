@@ -32,6 +32,7 @@ interface PaymentTransactionDialogProps {
   month: number;
   year: number;
   students: { id: string; name: string; avatar: string | null }[];
+  payments: { studentId: string; expectedAmount: number }[];
   initialStudentId?: string;
 }
 
@@ -41,6 +42,7 @@ export function PaymentTransactionDialog({
   month,
   year,
   students,
+  payments,
   initialStudentId,
 }: PaymentTransactionDialogProps) {
   const utils = api.useUtils();
@@ -62,15 +64,9 @@ export function PaymentTransactionDialog({
     [students, studentId],
   );
 
-  const monthRecord = api.payment.getOrCreateMonthRecord.useQuery(
-    {
-      studentId,
-      month,
-      year,
-    },
-    {
-      enabled: open && !!studentId,
-    },
+  const expectedAmount = useMemo(
+    () => payments.find((p) => p.studentId === studentId)?.expectedAmount ?? 0,
+    [payments, studentId],
   );
 
   const addTransaction = api.payment.addTransaction.useMutation({
@@ -109,14 +105,10 @@ export function PaymentTransactionDialog({
       return;
     }
 
-    if (!monthRecord.data?.id) {
-      toast.error("Payment month record not ready yet");
-      return;
-    }
-
     addTransaction.mutate({
-      paymentMonthId: monthRecord.data.id,
       studentId,
+      month,
+      year,
       amount: parsedAmount,
       method: method || undefined,
       note: note || undefined,
@@ -154,14 +146,11 @@ export function PaymentTransactionDialog({
                 {selectedStudent.name}
               </div>
               <div className="text-pink-700/80">
-                Month: {month}/{year}
+                Billing Month: {month}/{year}
               </div>
-              {monthRecord.data && (
-                <div className="mt-1 text-pink-700/80">
-                  Expected:{" "}
-                  {formatCurrency(monthRecord.data.expectedAmount, currency)}
-                </div>
-              )}
+              <div className="mt-1 text-pink-700/80">
+                Expected: {formatCurrency(expectedAmount, currency)}
+              </div>
             </div>
           )}
 
@@ -210,10 +199,7 @@ export function PaymentTransactionDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={addTransaction.isPending || monthRecord.isLoading}
-          >
+          <Button onClick={handleSubmit} disabled={addTransaction.isPending}>
             {addTransaction.isPending ? "Saving..." : "Record payment"}
           </Button>
         </DialogFooter>

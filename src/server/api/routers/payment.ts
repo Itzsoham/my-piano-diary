@@ -10,7 +10,6 @@ import {
 import {
   addPaymentTransactionSchema,
   deletePaymentTransactionSchema,
-  getOrCreatePaymentMonthSchema,
   getPaymentForMonthSchema,
   getPaymentStudentHistorySchema,
   getPaymentUnpaidSummarySchema,
@@ -307,39 +306,35 @@ export const paymentRouter = createTRPCRouter({
       return rows.filter((row) => row.status === input.status);
     }),
 
-  getOrCreateMonthRecord: protectedProcedure
-    .input(getOrCreatePaymentMonthSchema)
-    .query(async ({ ctx, input }) => {
+  addTransaction: protectedProcedure
+    .input(addPaymentTransactionSchema)
+    .mutation(async ({ ctx, input }) => {
       const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
       const timezone = ctx.session.user.timezone ?? "UTC";
-      const startDate = getStartOfMonthUTC(input.month, input.year, timezone);
-      const endDate = getEndOfMonthUTC(input.month, input.year, timezone);
 
       const student = await ctx.db.student.findFirst({
-        where: {
-          id: input.studentId,
-          teacherId: teacher.id,
-        },
+        where: { id: input.studentId, teacherId: teacher.id },
       });
 
       if (!student) {
         throw new Error("Student not found");
       }
 
+      const startDate = getStartOfMonthUTC(input.month, input.year, timezone);
+      const endDate = getEndOfMonthUTC(input.month, input.year, timezone);
+
       const completedCount = await ctx.db.lesson.count({
         where: {
           studentId: input.studentId,
           teacherId: teacher.id,
           status: "COMPLETE",
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
+          date: { gte: startDate, lte: endDate },
         },
       });
 
       const expectedAmount = completedCount * student.lessonRate;
 
+      // Create paymentMonth only now — not on page load or dialog open
       const paymentMonth = await ctx.db.paymentMonth.upsert({
         where: {
           studentId_month_year: {
@@ -355,62 +350,14 @@ export const paymentRouter = createTRPCRouter({
           year: input.year,
           expectedAmount,
         },
-        update: {
-          expectedAmount,
-        },
-        include: {
-          transactions: {
-            orderBy: {
-              date: "desc",
-            },
-          },
-          student: {
-            select: {
-              id: true,
-              name: true,
-              avatar: true,
-              lessonRate: true,
-            },
-          },
-        },
+        update: { expectedAmount },
       });
-
-      const receivedAmount = paymentMonth.transactions.reduce(
-        (sum, transaction) => sum + transaction.amount,
-        0,
-      );
-
-      return {
-        ...paymentMonth,
-        receivedAmount,
-        remainingAmount: calculateRemaining(expectedAmount, receivedAmount),
-        status: derivePaymentStatus(expectedAmount, receivedAmount),
-      };
-    }),
-
-  addTransaction: protectedProcedure
-    .input(addPaymentTransactionSchema)
-    .mutation(async ({ ctx, input }) => {
-      const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
-      const timezone = ctx.session.user.timezone ?? "UTC";
-
-      const paymentMonth = await ctx.db.paymentMonth.findFirst({
-        where: {
-          id: input.paymentMonthId,
-          teacherId: teacher.id,
-          studentId: input.studentId,
-        },
-      });
-
-      if (!paymentMonth) {
-        throw new Error("Payment month record not found");
-      }
 
       const normalizedDate = normalizePaymentDateInput(input.date, timezone);
 
       await ctx.db.paymentTransaction.create({
         data: {
-          paymentMonthId: input.paymentMonthId,
+          paymentMonthId: paymentMonth.id,
           studentId: input.studentId,
           teacherId: teacher.id,
           amount: input.amount,
@@ -421,20 +368,11 @@ export const paymentRouter = createTRPCRouter({
       });
 
       const refreshed = await ctx.db.paymentMonth.findUnique({
-        where: { id: input.paymentMonthId },
+        where: { id: paymentMonth.id },
         include: {
-          transactions: {
-            orderBy: {
-              date: "desc",
-            },
-          },
+          transactions: { orderBy: { date: "desc" } },
           student: {
-            select: {
-              id: true,
-              name: true,
-              avatar: true,
-              lessonRate: true,
-            },
+            select: { id: true, name: true, avatar: true, lessonRate: true },
           },
         },
       });

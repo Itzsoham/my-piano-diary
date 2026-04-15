@@ -321,6 +321,7 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
         month={queryInput.month}
         year={queryInput.year}
         students={students}
+        payments={payments}
         initialStudentId={addStudentId}
       />
 

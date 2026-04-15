@@ -287,7 +287,7 @@ export const getPaymentForMonthSchema = z.object({
   status: paymentStatusSchema.optional(),
 });
 
-export const getOrCreatePaymentMonthSchema = z.object({
+export const addPaymentTransactionSchema = z.object({
   studentId: z.string().cuid("Invalid student ID"),
   month: z
     .number()
@@ -299,11 +299,6 @@ export const getOrCreatePaymentMonthSchema = z.object({
     .int()
     .min(2000, "Year must be 2000 or later")
     .max(2100, "Year must be 2100 or earlier"),
-});
-
-export const addPaymentTransactionSchema = z.object({
-  paymentMonthId: z.string().cuid("Invalid payment month ID"),
-  studentId: z.string().cuid("Invalid student ID"),
   amount: z.number().int().min(1, "Amount must be at least 1"),
   date: z
     .union([
@@ -430,9 +425,6 @@ export type DeleteReportInput = z.infer<typeof deleteReportSchema>;
 
 export type PaymentStatusInput = z.infer<typeof paymentStatusSchema>;
 export type GetPaymentForMonthInput = z.infer<typeof getPaymentForMonthSchema>;
-export type GetOrCreatePaymentMonthInput = z.infer<
-  typeof getOrCreatePaymentMonthSchema
->;
 export type AddPaymentTransactionInput = z.infer<
   typeof addPaymentTransactionSchema
 >;
