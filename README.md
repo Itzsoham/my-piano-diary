@@ -69,3 +69,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Deploy
 
 Deploy to [Vercel](https://create.t3.gg/en/deployment/vercel) — set environment variables and connect your database.
+
+---
+🎂 Happy Birthday! This update was made on the `birthday` branch.
+
