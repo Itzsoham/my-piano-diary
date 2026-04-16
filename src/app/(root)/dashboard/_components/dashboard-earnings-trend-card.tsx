@@ -99,7 +99,10 @@ export function DashboardEarningsTrendCard({
               No completed lessons yet this month.
             </div>
           ) : (
-            <ChartContainer config={chartConfig} className="h-full min-h-72 w-full">
+            <ChartContainer
+              config={chartConfig}
+              className="h-full min-h-72 w-full"
+            >
               <LineChart
                 accessibilityLayer
                 data={trendData}
@@ -118,8 +121,17 @@ export function DashboardEarningsTrendCard({
                     <stop offset="100%" stopColor="#f59e0b" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 8" opacity={0.18} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} minTickGap={20} />
+                <CartesianGrid
+                  vertical={false}
+                  strokeDasharray="3 8"
+                  opacity={0.18}
+                />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={20}
+                />
                 <YAxis hide />
                 <ChartTooltip
                   cursor={false}

@@ -141,7 +141,7 @@ export function DashboardIntelligencePanel() {
   const topThreeStudents: TopStudent[] = topStudents.slice(0, 3);
 
   return (
-    <div className="grid gap-4 px-4 lg:grid-cols-2 lg:auto-rows-[34rem] lg:px-6">
+    <div className="grid gap-4 px-4 lg:auto-rows-[34rem] lg:grid-cols-2 lg:px-6">
       <motion.div
         initial="hidden"
         animate="visible"
@@ -149,7 +149,10 @@ export function DashboardIntelligencePanel() {
         transition={{ duration: 0.35 }}
         className="h-full"
       >
-        <TodayLessonsTable className="h-full" contentClassName="overflow-y-auto" />
+        <TodayLessonsTable
+          className="h-full"
+          contentClassName="overflow-y-auto"
+        />
       </motion.div>
 
       <motion.div

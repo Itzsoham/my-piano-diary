@@ -162,7 +162,9 @@ export function TodayLessonsTable({
           </div>
         </div>
       </CardHeader>
-      <CardContent className={cn("min-h-0 flex-1 p-0 sm:p-6 sm:pt-2", contentClassName)}>
+      <CardContent
+        className={cn("min-h-0 flex-1 p-0 sm:p-6 sm:pt-2", contentClassName)}
+      >
         {isLoading ? (
           <div className="flex h-32 items-center justify-center px-4 text-rose-400 italic">
             Gathering your lessons...
