@@ -37,7 +37,15 @@ const toLessonStatus = (status: string): LessonStatus => {
   return "PENDING";
 };
 
-export function TodayLessonsTable() {
+type TodayLessonsTableProps = {
+  className?: string;
+  contentClassName?: string;
+};
+
+export function TodayLessonsTable({
+  className,
+  contentClassName,
+}: TodayLessonsTableProps = {}) {
   const [date, setDate] = useState<Date>(() => startOfDay(new Date()));
   const { currency } = useCurrency();
 
@@ -71,7 +79,7 @@ export function TodayLessonsTable() {
     switch (status) {
       case "COMPLETE":
         return (
-          <Badge className="border-none bg-green-100 text-green-700 shadow-none hover:bg-green-200">
+          <Badge className="border-none bg-emerald-100 text-emerald-700 shadow-none hover:bg-emerald-200">
             Complete
           </Badge>
         );
@@ -83,10 +91,7 @@ export function TodayLessonsTable() {
         );
       default:
         return (
-          <Badge
-            variant="outline"
-            className="text-muted-foreground border-pink-200 bg-white/50"
-          >
+          <Badge className="border-none bg-amber-100 text-amber-700 shadow-none hover:bg-amber-200">
             Pending
           </Badge>
         );
@@ -97,18 +102,26 @@ export function TodayLessonsTable() {
     lessons?.reduce((sum, lesson) => sum + lesson.earnings, 0) ?? 0;
 
   return (
-    <Card className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-sm backdrop-blur">
-      <CardHeader className="bg-transparent pb-2">
+    <Card
+      className={cn(
+        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(160deg,rgba(255,255,255,0.95),rgba(255,245,250,0.92),rgba(255,252,245,0.95))] shadow-sm backdrop-blur-xl",
+        className,
+      )}
+    >
+      <CardHeader className="bg-transparent pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-lg text-rose-950 sm:text-xl">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-pink-500 uppercase shadow-sm">
+              Daily lineup
+            </div>
+            <CardTitle className="flex items-center gap-2 text-2xl text-rose-950 sm:text-[1.75rem]">
               Today&apos;s Focus <span className="text-lg sm:text-xl">🎹</span>
             </CardTitle>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-auto p-0 text-sm font-normal text-rose-600/80 italic hover:bg-transparent hover:text-rose-700 sm:text-base"
+                  className="h-auto justify-start rounded-full border border-transparent p-0 text-sm font-normal text-rose-600/80 italic transition-all duration-300 hover:bg-transparent hover:text-rose-700 active:scale-[0.98] sm:text-base"
                 >
                   {format(date, "EEEE, MMMM do")}
                 </Button>
@@ -123,12 +136,12 @@ export function TodayLessonsTable() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="flex items-center gap-2 self-start rounded-2xl border border-pink-100 bg-white/60 px-3 py-2 shadow-sm backdrop-blur sm:gap-3 sm:self-auto sm:px-4">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pink-100 text-pink-500 sm:h-8 sm:w-8">
+          <div className="flex items-center gap-2 self-start rounded-[1.35rem] border border-white/80 bg-white/80 px-3 py-2 shadow-sm backdrop-blur sm:gap-3 sm:self-auto sm:px-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-pink-100 text-pink-500 sm:h-9 sm:w-9">
               <DollarSign className="size-3 sm:size-4" />
             </div>
             <div>
-              <div className="text-muted-foreground text-[9px] font-medium tracking-wider uppercase sm:text-[10px]">
+              <div className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase sm:text-[10px]">
                 {isSameDay(date, new Date())
                   ? "Today&apos;s Total"
                   : "Day&apos;s Total"}
@@ -137,10 +150,19 @@ export function TodayLessonsTable() {
                 {formatCurrency(totalEarnings, currency)}
               </div>
             </div>
+            <div className="hidden h-10 w-px bg-rose-100 sm:block" />
+            <div className="hidden sm:block">
+              <div className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase">
+                Lessons
+              </div>
+              <div className="text-sm font-semibold text-rose-950">
+                {lessons.length}
+              </div>
+            </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 sm:p-6 sm:pt-2">
+      <CardContent className={cn("min-h-0 flex-1 p-0 sm:p-6 sm:pt-2", contentClassName)}>
         {isLoading ? (
           <div className="flex h-32 items-center justify-center px-4 text-rose-400 italic">
             Gathering your lessons...
@@ -150,10 +172,10 @@ export function TodayLessonsTable() {
             {/* Desktop Table View */}
             <div className="hidden sm:-mx-4 sm:block sm:overflow-x-auto">
               <div className="inline-block min-w-full align-middle">
-                <div className="mx-4 overflow-hidden rounded-xl border border-pink-100 bg-white/60 shadow-sm backdrop-blur sm:mx-0">
+                <div className="mx-4 overflow-hidden rounded-[1.5rem] bg-white/75 shadow-sm backdrop-blur sm:mx-0">
                   <Table>
-                    <TableHeader className="bg-pink-50/50">
-                      <TableRow className="border-pink-100 hover:bg-transparent">
+                    <TableHeader className="bg-[linear-gradient(180deg,rgba(255,241,246,0.88),rgba(255,255,255,0.72))]">
+                      <TableRow className="border-pink-100/70 hover:bg-transparent">
                         <TableHead className="whitespace-nowrap text-rose-900/70">
                           Time
                         </TableHead>
@@ -181,11 +203,13 @@ export function TodayLessonsTable() {
                       {lessons.map((lesson) => (
                         <TableRow
                           key={lesson.id}
-                          className="border-pink-50 hover:bg-pink-50/30"
+                          className="group border-pink-50/70 transition-all duration-300 ease-in-out hover:bg-rose-50/60"
                         >
                           <TableCell className="font-medium whitespace-nowrap text-rose-950">
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                              <Clock className="size-3 shrink-0 text-rose-400 sm:size-4" />
+                            <div className="flex items-center gap-2 sm:gap-2">
+                              <div className="flex size-8 items-center justify-center rounded-2xl bg-rose-50 text-rose-400">
+                                <Clock className="size-3 shrink-0 sm:size-4" />
+                              </div>
                               <span className="text-xs sm:text-sm">
                                 {formatTime(lesson.date)}
                               </span>
@@ -193,7 +217,7 @@ export function TodayLessonsTable() {
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
                             <div className="flex items-center gap-2 sm:gap-3">
-                              <Avatar className="size-6 shrink-0 border border-pink-100 sm:size-8">
+                              <Avatar className="size-8 shrink-0 border border-white/50 ring-2 ring-pink-500/15 transition-transform duration-300 group-hover:scale-105 sm:size-9">
                                 <AvatarImage
                                   src={lesson.student.avatar ?? undefined}
                                 />
@@ -232,7 +256,7 @@ export function TodayLessonsTable() {
                               size="sm"
                               variant="ghost"
                               className={cn(
-                                "h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap sm:px-4",
+                                "h-9 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-all duration-300 active:scale-[0.98] sm:px-4",
                                 lesson.status !== "PENDING"
                                   ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
                                   : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
@@ -278,10 +302,10 @@ export function TodayLessonsTable() {
               {lessons.map((lesson) => (
                 <div
                   key={lesson.id}
-                  className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
+                  className="rounded-[1.6rem] bg-white/80 p-4 shadow-sm backdrop-blur-md transition-all duration-300 ease-in-out hover:-translate-y-1 hover:bg-white/90 hover:shadow-md"
                 >
                   <div className="mb-3 flex items-start justify-between">
-                    <div className="flex items-center gap-1.5 rounded-full border border-pink-100/50 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-600">
+                    <div className="flex items-center gap-1.5 rounded-full border border-pink-100/70 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-600">
                       <Clock className="size-3" />
                       {formatTime(lesson.date)}
                     </div>
@@ -289,7 +313,7 @@ export function TodayLessonsTable() {
                   </div>
 
                   <div className="mb-4 flex items-center gap-3">
-                    <Avatar className="size-9 border border-pink-100">
+                    <Avatar className="size-10 border border-white/50 ring-2 ring-pink-500/15">
                       <AvatarImage src={lesson.student.avatar ?? ""} />
                       <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
                         {lesson.student.name.charAt(0).toUpperCase()}
@@ -308,7 +332,7 @@ export function TodayLessonsTable() {
 
                   <div className="mt-2 flex items-center justify-between gap-3 border-t border-pink-50 pt-3">
                     <div className="flex items-center gap-1">
-                      <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                      <span className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase">
                         Earned
                       </span>
                       <span
@@ -325,7 +349,7 @@ export function TodayLessonsTable() {
                     <Button
                       size="sm"
                       className={cn(
-                        "h-8 rounded-full px-4 text-xs font-medium shadow-none transition-all active:scale-[0.98]",
+                        "h-9 rounded-full px-4 text-xs font-medium shadow-none transition-all duration-300 active:scale-[0.98]",
                         lesson.status !== "PENDING"
                           ? "bg-pink-100 text-pink-700 hover:bg-pink-200"
                           : "bg-pink-500 text-white hover:bg-pink-600",
@@ -352,8 +376,10 @@ export function TodayLessonsTable() {
             </div>
           </>
         ) : (
-          <div className="py-12 text-center">
-            <Music className="mx-auto mb-4 size-10 animate-bounce text-pink-400" />
+          <div className="py-14 text-center">
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-pink-50 shadow-sm">
+              <Music className="size-8 text-pink-400" />
+            </div>
             <p className="text-muted-foreground font-medium">
               No lessons today 🎀
             </p>

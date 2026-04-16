@@ -159,11 +159,11 @@ export function BirthdayCountdownCard() {
         type="button"
         onClick={handleBurst}
         className={cn(
-          "group relative inline-flex cursor-pointer items-center gap-2.5 rounded-full select-none",
-          "border border-pink-200/60 bg-white/60 px-4 py-2 backdrop-blur-md",
-          "shadow-[0_4px_18px_-4px_rgba(244,114,182,0.32)]",
-          "transition-all duration-300 ease-out",
-          "hover:scale-105 hover:bg-white/80 hover:shadow-[0_8px_26px_-6px_rgba(244,114,182,0.55)]",
+          "group relative inline-flex cursor-pointer items-center gap-3 rounded-full select-none",
+          "border border-white/40 bg-white/60 px-5 py-2.5 backdrop-blur-xl",
+          "shadow-[0_8px_32px_-4px_rgba(244,114,182,0.25)]",
+          "transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)",
+          "hover:scale-105 hover:bg-white/80 hover:shadow-[0_12px_40px_-6px_rgba(244,114,182,0.45)]",
           "active:scale-95",
         )}
       >

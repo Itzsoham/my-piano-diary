@@ -50,17 +50,26 @@ export function NavMain({
                   tooltip={item.title}
                   isActive={isActive}
                   className={cn(
-                    "hover:bg-primary/5 text-muted-foreground h-9 transition-colors",
-                    "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium",
+                    "relative h-10 transition-all duration-300 ease-in-out",
+                    "hover:bg-pink-500/5 hover:text-pink-600",
+                    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-pink-500/15 data-[active=true]:to-rose-500/5",
+                    "data-[active=true]:text-pink-600 data-[active=true]:font-semibold",
+                    "data-[active=true]:shadow-[inset_0_0_0_1px_rgba(244,114,182,0.1),0_4_12_-2px_rgba(244,114,182,0.15)]",
+                    "rounded-xl px-3",
                   )}
                 >
                   <Link
                     href={item.url}
-                    className="flex items-center gap-3"
+                    className="flex w-full items-center gap-3"
                     onClick={handleItemClick}
                   >
-                    {item.icon && <item.icon className="size-4" />}
-                    <span>{item.title}</span>
+                    <div className={cn(
+                      "flex size-5 items-center justify-center transition-transform duration-300",
+                      isActive && "scale-110 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]"
+                    )}>
+                      {item.icon && <item.icon className="size-full" />}
+                    </div>
+                    <span className="text-sm">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
