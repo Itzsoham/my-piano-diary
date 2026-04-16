@@ -141,13 +141,13 @@ export function DashboardIntelligencePanel() {
   const topThreeStudents: TopStudent[] = topStudents.slice(0, 3);
 
   return (
-    <div className="grid gap-4 px-4 lg:auto-rows-[34rem] lg:grid-cols-2 lg:px-6">
+    <div className="grid gap-4 px-4 lg:auto-rows-[28rem] lg:grid-cols-3 lg:px-6">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.35 }}
-        className="h-full"
+        className="h-full lg:col-span-2"
       >
         <TodayLessonsTable
           className="h-full"
@@ -160,7 +160,7 @@ export function DashboardIntelligencePanel() {
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.4, delay: 0.05 }}
-        className="h-full"
+        className="h-full lg:col-span-1"
       >
         <DashboardTopStudentsCard
           studentsLoading={studentsLoading}
@@ -175,7 +175,7 @@ export function DashboardIntelligencePanel() {
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.45, delay: 0.1 }}
-        className="h-full"
+        className="h-full lg:col-span-1"
       >
         <DashboardQuickInsightsCard insights={insights} className="h-full" />
       </motion.div>
@@ -185,7 +185,7 @@ export function DashboardIntelligencePanel() {
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="h-full"
+        className="h-full lg:col-span-2"
       >
         <DashboardEarningsTrendCard
           lessonsLoading={lessonsLoading}

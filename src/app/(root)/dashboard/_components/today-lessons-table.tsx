@@ -2,19 +2,12 @@
 
 import { useState } from "react";
 import { api } from "@/trpc/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, DollarSign, Music } from "lucide-react";
+import { DollarSign, Music } from "lucide-react";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { format, isSameDay, startOfDay } from "date-fns";
 import {
@@ -101,19 +94,102 @@ export function TodayLessonsTable({
   const totalEarnings =
     lessons?.reduce((sum, lesson) => sum + lesson.earnings, 0) ?? 0;
 
+  const columns: DataTableColumn<(typeof lessons)[number]>[] = [
+    {
+      id: "student",
+      header: "Student",
+      cell: (lesson) => (
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Avatar className="size-8 shrink-0 border border-white/50 ring-2 ring-pink-500/15 transition-transform duration-300 group-hover:scale-105 sm:size-9">
+            <AvatarImage src={lesson.student.avatar ?? undefined} />
+            <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
+              {lesson.student.name
+                .split(" ")
+                .map((namePart) => namePart[0])
+                .join("")
+                .toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-xs font-medium text-rose-950 sm:text-sm">
+            {lesson.student.name}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "time",
+      header: "Time",
+      cell: (lesson) => (
+        <span className="text-xs sm:text-sm">{formatTime(lesson.date)}</span>
+      ),
+      cellClassName: "font-medium text-rose-950",
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (lesson) => getStatusBadge(toLessonStatus(lesson.status)),
+    },
+    {
+      id: "attendance",
+      header: "Attendance",
+      headerClassName: "hidden lg:table-cell",
+      cellClassName: "hidden lg:table-cell",
+      cell: (lesson) => (
+        <Button
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "h-9 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-all duration-300 active:scale-[0.98] sm:px-4",
+            lesson.status !== "PENDING"
+              ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
+              : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
+          )}
+          onClick={() => {
+            setSelectedLesson({
+              id: lesson.id,
+              studentName: lesson.student.name,
+              duration: lesson.duration,
+              status: toLessonStatus(lesson.status),
+              actualMin: lesson.actualMin,
+              cancelReason: lesson.cancelReason,
+              note: lesson.note,
+              date: lesson.date,
+            });
+            setOpen(true);
+          }}
+        >
+          {lesson.status !== "PENDING" ? "Update" : "Mark"}
+        </Button>
+      ),
+    },
+    {
+      id: "earnings",
+      header: "Earnings",
+      headerClassName: "text-right text-rose-900/70",
+      cellClassName: "text-right font-semibold",
+      cell: (lesson) =>
+        lesson.status === "CANCELLED" ? (
+          <span className="text-xs text-rose-400 line-through opacity-70 sm:text-sm">
+            {formatCurrency(lesson.earnings, currency)}
+          </span>
+        ) : (
+          <span className="text-xs text-rose-600 sm:text-sm">
+            {formatCurrency(lesson.earnings, currency)}
+          </span>
+        ),
+    },
+  ];
+
   return (
     <Card
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(160deg,rgba(255,255,255,0.95),rgba(255,245,250,0.92),rgba(255,252,245,0.95))] shadow-sm backdrop-blur-xl",
+        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur transition-shadow duration-300 hover:shadow-lg",
         className,
       )}
     >
       <CardHeader className="bg-transparent pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-pink-500 uppercase shadow-sm">
-              Daily lineup
-            </div>
             <CardTitle className="flex items-center gap-2 text-2xl text-rose-950 sm:text-[1.75rem]">
               Today&apos;s Focus <span className="text-lg sm:text-xl">🎹</span>
             </CardTitle>
@@ -142,9 +218,7 @@ export function TodayLessonsTable({
             </div>
             <div>
               <div className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase sm:text-[10px]">
-                {isSameDay(date, new Date())
-                  ? "Today&apos;s Total"
-                  : "Day&apos;s Total"}
+                {isSameDay(date, new Date()) ? "Today's Total" : "Day's Total"}
               </div>
               <div className="text-sm font-semibold text-rose-950 sm:text-base">
                 {formatCurrency(totalEarnings, currency)}
@@ -172,132 +246,16 @@ export function TodayLessonsTable({
         ) : lessons && lessons.length > 0 ? (
           <>
             {/* Desktop Table View */}
-            <div className="hidden sm:-mx-4 sm:block sm:overflow-x-auto">
-              <div className="inline-block min-w-full align-middle">
-                <div className="mx-4 overflow-hidden rounded-[1.5rem] bg-white/75 shadow-sm backdrop-blur sm:mx-0">
-                  <Table>
-                    <TableHeader className="bg-[linear-gradient(180deg,rgba(255,241,246,0.88),rgba(255,255,255,0.72))]">
-                      <TableRow className="border-pink-100/70 hover:bg-transparent">
-                        <TableHead className="whitespace-nowrap text-rose-900/70">
-                          Time
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap text-rose-900/70">
-                          Student
-                        </TableHead>
-                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 sm:table-cell">
-                          Piece
-                        </TableHead>
-                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 md:table-cell">
-                          Duration
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap text-rose-900/70">
-                          Status
-                        </TableHead>
-                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 lg:table-cell">
-                          Attendance
-                        </TableHead>
-                        <TableHead className="text-right whitespace-nowrap text-rose-900/70">
-                          Earnings
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lessons.map((lesson) => (
-                        <TableRow
-                          key={lesson.id}
-                          className="group border-pink-50/70 transition-all duration-300 ease-in-out hover:bg-rose-50/60"
-                        >
-                          <TableCell className="font-medium whitespace-nowrap text-rose-950">
-                            <div className="flex items-center gap-2 sm:gap-2">
-                              <div className="flex size-8 items-center justify-center rounded-2xl bg-rose-50 text-rose-400">
-                                <Clock className="size-3 shrink-0 sm:size-4" />
-                              </div>
-                              <span className="text-xs sm:text-sm">
-                                {formatTime(lesson.date)}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <Avatar className="size-8 shrink-0 border border-white/50 ring-2 ring-pink-500/15 transition-transform duration-300 group-hover:scale-105 sm:size-9">
-                                <AvatarImage
-                                  src={lesson.student.avatar ?? undefined}
-                                />
-                                <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
-                                  {lesson.student.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs font-medium text-rose-950 sm:text-sm">
-                                {lesson.student.name}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            {lesson.piece?.title ? (
-                              <span className="text-xs text-rose-800 sm:text-sm">
-                                {lesson.piece.title}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs italic">
-                                No piece
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground hidden text-xs sm:text-sm md:table-cell">
-                            {lesson.duration} min
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(toLessonStatus(lesson.status))}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className={cn(
-                                "h-9 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-all duration-300 active:scale-[0.98] sm:px-4",
-                                lesson.status !== "PENDING"
-                                  ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
-                                  : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
-                              )}
-                              onClick={() => {
-                                setSelectedLesson({
-                                  id: lesson.id,
-                                  studentName: lesson.student.name,
-                                  duration: lesson.duration,
-                                  status: toLessonStatus(lesson.status),
-                                  actualMin: lesson.actualMin,
-                                  cancelReason: lesson.cancelReason,
-                                  note: lesson.note,
-                                  date: lesson.date,
-                                });
-                                setOpen(true);
-                              }}
-                            >
-                              {lesson.status !== "PENDING" ? "Update" : "Mark"}
-                            </Button>
-                          </TableCell>
-                          <TableCell className="text-right font-semibold whitespace-nowrap">
-                            {lesson.status === "CANCELLED" ? (
-                              <span className="text-xs text-rose-400 line-through opacity-70 sm:text-sm">
-                                {formatCurrency(lesson.earnings, currency)}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-rose-600 sm:text-sm">
-                                {formatCurrency(lesson.earnings, currency)}
-                              </span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </div>
+            <DataTable
+              className="hidden sm:-mx-4 sm:block"
+              viewportClassName="inline-block min-w-full align-middle"
+              surfaceClassName="mx-4 rounded-[1.5rem] border-0 bg-white/75 shadow-sm backdrop-blur sm:mx-0"
+              headerClassName="bg-[linear-gradient(180deg,rgba(255,241,246,0.88),rgba(255,255,255,0.72))]"
+              columns={columns}
+              data={lessons}
+              getRowKey={(lesson) => lesson.id}
+              itemRowClassName="group border-pink-50/70 transition-all duration-300 ease-in-out hover:bg-rose-50/60"
+            />
 
             {/* Mobile Card View */}
             <div className="mb-4 grid grid-cols-1 gap-3 px-4 sm:hidden">
@@ -308,7 +266,6 @@ export function TodayLessonsTable({
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <div className="flex items-center gap-1.5 rounded-full border border-pink-100/70 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-600">
-                      <Clock className="size-3" />
                       {formatTime(lesson.date)}
                     </div>
                     {getStatusBadge(toLessonStatus(lesson.status))}

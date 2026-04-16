@@ -1,10 +1,10 @@
 "use client";
 
-import { Crown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
+import type { CurrencyCode } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 type TopStudent = {
@@ -18,7 +18,7 @@ type TopStudent = {
 type DashboardTopStudentsCardProps = {
   studentsLoading: boolean;
   topThreeStudents: TopStudent[];
-  currency: string;
+  currency: CurrencyCode;
   className?: string;
 };
 
@@ -31,15 +31,11 @@ export function DashboardTopStudentsCard({
   return (
     <Card
       className={cn(
-        "h-full overflow-hidden rounded-[2rem] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(255,245,252,0.93),rgba(255,250,245,0.95))] shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
+        "h-full overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur transition-shadow duration-300 hover:shadow-lg",
         className,
       )}
     >
       <CardHeader className="pb-1">
-        <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-200/70 bg-fuchsia-50/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-fuchsia-500 uppercase shadow-sm">
-          <Crown className="size-3.5" />
-          Ranking
-        </div>
         <CardTitle className="mt-3 text-xl text-rose-950/90">
           Top Students This Month
         </CardTitle>

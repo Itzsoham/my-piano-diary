@@ -24,20 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { AppLoader } from "@/components/ui/app-loader";
 import { LessonEditDialog } from "@/components/lessons/lesson-edit-dialog";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 
 const statusLabels: Record<LessonStatus, string> = {
   COMPLETE: "Complete",
@@ -144,6 +137,92 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   );
 
   const isLoading = isPending && lessons.length === 0;
+
+  const columns: DataTableColumn<Lesson>[] = [
+    {
+      id: "date",
+      header: "Date",
+      cell: (lesson) => format(new Date(lesson.date), "MMM d, yyyy"),
+    },
+    {
+      id: "time",
+      header: "Time",
+      cell: (lesson) => format(new Date(lesson.date), "h:mm a"),
+    },
+    {
+      id: "student",
+      header: "Student",
+      cell: (lesson) => lesson.student.name,
+      cellClassName: "font-medium",
+    },
+    {
+      id: "piece",
+      header: "Piece",
+      cell: (lesson) => (
+        <div className="max-w-37.5 truncate" title={lesson.piece?.title ?? ""}>
+          {lesson.piece?.title ?? "None"}
+        </div>
+      ),
+    },
+    {
+      id: "duration",
+      header: "Duration",
+      cell: (lesson) => `${lesson.duration} min`,
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (lesson) => (
+        <Badge className={statusClasses[lesson.status as LessonStatus]}>
+          {statusLabels[lesson.status as LessonStatus]}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+      cell: (lesson) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="rounded-xl border-pink-100 bg-white shadow-lg"
+          >
+            <DropdownMenuItem
+              onSelect={() => setEditLesson(lesson)}
+              className="rounded-lg hover:bg-pink-50"
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => setAttendanceLesson(lesson)}
+              className="rounded-lg hover:bg-pink-50"
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Mark attendance
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => setDeleteLesson(lesson)}
+              className="rounded-lg text-rose-500 hover:bg-rose-50"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
 
   const deleteMutation = api.lesson.delete.useMutation({
     onMutate: async ({ id }) => {
@@ -289,100 +368,13 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden overflow-x-auto rounded-2xl border border-pink-100 bg-white shadow-md md:block">
-              <Table>
-                <TableHeader className="bg-rose-50/60">
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Date</TableHead>
-                    <TableHead className="whitespace-nowrap">Time</TableHead>
-                    <TableHead className="whitespace-nowrap">Student</TableHead>
-                    <TableHead className="whitespace-nowrap">Piece</TableHead>
-                    <TableHead className="whitespace-nowrap">
-                      Duration
-                    </TableHead>
-                    <TableHead className="whitespace-nowrap">Status</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lessons.map((lesson) => (
-                    <TableRow
-                      key={lesson.id}
-                      className="transition-colors hover:bg-pink-50"
-                    >
-                      <TableCell className="whitespace-nowrap">
-                        {format(new Date(lesson.date), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {format(new Date(lesson.date), "h:mm a")}
-                      </TableCell>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {lesson.student.name}
-                      </TableCell>
-                      <TableCell
-                        className="max-w-37.5 truncate whitespace-nowrap"
-                        title={lesson.piece?.title ?? ""}
-                      >
-                        {lesson.piece?.title ?? "None"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {lesson.duration} min
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            statusClasses[lesson.status as LessonStatus]
-                          }
-                        >
-                          {statusLabels[lesson.status as LessonStatus]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="rounded-xl border-pink-100 bg-white shadow-lg"
-                          >
-                            <DropdownMenuItem
-                              onSelect={() => setEditLesson(lesson)}
-                              className="rounded-lg hover:bg-pink-50"
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem
-                              onSelect={() => setAttendanceLesson(lesson)}
-                              className="rounded-lg hover:bg-pink-50"
-                            >
-                              <CheckCircle2 className="mr-2 h-4 w-4" />
-                              Mark attendance
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onSelect={() => setDeleteLesson(lesson)}
-                              className="rounded-lg text-rose-500 hover:bg-rose-50"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              className="hidden md:block"
+              columns={columns}
+              data={lessons}
+              getRowKey={(lesson) => lesson.id}
+              itemRowClassName="transition-colors hover:bg-pink-50"
+            />
 
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden">

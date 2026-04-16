@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -23,15 +23,11 @@ export function DashboardQuickInsightsCard({
   return (
     <Card
       className={cn(
-        "h-full overflow-hidden rounded-[2rem] bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(255,246,250,0.93),rgba(255,252,247,0.95))] shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
+        "h-full overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur transition-shadow duration-300 hover:shadow-lg",
         className,
       )}
     >
       <CardHeader className="pb-1">
-        <div className="inline-flex items-center gap-2 rounded-full border border-rose-200/70 bg-rose-50/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-rose-500 uppercase shadow-sm">
-          <Heart className="size-3.5 fill-current" />
-          Insights
-        </div>
         <CardTitle className="mt-3 text-xl text-rose-950/90">
           Quick Insights
         </CardTitle>

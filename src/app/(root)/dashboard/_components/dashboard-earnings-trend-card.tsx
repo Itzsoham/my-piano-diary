@@ -1,6 +1,5 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -11,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
+import type { CurrencyCode } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 type TrendPoint = {
@@ -28,7 +28,7 @@ type DashboardEarningsTrendCardProps = {
   lessonsLoading: boolean;
   trendData: TrendPoint[];
   insights: InsightSummary;
-  currency: string;
+  currency: CurrencyCode;
   className?: string;
 };
 
@@ -49,7 +49,7 @@ export function DashboardEarningsTrendCard({
   return (
     <Card
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(160deg,rgba(255,255,255,0.94),rgba(255,245,249,0.92),rgba(255,252,245,0.95))] shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
+        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur transition-shadow duration-300 hover:shadow-lg",
         className,
       )}
     >
@@ -57,10 +57,6 @@ export function DashboardEarningsTrendCard({
         <div className="absolute top-4 right-4 h-24 w-24 rounded-full bg-pink-100/70 blur-3xl" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-pink-200/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-pink-500 uppercase shadow-sm">
-              <Sparkles className="size-3.5" />
-              This month
-            </div>
             <CardTitle className="text-2xl text-rose-950">
               Earnings Trend This Month
             </CardTitle>
@@ -132,7 +128,14 @@ export function DashboardEarningsTrendCard({
                   tickLine={false}
                   minTickGap={20}
                 />
-                <YAxis hide />
+                <YAxis
+                  hide
+                  domain={[
+                    0,
+                    (dataMax: number) => Math.max(Math.ceil(dataMax * 1.1), 1),
+                  ]}
+                  allowDecimals={false}
+                />
                 <ChartTooltip
                   cursor={false}
                   content={
@@ -152,7 +155,7 @@ export function DashboardEarningsTrendCard({
                   }
                 />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="earned"
                   stroke="url(#dashboard-earnings-gradient)"
                   strokeWidth={4}

@@ -1,6 +1,6 @@
-import { BirthdayCountdownCard } from "@/app/(root)/dashboard/_components/birthday-countdown-card";
 import { SectionCards } from "@/app/(root)/dashboard/_components/section-cards";
 import { DashboardIntelligencePanel } from "@/app/(root)/dashboard/_components/dashboard-intelligence-panel";
+import { BirthdayCountdownCard } from "./_components/birthday-countdown-card";
 
 export default function Page() {
   return (
