@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { api } from "@/trpc/react";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,96 +93,10 @@ export function TodayLessonsTable({
   const totalEarnings =
     lessons?.reduce((sum, lesson) => sum + lesson.earnings, 0) ?? 0;
 
-  const columns: DataTableColumn<(typeof lessons)[number]>[] = [
-    {
-      id: "student",
-      header: "Student",
-      cell: (lesson) => (
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Avatar className="size-8 shrink-0 border border-white/50 ring-2 ring-pink-500/15 transition-transform duration-300 group-hover:scale-105 sm:size-9">
-            <AvatarImage src={lesson.student.avatar ?? undefined} />
-            <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
-              {lesson.student.name
-                .split(" ")
-                .map((namePart) => namePart[0])
-                .join("")
-                .toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-xs font-medium text-rose-950 sm:text-sm">
-            {lesson.student.name}
-          </span>
-        </div>
-      ),
-    },
-    {
-      id: "time",
-      header: "Time",
-      cell: (lesson) => (
-        <span className="text-xs sm:text-sm">{formatTime(lesson.date)}</span>
-      ),
-      cellClassName: "font-medium text-rose-950",
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: (lesson) => getStatusBadge(toLessonStatus(lesson.status)),
-    },
-    {
-      id: "attendance",
-      header: "Attendance",
-      headerClassName: "hidden lg:table-cell",
-      cellClassName: "hidden lg:table-cell",
-      cell: (lesson) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          className={cn(
-            "h-9 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-all duration-300 active:scale-[0.98] sm:px-4",
-            lesson.status !== "PENDING"
-              ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
-              : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
-          )}
-          onClick={() => {
-            setSelectedLesson({
-              id: lesson.id,
-              studentName: lesson.student.name,
-              duration: lesson.duration,
-              status: toLessonStatus(lesson.status),
-              actualMin: lesson.actualMin,
-              cancelReason: lesson.cancelReason,
-              note: lesson.note,
-              date: lesson.date,
-            });
-            setOpen(true);
-          }}
-        >
-          {lesson.status !== "PENDING" ? "Update" : "Mark"}
-        </Button>
-      ),
-    },
-    {
-      id: "earnings",
-      header: "Earnings",
-      headerClassName: "text-right text-rose-900/70",
-      cellClassName: "text-right font-semibold",
-      cell: (lesson) =>
-        lesson.status === "CANCELLED" ? (
-          <span className="text-xs text-rose-400 line-through opacity-70 sm:text-sm">
-            {formatCurrency(lesson.earnings, currency)}
-          </span>
-        ) : (
-          <span className="text-xs text-rose-600 sm:text-sm">
-            {formatCurrency(lesson.earnings, currency)}
-          </span>
-        ),
-    },
-  ];
-
   return (
     <Card
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur transition-shadow duration-300 hover:shadow-lg",
+        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur",
         className,
       )}
     >
@@ -246,16 +159,91 @@ export function TodayLessonsTable({
         ) : lessons && lessons.length > 0 ? (
           <>
             {/* Desktop Table View */}
-            <DataTable
-              className="hidden sm:-mx-4 sm:block"
-              viewportClassName="inline-block min-w-full align-middle"
-              surfaceClassName="mx-4 rounded-[1.5rem] border-0 bg-white/75 shadow-sm backdrop-blur sm:mx-0"
-              headerClassName="bg-[linear-gradient(180deg,rgba(255,241,246,0.88),rgba(255,255,255,0.72))]"
-              columns={columns}
-              data={lessons}
-              getRowKey={(lesson) => lesson.id}
-              itemRowClassName="group border-pink-50/70 transition-all duration-300 ease-in-out hover:bg-rose-50/60"
-            />
+            <div className="hidden sm:block h-full">
+              <div className="overflow-hidden rounded-[1.5rem] bg-white/75 shadow-sm backdrop-blur">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="bg-[linear-gradient(180deg,rgba(255,241,246,0.88),rgba(255,255,255,0.72))]">
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Student</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Time</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Status</th>
+                      <th className="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase lg:table-cell">Attendance</th>
+                      <th className="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Earnings</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-pink-50/70">
+                    {lessons.map((lesson) => (
+                      <tr
+                        key={lesson.id}
+                        className="group border-pink-50/70 transition-all duration-300 ease-in-out hover:bg-rose-50/60"
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="size-9 shrink-0 border border-white/50 ring-2 ring-pink-500/15 transition-transform duration-300 group-hover:scale-105">
+                              <AvatarImage src={lesson.student.avatar ?? undefined} />
+                              <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
+                                {lesson.student.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium text-rose-950">
+                              {lesson.student.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-sm font-medium text-rose-950">
+                          {formatTime(lesson.date)}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {getStatusBadge(toLessonStatus(lesson.status))}
+                        </td>
+                        <td className="hidden px-5 py-3.5 lg:table-cell">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-9 rounded-full px-4 text-xs font-medium whitespace-nowrap transition-all duration-300 active:scale-[0.98]",
+                              lesson.status !== "PENDING"
+                                ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
+                                : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
+                            )}
+                            onClick={() => {
+                              setSelectedLesson({
+                                id: lesson.id,
+                                studentName: lesson.student.name,
+                                duration: lesson.duration,
+                                status: toLessonStatus(lesson.status),
+                                actualMin: lesson.actualMin,
+                                cancelReason: lesson.cancelReason,
+                                note: lesson.note,
+                                date: lesson.date,
+                              });
+                              setOpen(true);
+                            }}
+                          >
+                            {lesson.status !== "PENDING" ? "Update" : "Mark"}
+                          </Button>
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-semibold">
+                          {lesson.status === "CANCELLED" ? (
+                            <span className="text-sm text-rose-400 line-through opacity-70">
+                              {formatCurrency(lesson.earnings, currency)}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-rose-600">
+                              {formatCurrency(lesson.earnings, currency)}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             {/* Mobile Card View */}
             <div className="mb-4 grid grid-cols-1 gap-3 px-4 sm:hidden">

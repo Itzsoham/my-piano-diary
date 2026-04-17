@@ -31,7 +31,7 @@ export function DashboardTopStudentsCard({
   return (
     <Card
       className={cn(
-        "h-full overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur transition-shadow duration-300 hover:shadow-lg",
+        "h-full overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur",
         className,
       )}
     >
@@ -53,7 +53,7 @@ export function DashboardTopStudentsCard({
           topThreeStudents.map((student, index) => (
             <div
               key={student.studentId}
-              className="flex items-center justify-between rounded-[1.35rem] bg-white/70 px-4 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/90"
+              className="flex items-center justify-between rounded-[1.35rem] bg-white/70 px-4 py-3 shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <span className="flex size-8 items-center justify-center rounded-2xl bg-linear-to-br from-pink-500 to-fuchsia-500 text-sm font-semibold text-white shadow-sm">

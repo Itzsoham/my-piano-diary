@@ -23,7 +23,7 @@ export function DashboardQuickInsightsCard({
   return (
     <Card
       className={cn(
-        "h-full overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur transition-shadow duration-300 hover:shadow-lg",
+        "h-full overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur",
         className,
       )}
     >
