@@ -5,6 +5,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { UserStoreProvider } from "./user-store-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { BirthdayProvider } from "@/components/birthday/birthday-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,8 +13,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <SessionProvider>
         <TRPCReactProvider>
           <UserStoreProvider>
-            {children}
-            <Toaster />
+            <BirthdayProvider>
+              {children}
+              <Toaster />
+            </BirthdayProvider>
           </UserStoreProvider>
         </TRPCReactProvider>
       </SessionProvider>

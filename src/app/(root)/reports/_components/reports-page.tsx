@@ -2,6 +2,7 @@
 
 import { keepPreviousData } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import {
   Eye,
   FileText,
@@ -293,6 +294,11 @@ export function ReportsPage({
 
   return (
     <div className="container mx-auto">
+      <BirthdayBanner
+        text="You're building something beautiful ✨"
+        icon="✨"
+        storageKey="reports"
+      />
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           Monthly Reports

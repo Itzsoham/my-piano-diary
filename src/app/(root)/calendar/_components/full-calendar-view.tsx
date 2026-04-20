@@ -14,6 +14,9 @@ import { type EventResizeDoneArg } from "@fullcalendar/interaction";
 import { format, isSameDay } from "date-fns";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import { useBirthday } from "@/components/birthday/birthday-provider";
+
+const BIRTHDAY_DATE = new Date("2026-04-24T00:00:00");
 
 interface Lesson {
   id: string;
@@ -47,6 +50,7 @@ export function FullCalendarView({
 }: FullCalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const updateLesson = api.lesson.update.useMutation();
+  const { isBirthdayMode } = useBirthday();
 
   const handleDatesSet = (arg: {
     start: Date;
@@ -123,10 +127,32 @@ export function FullCalendarView({
       isSameDay(new Date(l.date), arg.date),
     ).length;
 
+    const isBirthday = isBirthdayMode && isSameDay(arg.date, BIRTHDAY_DATE);
+
     return (
       <div className="flex h-full w-full flex-col justify-between p-1">
-        <span className="text-foreground/80 text-sm font-medium">
+        <span
+          className={
+            isBirthday
+              ? "inline-flex items-center gap-0.5 text-sm font-bold text-amber-600"
+              : "text-foreground/80 text-sm font-medium"
+          }
+          style={
+            isBirthday
+              ? {
+                  outline: "2px solid #fde68a",
+                  outlineOffset: "2px",
+                  borderRadius: "4px",
+                  padding: "0 2px",
+                  background:
+                    "linear-gradient(135deg, rgba(253,230,138,0.3), rgba(251,207,232,0.3))",
+                }
+              : undefined
+          }
+          title={isBirthday ? "Her Birthday! 🎂" : undefined}
+        >
           {arg.dayNumberText}
+          {isBirthday && <span className="ml-0.5 text-xs">🎂</span>}
         </span>
         {count > 0 && (
           <div className="mt-auto self-start">

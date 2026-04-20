@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { keepPreviousData } from "@tanstack/react-query";
 
 import { api, type RouterOutputs } from "@/trpc/react";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -272,6 +273,12 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
 
   return (
     <div className="container mx-auto">
+      <BirthdayBanner
+        text="Each lesson you give echoes forever 🎵"
+        icon="🎵"
+        storageKey="lessons"
+        leftEmojis={["🎵", "🎹", "🎵"]}
+      />
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           Lessons & Attendance

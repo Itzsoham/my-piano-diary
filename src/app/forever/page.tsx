@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
+import { isBirthdayToday } from "@/config/app-config";
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 const START_DATE = new Date("2025-09-15T00:00:00");
@@ -51,6 +52,8 @@ export default function ForeverPage() {
   const [cuteStep, setCuteStep] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cuteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const birthdayConfettiFired = useRef(false);
+  const isHerBirthday = isBirthdayToday();
 
   // ── Console Easter Egg ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -76,7 +79,29 @@ export default function ForeverPage() {
     );
   }, []);
 
-  // ── Generate floating hearts client-side only (avoids hydration mismatch) ──
+  // ── Birthday auto-confetti ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isHerBirthday || birthdayConfettiFired.current) return;
+    birthdayConfettiFired.current = true;
+    const bdayColors = ["#fbcfe8", "#fde68a", "#e9d5ff", "#f9a8d4", "#fcd34d"];
+    const timer = setTimeout(() => {
+      void confetti({
+        particleCount: 30,
+        spread: 60,
+        origin: { x: 0.3, y: 0.5 },
+        colors: bdayColors,
+        scalar: 1.1,
+      });
+      void confetti({
+        particleCount: 30,
+        spread: 60,
+        origin: { x: 0.7, y: 0.5 },
+        colors: bdayColors,
+        scalar: 1.1,
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isHerBirthday]);
   useEffect(() => {
     setHearts(
       Array.from({ length: 16 }, (_, i) => ({
@@ -315,6 +340,16 @@ export default function ForeverPage() {
           0%, 100% { transform: translateY(0px); }
           50%       { transform: translateY(-10px); }
         }
+        @keyframes bday-hero-glow {
+          0%, 100% { text-shadow: 0 0 12px #fbcfe8, 0 0 28px #f9a8d4; }
+          50%       { text-shadow: 0 0 24px #fde68a, 0 0 48px #f9a8d4, 0 0 70px #e9d5ff; }
+        }
+        @keyframes bday-cake-bounce {
+          0%, 100% { transform: translateY(0) scale(1); }
+          40%       { transform: translateY(-14px) scale(1.08); }
+          60%       { transform: translateY(-8px) scale(1.04); }
+        }
+        .bday-glow-text { animation: bday-hero-glow 2.2s ease-in-out infinite; }
         .float-heart {
           position: fixed;
           bottom: -20px;
@@ -368,7 +403,7 @@ export default function ForeverPage() {
           >
             <div className="float-hero mb-5 text-5xl sm:text-7xl">❤️</div>
             <h1 className="glow-text mb-3 text-3xl font-bold text-pink-300 sm:text-4xl">
-              Happy 6 Months
+              {isHerBirthday ? "Happy Birthday, My Love 🎂" : "Happy 6 Months"}
             </h1>
             <p className="text-sm text-pink-200/60 sm:text-base">my love 🎹</p>
           </motion.div>
@@ -384,6 +419,42 @@ export default function ForeverPage() {
             <br />
             has been my favorite moments of my life.
           </motion.p>
+
+          {/* ─ BIRTHDAY BLOCK ────────────────────────────────────────────── */}
+          {isHerBirthday && (
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.2 }}
+              className="mb-8 rounded-2xl border border-amber-400/30 bg-linear-to-br from-pink-900/30 via-purple-900/20 to-amber-900/20 p-5 backdrop-blur-sm"
+            >
+              <div
+                className="mb-3 text-5xl"
+                style={{
+                  animation: "bday-cake-bounce 2s ease-in-out infinite",
+                }}
+              >
+                🎂
+              </div>
+              <p
+                className="bday-glow-text mb-2 text-xl font-bold"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #fbcfe8, #e9d5ff, #fde68a)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Today is your day.
+              </p>
+              <p className="text-sm leading-relaxed text-pink-200/70 italic">
+                Every key you&apos;ve ever played led to this moment. 💖
+                <br />
+                I&apos;m so glad I get to celebrate you.
+              </p>
+            </motion.div>
+          )}
 
           {/* ─ RELATIONSHIP TIMER ────────────────────────────────────────────── */}
           <motion.div
@@ -429,6 +500,17 @@ export default function ForeverPage() {
                 seconds
               </span>
             </div>
+            {isHerBirthday && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.2 }}
+                className="mt-4 text-xs text-pink-300/60 italic"
+              >
+                It&apos;s been {time.days.toLocaleString()} days since I met my
+                favorite piano teacher 🎹
+              </motion.p>
+            )}
           </motion.div>
 
           {/* ─ DISTANCE ──────────────────────────────────────────────────────── */}

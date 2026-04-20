@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/ui/star-rating";
 import { PieceSheet } from "./piece-sheet";
 import { api } from "@/trpc/react";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -302,6 +303,11 @@ export function PiecesTable({ data }: PiecesTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <BirthdayBanner
+        text="Every piece you teach lives on in your students 🎹"
+        icon="🎹"
+        storageKey="pieces"
+      />
       <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-sm">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />

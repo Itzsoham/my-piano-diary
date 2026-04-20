@@ -7,6 +7,7 @@ import { FullCalendarView } from "./_components/full-calendar-view";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
 import { api } from "@/trpc/react";
+import { useBirthday } from "@/components/birthday/birthday-provider";
 
 interface Lesson {
   id: string;
@@ -32,6 +33,7 @@ export default function CalendarPage() {
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const { isBirthdayMode } = useBirthday();
 
   const utils = api.useUtils();
   const { data: lessons = [] } = api.lesson.getInRange.useQuery({
@@ -63,12 +65,30 @@ export default function CalendarPage() {
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+          <h1
+            className="text-3xl font-bold tracking-tight"
+            style={
+              isBirthdayMode
+                ? { animation: "bday-float 4s ease-in-out infinite" }
+                : undefined
+            }
+          >
+            Calendar
+          </h1>
           <p className="text-muted-foreground">
-            Manage lessons and track attendance
+            {isBirthdayMode
+              ? "Every lesson is a gift. Yours especially 🎹✨"
+              : "Manage lessons and track attendance"}
           </p>
         </div>
-        <Button onClick={() => handleAddLesson(new Date())}>
+        <Button
+          onClick={() => handleAddLesson(new Date())}
+          className={
+            isBirthdayMode
+              ? "transition-all duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
+              : ""
+          }
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Lesson
         </Button>

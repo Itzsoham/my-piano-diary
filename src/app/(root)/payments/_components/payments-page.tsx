@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/format";
 import { api } from "@/trpc/react";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import { useCurrency } from "@/lib/currency";
 import { PaymentHistoryDialog } from "./payment-history-dialog";
 import { PaymentTransactionDialog } from "./payment-transaction-dialog";
@@ -146,6 +147,11 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
 
   return (
     <div className="flex flex-1 flex-col gap-6">
+      <BirthdayBanner
+        text="Your hard work deserves every penny 🌸"
+        icon="🌸"
+        storageKey="payments"
+      />
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
         <p className="text-muted-foreground mt-2 text-sm">

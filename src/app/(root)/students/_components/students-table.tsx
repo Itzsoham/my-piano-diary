@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { StudentSheet } from "./student-sheet";
 import Image from "next/image";
 import Link from "next/link";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -347,6 +348,11 @@ export function StudentsTable({ data }: StudentsTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <BirthdayBanner
+        text="Your students are lucky to have you 💖"
+        icon="💖"
+        storageKey="students"
+      />
       <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-sm">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />

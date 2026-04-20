@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useUserStore } from "@/store/use-user-store";
 import { useState, useEffect, useCallback } from "react";
 import { startOfDay, endOfDay } from "date-fns";
+import { useBirthday } from "@/components/birthday/birthday-provider";
 
 // Mood data structure with categories
 const moods = {
@@ -80,6 +81,37 @@ const moods = {
 
 type MoodCategory = keyof typeof moods;
 
+// Birthday mood messages — shown 50% of the time when birthday mode is active
+const bdayMoods = [
+  {
+    primary: "Something beautiful is coming 💛",
+    secondary: "Your special day is almost here 🎂",
+  },
+  {
+    primary: "You're doing amazing today ✨",
+    secondary: "Teaching is love in motion 🎹",
+  },
+  {
+    primary: "Teaching is art in motion 🎹",
+    secondary: "Every note you share is a gift.",
+  },
+  {
+    primary: "The world is sweeter because of you 🌸",
+    secondary: "Happy almost-birthday 🎂✨",
+  },
+] as const;
+
+const birthdayDayMoods = [
+  {
+    primary: "Happy Birthday! 🎂✨",
+    secondary: "This day is all yours 💖",
+  },
+  {
+    primary: "Today belongs to you 🌸",
+    secondary: "You deserve every beautiful moment 💛",
+  },
+] as const;
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -96,6 +128,7 @@ function getMoodCategory(count: number): MoodCategory {
 export function SiteHeader() {
   const { data: session } = useSession();
   const { user: storeUser } = useUserStore();
+  const { isBirthdayMode, isBirthdayDay } = useBirthday();
 
   const user = storeUser ?? session?.user ?? null;
   const userName = user?.name ?? "Teacher";
@@ -112,35 +145,60 @@ export function SiteHeader() {
 
   const [moodIndex, setMoodIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [useBdayMood, setUseBdayMood] = useState(false);
+  const [bdayMoodIndex, setBdayMoodIndex] = useState(0);
 
   // Set random mood when category changes
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * moods[category].length);
     setMoodIndex(randomIndex);
-  }, [category]);
+    // 50% chance to show birthday mood when mode active
+    if (isBirthdayMode && !isBirthdayDay) {
+      setUseBdayMood(Math.random() > 0.5);
+      setBdayMoodIndex(Math.floor(Math.random() * bdayMoods.length));
+    }
+  }, [category, isBirthdayMode, isBirthdayDay]);
 
   const changeMood = useCallback(() => {
     if (isAnimating) return;
-
     setIsAnimating(true);
 
-    // After fade out, change mood and fade in
     setTimeout(() => {
-      let newIndex: number;
-      do {
-        newIndex = Math.floor(Math.random() * moods[category].length);
-      } while (newIndex === moodIndex && moods[category].length > 1);
+      if (isBirthdayDay) {
+        setBdayMoodIndex((i) => (i + 1) % birthdayDayMoods.length);
+      } else if (isBirthdayMode) {
+        // Toggle between bday and normal, pick new index
+        const showBday = Math.random() > 0.5;
+        setUseBdayMood(showBday);
+        if (showBday) {
+          setBdayMoodIndex(Math.floor(Math.random() * bdayMoods.length));
+        } else {
+          let newIndex: number;
+          do {
+            newIndex = Math.floor(Math.random() * moods[category].length);
+          } while (newIndex === moodIndex && moods[category].length > 1);
+          setMoodIndex(newIndex);
+        }
+      } else {
+        let newIndex: number;
+        do {
+          newIndex = Math.floor(Math.random() * moods[category].length);
+        } while (newIndex === moodIndex && moods[category].length > 1);
+        setMoodIndex(newIndex);
+      }
 
-      setMoodIndex(newIndex);
-
-      // Reset animation state after transition
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 300);
+      setTimeout(() => setIsAnimating(false), 300);
     }, 150);
-  }, [category, moodIndex, isAnimating]);
+  }, [category, moodIndex, isAnimating, isBirthdayMode, isBirthdayDay]);
 
-  const currentMood = moods[category][moodIndex] ?? moods[category][0];
+  let currentMood: { primary: string; secondary: string };
+  if (isBirthdayDay) {
+    currentMood = birthdayDayMoods[bdayMoodIndex] ?? birthdayDayMoods[0]!;
+  } else if (isBirthdayMode && useBdayMood) {
+    currentMood = bdayMoods[bdayMoodIndex] ?? bdayMoods[0]!;
+  } else {
+    currentMood = moods[category][moodIndex] ?? moods[category][0]!;
+  }
 
   return (
     <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-pink-100/80 bg-white/70 backdrop-blur-md transition-[width,height] ease-linear print:hidden">
