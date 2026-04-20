@@ -25,7 +25,7 @@ export function DashboardIntelligencePanel() {
   const { currency } = useCurrency();
 
   const { data: topStudents = [], isLoading: studentsLoading } =
-    api.earnings.getTopStudentsThisMonth.useQuery({ limit: 3 });
+    api.earnings.getTopStudentsThisMonth.useQuery({ limit: 5 });
 
   const { data: trendData = [], isLoading: trendLoading } =
     api.earnings.getEarningsTrendThisMonth.useQuery();
@@ -42,7 +42,7 @@ export function DashboardIntelligencePanel() {
 
   const quickInsights = insights ?? defaultInsights;
 
-  const topThreeStudents: TopStudent[] = topStudents;
+  const topFiveStudents: TopStudent[] = topStudents;
 
   return (
     <div className="grid gap-4 px-4 lg:auto-rows-[28rem] lg:grid-cols-3 lg:px-6">
@@ -68,8 +68,7 @@ export function DashboardIntelligencePanel() {
       >
         <DashboardTopStudentsCard
           studentsLoading={studentsLoading}
-          topThreeStudents={topThreeStudents}
-          currency={currency}
+          topFiveStudents={topFiveStudents}
           className="h-full"
         />
       </motion.div>

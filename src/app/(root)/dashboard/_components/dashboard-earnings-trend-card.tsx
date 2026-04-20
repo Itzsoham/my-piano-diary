@@ -9,6 +9,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
@@ -64,41 +65,27 @@ export function DashboardEarningsTrendCard({
   return (
     <Card
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur",
+        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none",
         className,
       )}
     >
-      <CardHeader className="relative space-y-4 pb-0">
-        <div className="absolute top-4 right-4 h-24 w-24 rounded-full bg-pink-100/70 blur-3xl" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <CardHeader className="space-y-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
             <CardTitle className="text-2xl text-rose-950">
               Earnings Trend This Month
             </CardTitle>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 self-start sm:min-w-64">
-            <div className="rounded-[1.35rem] bg-white/75 p-3 shadow-sm">
-              <p className="text-[11px] font-semibold tracking-[0.18em] text-rose-400 uppercase">
-                Completed
-              </p>
-              <p className="mt-2 text-2xl font-semibold text-rose-950">
-                {insights.completed}
-              </p>
-            </div>
-            <div className="rounded-[1.35rem] bg-white/75 p-3 shadow-sm">
-              <p className="text-[11px] font-semibold tracking-[0.18em] text-emerald-500 uppercase">
-                Completion
-              </p>
-              <p className="mt-2 text-2xl font-semibold text-emerald-600">
-                {insights.completionRate}%
-              </p>
-            </div>
+          <div className="self-start">
+            <Badge className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-emerald-700 uppercase hover:bg-emerald-50">
+              {insights.completionRate}% completion
+            </Badge>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 pt-4 pb-4">
-        <div className="h-full min-h-72 w-full rounded-[1.6rem] bg-white/65 p-3 shadow-inner shadow-rose-100/30 sm:p-5">
+      <CardContent className="flex min-h-0 flex-1 overflow-hidden px-4 pb-4 sm:px-6 sm:pb-6">
+        <div className="h-full min-h-64 w-full min-w-0 overflow-hidden rounded-[1.5rem] border border-rose-100 bg-rose-50/30 p-3 sm:min-h-80 sm:p-4">
           {trendLoading ? (
             <Skeleton className="h-full w-full rounded-4xl" />
           ) : trendData.length === 0 ? (
@@ -108,12 +95,12 @@ export function DashboardEarningsTrendCard({
           ) : (
             <ChartContainer
               config={chartConfig}
-              className="aspect-auto! h-full w-full"
+              className="aspect-auto! h-full w-full min-w-0 overflow-hidden"
             >
               <LineChart
                 accessibilityLayer
                 data={trendData}
-                margin={{ left: 16, right: 12, top: 12, bottom: 24 }}
+                margin={{ left: 4, right: 8, top: 10, bottom: 18 }}
               >
                 <defs>
                   <linearGradient
@@ -142,7 +129,7 @@ export function DashboardEarningsTrendCard({
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  width={56}
+                  width={48}
                   axisLine={false}
                   tickLine={false}
                   domain={[

@@ -3,29 +3,35 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency } from "@/lib/format";
-import type { CurrencyCode } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 type TopStudent = {
   studentId: string | number;
   studentName: string;
   lessonCount: number;
-  earnings: number;
   avatar: string | null;
 };
 
 type DashboardTopStudentsCardProps = {
   studentsLoading: boolean;
-  topThreeStudents: TopStudent[];
-  currency: CurrencyCode;
+  topFiveStudents: TopStudent[];
   className?: string;
+};
+
+const getRankStyles = () => {
+  return "bg-pink-100 text-pink-700 border border-pink-200";
+};
+
+const getRankMedal = (rank: number) => {
+  if (rank === 1) return "🥇";
+  if (rank === 2) return "🥈";
+  if (rank === 3) return "🥉";
+  return null;
 };
 
 export function DashboardTopStudentsCard({
   studentsLoading,
-  topThreeStudents,
-  currency,
+  topFiveStudents,
   className,
 }: DashboardTopStudentsCardProps) {
   return (
@@ -36,54 +42,68 @@ export function DashboardTopStudentsCard({
       )}
     >
       <CardHeader className="pb-1">
-        <CardTitle className="mt-3 text-xl text-rose-950/90">
+        <CardTitle className="text-1.5xl mt-3 text-rose-950/90 sm:text-[1.5rem]">
           Top Students This Month
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 pt-0">
+      <CardContent className="pt-0">
         {studentsLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-16 w-full rounded-2xl" />
-            <Skeleton className="h-16 w-full rounded-2xl" />
-            <Skeleton className="h-16 w-full rounded-2xl" />
+          <div className="space-y-2.5">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
           </div>
-        ) : topThreeStudents.length === 0 ? (
+        ) : topFiveStudents.length === 0 ? (
           <p className="text-sm text-rose-500">No activity yet this month.</p>
         ) : (
-          topThreeStudents.map((student, index) => (
-            <div
-              key={student.studentId}
-              className="flex items-center justify-between rounded-[1.35rem] bg-white/70 px-4 py-3 shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex size-8 items-center justify-center rounded-2xl bg-linear-to-br from-pink-500 to-fuchsia-500 text-sm font-semibold text-white shadow-sm">
-                  {index + 1}
-                </span>
-                <Avatar className="size-10 border border-white/60 ring-2 ring-pink-100/80">
-                  <AvatarImage src={student.avatar ?? undefined} />
-                  <AvatarFallback className="bg-pink-100 text-pink-700">
-                    {student.studentName
-                      .split(" ")
-                      .map((part) => part[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-semibold text-rose-900/90">
+          <div className="divide-y divide-rose-100/70">
+            {topFiveStudents.map((student, index) => (
+              <div
+                key={student.studentId}
+                className="flex items-center justify-between gap-3 py-3"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  {getRankMedal(index + 1) ? (
+                    <span
+                      className="inline-flex size-8 shrink-0 items-center justify-center text-base"
+                      aria-hidden="true"
+                    >
+                      {getRankMedal(index + 1)}
+                    </span>
+                  ) : (
+                    <span
+                      className={cn(
+                        "inline-flex size-8 shrink-0 items-center justify-center rounded-xl text-sm font-semibold",
+                        getRankStyles(),
+                      )}
+                    >
+                      {index + 1}
+                    </span>
+                  )}
+                  <Avatar className="size-10 border border-white/60 ring-2 ring-pink-100/80">
+                    <AvatarImage src={student.avatar ?? undefined} />
+                    <AvatarFallback className="bg-pink-100 text-pink-700">
+                      {student.studentName
+                        .split(" ")
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="truncate text-sm font-semibold text-rose-950">
                     {student.studentName}
                   </p>
-                  <p className="text-xs text-rose-500">
-                    {student.lessonCount} lessons
-                  </p>
+                </div>
+
+                <div className="shrink-0 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                  {student.lessonCount} lessons
                 </div>
               </div>
-              <p className="text-sm font-semibold text-fuchsia-600">
-                {formatCurrency(student.earnings, currency)}
-              </p>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

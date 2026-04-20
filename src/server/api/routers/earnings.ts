@@ -499,11 +499,17 @@ export const earningsRouter = createTRPCRouter({
         {} as Record<string, StudentEarningsData>,
       );
 
-      const sorted = Object.values(studentEarnings).sort(
-        (a, b) => b.earnings - a.earnings,
-      );
+      const sorted = Object.values(studentEarnings).sort((a, b) => {
+        // Primary rank: most completed classes this month.
+        if (b.lessonCount !== a.lessonCount) {
+          return b.lessonCount - a.lessonCount;
+        }
 
-      return sorted.slice(0, input?.limit ?? 3);
+        // Tie-breaker: alphabetical for stable order.
+        return a.studentName.localeCompare(b.studentName);
+      });
+
+      return sorted.slice(0, input?.limit ?? 5);
     }),
 
   // Get quick insights for the dashboard panel
