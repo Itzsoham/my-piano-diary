@@ -27,6 +27,20 @@ interface StudentEarningsData {
   lessonRate: number;
 }
 
+interface TrendPoint {
+  day: number;
+  label: string;
+  earned: number;
+}
+
+interface QuickInsightsData {
+  bestDay: string;
+  completed: number;
+  cancelled: number;
+  inactiveCount: number;
+  completionRate: number;
+}
+
 interface TodayLesson {
   id: string;
   studentId: string;
@@ -408,6 +422,255 @@ export const earningsRouter = createTRPCRouter({
       return Object.values(studentEarnings).sort(
         (a, b) => b.earnings - a.earnings,
       );
+    },
+  ),
+
+  // Get top students for the current month
+  getTopStudentsThisMonth: protectedProcedure
+    .input(
+      z
+        .object({ limit: z.number().int().min(1).max(10).optional() })
+        .optional(),
+    )
+    .query(async ({ ctx, input }): Promise<StudentEarningsData[]> => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        return [];
+      }
+
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const nowInUserTz = fromUTC(new Date(), timezone);
+      const currentMonth = nowInUserTz.getMonth() + 1;
+      const currentYear = nowInUserTz.getFullYear();
+
+      const currentMonthStart = getStartOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
+      );
+      const currentMonthEnd = getEndOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
+      );
+
+      const lessons = await ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          date: {
+            gte: currentMonthStart,
+            lte: currentMonthEnd,
+          },
+          status: "COMPLETE",
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+              lessonRate: true,
+            },
+          },
+        },
+      });
+
+      const studentEarnings = lessons.reduce(
+        (acc, lesson) => {
+          const studentId = lesson.student.id;
+
+          acc[studentId] ??= {
+            studentId,
+            studentName: lesson.student.name,
+            avatar: lesson.student.avatar,
+            lessonCount: 0,
+            earnings: 0,
+            lessonRate: lesson.student.lessonRate,
+          };
+
+          acc[studentId].earnings += lesson.student.lessonRate;
+          acc[studentId].lessonCount += 1;
+
+          return acc;
+        },
+        {} as Record<string, StudentEarningsData>,
+      );
+
+      const sorted = Object.values(studentEarnings).sort(
+        (a, b) => b.earnings - a.earnings,
+      );
+
+      return sorted.slice(0, input?.limit ?? 3);
+    }),
+
+  // Get quick insights for the dashboard panel
+  getQuickInsights: protectedProcedure.query(
+    async ({ ctx }): Promise<QuickInsightsData> => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        return {
+          bestDay: "No best day yet",
+          completed: 0,
+          cancelled: 0,
+          inactiveCount: 0,
+          completionRate: 0,
+        };
+      }
+
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const nowInUserTz = fromUTC(new Date(), timezone);
+      const currentMonth = nowInUserTz.getMonth() + 1;
+      const currentYear = nowInUserTz.getFullYear();
+
+      const monthStart = getStartOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
+      );
+      const monthEnd = getEndOfMonthUTC(currentMonth, currentYear, timezone);
+      const recentFrom = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+      const [monthLessons, recentCompletedLessons, totalStudents] =
+        await Promise.all([
+          ctx.db.lesson.findMany({
+            where: {
+              teacherId: teacher.id,
+              date: {
+                gte: monthStart,
+                lte: monthEnd,
+              },
+            },
+            select: {
+              status: true,
+              date: true,
+            },
+          }),
+          ctx.db.lesson.findMany({
+            where: {
+              teacherId: teacher.id,
+              date: {
+                gte: recentFrom,
+                lte: new Date(),
+              },
+              status: "COMPLETE",
+            },
+            select: {
+              studentId: true,
+            },
+          }),
+          ctx.db.student.count({
+            where: { teacherId: teacher.id },
+          }),
+        ]);
+
+      const completed = monthLessons.filter(
+        (lesson) => lesson.status === "COMPLETE",
+      ).length;
+      const cancelled = monthLessons.filter(
+        (lesson) => lesson.status === "CANCELLED",
+      ).length;
+      const scheduled = monthLessons.length;
+
+      const weekdayCounts = new Map<string, number>();
+      for (const lesson of monthLessons) {
+        if (lesson.status !== "COMPLETE") {
+          continue;
+        }
+
+        const weekday = fromUTC(
+          new Date(lesson.date),
+          timezone,
+        ).toLocaleDateString("en-US", { weekday: "long" });
+        weekdayCounts.set(weekday, (weekdayCounts.get(weekday) ?? 0) + 1);
+      }
+
+      const bestDay =
+        [...weekdayCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+        "No best day yet";
+
+      const recentActiveIds = new Set(
+        recentCompletedLessons.map((lesson) => lesson.studentId),
+      );
+
+      return {
+        bestDay,
+        completed,
+        cancelled,
+        inactiveCount: Math.max(0, totalStudents - recentActiveIds.size),
+        completionRate:
+          scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0,
+      };
+    },
+  ),
+
+  // Get line chart data for earnings trend in the current month
+  getEarningsTrendThisMonth: protectedProcedure.query(
+    async ({ ctx }): Promise<TrendPoint[]> => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        return [];
+      }
+
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const nowInUserTz = fromUTC(new Date(), timezone);
+      const currentMonth = nowInUserTz.getMonth() + 1;
+      const currentYear = nowInUserTz.getFullYear();
+
+      const monthStart = getStartOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
+      );
+      const monthEnd = getEndOfMonthUTC(currentMonth, currentYear, timezone);
+
+      const completedLessons = await ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          status: "COMPLETE",
+          date: {
+            gte: monthStart,
+            lte: monthEnd,
+          },
+        },
+        include: {
+          student: {
+            select: {
+              lessonRate: true,
+            },
+          },
+        },
+      });
+
+      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+      const points = Array.from({ length: daysInMonth }, (_, index) => ({
+        day: index + 1,
+        label: String(index + 1),
+        earned: 0,
+      }));
+
+      for (const lesson of completedLessons) {
+        const dayInTimezone = fromUTC(
+          new Date(lesson.date),
+          timezone,
+        ).getDate();
+        const point = points[dayInTimezone - 1];
+        if (!point) {
+          continue;
+        }
+
+        point.earned += lesson.student.lessonRate;
+      }
+
+      return points.filter((point) => point.day <= nowInUserTz.getDate());
     },
   ),
 });

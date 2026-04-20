@@ -159,16 +159,26 @@ export function TodayLessonsTable({
         ) : lessons && lessons.length > 0 ? (
           <>
             {/* Desktop Table View */}
-            <div className="hidden sm:block h-full">
+            <div className="hidden h-full sm:block">
               <div className="overflow-hidden rounded-[1.5rem] bg-white/75 shadow-sm backdrop-blur">
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-[linear-gradient(180deg,rgba(255,241,246,0.88),rgba(255,255,255,0.72))]">
-                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Student</th>
-                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Time</th>
-                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Status</th>
-                      <th className="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase lg:table-cell">Attendance</th>
-                      <th className="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-rose-900/60 uppercase">Earnings</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">
+                        Student
+                      </th>
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">
+                        Time
+                      </th>
+                      <th className="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase">
+                        Status
+                      </th>
+                      <th className="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-rose-900/60 uppercase lg:table-cell">
+                        Attendance
+                      </th>
+                      <th className="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-rose-900/60 uppercase">
+                        Earnings
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-pink-50/70">
@@ -180,7 +190,9 @@ export function TodayLessonsTable({
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
                             <Avatar className="size-9 shrink-0 border border-white/50 ring-2 ring-pink-500/15 transition-transform duration-300 group-hover:scale-105">
-                              <AvatarImage src={lesson.student.avatar ?? undefined} />
+                              <AvatarImage
+                                src={lesson.student.avatar ?? undefined}
+                              />
                               <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
                                 {lesson.student.name
                                   .split(" ")

@@ -3,6 +3,8 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -25,7 +27,7 @@ type InsightSummary = {
 };
 
 type DashboardEarningsTrendCardProps = {
-  lessonsLoading: boolean;
+  trendLoading: boolean;
   trendData: TrendPoint[];
   insights: InsightSummary;
   currency: CurrencyCode;
@@ -39,8 +41,21 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const formatCompactAmount = (value: number, currency: CurrencyCode) => {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+
+  const compact = new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+
+  return `${compact} ${currency}`;
+};
+
 export function DashboardEarningsTrendCard({
-  lessonsLoading,
+  trendLoading,
   trendData,
   insights,
   currency,
@@ -60,10 +75,6 @@ export function DashboardEarningsTrendCard({
             <CardTitle className="text-2xl text-rose-950">
               Earnings Trend This Month
             </CardTitle>
-            <p className="max-w-lg text-sm leading-6 text-rose-600/85">
-              A cleaner, softer view of how your income is moving through the
-              month.
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 self-start sm:min-w-64">
@@ -86,23 +97,23 @@ export function DashboardEarningsTrendCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 pt-5">
-        <div className="h-full rounded-[1.6rem] bg-white/65 p-3 shadow-inner shadow-rose-100/30 sm:p-5">
-          {lessonsLoading ? (
-            <Skeleton className="h-full min-h-72 w-full rounded-4xl" />
+      <CardContent className="flex min-h-0 flex-1 pt-4 pb-4">
+        <div className="h-full min-h-72 w-full rounded-[1.6rem] bg-white/65 p-3 shadow-inner shadow-rose-100/30 sm:p-5">
+          {trendLoading ? (
+            <Skeleton className="h-full w-full rounded-4xl" />
           ) : trendData.length === 0 ? (
-            <div className="flex h-full min-h-72 items-center justify-center rounded-4xl border border-dashed border-pink-200 bg-pink-50/40 text-sm text-rose-500">
+            <div className="flex h-full items-center justify-center rounded-4xl border border-dashed border-pink-200 bg-pink-50/40 text-sm text-rose-500">
               No completed lessons yet this month.
             </div>
           ) : (
             <ChartContainer
               config={chartConfig}
-              className="h-full min-h-72 w-full"
+              className="aspect-auto! h-full w-full"
             >
               <LineChart
                 accessibilityLayer
                 data={trendData}
-                margin={{ left: 8, right: 8, top: 8, bottom: 8 }}
+                margin={{ left: 16, right: 12, top: 12, bottom: 24 }}
               >
                 <defs>
                   <linearGradient
@@ -120,21 +131,28 @@ export function DashboardEarningsTrendCard({
                 <CartesianGrid
                   vertical={false}
                   strokeDasharray="3 8"
-                  opacity={0.18}
+                  opacity={0.24}
                 />
                 <XAxis
                   dataKey="label"
                   axisLine={false}
                   tickLine={false}
                   minTickGap={20}
+                  tickMargin={10}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
-                  hide
+                  width={56}
+                  axisLine={false}
+                  tickLine={false}
                   domain={[
                     0,
                     (dataMax: number) => Math.max(Math.ceil(dataMax * 1.1), 1),
                   ]}
                   allowDecimals={false}
+                  tickFormatter={(value: number) =>
+                    formatCompactAmount(value, currency)
+                  }
                 />
                 <ChartTooltip
                   cursor={false}
@@ -154,12 +172,19 @@ export function DashboardEarningsTrendCard({
                     />
                   }
                 />
+                <ChartLegend
+                  verticalAlign="top"
+                  align="left"
+                  content={
+                    <ChartLegendContent className="pt-0 pb-2 text-xs font-medium text-rose-700" />
+                  }
+                />
                 <Line
                   type="linear"
                   dataKey="earned"
                   stroke="url(#dashboard-earnings-gradient)"
                   strokeWidth={4}
-                  dot={false}
+                  dot={{ r: 2, fill: "#ec4899", strokeWidth: 0 }}
                   activeDot={{ r: 5, fill: "#ec4899" }}
                   animationDuration={900}
                 />
