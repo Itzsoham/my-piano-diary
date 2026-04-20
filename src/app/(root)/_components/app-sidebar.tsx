@@ -154,8 +154,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       </span>
                     )}
                   </span>
-                  <span className="text-muted-foreground truncate text-xs font-medium">
-                    personal teaching space
+                  <span className="truncate text-xs font-medium text-pink-400/70">
+                    Personal teaching space
                   </span>
                 </div>
               </Link>
@@ -168,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain label="MAIN" items={data.main} />
         <NavMain label="MANAGE" items={data.manage} />
       </SidebarContent>
-      <SidebarFooter className="border-sidebar-border border-t">
+      <SidebarFooter className="pt-2 pb-3">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

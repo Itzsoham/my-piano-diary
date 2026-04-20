@@ -9,7 +9,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -94,80 +93,81 @@ export function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="bg-muted/40 data-[state=open]:bg-muted/50 hover:bg-muted/50 h-auto rounded-xl px-2 py-2 transition-all"
+              className="h-auto rounded-xl border border-pink-100/60 bg-pink-50/40 px-2 py-2 transition-all hover:border-pink-200/60 hover:bg-pink-50/60 data-[state=open]:bg-pink-50/80"
             >
-              <Avatar className="h-8 w-8 rounded-lg border-transparent">
+              <Avatar className="h-8 w-8 rounded-lg border border-pink-100">
                 <AvatarImage src={userImage} alt={userDisplayName} />
-                <AvatarFallback className="bg-primary/10 text-primary rounded-lg font-medium">
+                <AvatarFallback className="bg-primary/10 text-primary rounded-lg font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left leading-tight">
-                <span className="truncate font-medium">{userDisplayName}</span>
-                <span className="text-muted-foreground truncate text-xs font-normal">
+                <span className="truncate text-sm font-semibold text-rose-950">
+                  {userDisplayName}
+                </span>
+                <span className="truncate text-[11px] font-normal text-pink-400/80">
                   {userEmail}
                 </span>
               </div>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="border-border/50 w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl shadow-sm"
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-60 overflow-hidden rounded-2xl border border-pink-100/80 bg-white p-1.5 shadow-lg shadow-pink-100/40"
             side={isMobile ? "bottom" : "top"}
             align="start"
             sideOffset={8}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={userImage} alt={userDisplayName} />
-                  <AvatarFallback className="bg-primary/10 text-primary rounded-lg">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
-                    {userDisplayName}
-                  </span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {userEmail}
-                  </span>
-                </div>
+            {/* User header */}
+            <div className="mb-1.5 flex items-center gap-3 rounded-xl bg-pink-50/60 px-3 py-2.5">
+              <Avatar className="h-9 w-9 rounded-xl border border-pink-100">
+                <AvatarImage src={userImage} alt={userDisplayName} />
+                <AvatarFallback className="bg-primary/10 text-primary rounded-xl text-sm font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="truncate text-sm font-semibold text-rose-950">
+                  {userDisplayName}
+                </span>
+                <span className="truncate text-[11px] text-pink-400/80">
+                  {userEmail}
+                </span>
               </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            </div>
+            <DropdownMenuSeparator className="my-1 bg-pink-100/60" />
+            <DropdownMenuGroup className="space-y-0.5">
               <DropdownMenuItem asChild>
                 <Link
                   href="/profile"
-                  className="flex cursor-pointer items-center gap-2"
+                  className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-pink-50 focus:bg-pink-50"
                   onClick={() => isMobile && setOpenMobile(false)}
                 >
-                  <User className="size-4" />
+                  <User className="size-4 text-pink-500" />
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex cursor-pointer items-center gap-2">
-                <Bell className="size-4" />
+              <DropdownMenuItem className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-pink-50 focus:bg-pink-50">
+                <Bell className="size-4 text-pink-500" />
                 Notifications
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
                   href="/updates"
-                  className="flex cursor-pointer items-center gap-2"
+                  className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-pink-50 focus:bg-pink-50"
                   onClick={() => isMobile && setOpenMobile(false)}
                 >
-                  <Sparkles className="size-4" />
+                  <Sparkles className="size-4 text-pink-500" />
                   Updates
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="my-1 bg-pink-100/60" />
             <DropdownMenuItem
               onClick={handleLogout}
-              className="flex cursor-pointer items-center gap-2 text-red-500 hover:text-red-500"
+              className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 focus:bg-red-50"
             >
               <LogOut className="size-4 text-red-500" />
-              <span className="text-red-500 hover:text-red-600">Log out</span>
+              <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

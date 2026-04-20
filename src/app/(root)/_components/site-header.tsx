@@ -5,7 +5,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { api } from "@/trpc/react";
 import { useSession } from "next-auth/react";
 import { useUserStore } from "@/store/use-user-store";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { startOfDay, endOfDay } from "date-fns";
 import { useBirthday } from "@/components/birthday/birthday-provider";
 
@@ -200,8 +200,28 @@ export function SiteHeader() {
     currentMood = moods[category][moodIndex] ?? moods[category][0]!;
   }
 
+  const [scrolled, setScrolled] = useState(false);
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Find the nearest scrollable parent (the main content area)
+    const el =
+      document.querySelector("main") ??
+      document.querySelector("[data-slot='sidebar-inset']") ??
+      document.documentElement;
+    mainRef.current = el as HTMLElement;
+
+    const onScroll = () => setScrolled(el.scrollTop > 4);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="flex h-14 w-full shrink-0 items-center gap-2 border-b border-pink-100/80 bg-white/70 backdrop-blur-md transition-[width,height] ease-linear print:hidden">
+    <header
+      className={`sticky top-0 z-30 flex h-16 w-full shrink-0 items-center gap-2 border-b border-pink-100/80 bg-white/80 backdrop-blur-md transition-all ease-linear print:hidden ${
+        scrolled ? "shadow-sm shadow-pink-50" : ""
+      }`}
+    >
       <div className="flex w-full items-center justify-between gap-2 overflow-hidden px-3 sm:px-4 lg:px-6">
         <div className="mr-2 flex min-w-0 flex-1 items-center gap-1 lg:gap-2">
           <SidebarTrigger className="-ml-1 shrink-0 text-pink-400 transition-colors hover:text-pink-600" />

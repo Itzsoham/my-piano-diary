@@ -50,6 +50,7 @@ export default function ForeverPage() {
     (typeof memories)[number] | null
   >(null);
   const [cuteStep, setCuteStep] = useState(0);
+  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cuteAudioRef = useRef<HTMLAudioElement | null>(null);
   const birthdayConfettiFired = useRef(false);
@@ -65,10 +66,17 @@ export default function ForeverPage() {
       "%c I love you",
       "color: #ff1493; font-size: 20px; font-weight: bold;",
     );
-    console.log(
-      "%c Happy 6 months anniversary 🎹",
-      "color: #ffb6c1; font-size: 14px;",
-    );
+    if (isHerBirthday) {
+      console.log(
+        "%c Happy Birthday, my love 🎂🎹",
+        "color: #fde68a; font-size: 14px;",
+      );
+    } else {
+      console.log(
+        "%c Happy 6 months anniversary 🎹",
+        "color: #ffb6c1; font-size: 14px;",
+      );
+    }
     console.log(
       "%c You found the secret message ❤️",
       "color: #ff69b4; font-size: 13px; font-style: italic;",
@@ -77,7 +85,7 @@ export default function ForeverPage() {
       "%c I love you more than anything in this world.",
       "color: #c084fc; font-size: 13px; font-style: italic;",
     );
-  }, []);
+  }, [isHerBirthday]);
 
   // ── Birthday auto-confetti ─────────────────────────────────────────────────
   useEffect(() => {
@@ -122,6 +130,52 @@ export default function ForeverPage() {
 
   // ── Confetti + Modal ───────────────────────────────────────────────────────
   const handleSurprise = () => {
+    if (isHerBirthday) {
+      setShowBirthdayModal(true);
+      const bdayColors = [
+        "#fde68a",
+        "#fbcfe8",
+        "#fcd34d",
+        "#e9d5ff",
+        "#f9a8d4",
+        "#fff",
+      ];
+      void confetti({
+        particleCount: 80,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: bdayColors,
+        scalar: 1.2,
+      });
+      setTimeout(() => {
+        void confetti({
+          particleCount: 60,
+          angle: 60,
+          spread: 60,
+          origin: { x: 0 },
+          colors: bdayColors,
+          scalar: 1.1,
+        });
+        void confetti({
+          particleCount: 60,
+          angle: 120,
+          spread: 60,
+          origin: { x: 1 },
+          colors: bdayColors,
+          scalar: 1.1,
+        });
+      }, 500);
+      setTimeout(() => {
+        void confetti({
+          particleCount: 40,
+          spread: 100,
+          origin: { y: 0.4 },
+          colors: bdayColors,
+          scalar: 0.9,
+        });
+      }, 1200);
+      return;
+    }
     setShowModal(true);
     const colors = ["#ff69b4", "#ff1493", "#ffb6c1", "#ffe4e1", "#c084fc"];
     void confetti({
@@ -349,7 +403,22 @@ export default function ForeverPage() {
           40%       { transform: translateY(-14px) scale(1.08); }
           60%       { transform: translateY(-8px) scale(1.04); }
         }
+        @keyframes gold-glow {
+          0%, 100% { text-shadow: 0 0 10px #fde68a, 0 0 24px #f59e0b; }
+          50%       { text-shadow: 0 0 22px #fbbf24, 0 0 45px #f59e0b, 0 0 70px #fbcfe8; }
+        }
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+          50%       { opacity: 1; transform: scale(1.2) rotate(180deg); }
+        }
+        @keyframes candle-flicker {
+          0%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+          25%       { transform: scaleY(1.15) scaleX(0.9); opacity: 0.9; }
+          75%       { transform: scaleY(0.9) scaleX(1.1); opacity: 0.95; }
+        }
         .bday-glow-text { animation: bday-hero-glow 2.2s ease-in-out infinite; }
+        .gold-glow-text  { animation: gold-glow 2s ease-in-out infinite; }
+        .sparkle-star    { animation: sparkle 2s ease-in-out infinite; }
         .float-heart {
           position: fixed;
           bottom: -20px;
@@ -579,16 +648,20 @@ export default function ForeverPage() {
 
               <div>
                 <p className="text-[11px] font-bold tracking-[0.2em] text-pink-500 uppercase">
-                  Today
+                  {isHerBirthday ? "Today — your birthday 🎂" : "Today"}
                 </p>
                 <p className="mt-2 text-base leading-relaxed text-pink-100">
-                  you are the most important person in my life.
+                  {isHerBirthday
+                    ? "you are the most beautiful gift in my life."
+                    : "you are the most important person in my life."}
                 </p>
               </div>
 
               <div className="pt-2 text-center">
                 <p className="glow-text text-xl font-bold text-pink-300">
-                  Happy 6 months baby❤️
+                  {isHerBirthday
+                    ? "Happy Birthday, my love ❤️"
+                    : "Happy 6 months baby❤️"}
                 </p>
               </div>
             </div>
@@ -917,7 +990,9 @@ export default function ForeverPage() {
 
                 {/* Sign-off */}
                 <p className="font-great-vibes glow-text mb-4 text-2xl text-pink-300 sm:text-4xl">
-                  Happy 6 months anniversary wifey 🎹💕
+                  {isHerBirthday
+                    ? "Happy Birthday, my love 🎂🎹💕"
+                    : "Happy 6 months anniversary wifey 🎹💕"}
                 </p>
 
                 {/* Letter signature */}
@@ -935,6 +1010,196 @@ export default function ForeverPage() {
                   className="w-full rounded-xl bg-pink-700/40 px-6 py-2.5 text-sm text-pink-200 transition-colors hover:bg-pink-600/50"
                 >
                   Close ❤️
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── BIRTHDAY CARD MODAL ─────────────────────────────────────────── */}
+        <AnimatePresence>
+          {showBirthdayModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+              onClick={() => setShowBirthdayModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.3, opacity: 0, y: 80, rotate: -3 }}
+                animate={{ scale: 1, opacity: 1, y: 0, rotate: 0 }}
+                exit={{ scale: 0.3, opacity: 0, y: 80, rotate: 3 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                className="hide-scrollbar relative w-full max-w-sm overflow-x-hidden overflow-y-auto rounded-3xl border border-amber-400/40 bg-linear-to-b from-[#1c0a2e] via-[#2a0d18] to-[#120608] px-6 pt-7 pb-8 text-center shadow-2xl shadow-amber-900/40 sm:max-h-[90vh] sm:px-8 sm:pt-9 sm:pb-10"
+                style={{ maxHeight: "88dvh" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* drag handle */}
+                <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-amber-500/30 sm:hidden" />
+
+                {/* Sparkle corners */}
+                <span
+                  className="sparkle-star absolute top-5 left-5 text-lg"
+                  style={{ animationDelay: "0s" }}
+                >
+                  ✨
+                </span>
+                <span
+                  className="sparkle-star absolute top-5 right-5 text-lg"
+                  style={{ animationDelay: "0.7s" }}
+                >
+                  ✨
+                </span>
+                <span
+                  className="sparkle-star absolute bottom-20 left-4 text-base"
+                  style={{ animationDelay: "1.3s" }}
+                >
+                  ⭐
+                </span>
+                <span
+                  className="sparkle-star absolute right-4 bottom-20 text-base"
+                  style={{ animationDelay: "0.4s" }}
+                >
+                  ⭐
+                </span>
+
+                {/* Cake */}
+                <div
+                  className="mb-3 text-6xl sm:text-7xl"
+                  style={{
+                    animation: "bday-cake-bounce 2.2s ease-in-out infinite",
+                  }}
+                >
+                  🎂
+                </div>
+
+                {/* Main title */}
+                <h2
+                  className="font-great-vibes gold-glow-text mb-1 text-4xl sm:text-5xl"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #fde68a, #fbcfe8, #e9d5ff, #fcd34d)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  Happy Birthday
+                </h2>
+                <p
+                  className="font-great-vibes gold-glow-text mb-4 text-2xl sm:text-3xl"
+                  style={{
+                    background: "linear-gradient(135deg, #fbcfe8, #fde68a)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  my love 🎹
+                </p>
+
+                {/* Divider */}
+                <div className="mx-auto mb-5 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent to-amber-500/50" />
+                  <span className="text-xs text-amber-400/70">🕯️ 🎂 🕯️</span>
+                  <div className="h-px flex-1 bg-linear-to-l from-transparent to-amber-500/50" />
+                </div>
+
+                {/* Letter body */}
+                <div className="font-cormorant mb-5 space-y-4 text-left">
+                  <p className="text-sm leading-relaxed text-amber-100/90 italic sm:text-base">
+                    Today, the whole universe pauses
+                    <br />
+                    just to celebrate{" "}
+                    <span className="font-semibold text-amber-300">you</span>.
+                    🌟
+                  </p>
+
+                  <div className="mx-auto h-px w-10 bg-amber-500/30" />
+
+                  <p className="text-sm leading-relaxed text-pink-100/85 italic sm:text-base">
+                    You came into my life like a melody
+                    <br />
+                    I never knew I was waiting for —
+                    <br />
+                    and every single day since then
+                    <br />
+                    has felt like{" "}
+                    <span className="font-semibold text-pink-300">
+                      the most beautiful song
+                    </span>
+                    . 🎹
+                  </p>
+
+                  <div className="mx-auto h-px w-10 bg-amber-500/30" />
+
+                  <p className="text-sm leading-relaxed text-purple-100/85 italic sm:text-base">
+                    On your birthday, I want you to know —
+                    <br />
+                    you are{" "}
+                    <span className="font-semibold text-purple-300">
+                      loved beyond every distance
+                    </span>
+                    ,
+                    <br />
+                    celebrated beyond words,
+                    <br />
+                    and cherished more than you know. 💜
+                  </p>
+
+                  <div className="mx-auto h-px w-10 bg-amber-500/30" />
+
+                  <p className="text-sm leading-relaxed text-amber-100/85 italic sm:text-base">
+                    I hope this year brings you
+                    <br />
+                    everything you deserve —
+                    <br />
+                    happiness, music, and{" "}
+                    <span className="font-semibold text-amber-300">me</span> by
+                    your side. 🌸
+                  </p>
+                </div>
+
+                {/* Birthday sign-off */}
+                <div
+                  className="mb-5 rounded-2xl border border-amber-400/20 p-4"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(251,191,36,0.08), rgba(249,168,212,0.08))",
+                  }}
+                >
+                  <p
+                    className="font-great-vibes gold-glow-text text-2xl sm:text-3xl"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #fde68a, #fbcfe8, #e9d5ff)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    Happy Birthday, my everything 🎂💕
+                  </p>
+                </div>
+
+                {/* Signature */}
+                <div className="font-cormorant mb-5 border-t border-amber-500/20 pt-4 text-right">
+                  <p className="text-xs text-amber-200/60 italic sm:text-sm">
+                    — From the guy who built this piano world,
+                    <br />
+                    just to remind you how loved you are ❤️
+                  </p>
+                  <p className="font-great-vibes mt-2 text-xl text-amber-300/90 sm:text-2xl">
+                    — forever yours ❤️
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowBirthdayModal(false)}
+                  className="w-full rounded-xl border border-amber-500/30 bg-amber-900/30 px-6 py-2.5 text-sm text-amber-200 transition-colors hover:bg-amber-800/50"
+                >
+                  Close 🎂
                 </button>
               </motion.div>
             </motion.div>

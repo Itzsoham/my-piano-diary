@@ -37,7 +37,11 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+      {label && (
+        <SidebarGroupLabel className="font-semibold tracking-widest text-pink-700">
+          {label}
+        </SidebarGroupLabel>
+      )}
       <SidebarGroupContent>
         <SidebarMenu className="gap-2">
           {items.map((item) => {
@@ -50,10 +54,10 @@ export function NavMain({
                   tooltip={item.title}
                   isActive={isActive}
                   className={cn(
-                    "relative h-10 transition-all duration-300 ease-in-out",
+                    "relative h-10 text-rose-500/75 transition-all duration-300 ease-in-out",
                     "hover:bg-pink-500/5 hover:text-pink-600",
-                    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-pink-500/15 data-[active=true]:to-rose-500/5",
-                    "data-[active=true]:text-pink-600 data-[active=true]:font-semibold",
+                    "data-[active=true]:bg-linear-to-r data-[active=true]:from-pink-500/15 data-[active=true]:to-rose-500/5",
+                    "data-[active=true]:font-semibold data-[active=true]:text-pink-600",
                     "data-[active=true]:shadow-[inset_0_0_0_1px_rgba(244,114,182,0.1),0_4_12_-2px_rgba(244,114,182,0.15)]",
                     "rounded-xl px-3",
                   )}
@@ -63,10 +67,13 @@ export function NavMain({
                     className="flex w-full items-center gap-3"
                     onClick={handleItemClick}
                   >
-                    <div className={cn(
-                      "flex size-5 items-center justify-center transition-transform duration-300",
-                      isActive && "scale-110 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]"
-                    )}>
+                    <div
+                      className={cn(
+                        "flex size-5 items-center justify-center transition-transform duration-300",
+                        isActive &&
+                          "scale-110 drop-shadow-[0_0_8px_rgba(244,114,182,0.5)]",
+                      )}
+                    >
                       {item.icon && <item.icon className="size-full" />}
                     </div>
                     <span className="text-sm">{item.title}</span>
