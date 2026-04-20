@@ -15,6 +15,7 @@ import { format, isSameDay } from "date-fns";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { useBirthday } from "@/components/birthday/birthday-provider";
+import { useQueryClient } from "@tanstack/react-query";
 
 const BIRTHDAY_DATE = new Date("2026-04-24T00:00:00");
 
@@ -38,7 +39,6 @@ interface FullCalendarViewProps {
   onDateRangeChange: (start: Date, end: Date) => void;
   onAddLesson: (date: Date) => void;
   onLessonClick: (lesson: Lesson) => void;
-  onRefresh: () => void;
 }
 
 export function FullCalendarView({
@@ -46,10 +46,24 @@ export function FullCalendarView({
   onDateRangeChange,
   onAddLesson,
   onLessonClick,
-  onRefresh,
 }: FullCalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
-  const updateLesson = api.lesson.update.useMutation();
+  const utils = api.useUtils();
+  const queryClient = useQueryClient();
+  const updateLesson = api.lesson.update.useMutation({
+    mutationKey: ["lesson-write"],
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+
+      if (inFlight !== 1) {
+        return;
+      }
+
+      await utils.lesson.invalidate();
+    },
+  });
   const { isBirthdayMode } = useBirthday();
 
   const handleDatesSet = (arg: {
@@ -86,7 +100,6 @@ export function FullCalendarView({
       const dayOfWeek = format(newDate, "EEEE");
       const time = format(newDate, "h:mm a");
       toast.success(`Lesson moved to ${dayOfWeek} ${time}`);
-      onRefresh();
     } catch (error) {
       toast.error("Failed to reschedule lesson");
       console.error(error);
@@ -113,7 +126,6 @@ export function FullCalendarView({
       });
 
       toast.success(`Lesson duration updated to ${durationMinutes} min`);
-      onRefresh();
     } catch (error) {
       toast.error("Failed to update duration");
       console.error(error);

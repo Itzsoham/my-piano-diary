@@ -101,7 +101,6 @@ export default function CalendarPage() {
         }
         onAddLesson={handleAddLesson}
         onLessonClick={handleLessonClick}
-        onRefresh={handleSuccess}
       />
 
       <LessonDialog

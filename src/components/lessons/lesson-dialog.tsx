@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
 import { api } from "@/trpc/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const LessonFormSchema = z.object({
   studentId: z.string().min(1, { message: "Student is required." }),
@@ -63,6 +64,7 @@ export function LessonDialog({
   onSuccess,
 }: LessonDialogProps) {
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
 
   // Fetch pieces for dropdown
   const { data: pieces = [] } = api.piece.getAll.useQuery(undefined, {
@@ -70,12 +72,12 @@ export function LessonDialog({
   });
 
   const createLesson = api.lesson.create.useMutation({
+    mutationKey: ["lesson-write"],
     onMutate: async () => {
       // ✅ Close dialog and show toast INSTANTLY — don't wait for server
       toast.success("Lesson created successfully! 💗", { id: "lesson-create" });
       onOpenChange(false);
       form.reset();
-      onSuccess?.();
     },
     onSuccess: () => {
       // Modal already closed
@@ -86,18 +88,27 @@ export function LessonDialog({
       });
       onOpenChange(true); // Re-open on error
     },
-    onSettled: () => {
-      void utils.lesson.invalidate();
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+
+      if (inFlight !== 1) {
+        return;
+      }
+
+      await utils.lesson.invalidate();
+      onSuccess?.();
     },
   });
 
   const createRecurring = api.lesson.createRecurring.useMutation({
+    mutationKey: ["lesson-write"],
     onMutate: async () => {
       // Optimistic close
       toast.loading("Scheduling lessons...", { id: "lesson-recurring" });
       onOpenChange(false);
       form.reset();
-      onSuccess?.();
     },
     onSuccess: (data) => {
       toast.success(`${data.count} lessons scheduled beautifully! ✨`, {
@@ -110,8 +121,17 @@ export function LessonDialog({
       });
       onOpenChange(true);
     },
-    onSettled: () => {
-      void utils.lesson.invalidate();
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+
+      if (inFlight !== 1) {
+        return;
+      }
+
+      await utils.lesson.invalidate();
+      onSuccess?.();
     },
   });
 

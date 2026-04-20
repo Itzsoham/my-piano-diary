@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { api } from "@/trpc/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const LessonEditSchema = z.object({
   date: z.date({ required_error: "Date is required" }),
@@ -66,11 +67,13 @@ export function LessonEditDialog({
   onSuccess,
 }: LessonEditDialogProps) {
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const { data: pieces = [] } = api.piece.getAll.useQuery(undefined, {
     enabled: open,
   });
 
   const updateLesson = api.lesson.update.useMutation({
+    mutationKey: ["lesson-write"],
     onMutate: async () => {
       // Cancel any outgoing refetches so they don't overwrite during mutation
       await utils.lesson.getAll.cancel({});
@@ -78,7 +81,6 @@ export function LessonEditDialog({
       // ✅ Close dialog and show toast INSTANTLY — don't wait for server
       toast.success("Lesson updated successfully", { id: "lesson-update" });
       onOpenChange(false);
-      onSuccess?.();
     },
 
     onSuccess: () => {
@@ -94,9 +96,18 @@ export function LessonEditDialog({
       onOpenChange(true);
     },
 
-    onSettled: () => {
-      // Always re-sync with real server data
-      void utils.lesson.invalidate();
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+
+      if (inFlight !== 1) {
+        return;
+      }
+
+      // Always re-sync with real server data once after the final write settles.
+      await utils.lesson.invalidate();
+      onSuccess?.();
     },
   });
 

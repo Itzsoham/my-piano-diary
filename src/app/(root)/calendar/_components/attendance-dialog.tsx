@@ -16,7 +16,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,13 +28,23 @@ import { format } from "date-fns";
 import { Check, X, Clock, Music2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { useQueryClient } from "@tanstack/react-query";
 
-const AttendanceFormSchema = z.object({
-  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
-  actualMin: z.string().optional(),
-  cancelReason: z.string().optional(),
-  note: z.string().optional(),
-});
+const AttendanceFormSchema = z
+  .object({
+    status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
+    cancelReason: z.string().optional(),
+    note: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.status === "CANCELLED" && !data.cancelReason?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cancelReason"],
+        message: "Reason is required when cancelling a lesson",
+      });
+    }
+  });
 
 type AttendanceFormValues = z.infer<typeof AttendanceFormSchema>;
 
@@ -67,7 +76,9 @@ export function AttendanceDialog({
 }: AttendanceDialogProps) {
   const { data: session } = useSession();
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const markAttendance = api.lesson.markAttendance.useMutation({
+    mutationKey: ["lesson-write"],
     // Step 1: Before request fires — patch ALL caches that show lesson data
     onMutate: async (input) => {
       // Cancel any in-flight refetches across all queries that show lessons
@@ -142,11 +153,10 @@ export function AttendanceDialog({
       // ✅ Close modal and show success toast IMMEDIATELY — don't wait for server
       toast.success("Attendance marked successfully! 💗", { id: "attendance" });
       onOpenChange(false);
-      onSuccess?.();
     },
 
     onSuccess: () => {
-      // Modal already closed, nothing to do here
+      // Modal already closed, actual sync callback runs when all in-flight writes settle.
     },
 
     onError: (error) => {
@@ -158,10 +168,21 @@ export function AttendanceDialog({
       onOpenChange(true);
     },
 
-    // Always re-sync with real server data after mutation
-    onSettled: () => {
-      void utils.lesson.invalidate();
-      void utils.earnings.getTodayLessons.invalidate();
+    // Re-sync once after the final in-flight lesson write settles to avoid stale overwrite flicker.
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+
+      if (inFlight !== 1) {
+        return;
+      }
+
+      await Promise.all([
+        utils.lesson.invalidate(),
+        utils.earnings.getTodayLessons.invalidate(),
+      ]);
+      onSuccess?.();
     },
   });
 
@@ -169,7 +190,6 @@ export function AttendanceDialog({
     resolver: zodResolver(AttendanceFormSchema),
     defaultValues: {
       status: lesson.status,
-      actualMin: lesson.actualMin?.toString() ?? lesson.duration.toString(),
       cancelReason: lesson.cancelReason ?? "",
       note: lesson.note ?? "",
     },
@@ -182,7 +202,6 @@ export function AttendanceDialog({
 
     form.reset({
       status: lesson.status,
-      actualMin: lesson.actualMin?.toString() ?? lesson.duration.toString(),
       cancelReason: lesson.cancelReason ?? "",
       note: lesson.note ?? "",
     });
@@ -191,12 +210,14 @@ export function AttendanceDialog({
   const selectedStatus = form.watch("status");
 
   const onSubmit = async (data: AttendanceFormValues) => {
+    const cancelReason = data.cancelReason?.trim();
+    const note = data.note?.trim();
+
     markAttendance.mutate({
       lessonId: lesson.id,
       status: data.status,
-      actualMin: data.actualMin ? parseInt(data.actualMin) : undefined,
-      cancelReason: data.cancelReason,
-      note: data.note,
+      cancelReason: cancelReason === "" ? undefined : cancelReason,
+      note: note === "" ? undefined : note,
     });
   };
 
@@ -333,33 +354,6 @@ export function AttendanceDialog({
                 )}
               />
 
-              {selectedStatus === "COMPLETE" && (
-                <FormField
-                  control={form.control}
-                  name="actualMin"
-                  render={({ field }) => (
-                    <FormItem className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <FormLabel className="text-sm font-semibold text-pink-900/70">
-                        Actual Duration (minutes)
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder={lesson.duration.toString()}
-                          className="rounded-xl border-pink-100 focus:border-pink-300 focus:ring-pink-200"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-pink-800/40">
-                        Scheduled: {lesson.duration} minutes
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
               {selectedStatus === "CANCELLED" && (
                 <>
                   <FormField
@@ -374,6 +368,7 @@ export function AttendanceDialog({
                           <Input
                             placeholder="e.g., Sick, Family emergency"
                             className="rounded-xl border-pink-100 focus:border-pink-300 focus:ring-pink-200"
+                            required
                             {...field}
                           />
                         </FormControl>

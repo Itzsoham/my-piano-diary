@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { CheckCircle2, Edit, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { keepPreviousData } from "@tanstack/react-query";
+import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 
 import { api, type RouterOutputs } from "@/trpc/react";
 import { BirthdayBanner } from "@/components/birthday/birthday-banner";
@@ -69,6 +69,7 @@ interface LessonsPageProps {
 
 export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const [studentId, setStudentId] = useState("all");
   const [status, setStatus] = useState<LessonStatus | "all">("all");
   const [fromDate, setFromDate] = useState<Date | undefined>(INITIAL_FROM);
@@ -226,6 +227,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   ];
 
   const deleteMutation = api.lesson.delete.useMutation({
+    mutationKey: ["lesson-write"],
     onMutate: async ({ id }) => {
       // Cancel any outgoing refetches
       await utils.lesson.getAll.cancel({});
@@ -259,8 +261,16 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
       }
     },
 
-    onSettled: () => {
-      void utils.lesson.invalidate();
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+
+      if (inFlight !== 1) {
+        return;
+      }
+
+      await utils.lesson.invalidate();
     },
   });
 
