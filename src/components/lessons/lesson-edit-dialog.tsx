@@ -283,10 +283,7 @@ export function LessonEditDialog({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                className="h-10 sm:h-auto"
-              >
+              <Button type="submit" className="h-10 sm:h-auto">
                 Save changes
               </Button>
             </div>
