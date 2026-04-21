@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 import { CheckCircle2, Edit, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
@@ -50,8 +50,8 @@ const statusClasses: Record<LessonStatus, string> = {
 
 type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
 
-const INITIAL_FROM = startOfMonth(new Date());
-const INITIAL_TO = endOfMonth(new Date());
+const INITIAL_FROM = startOfDay(new Date());
+const INITIAL_TO = endOfDay(new Date());
 
 const STORAGE_KEY = "lessons-filters";
 

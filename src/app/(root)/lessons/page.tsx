@@ -1,11 +1,11 @@
-import { startOfMonth, endOfMonth } from "date-fns";
+import { startOfDay, endOfDay } from "date-fns";
 import { api } from "@/trpc/server";
 import { LessonsPage } from "./_components/lessons-page";
 
 export default async function Lessons() {
   const now = new Date();
-  const from = startOfMonth(now);
-  const to = endOfMonth(now);
+  const from = startOfDay(now);
+  const to = endOfDay(now);
 
   const students = await api.student.getAll();
   const lessons = await api.lesson.getAll({ from, to });

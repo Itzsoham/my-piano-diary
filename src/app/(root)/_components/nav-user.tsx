@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, LogOut, Sparkles, User } from "lucide-react";
+import { LogOut, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -146,10 +146,7 @@ export function NavUser() {
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-pink-50 focus:bg-pink-50">
-                <Bell className="size-4 text-pink-500" />
-                Notifications
-              </DropdownMenuItem>
+
               <DropdownMenuItem asChild>
                 <Link
                   href="/updates"

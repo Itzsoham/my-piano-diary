@@ -3,14 +3,17 @@
 import { useEffect, useRef } from "react";
 import { useBirthday } from "./birthday-provider";
 
-type ActiveElem = {
-  physics: HTMLDivElement;
-  wrapper: HTMLDivElement;
+type Particle = {
+  el: HTMLDivElement;
   inner: HTMLSpanElement;
-  rx: number;
-  ry: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  speed: number;
+  baseVx: number;
+  half: number;
   removed: boolean;
-  timeoutId: ReturnType<typeof setTimeout> | null;
 };
 
 // Each entry: [emoji, glowColor, bgColor]
@@ -45,18 +48,18 @@ const EMOJI_POOL: [string, string, string][] = [
   ["🦋", "rgba(192,132,252,0.7)", "rgba(233,213,255,0.2)"],
 ];
 
-function randomBetween(min: number, max: number) {
+function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
 export function FloatingElements() {
   const { isBirthdayMode } = useBirthday();
   const containerRef = useRef<HTMLDivElement>(null);
-  const countRef = useRef(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const particlesRef = useRef<Particle[]>([]);
   const mouseRef = useRef({ x: -9999, y: -9999 });
-  const activeElemsRef = useRef<ActiveElem[]>([]);
   const rafRef = useRef<number | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countRef = useRef(0);
 
   useEffect(() => {
     if (!isBirthdayMode) return;
@@ -64,248 +67,210 @@ export function FloatingElements() {
     if (!container) return;
 
     const isMobile = window.innerWidth < 768;
-    const maxActive = isMobile ? 4 : 8;
+    const MAX_ACTIVE = isMobile ? 5 : 9;
+    const SPAWN_INTERVAL = 1800;
+    // Mouse deflects the PATH — not the speed
+    const INFLUENCE_RADIUS = isMobile ? 90 : 140;
+    const STEER = 0.3;
+    const RETURN_DAMP = 0.022;
+    const MAX_SPEED_MULT = 1.5;
+    const TAP_RADIUS = isMobile ? 44 : 32;
 
-    // Track mouse position
     const onMouseMove = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
     window.addEventListener("mousemove", onMouseMove);
 
-    // RAF repulsion loop
-    const REPULSION_RADIUS = 120;
-    const MAX_FORCE = 90;
-    const LERP = 0.14;
-    const TAP_RADIUS = isMobile ? 34 : 26;
-
-    const removeItem = (item: ActiveElem, burst: boolean) => {
-      if (item.removed) return;
-      item.removed = true;
-
-      if (item.timeoutId) {
-        clearTimeout(item.timeoutId);
-        item.timeoutId = null;
-      }
-
-      activeElemsRef.current = activeElemsRef.current.filter((e) => e !== item);
+    // ── burst + remove ──────────────────────────────────────────────────────
+    const removeParticle = (p: Particle, burst: boolean) => {
+      if (p.removed) return;
+      p.removed = true;
+      particlesRef.current = particlesRef.current.filter((item) => item !== p);
       countRef.current = Math.max(0, countRef.current - 1);
 
       if (!burst) {
-        item.physics.remove();
+        p.el.remove();
         return;
       }
 
-      item.physics.style.pointerEvents = "none";
-      item.wrapper.style.animation = "none";
-      item.inner.style.animation = "none";
+      const tx = (p.x - p.half).toFixed(1);
+      const ty = (p.y - p.half).toFixed(1);
 
-      item.inner.animate(
+      p.el.animate(
         [
-          {
-            transform: "scale(1) rotate(0deg)",
-            opacity: 1,
-            filter: "brightness(1)",
-          },
-          {
-            transform: "scale(1.65) rotate(16deg)",
-            opacity: 0,
-            filter: "brightness(1.35)",
-          },
+          { transform: `translate(${tx}px,${ty}px) scale(1)`, opacity: "1" },
+          { transform: `translate(${tx}px,${ty}px) scale(2)`, opacity: "0" },
         ],
-        {
-          duration: 250,
-          easing: "cubic-bezier(0.2, 0.85, 0.2, 1)",
-          fill: "forwards",
-        },
+        { duration: 320, easing: "ease-out", fill: "forwards" },
       );
-
-      item.wrapper.animate(
+      p.inner.animate(
         [
-          { transform: "scale(1)", opacity: 1 },
-          { transform: "scale(1.28)", opacity: 0 },
+          { transform: "scale(1) rotate(0deg)", filter: "brightness(1)" },
+          { transform: "scale(1.5) rotate(22deg)", filter: "brightness(1.7)" },
         ],
-        {
-          duration: 250,
-          easing: "ease-out",
-          fill: "forwards",
-        },
+        { duration: 280, easing: "ease-out", fill: "forwards" },
       );
-
-      setTimeout(() => {
-        item.physics.remove();
-      }, 260);
+      setTimeout(() => p.el.remove(), 340);
     };
 
-    const popAtPoint = (x: number, y: number) => {
-      let best: ActiveElem | null = null;
-      let bestDist = Number.POSITIVE_INFINITY;
-
-      for (const item of activeElemsRef.current) {
-        if (item.removed) continue;
-        const rect = item.physics.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = cx - x;
-        const dy = cy - y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist <= TAP_RADIUS && dist < bestDist) {
-          best = item;
-          bestDist = dist;
+    // ── global tap / touch hit-test ──────────────────────────────────────────
+    const popAtPoint = (cx: number, cy: number) => {
+      let best: Particle | null = null;
+      let bestDist = Infinity;
+      for (const p of particlesRef.current) {
+        if (p.removed) continue;
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d <= TAP_RADIUS && d < bestDist) {
+          best = p;
+          bestDist = d;
         }
       }
-
-      if (best) {
-        removeItem(best, true);
-      }
+      if (best) removeParticle(best, true);
     };
 
-    const onPointerDown = (e: PointerEvent) => {
-      popAtPoint(e.clientX, e.clientY);
-    };
-
+    const onPointerDown = (e: PointerEvent) => popAtPoint(e.clientX, e.clientY);
     const onTouchStart = (e: TouchEvent) => {
-      const touch = e.changedTouches[0];
-      if (!touch) return;
-      popAtPoint(touch.clientX, touch.clientY);
+      const t = e.changedTouches[0];
+      if (t) popAtPoint(t.clientX, t.clientY);
     };
 
     window.addEventListener("pointerdown", onPointerDown, { passive: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
 
+    // ── physics tick ─────────────────────────────────────────────────────────
     const tick = () => {
       const { x: mx, y: my } = mouseRef.current;
 
-      // Prune removed elements
-      activeElemsRef.current = activeElemsRef.current.filter((item) =>
-        document.contains(item.physics),
-      );
+      for (const p of [...particlesRef.current]) {
+        if (p.removed) continue;
 
-      for (const item of activeElemsRef.current) {
-        const rect = item.physics.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = cx - mx;
-        const dy = cy - my;
+        // Gradually return to natural upward drift
+        p.vx += (p.baseVx - p.vx) * RETURN_DAMP;
+        p.vy += (-p.speed - p.vy) * RETURN_DAMP;
+
+        // Steer away from cursor — changes direction, not raw speed
+        const dx = p.x - mx;
+        const dy = p.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < INFLUENCE_RADIUS && dist > 0.5) {
+          const str = (1 - dist / INFLUENCE_RADIUS) * STEER;
+          p.vx += (dx / dist) * str;
+          p.vy += (dy / dist) * str;
 
-        let targetRx = 0;
-        let targetRy = 0;
-
-        if (dist < REPULSION_RADIUS && dist > 1) {
-          const force =
-            ((REPULSION_RADIUS - dist) / REPULSION_RADIUS) * MAX_FORCE;
-          targetRx = (dx / dist) * force;
-          targetRy = (dy / dist) * force;
+          // Cap speed to avoid runaway
+          const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          const cap = p.speed * MAX_SPEED_MULT;
+          if (spd > cap) {
+            p.vx = (p.vx / spd) * cap;
+            p.vy = (p.vy / spd) * cap;
+          }
         }
 
-        // Smooth lerp toward target repulsion offset
-        item.rx += (targetRx - item.rx) * LERP;
-        item.ry += (targetRy - item.ry) * LERP;
+        p.x += p.vx;
+        p.y += p.vy;
 
-        if (Math.abs(item.rx) > 0.3 || Math.abs(item.ry) > 0.3) {
-          item.physics.style.transform = `translate(${item.rx.toFixed(1)}px, ${item.ry.toFixed(1)}px)`;
-        } else {
-          item.physics.style.transform = "";
-        }
+        p.el.style.transform = `translate(${(p.x - p.half).toFixed(1)}px,${(p.y - p.half).toFixed(1)}px)`;
+
+        if (p.y < -p.half * 2) removeParticle(p, false);
       }
 
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
 
+    // ── spawn ─────────────────────────────────────────────────────────────────
     const spawn = () => {
-      if (countRef.current >= maxActive) return;
+      if (countRef.current >= MAX_ACTIVE) return;
       countRef.current++;
 
       const entry = EMOJI_POOL[Math.floor(Math.random() * EMOJI_POOL.length)]!;
       const [emoji, glow, bg] = entry;
 
-      const size = randomBetween(15, 24);
+      const vw = document.documentElement.clientWidth;
+      const vh = document.documentElement.clientHeight;
+      const size = rand(20, 32);
       const pad = size * 0.55;
-      const left = randomBetween(2, 94);
-      const duration = randomBetween(5.5, 9);
-      const driftX = randomBetween(-30, 30);
-      // slight random rotation wobble
-      const rot1 = randomBetween(-18, 18);
-      const rot2 = randomBetween(-12, 12);
+      const total = size + pad * 2;
+      const half = total / 2;
+      const speed = rand(1.7, 2.3); // px/frame
+      const baseVx = rand(-0.2, 0.2);
 
-      // Outer physics anchor — JS applies mouse-repulsion transform here
-      const physics = document.createElement("div");
-      physics.style.cssText = `
+      const x = rand(total, vw - total);
+      const y = vh + total; // start just below screen
+
+      const el = document.createElement("div");
+      el.style.cssText = `
         position: absolute;
-        bottom: -40px;
-        left: ${left}%;
-        pointer-events: none;
-        user-select: none;
-        will-change: transform;
-      `;
-
-      // Inner wrapper: glowing circle badge with CSS float animation
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText = `
-        position: relative;
-        width: ${size + pad * 2}px;
-        height: ${size + pad * 2}px;
+        top: 0; left: 0;
+        width: ${total}px;
+        height: ${total}px;
         border-radius: 50%;
         background: radial-gradient(circle at 40% 35%, ${bg} 0%, transparent 72%);
         display: flex;
         align-items: center;
         justify-content: center;
-        will-change: transform, opacity;
-        --bday-drift-x: ${driftX}px;
-        animation: bday-drift ${duration}s ease-in-out forwards;
+        pointer-events: none;
+        user-select: none;
+        will-change: transform;
         filter: drop-shadow(0 0 ${Math.round(size * 0.45)}px ${glow})
                 drop-shadow(0 0 ${Math.round(size * 0.9)}px ${glow.replace(/[\d.]+\)$/, "0.35)")});
+        transform: translate(${(x - half).toFixed(1)}px,${(y - half).toFixed(1)}px);
+        opacity: 0;
       `;
 
-      // Inner emoji span with subtle rotation wobble via keyframe override
       const inner = document.createElement("span");
       inner.textContent = emoji;
       inner.style.cssText = `
         font-size: ${size}px;
         line-height: 1;
         display: block;
-        animation: bday-fe-wobble ${(duration * 0.6).toFixed(1)}s ease-in-out infinite alternate;
-        --r1: ${rot1}deg;
-        --r2: ${rot2}deg;
+        animation: bday-fe-wobble ${rand(2.5, 4).toFixed(1)}s ease-in-out infinite alternate;
+        --r1: ${rand(-15, 15).toFixed(0)}deg;
+        --r2: ${rand(-10, 10).toFixed(0)}deg;
       `;
-      wrapper.appendChild(inner);
-      physics.appendChild(wrapper);
-      container.appendChild(physics);
+      el.appendChild(inner);
+      container.appendChild(el);
 
-      const item: ActiveElem = {
-        physics,
-        wrapper,
+      const p: Particle = {
+        el,
         inner,
-        rx: 0,
-        ry: 0,
+        x,
+        y,
+        vx: baseVx,
+        vy: -speed,
+        speed,
+        baseVx,
+        half,
         removed: false,
-        timeoutId: null,
       };
-      activeElemsRef.current.push(item);
+      particlesRef.current.push(p);
 
-      item.timeoutId = setTimeout(() => {
-        removeItem(item, false);
-      }, duration * 1000);
+      // Fade in after first paint
+      requestAnimationFrame(() => {
+        if (!p.removed) {
+          el.style.transition = "opacity 0.45s ease";
+          el.style.opacity = "1";
+        }
+      });
     };
 
-    // Inject wobble keyframe once
-    const styleId = "bday-fe-style";
-    if (!document.getElementById(styleId)) {
+    // Wobble keyframe (injected once)
+    if (!document.getElementById("bday-fe-style")) {
       const s = document.createElement("style");
-      s.id = styleId;
+      s.id = "bday-fe-style";
       s.textContent = `
         @keyframes bday-fe-wobble {
-          0%   { transform: rotate(var(--r1, -12deg)) scale(1);    }
-          100% { transform: rotate(var(--r2,  12deg)) scale(1.08); }
+          0%   { transform: rotate(var(--r1,-12deg)) scale(1);    }
+          100% { transform: rotate(var(--r2, 12deg)) scale(1.08); }
         }
       `;
       document.head.appendChild(s);
     }
 
-    intervalRef.current = setInterval(spawn, 2200);
-    spawn(); // spawn one immediately
+    intervalRef.current = setInterval(spawn, SPAWN_INTERVAL);
+    spawn();
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -313,7 +278,8 @@ export function FloatingElements() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("touchstart", onTouchStart);
-      activeElemsRef.current = [];
+      for (const p of particlesRef.current) p.el.remove();
+      particlesRef.current = [];
       countRef.current = 0;
     };
   }, [isBirthdayMode]);
