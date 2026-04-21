@@ -54,7 +54,7 @@ export function NavMain({
                   tooltip={item.title}
                   isActive={isActive}
                   className={cn(
-                    "text-rose-600 relative h-10 transition-all duration-300 ease-in-out",
+                    "relative h-10 text-rose-600 transition-all duration-300 ease-in-out",
                     "hover:bg-sidebar-accent hover:text-pink-600",
                     "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold",
                     "data-[active=true]:text-pink-600",
