@@ -65,7 +65,7 @@ export function DashboardEarningsTrendCard({
   return (
     <Card
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none",
+        "flex h-full flex-col gap-2 overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none",
         className,
       )}
     >
@@ -84,7 +84,7 @@ export function DashboardEarningsTrendCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 overflow-hidden px-4 pb-4 sm:px-6 sm:pb-6">
+      <CardContent className="flex min-h-0 flex-1 overflow-hidden px-4 pb-1 sm:px-6">
         <div className="h-full min-h-64 w-full min-w-0 overflow-hidden rounded-[1.5rem] border border-rose-100 bg-rose-50/30 p-3 sm:min-h-80 sm:p-4">
           {trendLoading ? (
             <Skeleton className="h-full w-full rounded-4xl" />

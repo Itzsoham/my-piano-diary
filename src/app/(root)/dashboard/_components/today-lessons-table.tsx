@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrency } from "@/lib/currency";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -114,6 +115,54 @@ export function TodayLessonsTable({
     }
   };
 
+  const desktopSkeletonRows = Array.from({ length: 4 }, (_, index) => (
+    <tr key={`desktop-skeleton-${index}`} className="border-b border-rose-100">
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-9 rounded-full" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        <Skeleton className="h-4 w-20" />
+      </td>
+      <td className="px-5 py-3">
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </td>
+      <td className="hidden px-5 py-3 lg:table-cell">
+        <Skeleton className="h-8 w-16 rounded-full" />
+      </td>
+      <td className="px-5 py-3 text-right">
+        <Skeleton className="ml-auto h-4 w-24" />
+      </td>
+    </tr>
+  ));
+
+  const mobileSkeletonCards = Array.from({ length: 3 }, (_, index) => (
+    <div
+      key={`mobile-skeleton-${index}`}
+      className="rounded-[1.6rem] bg-white/80 p-4 shadow-sm backdrop-blur-md"
+    >
+      <div className="mb-3 flex items-start justify-between">
+        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <Skeleton className="size-10 rounded-full" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-3 border-t border-pink-50 pt-3">
+        <div className="space-y-2">
+          <Skeleton className="h-2.5 w-12" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="h-9 w-16 rounded-full" />
+      </div>
+    </div>
+  ));
+
   return (
     <Card
       className={cn(
@@ -176,8 +225,37 @@ export function TodayLessonsTable({
         )}
       >
         {isLoading ? (
-          <div className="flex h-32 items-center justify-center px-4 text-rose-400 italic">
-            Gathering your lessons...
+          <div className="space-y-4 pb-4">
+            <div className="hidden h-full sm:block">
+              <div className="overflow-hidden rounded-[1.5rem] border border-rose-100 bg-white">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b border-rose-100 bg-rose-50/60">
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Student
+                      </th>
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Schedule
+                      </th>
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Status
+                      </th>
+                      <th className="hidden px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase lg:table-cell">
+                        Attendance
+                      </th>
+                      <th className="px-5 py-2.5 text-right text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Earnings
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>{desktopSkeletonRows}</tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mb-4 grid grid-cols-1 gap-3 px-4 sm:hidden">
+              {mobileSkeletonCards}
+            </div>
           </div>
         ) : lessons.length > 0 ? (
           <>
