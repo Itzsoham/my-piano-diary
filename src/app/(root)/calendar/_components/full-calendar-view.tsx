@@ -161,7 +161,7 @@ export function FullCalendarView({
                 }
               : undefined
           }
-          title={isBirthday ? "Her Birthday! 🎂" : undefined}
+          title={isBirthday ? "Special Day! 🎂" : undefined}
         >
           {arg.dayNumberText}
           {isBirthday && <span className="ml-0.5 text-xs">🎂</span>}
@@ -337,6 +337,18 @@ export function FullCalendarView({
           color: #ec4899 !important;
         }
 
+        .fc-button:focus,
+        .fc-button:focus-visible {
+          outline: none !important;
+          border-color: #ec4899 !important;
+          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3) !important;
+        }
+
+        .fc-button:active {
+          border-color: #db2777 !important;
+          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.2) !important;
+        }
+
         .fc-button-active,
         .fc-button-primary:not(:disabled).fc-button-active {
           background: linear-gradient(135deg, #ec4899, #a855f7) !important;
@@ -470,8 +482,24 @@ export function FullCalendarView({
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
+              customButtons={{
+                prevMonth: {
+                  text: "❮",
+                  hint: "Previous month",
+                  click: () => {
+                    calendarRef.current?.getApi().prev();
+                  },
+                },
+                nextMonth: {
+                  text: "❯",
+                  hint: "Next month",
+                  click: () => {
+                    calendarRef.current?.getApi().next();
+                  },
+                },
+              }}
               headerToolbar={{
-                left: "prev,next today",
+                left: "prevMonth,nextMonth today",
                 center: "title",
                 right: "dayGridMonth,timeGridWeek,timeGridDay",
               }}

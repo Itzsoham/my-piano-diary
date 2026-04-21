@@ -86,7 +86,7 @@ export function DashboardIntelligencePanel() {
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.35 }}
-        className="h-full lg:col-span-2"
+        className="h-full rounded-[2rem] lg:col-span-2"
         style={
           isBirthdayMode
             ? {
@@ -111,7 +111,7 @@ export function DashboardIntelligencePanel() {
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.4, delay: 0.05 }}
-        className="h-full lg:col-span-1"
+        className="h-full rounded-[2rem] lg:col-span-1"
         style={
           isBirthdayMode
             ? {
@@ -137,7 +137,7 @@ export function DashboardIntelligencePanel() {
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.45, delay: 0.1 }}
-        className="h-full lg:col-span-1"
+        className="h-full rounded-[2rem] lg:col-span-1"
         style={
           isBirthdayMode
             ? {
@@ -163,7 +163,7 @@ export function DashboardIntelligencePanel() {
         animate="visible"
         variants={containerAnimation}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="h-full lg:col-span-2"
+        className="h-full rounded-[2rem] lg:col-span-2"
         style={
           isBirthdayMode
             ? {
