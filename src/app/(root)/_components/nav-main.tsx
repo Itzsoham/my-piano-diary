@@ -38,7 +38,7 @@ export function NavMain({
   return (
     <SidebarGroup>
       {label && (
-        <SidebarGroupLabel className="text-primary/85 font-semibold tracking-widest">
+        <SidebarGroupLabel className="font-semibold tracking-widest text-pink-700">
           {label}
         </SidebarGroupLabel>
       )}
@@ -54,11 +54,11 @@ export function NavMain({
                   tooltip={item.title}
                   isActive={isActive}
                   className={cn(
-                    "relative h-10 text-pink-500 transition-all duration-300 ease-in-out",
-                    "hover:text-primary hover:bg-pink-100",
-                    "data-[active=true]:bg-primary/12 data-[active=true]:font-semibold",
-                    "data-[active=true]:text-primary",
-                    "data-[active=true]:shadow-[inset_0_0_0_1px_hsl(var(--ring)/0.18),0_4px_12px_-2px_hsl(var(--ring)/0.18)]",
+                    "text-rose-600 relative h-10 transition-all duration-300 ease-in-out",
+                    "hover:bg-sidebar-accent hover:text-pink-600",
+                    "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold",
+                    "data-[active=true]:text-pink-600",
+                    "data-[active=true]:shadow-[inset_0_0_0_1px_hsl(var(--sidebar-border)),0_4px_12px_-2px_hsl(var(--sidebar-ring)/0.22)]",
                     "rounded-xl px-3",
                   )}
                 >
@@ -71,7 +71,7 @@ export function NavMain({
                       className={cn(
                         "flex size-5 items-center justify-center transition-transform duration-300",
                         isActive &&
-                          "scale-110 drop-shadow-[0_0_8px_hsl(var(--ring)/0.4)]",
+                          "scale-110 drop-shadow-[0_0_8px_hsl(var(--sidebar-ring)/0.45)]",
                       )}
                     >
                       {item.icon && <item.icon className="size-full" />}

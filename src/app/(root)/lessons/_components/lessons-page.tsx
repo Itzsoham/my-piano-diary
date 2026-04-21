@@ -290,7 +290,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         leftEmojis={["🎵", "🎹", "🎵"]}
       />
       <div className="mb-6">
-        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+        <h1 className="bday-animate-title flex items-center gap-2 text-3xl font-bold tracking-tight">
           Lessons & Attendance
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -360,7 +360,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
           <Button
             variant="outline"
             onClick={resetFilters}
-            className="h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10 md:w-full"
+            className="bday-animate-button h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10 md:w-full"
           >
             Reset
           </Button>

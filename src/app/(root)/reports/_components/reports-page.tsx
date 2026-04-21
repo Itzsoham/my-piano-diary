@@ -300,7 +300,7 @@ export function ReportsPage({
         storageKey="reports"
       />
       <div className="mb-6">
-        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+        <h1 className="bday-animate-title flex items-center gap-2 text-3xl font-bold tracking-tight">
           Monthly Reports
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -364,7 +364,7 @@ export function ReportsPage({
           <Button
             variant="outline"
             onClick={resetFilters}
-            className="h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10"
+            className="bday-animate-button h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10"
           >
             Reset
           </Button>
@@ -393,7 +393,7 @@ export function ReportsPage({
                     buildReportHref(studentId, filters.month, filters.year),
                   );
                 }}
-                className="min-w-44"
+                className="bday-animate-button min-w-44"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Generate Report

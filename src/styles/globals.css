@@ -308,3 +308,14 @@
   outline-color: #e9d5ff;
   box-shadow: 0 0 0 2px rgba(233, 213, 255, 0.5);
 }
+
+/* Reusable birthday motion helpers for page headings and CTAs */
+.birthday-mode .bday-animate-title {
+  animation: bday-float 4s ease-in-out infinite;
+}
+
+.birthday-mode .bday-animate-button {
+  animation:
+    bday-float 4s ease-in-out infinite,
+    bday-glow-pulse 2.8s ease-in-out infinite;
+}

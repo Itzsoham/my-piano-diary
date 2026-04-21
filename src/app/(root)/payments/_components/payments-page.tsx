@@ -153,7 +153,9 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
         storageKey="payments"
       />
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
+        <h1 className="bday-animate-title text-3xl font-bold tracking-tight">
+          Payments
+        </h1>
         <p className="text-muted-foreground mt-2 text-sm">
           Track expected dues, partial payments, and full monthly settlements.
         </p>
@@ -280,7 +282,7 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
           </div>
 
           <Button
-            className="h-11 md:h-10"
+            className="bday-animate-button h-11 md:h-10"
             onClick={() => {
               if (studentId === "all") {
                 setAddStudentId(undefined);

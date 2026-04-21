@@ -8,6 +8,7 @@ import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
 import { api } from "@/trpc/react";
 import { useBirthday } from "@/components/birthday/birthday-provider";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 
 interface Lesson {
   id: string;
@@ -63,16 +64,16 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+      <BirthdayBanner
+        text="Every lesson is a little celebration 🎹"
+        icon="🎉"
+        storageKey="calendar"
+        leftEmojis={["🎵", "✨", "🎹"]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
-          <h1
-            className="text-3xl font-bold tracking-tight"
-            style={
-              isBirthdayMode
-                ? { animation: "bday-float 4s ease-in-out infinite" }
-                : undefined
-            }
-          >
+          <h1 className="bday-animate-title text-3xl font-bold tracking-tight">
             Calendar
           </h1>
           <p className="text-muted-foreground">
@@ -83,16 +84,11 @@ export default function CalendarPage() {
         </div>
         <Button
           onClick={() => handleAddLesson(new Date())}
-          className={`rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
+          className={`bday-animate-button rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
             isBirthdayMode
               ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
               : "hover:from-pink-600 hover:to-purple-600 hover:shadow-md hover:shadow-pink-300/40"
           }`}
-          style={
-            isBirthdayMode
-              ? { animation: "bday-float 4s ease-in-out infinite" }
-              : undefined
-          }
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Lesson

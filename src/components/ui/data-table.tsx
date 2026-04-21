@@ -136,7 +136,9 @@ function DataTable<TData extends RowData>({
 
     content = (
       <Table className={tableClassName}>
-        <TableHeader className={cn("bg-rose-50/60", headerClassName)}>
+        <TableHeader
+          className={cn("sticky top-0 z-10 bg-rose-50/60", headerClassName)}
+        >
           {tanstackProps.table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -208,7 +210,9 @@ function DataTable<TData extends RowData>({
 
     content = (
       <Table className={tableClassName}>
-        <TableHeader className={cn("bg-rose-50/60", headerClassName)}>
+        <TableHeader
+          className={cn("sticky top-0 z-10 bg-rose-50/60", headerClassName)}
+        >
           <TableRow>
             {basicProps.columns.map((column) => (
               <TableHead
@@ -260,14 +264,14 @@ function DataTable<TData extends RowData>({
 
   return (
     <div className={className}>
-      <div className={viewportClassName}>
-        <div
-          className={cn(
-            "overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md",
-            surfaceClassName,
-          )}
-        >
-          {content}
+      <div
+        className={cn(
+          "flex max-h-96 flex-col overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md",
+          viewportClassName,
+        )}
+      >
+        <div className="flex-1 overflow-y-auto">
+          <div className={cn("", surfaceClassName)}>{content}</div>
         </div>
       </div>
     </div>
