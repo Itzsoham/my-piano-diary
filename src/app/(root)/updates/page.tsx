@@ -1,10 +1,17 @@
 "use client";
 
+import { useBirthday } from "@/components/birthday/birthday-provider";
+import { BirthdayRevealPage } from "@/components/birthday/birthday-reveal-page";
 import { ComingSoon } from "@/components/ui/coming-soon";
 import { useRouter } from "next/navigation";
 
 export default function UpdatesPage() {
   const router = useRouter();
+  const { isBirthdayMode } = useBirthday();
+
+  if (isBirthdayMode) {
+    return <BirthdayRevealPage />;
+  }
 
   return (
     <div className="flex h-full flex-1 flex-col items-center justify-center p-4">
