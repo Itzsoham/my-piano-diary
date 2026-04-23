@@ -92,7 +92,13 @@ function buildMemoryCards(): MemoryCard[] {
   return shuffleArray(
     MEMORY_MESSAGES.flatMap((msg, pairId) => [
       { id: pairId * 2, pairId, ...msg, isFlipped: false, isMatched: false },
-      { id: pairId * 2 + 1, pairId, ...msg, isFlipped: false, isMatched: false },
+      {
+        id: pairId * 2 + 1,
+        pairId,
+        ...msg,
+        isFlipped: false,
+        isMatched: false,
+      },
     ]),
   );
 }
@@ -145,7 +151,9 @@ export function BirthdayGamePage() {
     if (c1.pairId === c2.pairId) {
       // ✅ Match
       setCards((prev) =>
-        prev.map((c) => (c.pairId === c1.pairId ? { ...c, isMatched: true } : c)),
+        prev.map((c) =>
+          c.pairId === c1.pairId ? { ...c, isMatched: true } : c,
+        ),
       );
       setMatchedCount((mc) => {
         const next = mc + 1;
@@ -170,7 +178,9 @@ export function BirthdayGamePage() {
       // ❌ No match → flip back
       setTimeout(() => {
         setCards((prev) =>
-          prev.map((c) => (c.isFlipped && !c.isMatched ? { ...c, isFlipped: false } : c)),
+          prev.map((c) =>
+            c.isFlipped && !c.isMatched ? { ...c, isFlipped: false } : c,
+          ),
         );
         isCheckingRef.current = false;
       }, 900);
@@ -222,7 +232,10 @@ export function BirthdayGamePage() {
       `}</style>
 
       {/* Gradient background */}
-      <div className="pointer-events-none fixed inset-0 -z-30" style={ROOM_GLOW} />
+      <div
+        className="pointer-events-none fixed inset-0 -z-30"
+        style={ROOM_GLOW}
+      />
 
       {/* Glass layers */}
       <div className="pointer-events-none fixed inset-0 -z-20">
@@ -238,7 +251,11 @@ export function BirthdayGamePage() {
             className="absolute text-2xl opacity-35"
             style={{ left: `${8 + i * 19}%`, top: `${12 + (i % 3) * 22}%` }}
             animate={{ y: [0, -14, 0], rotate: [-6, 6, -6] }}
-            transition={{ duration: 3.2 + i * 0.4, repeat: Infinity, ease: "easeInOut" }}
+            transition={{
+              duration: 3.2 + i * 0.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           >
             {e}
           </motion.span>
@@ -281,7 +298,9 @@ export function BirthdayGamePage() {
           />
         )}
 
-        {phase === "complete" && <CompleteSection key="complete" moves={moves} />}
+        {phase === "complete" && (
+          <CompleteSection key="complete" moves={moves} />
+        )}
       </AnimatePresence>
     </main>
   );
@@ -324,7 +343,9 @@ function LoveGameSection({
               <span className="font-poppins text-[10px] tracking-[0.22em] text-rose-600/70 uppercase">
                 Journey
               </span>
-              <span className="font-poppins text-xs font-medium text-rose-600/80">{progress}%</span>
+              <span className="font-poppins text-xs font-medium text-rose-600/80">
+                {progress}%
+              </span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-rose-100/80">
               <motion.div
@@ -351,7 +372,11 @@ function LoveGameSection({
           >
             <motion.div
               animate={{ scale: [1, 1.1, 1], rotate: [-4, 4, -4] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+              transition={{
+                duration: 2.4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
               className="mb-6 text-7xl"
             >
               🎮
@@ -460,7 +485,13 @@ function LoveGameSection({
 
 // ─── Transition Section ────────────────────────────────────────────────────────
 
-function TransitionSection({ stage, onStart }: { stage: number; onStart: () => void }) {
+function TransitionSection({
+  stage,
+  onStart,
+}: {
+  stage: number;
+  onStart: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -479,7 +510,7 @@ function TransitionSection({ stage, onStart }: { stage: number; onStart: () => v
               transition={{ duration: 0.85 }}
               className="font-great-vibes mb-4 text-5xl text-rose-600 sm:text-6xl"
             >
-              This wasn't really a game…
+              This wasn&apos;t really a game…
             </motion.p>
           )}
 
@@ -567,7 +598,9 @@ function MemoryGameSection({
           <p className="font-poppins text-[10px] tracking-widest text-rose-500/65 uppercase">
             Moves
           </p>
-          <p className="font-poppins text-xl font-semibold text-rose-700">{moves}</p>
+          <p className="font-poppins text-xl font-semibold text-rose-700">
+            {moves}
+          </p>
         </div>
 
         <div className="flex-1 px-2">
@@ -624,7 +657,13 @@ function MemoryGameSection({
 
 // ─── Memory Card Tile ──────────────────────────────────────────────────────────
 
-function MemoryCardTile({ card, onFlip }: { card: MemoryCard; onFlip: (id: number) => void }) {
+function MemoryCardTile({
+  card,
+  onFlip,
+}: {
+  card: MemoryCard;
+  onFlip: (id: number) => void;
+}) {
   const visible = card.isFlipped || card.isMatched;
 
   return (
@@ -664,7 +703,9 @@ function MemoryCardTile({ card, onFlip }: { card: MemoryCard; onFlip: (id: numbe
           }`}
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
-          <span className="text-base leading-none sm:text-xl">{card.emoji}</span>
+          <span className="text-base leading-none sm:text-xl">
+            {card.emoji}
+          </span>
           <p className="font-poppins mt-0.5 text-[7px] leading-tight text-rose-700 sm:text-[9px]">
             {card.text}
           </p>
@@ -690,8 +731,16 @@ function CompleteSection({ moves }: { moves: number }) {
           key={i}
           className="pointer-events-none fixed text-3xl sm:text-4xl"
           style={{ left: `${6 + i * 16}%`, top: `${10 + (i % 3) * 20}%` }}
-          animate={{ y: [0, -18, 0], rotate: [-10, 10, -10], opacity: [0.55, 1, 0.55] }}
-          transition={{ duration: 3 + i * 0.35, repeat: Infinity, ease: "easeInOut" }}
+          animate={{
+            y: [0, -18, 0],
+            rotate: [-10, 10, -10],
+            opacity: [0.55, 1, 0.55],
+          }}
+          transition={{
+            duration: 3 + i * 0.35,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
         >
           {e}
         </motion.span>
@@ -732,7 +781,9 @@ function CompleteSection({ moves }: { moves: number }) {
               <p className="font-poppins text-[10px] tracking-widest text-rose-500/65 uppercase">
                 Total Moves
               </p>
-              <p className="font-poppins mt-1 text-2xl font-semibold text-rose-700">{moves}</p>
+              <p className="font-poppins mt-1 text-2xl font-semibold text-rose-700">
+                {moves}
+              </p>
             </div>
             <div className="rounded-2xl border border-rose-200/70 bg-linear-to-br from-rose-50/90 to-pink-50/90 px-5 py-3 text-center">
               <p className="font-poppins text-[10px] tracking-widest text-rose-500/65 uppercase">

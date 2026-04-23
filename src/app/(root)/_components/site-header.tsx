@@ -193,11 +193,11 @@ export function SiteHeader() {
 
   let currentMood: { primary: string; secondary: string };
   if (isBirthdayDay) {
-    currentMood = birthdayDayMoods[bdayMoodIndex] ?? birthdayDayMoods[0]!;
+    currentMood = birthdayDayMoods[bdayMoodIndex] ?? birthdayDayMoods[0];
   } else if (isBirthdayMode && useBdayMood) {
-    currentMood = bdayMoods[bdayMoodIndex] ?? bdayMoods[0]!;
+    currentMood = bdayMoods[bdayMoodIndex] ?? bdayMoods[0];
   } else {
-    currentMood = moods[category][moodIndex] ?? moods[category][0]!;
+    currentMood = moods[category][moodIndex] ?? moods[category][0];
   }
 
   const [scrolled, setScrolled] = useState(false);
@@ -206,10 +206,10 @@ export function SiteHeader() {
   useEffect(() => {
     // Find the nearest scrollable parent (the main content area)
     const el =
-      document.querySelector("main") ??
-      document.querySelector("[data-slot='sidebar-inset']") ??
+      document.querySelector<HTMLElement>("main") ??
+      document.querySelector<HTMLElement>("[data-slot='sidebar-inset']") ??
       document.documentElement;
-    mainRef.current = el as HTMLElement;
+    mainRef.current = el;
 
     const onScroll = () => setScrolled(el.scrollTop > 4);
     el.addEventListener("scroll", onScroll, { passive: true });
