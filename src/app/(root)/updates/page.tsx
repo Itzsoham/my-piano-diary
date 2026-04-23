@@ -7,6 +7,22 @@ import { ComingSoon } from "@/components/ui/coming-soon";
 export default function UpdatesPage() {
   const { isBirthdayMode, isBirthdayDay } = useBirthday();
   const [isBirthdayBoxOpen, setIsBirthdayBoxOpen] = useState(false);
+  const [isPasscodeCopied, setIsPasscodeCopied] = useState(false);
+
+  const passcode = "THUYYEUSOHAM";
+
+  const copyPasscode = async () => {
+    try {
+      await navigator.clipboard.writeText(passcode);
+      setIsPasscodeCopied(true);
+
+      window.setTimeout(() => {
+        setIsPasscodeCopied(false);
+      }, 1800);
+    } catch {
+      setIsPasscodeCopied(false);
+    }
+  };
 
   if (isBirthdayDay || isBirthdayMode) {
     return (
@@ -117,6 +133,19 @@ export default function UpdatesPage() {
                 Your birthday room is waiting for you whenever you want to step
                 inside. ✨
               </p>
+              <div className="mx-auto mt-3 flex w-fit max-w-2xl flex-wrap items-center justify-center gap-2 rounded-full border border-rose-200/70 bg-white/55 px-3 py-2 backdrop-blur-sm sm:px-4">
+                <p className="font-cormorant text-base text-rose-600/90 italic sm:text-lg">
+                  PASSCODE : {passcode}
+                </p>
+                <button
+                  type="button"
+                  onClick={copyPasscode}
+                  className="rounded-full border border-rose-300/70 bg-rose-50/90 px-3 py-1 text-xs tracking-widest text-rose-700 uppercase transition hover:scale-[1.03] active:scale-[0.97]"
+                  aria-label="Copy birthday room passcode"
+                >
+                  {isPasscodeCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
             </div>
           )}
         </button>
