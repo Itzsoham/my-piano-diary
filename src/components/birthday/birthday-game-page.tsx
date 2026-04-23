@@ -71,10 +71,10 @@ const MOTIVATIONAL = [
 
 const ROOM_GLOW = {
   backgroundImage:
-    "radial-gradient(1000px 520px at 50% -8%, rgba(255,213,230,0.86), transparent 58%), " +
-    "radial-gradient(700px 420px at 16% 22%, rgba(251,182,206,0.4), transparent 72%), " +
-    "radial-gradient(760px 460px at 84% 18%, rgba(255,226,189,0.44), transparent 72%), " +
-    "linear-gradient(180deg, #ffc5d8 0%, #ffd7e4 30%, #ffe8ef 58%, #f8d7e0 100%)",
+    "radial-gradient(920px 520px at 50% -8%, rgba(34,211,238,0.26), transparent 58%), " +
+    "radial-gradient(760px 440px at 14% 18%, rgba(244,114,182,0.22), transparent 72%), " +
+    "radial-gradient(760px 480px at 86% 16%, rgba(129,140,248,0.24), transparent 72%), " +
+    "linear-gradient(180deg, #09090f 0%, #12152d 30%, #19183b 58%, #090b17 100%)",
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -239,18 +239,24 @@ export function BirthdayGamePage() {
 
       {/* Glass layers */}
       <div className="pointer-events-none fixed inset-0 -z-20">
-        <div className="absolute inset-x-[6%] top-[8%] h-[54%] rounded-[2.8rem] border border-white/55 bg-white/22 backdrop-blur-[2px]" />
-        <div className="absolute inset-x-[12%] top-[12%] h-[46%] rounded-[2.6rem] border border-white/45 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.75),transparent_56%),linear-gradient(180deg,rgba(255,255,255,0.36),rgba(255,255,255,0.12))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-size-[28px_28px] opacity-30" />
+        <div className="absolute inset-x-[5%] top-[7%] h-[58%] rounded-[2.8rem] border border-cyan-300/18 bg-slate-950/26 shadow-[0_0_80px_rgba(34,211,238,0.12)] backdrop-blur-md" />
+        <div className="absolute inset-x-[10%] top-[12%] h-[46%] rounded-[2.6rem] border border-fuchsia-300/14 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_52%),linear-gradient(180deg,rgba(15,23,42,0.58),rgba(10,10,28,0.18))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_58%,rgba(3,4,12,0.36)_100%)]" />
       </div>
 
       {/* Ambient floating decorations */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        {(["🌸", "✨", "💖", "🌺", "⭐"] as const).map((e, i) => (
+        {(["🎮", "✨", "💎", "🪄", "⭐"] as const).map((e, i) => (
           <motion.span
             key={i}
-            className="absolute text-2xl opacity-35"
+            className="absolute text-2xl opacity-45 drop-shadow-[0_0_20px_rgba(103,232,249,0.34)]"
             style={{ left: `${8 + i * 19}%`, top: `${12 + (i % 3) * 22}%` }}
-            animate={{ y: [0, -14, 0], rotate: [-6, 6, -6] }}
+            animate={{
+              y: [0, -14, 0],
+              rotate: [-8, 8, -8],
+              scale: [1, 1.08, 1],
+            }}
             transition={{
               duration: 3.2 + i * 0.4,
               repeat: Infinity,
@@ -339,17 +345,17 @@ function LoveGameSection({
             animate={{ opacity: 1, y: 0 }}
             className="mb-8 w-full"
           >
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-poppins text-[10px] tracking-[0.22em] text-rose-600/70 uppercase">
+            <div className="mb-3 flex items-center justify-between rounded-full border border-cyan-300/18 bg-slate-950/48 px-4 py-2 shadow-[0_12px_28px_rgba(6,10,28,0.32)] backdrop-blur-md">
+              <span className="font-poppins text-[10px] tracking-[0.22em] text-cyan-200/75 uppercase">
                 Journey
               </span>
-              <span className="font-poppins text-xs font-medium text-rose-600/80">
+              <span className="font-poppins text-xs font-medium text-fuchsia-100/85">
                 {progress}%
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-rose-100/80">
+            <div className="h-2.5 w-full overflow-hidden rounded-full border border-white/8 bg-white/8 shadow-[inset_0_0_16px_rgba(15,23,42,0.56)]">
               <motion.div
-                className="h-full rounded-full bg-linear-to-r from-rose-400 to-pink-400 shadow-[0_0_8px_rgba(251,113,133,0.55)]"
+                className="h-full rounded-full bg-linear-to-r from-cyan-300 via-sky-400 to-fuchsia-400 shadow-[0_0_14px_rgba(56,189,248,0.58)]"
                 initial={{ width: "0%" }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
@@ -382,18 +388,21 @@ function LoveGameSection({
               🎮
             </motion.div>
 
-            <h1 className="font-great-vibes mb-4 text-6xl leading-tight text-rose-700 drop-shadow-[0_4px_18px_rgba(183,74,118,0.3)] sm:text-7xl">
+            <p className="font-poppins mb-3 rounded-full border border-cyan-300/18 bg-slate-950/44 px-4 py-1.5 text-[10px] tracking-[0.28em] text-cyan-200/75 uppercase backdrop-blur-md">
+              Love Quest Mode
+            </p>
+            <h1 className="font-great-vibes mb-4 text-6xl leading-tight text-white drop-shadow-[0_0_28px_rgba(96,165,250,0.32)] sm:text-7xl">
               Its game time baby ❤️
             </h1>
-            <p className="font-cormorant mb-10 max-w-sm text-xl text-rose-700/75 italic sm:text-2xl">
-              A little journey made just for you...
+            <p className="font-cormorant mb-10 max-w-sm text-xl text-cyan-50/78 italic sm:text-2xl">
+              A cute little arcade made just for you...
             </p>
 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
-              className="font-poppins rounded-2xl border border-rose-300/70 bg-linear-to-r from-rose-400 to-pink-400 px-12 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_14px_32px_rgba(180,58,107,0.42)] transition"
+              className="font-poppins rounded-2xl border border-cyan-300/30 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-12 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_18px_38px_rgba(59,130,246,0.36)] transition"
             >
               Start ✨
             </motion.button>
@@ -410,13 +419,13 @@ function LoveGameSection({
             transition={{ duration: 0.42 }}
             className="flex flex-1 flex-col justify-center"
           >
-            <div className="overflow-hidden rounded-[2rem] border border-white/60 bg-white/70 shadow-[0_18px_48px_rgba(174,78,118,0.2)] backdrop-blur-md">
+            <div className="overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-slate-950/54 shadow-[0_22px_52px_rgba(7,10,32,0.44)] backdrop-blur-xl">
               {/* Question header */}
-              <div className="border-b border-rose-100/60 px-6 py-5 sm:px-8">
-                <p className="font-poppins text-[10px] tracking-[0.26em] text-rose-500/65 uppercase">
+              <div className="border-b border-white/10 bg-white/3 px-6 py-5 sm:px-8">
+                <p className="font-poppins text-[10px] tracking-[0.26em] text-cyan-200/70 uppercase">
                   Question {step} of {QUESTIONS.length}
                 </p>
-                <h2 className="font-great-vibes mt-2 text-4xl leading-snug text-rose-700 sm:text-5xl">
+                <h2 className="font-great-vibes mt-2 text-4xl leading-snug text-white drop-shadow-[0_0_18px_rgba(96,165,250,0.22)] sm:text-5xl">
                   {QUESTIONS[step - 1]!.question}
                 </h2>
               </div>
@@ -435,12 +444,19 @@ function LoveGameSection({
                       {QUESTIONS[step - 1]!.options.map((opt) => (
                         <motion.button
                           key={opt}
-                          whileHover={{ scale: 1.02, x: 4 }}
+                          whileHover={{
+                            scale: 1.02,
+                            x: 4,
+                            boxShadow: "0 0 28px rgba(34, 211, 238, 0.2)",
+                          }}
                           whileTap={{ scale: 0.97 }}
                           onClick={onOptionClick}
-                          className="font-poppins w-full rounded-xl border border-rose-200/70 bg-white/85 px-5 py-3.5 text-left text-sm text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50/90"
+                          className="font-poppins w-full rounded-2xl border border-cyan-300/18 bg-[linear-gradient(135deg,rgba(15,23,42,0.88),rgba(30,41,59,0.72))] px-5 py-4 text-left text-sm text-cyan-50 shadow-[0_14px_28px_rgba(7,10,32,0.24)] transition hover:border-fuchsia-300/30 hover:text-white"
                         >
-                          {opt}
+                          <span className="flex items-center justify-between gap-3">
+                            <span>{opt}</span>
+                            <span className="text-cyan-300/80">✦</span>
+                          </span>
                         </motion.button>
                       ))}
                     </motion.div>
@@ -450,16 +466,16 @@ function LoveGameSection({
                       initial={{ opacity: 0, scale: 0.92, y: 12 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       transition={{ duration: 0.45, ease: "easeOut" }}
-                      className="rounded-2xl border border-rose-200/60 bg-linear-to-br from-rose-50/95 to-pink-50/95 p-6 text-center"
+                      className="rounded-[1.8rem] border border-fuchsia-300/20 bg-linear-to-br from-slate-900/95 via-indigo-950/92 to-fuchsia-950/72 p-6 text-center shadow-[0_20px_46px_rgba(17,24,39,0.4)]"
                     >
                       <motion.p
                         animate={{ scale: [1, 1.14, 1] }}
                         transition={{ duration: 1.4, repeat: Infinity }}
                         className="mb-3 text-3xl"
                       >
-                        💌
+                        🎁
                       </motion.p>
-                      <p className="font-great-vibes text-4xl leading-snug text-rose-700 drop-shadow-[0_2px_10px_rgba(183,74,118,0.28)] sm:text-5xl">
+                      <p className="font-great-vibes text-4xl leading-snug text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.28)] sm:text-5xl">
                         {QUESTIONS[step - 1]!.reveal}
                       </p>
 
@@ -467,7 +483,7 @@ function LoveGameSection({
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={onContinue}
-                        className="font-poppins mt-6 rounded-xl border border-rose-300/70 bg-linear-to-r from-rose-400 to-pink-400 px-8 py-3 text-sm tracking-[0.18em] text-white uppercase shadow-[0_10px_24px_rgba(180,58,107,0.34)] transition"
+                        className="font-poppins mt-6 rounded-2xl border border-cyan-300/22 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-8 py-3 text-sm tracking-[0.18em] text-white uppercase shadow-[0_12px_28px_rgba(59,130,246,0.34)] transition"
                       >
                         {step === QUESTIONS.length ? "Finish 💖" : "Continue →"}
                       </motion.button>
@@ -500,7 +516,7 @@ function TransitionSection({
       transition={{ duration: 0.7 }}
       className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center"
     >
-      <div className="max-w-lg">
+      <div className="max-w-lg rounded-[2rem] border border-cyan-300/16 bg-slate-950/42 px-6 py-10 shadow-[0_24px_60px_rgba(7,10,32,0.34)] backdrop-blur-xl sm:px-8">
         <AnimatePresence>
           {stage >= 1 && (
             <motion.p
@@ -508,7 +524,7 @@ function TransitionSection({
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.85 }}
-              className="font-great-vibes mb-4 text-5xl text-rose-600 sm:text-6xl"
+              className="font-great-vibes mb-4 text-5xl text-white drop-shadow-[0_0_22px_rgba(103,232,249,0.22)] sm:text-6xl"
             >
               This wasn&apos;t really a game…
             </motion.p>
@@ -520,7 +536,7 @@ function TransitionSection({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.85, delay: 0.15 }}
-              className="font-cormorant mb-10 text-2xl text-rose-700/85 italic sm:text-3xl"
+              className="font-cormorant mb-10 text-2xl text-cyan-50/78 italic sm:text-3xl"
             >
               I just wanted to remind you how special you are ❤️
             </motion.p>
@@ -534,17 +550,17 @@ function TransitionSection({
               transition={{ duration: 0.7, delay: 1.1 }}
               className="flex flex-col items-center gap-3"
             >
-              <p className="font-poppins text-[10px] tracking-[0.26em] text-rose-600/60 uppercase">
+              <p className="font-poppins text-[10px] tracking-[0.26em] text-cyan-200/60 uppercase">
                 ok time to get serious
               </p>
-              <p className="font-poppins text-sm tracking-[0.12em] text-rose-700/65 lowercase">
+              <p className="font-poppins text-sm tracking-[0.12em] text-fuchsia-100/72 lowercase">
                 really game time 🎮
               </p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={onStart}
-                className="font-poppins mt-3 rounded-2xl border border-rose-300/70 bg-linear-to-r from-rose-400 to-pink-500 px-12 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_14px_32px_rgba(180,58,107,0.44)] transition"
+                className="font-poppins mt-3 rounded-2xl border border-cyan-300/28 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-12 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_16px_36px_rgba(59,130,246,0.34)] transition"
               >
                 Lets Start 🎮
               </motion.button>
@@ -584,21 +600,21 @@ function MemoryGameSection({
     >
       {/* Header */}
       <div className="mb-5 text-center">
-        <p className="font-poppins text-[10px] tracking-[0.26em] text-rose-500/65 uppercase">
+        <p className="font-poppins text-[10px] tracking-[0.26em] text-cyan-200/65 uppercase">
           Real Game 🎮
         </p>
-        <h2 className="font-great-vibes mt-1 text-4xl text-rose-700 sm:text-5xl">
+        <h2 className="font-great-vibes mt-1 text-4xl text-white drop-shadow-[0_0_20px_rgba(96,165,250,0.26)] sm:text-5xl">
           Tap to reveal 💕
         </h2>
       </div>
 
       {/* Stats bar */}
-      <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.4rem] border border-white/60 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-md">
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.4rem] border border-cyan-300/16 bg-slate-950/50 px-4 py-3 shadow-[0_16px_36px_rgba(7,10,32,0.34)] backdrop-blur-xl">
         <div className="min-w-13 text-center">
-          <p className="font-poppins text-[10px] tracking-widest text-rose-500/65 uppercase">
+          <p className="font-poppins text-[10px] tracking-widest text-cyan-200/65 uppercase">
             Moves
           </p>
-          <p className="font-poppins text-xl font-semibold text-rose-700">
+          <p className="font-poppins text-xl font-semibold text-white">
             {moves}
           </p>
         </div>
@@ -611,7 +627,7 @@ function MemoryGameSection({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.35 }}
-              className="font-cormorant text-center text-base leading-snug text-rose-600/85 italic"
+              className="font-cormorant text-center text-base leading-snug text-fuchsia-100/88 italic"
             >
               {motivIdx < 0
                 ? "Find the matching pairs! 🌸"
@@ -621,10 +637,10 @@ function MemoryGameSection({
         </div>
 
         <div className="min-w-13 text-center">
-          <p className="font-poppins text-[10px] tracking-widest text-rose-500/65 uppercase">
+          <p className="font-poppins text-[10px] tracking-widest text-cyan-200/65 uppercase">
             Pairs
           </p>
-          <p className="font-poppins text-xl font-semibold text-rose-700">
+          <p className="font-poppins text-xl font-semibold text-white">
             {matchedCount}/{total}
           </p>
         </div>
@@ -632,9 +648,9 @@ function MemoryGameSection({
 
       {/* Progress bar */}
       <div className="mb-5">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-rose-100/80">
+        <div className="h-2 w-full overflow-hidden rounded-full border border-white/8 bg-white/8 shadow-[inset_0_0_16px_rgba(15,23,42,0.5)]">
           <motion.div
-            className="h-full rounded-full bg-linear-to-r from-rose-400 to-pink-400 shadow-[0_0_6px_rgba(251,113,133,0.5)]"
+            className="h-full rounded-full bg-linear-to-r from-cyan-300 via-sky-400 to-fuchsia-400 shadow-[0_0_14px_rgba(56,189,248,0.5)]"
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.5 }}
           />
@@ -648,7 +664,7 @@ function MemoryGameSection({
         ))}
       </div>
 
-      <p className="font-cormorant mt-6 text-center text-base text-rose-700/55 italic">
+      <p className="font-cormorant mt-6 text-center text-base text-cyan-50/58 italic">
         Find all matching pairs to reveal your surprise 💝
       </p>
     </motion.div>
@@ -682,7 +698,7 @@ function MemoryCardTile({
       >
         {/* Face-down */}
         <div
-          className="absolute inset-0 flex items-center justify-center rounded-xl border border-rose-300/60 bg-linear-to-br from-rose-300 via-pink-300 to-rose-200 shadow-md"
+          className="absolute inset-0 flex items-center justify-center rounded-xl border border-cyan-300/26 bg-linear-to-br from-cyan-500 via-sky-500 to-fuchsia-500 shadow-[0_16px_28px_rgba(14,165,233,0.26)]"
           style={{ backfaceVisibility: "hidden" }}
         >
           <motion.span
@@ -698,15 +714,15 @@ function MemoryCardTile({
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center gap-0.5 rounded-xl border p-1 text-center shadow-md ${
             card.isMatched
-              ? "border-rose-300/80 bg-linear-to-br from-rose-100 to-pink-100 shadow-[0_0_12px_rgba(251,113,133,0.38)]"
-              : "border-rose-200/70 bg-white/92"
+              ? "border-fuchsia-300/30 bg-linear-to-br from-slate-900/96 to-indigo-950/88 shadow-[0_0_16px_rgba(168,85,247,0.34)]"
+              : "border-cyan-300/16 bg-slate-950/84"
           }`}
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <span className="text-base leading-none sm:text-xl">
             {card.emoji}
           </span>
-          <p className="font-poppins mt-0.5 text-[7px] leading-tight text-rose-700 sm:text-[9px]">
+          <p className="font-poppins mt-0.5 text-[7px] leading-tight text-cyan-50 sm:text-[9px]">
             {card.text}
           </p>
         </div>
@@ -750,10 +766,10 @@ function CompleteSection({ moves }: { moves: number }) {
         initial={{ opacity: 0, y: 36, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.7, ease: "easeOut" }}
-        className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-white/60 bg-white/78 shadow-[0_24px_64px_rgba(176,68,114,0.32)] backdrop-blur-md"
+        className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-cyan-300/18 bg-slate-950/58 shadow-[0_24px_64px_rgba(7,10,32,0.44)] backdrop-blur-xl"
       >
-        <div className="pointer-events-none absolute -top-14 right-4 h-40 w-40 rounded-full bg-rose-200/50 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-pink-200/50 blur-2xl" />
+        <div className="pointer-events-none absolute -top-14 right-4 h-40 w-40 rounded-full bg-cyan-400/24 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-fuchsia-400/24 blur-2xl" />
 
         <div className="relative p-7 sm:p-9">
           <motion.p
@@ -764,32 +780,32 @@ function CompleteSection({ moves }: { moves: number }) {
             🎊
           </motion.p>
 
-          <h1 className="font-great-vibes mt-3 text-5xl leading-tight text-rose-700 drop-shadow-[0_4px_18px_rgba(183,74,118,0.32)] sm:text-6xl">
+          <h1 className="font-great-vibes mt-3 text-5xl leading-tight text-white drop-shadow-[0_0_24px_rgba(56,189,248,0.24)] sm:text-6xl">
             You did it baby!
           </h1>
 
-          <p className="font-cormorant mt-4 text-xl text-rose-700/85 italic sm:text-2xl">
+          <p className="font-cormorant mt-4 text-xl text-cyan-50/86 italic sm:text-2xl">
             All {MEMORY_MESSAGES.length} pairs found in {moves} moves.
           </p>
-          <p className="font-cormorant mt-1 text-lg text-rose-700/75 italic sm:text-xl">
+          <p className="font-cormorant mt-1 text-lg text-fuchsia-100/76 italic sm:text-xl">
             Just like you always find your way into my heart 💖
           </p>
 
           {/* Stats */}
           <div className="mt-6 flex justify-center gap-4">
-            <div className="rounded-2xl border border-rose-200/70 bg-linear-to-br from-rose-50/90 to-pink-50/90 px-5 py-3 text-center">
-              <p className="font-poppins text-[10px] tracking-widest text-rose-500/65 uppercase">
+            <div className="rounded-2xl border border-cyan-300/16 bg-linear-to-br from-slate-900/96 to-indigo-950/90 px-5 py-3 text-center">
+              <p className="font-poppins text-[10px] tracking-widest text-cyan-200/65 uppercase">
                 Total Moves
               </p>
-              <p className="font-poppins mt-1 text-2xl font-semibold text-rose-700">
+              <p className="font-poppins mt-1 text-2xl font-semibold text-white">
                 {moves}
               </p>
             </div>
-            <div className="rounded-2xl border border-rose-200/70 bg-linear-to-br from-rose-50/90 to-pink-50/90 px-5 py-3 text-center">
-              <p className="font-poppins text-[10px] tracking-widest text-rose-500/65 uppercase">
+            <div className="rounded-2xl border border-cyan-300/16 bg-linear-to-br from-slate-900/96 to-indigo-950/90 px-5 py-3 text-center">
+              <p className="font-poppins text-[10px] tracking-widest text-cyan-200/65 uppercase">
                 Pairs Found
               </p>
-              <p className="font-poppins mt-1 text-2xl font-semibold text-rose-700">
+              <p className="font-poppins mt-1 text-2xl font-semibold text-white">
                 {MEMORY_MESSAGES.length}/{MEMORY_MESSAGES.length}
               </p>
             </div>
@@ -800,7 +816,7 @@ function CompleteSection({ moves }: { moves: number }) {
             <motion.div
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className="font-poppins mt-7 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-rose-300/70 bg-linear-to-r from-rose-400 via-pink-400 to-rose-500 px-6 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_14px_36px_rgba(180,58,107,0.48)] transition"
+              className="font-poppins mt-7 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-cyan-300/24 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-6 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_16px_40px_rgba(59,130,246,0.38)] transition"
             >
               <span>Claim Your Rewards</span>
               <span className="text-base">🎁</span>
