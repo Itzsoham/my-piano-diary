@@ -240,8 +240,8 @@ export function BirthdayGamePage() {
       {/* Glass layers */}
       <div className="pointer-events-none fixed inset-0 -z-20">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-size-[28px_28px] opacity-30" />
-        <div className="absolute inset-x-[5%] top-[7%] h-[58%] rounded-[2.8rem] border border-cyan-300/18 bg-slate-950/26 shadow-[0_0_80px_rgba(34,211,238,0.12)] backdrop-blur-md" />
-        <div className="absolute inset-x-[10%] top-[12%] h-[46%] rounded-[2.6rem] border border-fuchsia-300/14 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_52%),linear-gradient(180deg,rgba(15,23,42,0.58),rgba(10,10,28,0.18))]" />
+        <div className="absolute inset-x-[3%] top-[3%] bottom-[3%] rounded-[2.8rem] border border-cyan-300/18 bg-slate-950/26 shadow-[0_0_80px_rgba(34,211,238,0.12)] backdrop-blur-md" />
+        <div className="absolute inset-x-[6%] top-[6%] bottom-[6%] rounded-[2.6rem] border border-fuchsia-300/14 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_52%),linear-gradient(180deg,rgba(15,23,42,0.58),rgba(10,10,28,0.18))]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_58%,rgba(3,4,12,0.36)_100%)]" />
       </div>
 
@@ -335,7 +335,7 @@ function LoveGameSection({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.5 }}
-      className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-4 py-8 sm:px-6"
+      className="relative z-10 mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-8 sm:px-6 lg:px-8"
     >
       {/* Progress bar */}
       <AnimatePresence>
@@ -419,7 +419,7 @@ function LoveGameSection({
             transition={{ duration: 0.42 }}
             className="flex flex-1 flex-col justify-center"
           >
-            <div className="overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-slate-950/54 shadow-[0_22px_52px_rgba(7,10,32,0.44)] backdrop-blur-xl">
+            <div className="min-h-[70vh] overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-slate-950/54 shadow-[0_22px_52px_rgba(7,10,32,0.44)] backdrop-blur-xl">
               {/* Question header */}
               <div className="border-b border-white/10 bg-white/3 px-6 py-5 sm:px-8">
                 <p className="font-poppins text-[10px] tracking-[0.26em] text-cyan-200/70 uppercase">
@@ -516,7 +516,7 @@ function TransitionSection({
       transition={{ duration: 0.7 }}
       className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center"
     >
-      <div className="max-w-lg rounded-[2rem] border border-cyan-300/16 bg-slate-950/42 px-6 py-10 shadow-[0_24px_60px_rgba(7,10,32,0.34)] backdrop-blur-xl sm:px-8">
+      <div className="w-full max-w-3xl rounded-[2rem] border border-cyan-300/16 bg-slate-950/42 px-6 py-10 shadow-[0_24px_60px_rgba(7,10,32,0.34)] backdrop-blur-xl sm:px-8 lg:px-10">
         <AnimatePresence>
           {stage >= 1 && (
             <motion.p
@@ -596,7 +596,7 @@ function MemoryGameSection({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.55 }}
-      className="relative z-10 mx-auto w-full max-w-2xl px-3 py-8 sm:px-5"
+      className="relative z-10 mx-auto w-full max-w-5xl px-3 py-8 sm:px-5 lg:px-8"
     >
       {/* Header */}
       <div className="mb-5 text-center">
@@ -766,7 +766,7 @@ function CompleteSection({ moves }: { moves: number }) {
         initial={{ opacity: 0, y: 36, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.7, ease: "easeOut" }}
-        className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-cyan-300/18 bg-slate-950/58 shadow-[0_24px_64px_rgba(7,10,32,0.44)] backdrop-blur-xl"
+        className="relative w-full max-w-3xl overflow-hidden rounded-[2.5rem] border border-cyan-300/18 bg-slate-950/58 shadow-[0_24px_64px_rgba(7,10,32,0.44)] backdrop-blur-xl"
       >
         <div className="pointer-events-none absolute -top-14 right-4 h-40 w-40 rounded-full bg-cyan-400/24 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-fuchsia-400/24 blur-2xl" />
