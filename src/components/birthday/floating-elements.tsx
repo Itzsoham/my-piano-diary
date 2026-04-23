@@ -110,6 +110,37 @@ export function FloatingElements() {
         ],
         { duration: 280, easing: "ease-out", fill: "forwards" },
       );
+
+      const love = document.createElement("span");
+      love.textContent = "i love you";
+      love.style.cssText = `
+        position: absolute;
+        left: ${p.x.toFixed(1)}px;
+        top: ${p.y.toFixed(1)}px;
+        transform: translate(-50%, -50%);
+        font-size: ${rand(9.5, 11.5).toFixed(1)}px;
+        font-style: italic;
+        font-family: "Cormorant Garamond", "Georgia", "Times New Roman", serif;
+        letter-spacing: 0.01em;
+        color: rgba(244, 63, 94, 0.98);
+        text-shadow: 0 0 10px rgba(251, 113, 133, 0.8), 0 0 16px rgba(190, 24, 93, 0.45);
+        opacity: 1;
+        pointer-events: none;
+        user-select: none;
+        white-space: nowrap;
+        z-index: 9999;
+      `;
+      container.appendChild(love);
+      love.animate(
+        [
+          { transform: "translate(-50%, -50%) scale(0.92)", opacity: 1 },
+          { transform: "translate(-50%, -72%) scale(1.02)", opacity: 0.95 },
+          { transform: "translate(-50%, -102%) scale(0.98)", opacity: 0 },
+        ],
+        { duration: 700, easing: "ease-out", fill: "forwards" },
+      );
+      setTimeout(() => love.remove(), 760);
+
       setTimeout(() => p.el.remove(), 340);
     };
 

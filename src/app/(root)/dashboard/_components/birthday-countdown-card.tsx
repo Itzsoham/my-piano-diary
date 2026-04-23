@@ -1,12 +1,29 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useBirthday } from "@/components/birthday/birthday-provider";
 
 const PARTICLE_POOL = [
-  "✨", "🎵", "💖", "🌸", "💛", "🎶", "🌷", "🎂",
-  "🌟", "💫", "🎀", "🪷", "💝", "🎁", "🎊", "🦋", "🪄", "🌹",
+  "✨",
+  "🎵",
+  "💖",
+  "🌸",
+  "💛",
+  "🎶",
+  "🌷",
+  "🎂",
+  "🌟",
+  "💫",
+  "🎀",
+  "🪷",
+  "💝",
+  "🎁",
+  "🎊",
+  "🦋",
+  "🪄",
+  "🌹",
 ];
 
 interface Particle {
@@ -20,7 +37,8 @@ interface Particle {
 function playChime() {
   try {
     type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
-    const Ctx = window.AudioContext ?? (window as WebkitWindow).webkitAudioContext;
+    const Ctx =
+      window.AudioContext ?? (window as WebkitWindow).webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
     [523.25, 587.33, 659.25, 783.99, 1046.5].forEach((freq, i) => {
@@ -53,7 +71,13 @@ function getTimeLeft() {
   };
 }
 
-function LetterReveal({ text, className }: { text: string; className?: string }) {
+function LetterReveal({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
   return (
     <span className={className} aria-label={text}>
       {text.split("").map((char, i) => (
@@ -78,10 +102,20 @@ export function BirthdayCountdownCard() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [rings, setRings] = useState<number[]>([]);
   const [clickCount, setClickCount] = useState(0);
-  const [showHint, setShowHint] = useState(false);
-  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [sparkleKey, setSparkleKey] = useState(0);
+  const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
 
   const { isBirthdayDay, isBirthdayMode, activateBirthdayMode } = useBirthday();
+
+  useEffect(() => {
+    return () => {
+      if (messageTimerRef.current) {
+        clearTimeout(messageTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -132,26 +166,67 @@ export function BirthdayCountdownCard() {
     const ringIds = [Math.random(), Math.random(), Math.random()];
     setRings((r) => [...r, ...ringIds]);
     ringIds.forEach((id, i) => {
-      setTimeout(() => setRings((r) => r.filter((x) => x !== id)), 800 + i * 150);
+      setTimeout(
+        () => setRings((r) => r.filter((x) => x !== id)),
+        800 + i * 150,
+      );
     });
+  };
+
+  const CLICK_MESSAGES: Array<{ threshold: number; text: string }> = [
+    { threshold: 5, text: "hmm… curious already? 🤭✨" },
+    { threshold: 10, text: "hey hey… easy there, pianist 🎹💛" },
+    { threshold: 20, text: "you’re not giving up, are you… 😌" },
+    { threshold: 30, text: "something tells me you *really* want to know… ✨" },
+    { threshold: 50, text: "okay… now I’m getting a little nervous 😳💛" },
+    { threshold: 70, text: "you’re getting closer… don’t stop now 🎵✨" },
+    { threshold: 100, text: "alright… I think you’ve earned this 💛" },
+  ];
+
+  const getClickMessage = (count: number) => {
+    if (count >= 100) return CLICK_MESSAGES[CLICK_MESSAGES.length - 1].text;
+    const next = [...CLICK_MESSAGES]
+      .reverse()
+      .find((item) => count >= item.threshold);
+    return next?.text ?? null;
+  };
+
+  const clearMessageTimeout = () => {
+    if (messageTimerRef.current) {
+      clearTimeout(messageTimerRef.current);
+      messageTimerRef.current = null;
+    }
   };
 
   const handleBirthdayClick = () => {
     handleBurst();
     if (isBirthdayMode) return;
+
     const next = clickCount + 1;
     setClickCount(next);
-    if (next === 1) {
-      setShowHint(true);
-      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-      hintTimerRef.current = setTimeout(() => {
-        setShowHint(false);
-        setClickCount(0);
-      }, 6000);
-    } else if (next >= 2) {
-      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-      setShowHint(false);
-      activateBirthdayMode();
+    setSparkleKey((prev) => prev + 1);
+
+    if (next === 101) {
+      setMessage("one more… just one more 🎂✨");
+      clearMessageTimeout();
+      messageTimerRef.current = setTimeout(
+        () => router.push("/birthday-room"),
+        650,
+      );
+      return;
+    }
+
+    const nextMessage = getClickMessage(next);
+    if (nextMessage) {
+      setMessage(nextMessage);
+      clearMessageTimeout();
+      messageTimerRef.current = setTimeout(() => setMessage(null), 4200);
+    }
+
+    if (next >= 2 && next < 101) {
+      if (next === 2) {
+        activateBirthdayMode();
+      }
     }
   };
 
@@ -183,6 +258,12 @@ export function BirthdayCountdownCard() {
       0%   { opacity: 0; transform: translateY(6px); }
       100% { opacity: 1; transform: translateY(0);   }
     }
+    @keyframes bcd-sparkle {
+      0%   { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
+      35%  { transform: translate(-50%, -6px) scale(1); opacity: 1; }
+      65%  { transform: translate(-50%, -14px) scale(1.1); opacity: 0.8; }
+      100% { transform: translate(-50%, -24px) scale(1.3); opacity: 0; }
+    }
     .bcd-particle {
       position: absolute; bottom: 30%; line-height: 1;
       pointer-events: none; user-select: none; z-index: 30;
@@ -204,7 +285,8 @@ export function BirthdayCountdownCard() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: "linear-gradient(135deg, #fbcfe8, #e9d5ff, #fde68a)",
+                background:
+                  "linear-gradient(135deg, #fbcfe8, #e9d5ff, #fde68a)",
                 filter: "blur(20px)",
                 animation: "bday-halo 2.5s ease-in-out infinite",
                 zIndex: -1,
@@ -219,7 +301,8 @@ export function BirthdayCountdownCard() {
                 "transition-all duration-300 hover:scale-105 active:scale-95",
               )}
               style={{
-                boxShadow: "0 8px 40px -8px rgba(251,207,232,0.8), 0 0 0 3px rgba(251,207,232,0.3)",
+                boxShadow:
+                  "0 8px 40px -8px rgba(251,207,232,0.8), 0 0 0 3px rgba(251,207,232,0.3)",
                 animation: "bday-glow-pulse 3s ease-in-out infinite",
               }}
             >
@@ -243,23 +326,48 @@ export function BirthdayCountdownCard() {
               {isBirthdayMode ? (
                 <LetterReveal
                   text="Happy Birthday!"
-                  className="text-sm font-bold text-rose-600 sm:text-base"
+                  className="text-sm font-bold text-rose-600 uppercase sm:text-base"
                 />
               ) : (
-                <span className="text-sm font-bold text-rose-600 sm:text-base">
+                <span className="text-sm font-bold text-rose-600 uppercase sm:text-base">
                   Happy Birthday Baby!
                 </span>
               )}
-              <span className={cn("text-xl transition-all", clickCount === 1 ? "animate-spin" : "animate-bounce")}>
+              <span
+                className={cn(
+                  "text-xl transition-all",
+                  clickCount === 1 ? "animate-spin" : "animate-bounce",
+                )}
+              >
                 ✨
               </span>
             </button>
           </div>
-          {!isBirthdayMode && showHint && (
-            <p className="text-xs italic text-rose-400/70" style={{ animation: "bday-hint-in 0.4s ease-out both" }}>
-              once more to reveal your surprise ✨
-            </p>
-          )}
+          {message ? (
+            <div
+              key={sparkleKey}
+              className="relative mt-3 overflow-hidden rounded-full border border-rose-200/50 bg-white/80 px-4 py-2 text-sm text-rose-600 shadow-[0_12px_36px_rgba(251,207,232,0.22)] transition-all duration-500 ease-in-out"
+              style={{
+                animation:
+                  "bday-hint-in 0.35s ease-out both, bcd-digit-float 2.5s ease-in-out infinite",
+                fontFamily: '"Cormorant Garamond", serif',
+              }}
+            >
+              <span
+                className="pointer-events-none absolute top-2 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-rose-300/95 shadow-[0_0_12px_rgba(251,207,232,0.75)]"
+                style={{ animation: "bcd-sparkle 0.75s ease-out forwards" }}
+              />
+              <span
+                className="pointer-events-none absolute top-2 left-1/3 h-2 w-2 -translate-x-1/2 rounded-full bg-rose-300/75 shadow-[0_0_8px_rgba(251,207,232,0.55)]"
+                style={{ animation: "bcd-sparkle 0.85s ease-out forwards" }}
+              />
+              <span
+                className="pointer-events-none absolute top-3 right-1/4 h-2 w-2 rounded-full bg-rose-300/70 shadow-[0_0_8px_rgba(251,207,232,0.55)]"
+                style={{ animation: "bcd-sparkle 0.95s ease-out forwards" }}
+              />
+              <span className="text-rose-500/90">✨</span> {message}
+            </div>
+          ) : null}
         </div>
       </>
     );
@@ -280,7 +388,8 @@ export function BirthdayCountdownCard() {
           "hover:bg-white/80 hover:shadow-[0_12px_40px_-6px_rgba(244,114,182,0.5)]",
         )}
         style={{
-          background: "linear-gradient(135deg, rgba(255,255,255,0.78) 0%, rgba(251,207,232,0.22) 50%, rgba(233,213,255,0.18) 80%, rgba(255,255,255,0.78) 100%)",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.78) 0%, rgba(251,207,232,0.22) 50%, rgba(233,213,255,0.18) 80%, rgba(255,255,255,0.78) 100%)",
           boxShadow: "0 8px 32px -4px rgba(244,114,182,0.3)",
         }}
       >
@@ -288,7 +397,11 @@ export function BirthdayCountdownCard() {
           <span
             key={p.id}
             className="bcd-particle"
-            style={{ left: `${p.left}%`, fontSize: `${p.size}px`, animation: `bcd-float ${p.dur}s ease-out forwards` }}
+            style={{
+              left: `${p.left}%`,
+              fontSize: `${p.size}px`,
+              animation: `bcd-float ${p.dur}s ease-out forwards`,
+            }}
           >
             {p.emoji}
           </span>
@@ -303,17 +416,35 @@ export function BirthdayCountdownCard() {
         </span>
         <span className="h-3.5 w-px shrink-0 bg-pink-200/80" />
         <span className="flex items-baseline gap-1 tabular-nums">
-          <span className="text-sm font-bold text-rose-600" style={{ animation: "bcd-digit-float 4s ease-in-out infinite", animationDelay: "0s" }}>
+          <span
+            className="text-sm font-bold text-rose-600"
+            style={{
+              animation: "bcd-digit-float 4s ease-in-out infinite",
+              animationDelay: "0s",
+            }}
+          >
             {tl.days}
           </span>
           <span className="text-[10px] font-medium text-rose-400">d</span>
           <span className="text-[10px] text-rose-300/70">·</span>
-          <span className="text-sm font-bold text-rose-600" style={{ animation: "bcd-digit-float 4s ease-in-out infinite", animationDelay: "0.5s" }}>
+          <span
+            className="text-sm font-bold text-rose-600"
+            style={{
+              animation: "bcd-digit-float 4s ease-in-out infinite",
+              animationDelay: "0.5s",
+            }}
+          >
             {String(tl.hours).padStart(2, "0")}
           </span>
           <span className="text-[10px] font-medium text-rose-400">h</span>
           <span className="text-[10px] text-rose-300/70">·</span>
-          <span className="text-sm font-bold text-rose-600" style={{ animation: "bcd-digit-float 4s ease-in-out infinite", animationDelay: "1s" }}>
+          <span
+            className="text-sm font-bold text-rose-600"
+            style={{
+              animation: "bcd-digit-float 4s ease-in-out infinite",
+              animationDelay: "1s",
+            }}
+          >
             {String(tl.minutes).padStart(2, "0")}
           </span>
           <span className="text-[10px] font-medium text-rose-400">m</span>
