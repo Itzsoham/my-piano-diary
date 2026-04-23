@@ -13,10 +13,12 @@ import {
 } from "@/components/ui/sidebar";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { api } from "@/trpc/react";
+import { useBirthday } from "@/components/birthday/birthday-provider";
 
 export function NavAction() {
   const [open, setOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
+  const { isBirthdayMode } = useBirthday();
   const { data: students = [] } = api.student.getAll.useQuery();
 
   return (
@@ -26,7 +28,16 @@ export function NavAction() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary active:bg-primary/25 active:text-primary border-primary/10 h-10 cursor-pointer justify-start rounded-xl border shadow-none transition-all"
+                className={`h-10 cursor-pointer rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
+                  isBirthdayMode
+                    ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
+                    : "hover:from-pink-600 hover:to-purple-600 hover:shadow-md hover:shadow-pink-300/40"
+                }`}
+                style={
+                  isBirthdayMode
+                    ? { animation: "bday-float 4s ease-in-out infinite" }
+                    : undefined
+                }
                 onClick={() => {
                   setOpen(true);
                   if (isMobile) setOpenMobile(false);
@@ -34,7 +45,7 @@ export function NavAction() {
                 tooltip="Add lesson"
               >
                 <CirclePlus className="size-4 shrink-0" />
-                <span className="font-medium">Add lesson</span>
+                <span className="font-semibold">Add lesson</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

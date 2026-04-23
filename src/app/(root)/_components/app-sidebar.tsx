@@ -28,6 +28,7 @@ import Image from "next/image";
 import { APP_CONFIG } from "@/config/app-config";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useBirthday } from "@/components/birthday/birthday-provider";
 
 const data = {
   main: [
@@ -74,6 +75,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isMobile, setOpenMobile } = useSidebar();
   const router = useRouter();
+  const { isBirthdayMode, isBirthdayDay } = useBirthday();
   const logoClickRef = React.useRef(0);
   const logoTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -129,11 +131,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   />
                 </div>
                 <div className="grid flex-1 text-left leading-tight">
-                  <span className="text-primary truncate text-base font-semibold">
+                  <span className="text-primary flex items-center gap-1 truncate text-base font-semibold">
                     {APP_CONFIG.name}
+                    {isBirthdayMode && (
+                      <span
+                        className={
+                          isBirthdayDay
+                            ? "text-amber-500"
+                            : "animate-bounce text-rose-400"
+                        }
+                        style={
+                          isBirthdayDay
+                            ? {
+                                display: "inline-block",
+                                animation: "spin 0.6s ease-in-out 3",
+                              }
+                            : undefined
+                        }
+                        aria-hidden="true"
+                      >
+                        {isBirthdayDay ? "🎉" : "🎂"}
+                      </span>
+                    )}
                   </span>
-                  <span className="text-muted-foreground truncate text-xs font-medium">
-                    personal teaching space
+                  <span className="truncate text-xs font-medium text-pink-400/70">
+                    Personal teaching space
                   </span>
                 </div>
               </Link>
@@ -146,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain label="MAIN" items={data.main} />
         <NavMain label="MANAGE" items={data.manage} />
       </SidebarContent>
-      <SidebarFooter className="border-sidebar-border border-t">
+      <SidebarFooter className="pt-2 pb-3">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

@@ -37,7 +37,11 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+      {label && (
+        <SidebarGroupLabel className="font-semibold tracking-widest text-pink-700">
+          {label}
+        </SidebarGroupLabel>
+      )}
       <SidebarGroupContent>
         <SidebarMenu className="gap-2">
           {items.map((item) => {
@@ -50,17 +54,29 @@ export function NavMain({
                   tooltip={item.title}
                   isActive={isActive}
                   className={cn(
-                    "hover:bg-primary/5 text-muted-foreground h-9 transition-colors",
-                    "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium",
+                    "relative h-10 text-rose-600 transition-all duration-300 ease-in-out",
+                    "hover:bg-sidebar-accent hover:text-pink-600",
+                    "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold",
+                    "data-[active=true]:text-pink-600",
+                    "data-[active=true]:shadow-[inset_0_0_0_1px_hsl(var(--sidebar-border)),0_4px_12px_-2px_hsl(var(--sidebar-ring)/0.22)]",
+                    "rounded-xl px-3",
                   )}
                 >
                   <Link
                     href={item.url}
-                    className="flex items-center gap-3"
+                    className="flex w-full items-center gap-3"
                     onClick={handleItemClick}
                   >
-                    {item.icon && <item.icon className="size-4" />}
-                    <span>{item.title}</span>
+                    <div
+                      className={cn(
+                        "flex size-5 items-center justify-center transition-transform duration-300",
+                        isActive &&
+                          "scale-110 drop-shadow-[0_0_8px_hsl(var(--sidebar-ring)/0.45)]",
+                      )}
+                    >
+                      {item.icon && <item.icon className="size-full" />}
+                    </div>
+                    <span className="text-sm">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

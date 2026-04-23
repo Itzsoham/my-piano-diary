@@ -52,7 +52,7 @@ export function StudentSheet({
         mode === "create" &&
         !isControlled && (
           <SheetTrigger asChild>
-            <Button>
+            <Button className="bday-animate-button">
               <Plus className="mr-2 size-4" />
               Add Student
             </Button>

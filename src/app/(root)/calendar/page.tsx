@@ -7,6 +7,8 @@ import { FullCalendarView } from "./_components/full-calendar-view";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
 import { api } from "@/trpc/react";
+import { useBirthday } from "@/components/birthday/birthday-provider";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 
 interface Lesson {
   id: string;
@@ -32,6 +34,7 @@ export default function CalendarPage() {
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const { isBirthdayMode } = useBirthday();
 
   const utils = api.useUtils();
   const { data: lessons = [] } = api.lesson.getInRange.useQuery({
@@ -61,14 +64,32 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+      <BirthdayBanner
+        text="Every lesson is a little celebration 🎹"
+        icon="🎉"
+        storageKey="calendar"
+        leftEmojis={["🎵", "✨", "🎹"]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+          <h1 className="bday-animate-title text-3xl font-bold tracking-tight">
+            Calendar
+          </h1>
           <p className="text-muted-foreground">
-            Manage lessons and track attendance
+            {isBirthdayMode
+              ? "Every lesson is a gift. Yours especially 🎹✨"
+              : "Manage lessons and track attendance"}
           </p>
         </div>
-        <Button onClick={() => handleAddLesson(new Date())}>
+        <Button
+          onClick={() => handleAddLesson(new Date())}
+          className={`bday-animate-button rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
+            isBirthdayMode
+              ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
+              : "hover:from-pink-600 hover:to-purple-600 hover:shadow-md hover:shadow-pink-300/40"
+          }`}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Lesson
         </Button>
@@ -81,7 +102,6 @@ export default function CalendarPage() {
         }
         onAddLesson={handleAddLesson}
         onLessonClick={handleLessonClick}
-        onRefresh={handleSuccess}
       />
 
       <LessonDialog

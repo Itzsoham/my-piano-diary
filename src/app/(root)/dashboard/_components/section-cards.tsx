@@ -1,14 +1,46 @@
 "use client";
 
-import { TrendingDown, CreditCard, Sparkles, WalletCards } from "lucide-react";
 import { api } from "@/trpc/react";
 import type { RouterOutputs } from "@/trpc/react";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
-import { fromUTC } from "@/lib/timezone";
-import { useSession } from "next-auth/react";
+import { useBirthday } from "@/components/birthday/birthday-provider";
+import { useEffect, useRef, useState } from "react";
+import {
+  type LucideIcon,
+  Wallet,
+  ArrowDownRight,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
+
+// Smooth count-up hook
+function useCountUp(target: number, duration = 800) {
+  const [value, setValue] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (target === 0) {
+      setValue(0);
+      return;
+    }
+    const start = performance.now();
+    const step = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(eased * target));
+      if (p < 1) rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target, duration]);
+
+  return value;
+}
 
 export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
@@ -19,121 +51,152 @@ export function SectionCards() {
       isLoading: boolean;
     };
   const { currency } = useCurrency();
-  const { data: session } = useSession();
-  const timezone = session?.user?.timezone ?? "UTC";
+  const { isBirthdayMode } = useBirthday();
 
-  // Determine month labels using the same timezone basis as backend calculations
-  const now = fromUTC(new Date(), timezone);
-  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthName = lastMonthDate.toLocaleString("default", {
-    month: "long",
-  });
+  const currentMonthEarnings = earnings?.currentMonthEarnings ?? 0;
+  const missedAmount = earnings?.currentMonthLoss ?? 0;
+  const collectedAmount = earnings?.lastMonthCollected ?? 0;
+  const outstandingAmount = earnings?.lastMonthOutstanding ?? 0;
 
-  // Placeholder progress - logic could be more dynamic if we had a goal
-  const progressPercentage = 65;
+  // Count-up values (only animate in birthday mode)
+  const animatedRevenue = useCountUp(isBirthdayMode ? currentMonthEarnings : 0);
+  const animatedMissed = useCountUp(isBirthdayMode ? missedAmount : 0);
+  const animatedCollected = useCountUp(isBirthdayMode ? collectedAmount : 0);
+  const animatedOutstanding = useCountUp(
+    isBirthdayMode ? outstandingAmount : 0,
+  );
+
+  const bdaySubtitles = [
+    "Your hard work is blooming 🌸",
+    "Every day is a fresh start ✨",
+    "You're doing amazing 💛",
+    "Almost there, keep going 🎹",
+  ];
+
+  const cards: Array<{
+    title: string;
+    rawValue: number;
+    animatedValue: number;
+    shell: string;
+    titleClass: string;
+    valueClass: string;
+    hoverShadow: string;
+    borderClass: string;
+    icon: LucideIcon;
+    glowDelay: string;
+    bdaySubtitle: string;
+  }> = [
+    {
+      title: "This Month Revenue",
+      rawValue: currentMonthEarnings,
+      animatedValue: animatedRevenue,
+      shell:
+        "bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(253,244,255,0.95),rgba(255,247,251,0.98))]",
+      hoverShadow: "hover:shadow-[0_15px_30px_-12px_rgba(192,38,211,0.15)]",
+      borderClass: "border-fuchsia-200/80",
+      titleClass: "text-fuchsia-600",
+      valueClass: "text-fuchsia-600",
+      icon: Wallet,
+      glowDelay: "0s",
+      bdaySubtitle: bdaySubtitles[0]!,
+    },
+    {
+      title: "Missed This Month",
+      rawValue: missedAmount,
+      animatedValue: animatedMissed,
+      shell:
+        "bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,238,243,0.94),rgba(255,247,248,0.98))]",
+      hoverShadow: "hover:shadow-[0_15px_30px_-12px_rgba(225,29,72,0.15)]",
+      borderClass: "border-rose-200/80",
+      titleClass: "text-rose-500",
+      valueClass: "text-rose-600",
+      icon: ArrowDownRight,
+      glowDelay: "0.75s",
+      bdaySubtitle: bdaySubtitles[1]!,
+    },
+    {
+      title: "Collected Last Month",
+      rawValue: collectedAmount,
+      animatedValue: animatedCollected,
+      shell:
+        "bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(236,253,245,0.95),rgba(248,255,252,0.98))]",
+      hoverShadow: "hover:shadow-[0_15px_30px_-12px_rgba(5,150,105,0.15)]",
+      borderClass: "border-emerald-200/80",
+      titleClass: "text-emerald-600",
+      valueClass: "text-emerald-600",
+      icon: CheckCircle2,
+      glowDelay: "1.5s",
+      bdaySubtitle: bdaySubtitles[2]!,
+    },
+    {
+      title: "Outstanding Last Month",
+      rawValue: outstandingAmount,
+      animatedValue: animatedOutstanding,
+      shell:
+        "bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,251,235,0.96),rgba(255,247,237,0.98))]",
+      hoverShadow: "hover:shadow-[0_15px_30px_-12px_rgba(217,119,6,0.15)]",
+      borderClass: "border-amber-200/80",
+      titleClass: "text-amber-600",
+      valueClass: "text-amber-500",
+      icon: Clock,
+      glowDelay: "2.25s",
+      bdaySubtitle: bdaySubtitles[3]!,
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:gap-4 lg:px-6 xl:grid-cols-4">
-      {/* 1st Card: Current Month Revenue */}
-      <Card className="group relative overflow-hidden rounded-2xl border bg-white/70 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
-        <div className="p-4 sm:p-6">
-          <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-            <CreditCard className="size-3 text-purple-500 sm:size-4" />
-            Current Month Revenue
-          </div>
+    <div className="px-4 lg:px-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => {
+          const Icon = card.icon;
+          const displayValue = isLoading
+            ? "Almost ready..."
+            : formatCurrency(
+                isBirthdayMode ? card.animatedValue : card.rawValue,
+                currency,
+              );
 
-          <div className="mt-2">
-            <p className="text-2xl font-semibold text-rose-600 tabular-nums sm:text-3xl">
-              {isLoading
-                ? "Almost ready…"
-                : formatCurrency(earnings?.currentMonthEarnings ?? 0, currency)}
-            </p>
-
-            <div className="mt-3">
-              <div className="h-2 overflow-hidden rounded-full bg-pink-100">
-                <div
-                  className="h-full rounded-full bg-pink-400 transition-all duration-1000 ease-out"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
+          return (
+            <Card
+              key={card.title}
+              className={`overflow-hidden rounded-[2rem] border ${card.borderClass} shadow-xs backdrop-blur-xl transition-all duration-300 ease-out ${card.hoverShadow} ${card.shell}`}
+              style={
+                isBirthdayMode
+                  ? {
+                      animation: `bday-glow-pulse 3s ease-in-out infinite`,
+                      animationDelay: card.glowDelay,
+                    }
+                  : undefined
+              }
+            >
+              <div className="flex h-full flex-col items-start justify-start p-8">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`flex size-5 shrink-0 items-center justify-center ${card.titleClass}`}
+                  >
+                    <Icon className="size-5" />
+                  </div>
+                  <p
+                    className={`text-xs font-medium tracking-wide uppercase opacity-70 ${card.titleClass}`}
+                  >
+                    {card.title}
+                  </p>
+                </div>
+                <p
+                  className={`mt-3 text-[2rem] font-semibold tracking-tight tabular-nums ${card.valueClass}`}
+                >
+                  {displayValue}
+                </p>
+                {isBirthdayMode && (
+                  <p className="text-muted-foreground/70 mt-1.5 text-[11px] italic">
+                    {card.bdaySubtitle}
+                  </p>
+                )}
               </div>
-            </div>
-
-            <p className="text-muted-foreground/80 mt-2 text-xs">
-              Revenue for {now.toLocaleString("default", { month: "long" })}
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* 2nd Card: Missed Opportunities */}
-      <Card className="group relative overflow-hidden rounded-2xl border bg-rose-50/50 shadow-[0_8px_20px_-12px_rgba(244,114,182,0.3)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(244,114,182,0.45)]">
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center gap-2 text-xs font-medium text-rose-600/80 sm:text-sm">
-            <TrendingDown className="size-3 sm:size-4" />
-            Missed Opportunities
-          </div>
-
-          <div className="mt-2">
-            <p className="text-2xl font-semibold text-rose-600/80 tabular-nums sm:text-3xl">
-              {isLoading
-                ? "Almost ready…"
-                : formatCurrency(earnings?.currentMonthLoss ?? 0, currency)}
-            </p>
-
-            <div className="mt-auto pt-2">
-              <Badge
-                variant="secondary"
-                className="border-none bg-rose-100 text-xs font-normal text-rose-600 hover:bg-rose-200"
-              >
-                Potential lost this month
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* 3rd Card: Payment Collected Last Month */}
-      <Card className="group relative overflow-hidden rounded-2xl border bg-emerald-50/30 shadow-[0_8px_20px_-12px_rgba(16,185,129,0.2)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(16,185,129,0.35)]">
-        <div className="p-4 sm:p-6">
-          <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-            <WalletCards className="size-3 text-emerald-500 sm:size-4" />
-            Payment Last Month
-          </div>
-
-          <div className="mt-2">
-            <p className="text-2xl font-semibold text-emerald-600 tabular-nums sm:text-3xl">
-              {isLoading
-                ? "Almost ready…"
-                : formatCurrency(earnings?.lastMonthCollected ?? 0, currency)}
-            </p>
-            <p className="text-muted-foreground/80 mt-2 flex items-center gap-1 text-xs">
-              Total cash collected in {lastMonthName}{" "}
-              <Sparkles className="size-3 text-amber-400" />
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* 4th Card: Outstanding Last Month */}
-      <Card className="group relative overflow-hidden rounded-2xl border bg-amber-50/50 shadow-[0_8px_20px_-12px_rgba(245,158,11,0.2)] backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-12px_rgba(245,158,11,0.35)]">
-        <div className="p-4 sm:p-6">
-          <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium sm:text-sm">
-            <TrendingDown className="size-3 text-amber-500 sm:size-4" />
-            Outstanding Last Month
-          </div>
-
-          <div className="mt-2">
-            <p className="text-2xl font-semibold text-amber-700 tabular-nums sm:text-3xl">
-              {isLoading
-                ? "Almost ready…"
-                : formatCurrency(earnings?.lastMonthOutstanding ?? 0, currency)}
-            </p>
-            <p className="text-muted-foreground/80 mt-2 text-xs">
-              Pending dues from {lastMonthName}
-            </p>
-          </div>
-        </div>
-      </Card>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

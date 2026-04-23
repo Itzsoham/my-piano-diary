@@ -14,6 +14,10 @@ import { type EventResizeDoneArg } from "@fullcalendar/interaction";
 import { format, isSameDay } from "date-fns";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import { useBirthday } from "@/components/birthday/birthday-provider";
+import { useQueryClient } from "@tanstack/react-query";
+
+const BIRTHDAY_DATE = new Date("2026-04-24T00:00:00");
 
 interface Lesson {
   id: string;
@@ -35,7 +39,6 @@ interface FullCalendarViewProps {
   onDateRangeChange: (start: Date, end: Date) => void;
   onAddLesson: (date: Date) => void;
   onLessonClick: (lesson: Lesson) => void;
-  onRefresh: () => void;
 }
 
 export function FullCalendarView({
@@ -43,10 +46,25 @@ export function FullCalendarView({
   onDateRangeChange,
   onAddLesson,
   onLessonClick,
-  onRefresh,
 }: FullCalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
-  const updateLesson = api.lesson.update.useMutation();
+  const utils = api.useUtils();
+  const queryClient = useQueryClient();
+  const updateLesson = api.lesson.update.useMutation({
+    mutationKey: ["lesson-write"],
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+
+      if (inFlight !== 1) {
+        return;
+      }
+
+      await utils.lesson.invalidate();
+    },
+  });
+  const { isBirthdayMode } = useBirthday();
 
   const handleDatesSet = (arg: {
     start: Date;
@@ -82,7 +100,6 @@ export function FullCalendarView({
       const dayOfWeek = format(newDate, "EEEE");
       const time = format(newDate, "h:mm a");
       toast.success(`Lesson moved to ${dayOfWeek} ${time}`);
-      onRefresh();
     } catch (error) {
       toast.error("Failed to reschedule lesson");
       console.error(error);
@@ -109,7 +126,6 @@ export function FullCalendarView({
       });
 
       toast.success(`Lesson duration updated to ${durationMinutes} min`);
-      onRefresh();
     } catch (error) {
       toast.error("Failed to update duration");
       console.error(error);
@@ -123,10 +139,32 @@ export function FullCalendarView({
       isSameDay(new Date(l.date), arg.date),
     ).length;
 
+    const isBirthday = isBirthdayMode && isSameDay(arg.date, BIRTHDAY_DATE);
+
     return (
       <div className="flex h-full w-full flex-col justify-between p-1">
-        <span className="text-foreground/80 text-sm font-medium">
+        <span
+          className={
+            isBirthday
+              ? "inline-flex items-center gap-0.5 text-sm font-bold text-amber-600"
+              : "text-foreground/80 text-sm font-medium"
+          }
+          style={
+            isBirthday
+              ? {
+                  outline: "2px solid #fde68a",
+                  outlineOffset: "2px",
+                  borderRadius: "4px",
+                  padding: "0 2px",
+                  background:
+                    "linear-gradient(135deg, rgba(253,230,138,0.3), rgba(251,207,232,0.3))",
+                }
+              : undefined
+          }
+          title={isBirthday ? "Special Day! 🎂" : undefined}
+        >
           {arg.dayNumberText}
+          {isBirthday && <span className="ml-0.5 text-xs">🎂</span>}
         </span>
         {count > 0 && (
           <div className="mt-auto self-start">
@@ -299,6 +337,18 @@ export function FullCalendarView({
           color: #ec4899 !important;
         }
 
+        .fc-button:focus,
+        .fc-button:focus-visible {
+          outline: none !important;
+          border-color: #ec4899 !important;
+          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3) !important;
+        }
+
+        .fc-button:active {
+          border-color: #db2777 !important;
+          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.2) !important;
+        }
+
         .fc-button-active,
         .fc-button-primary:not(:disabled).fc-button-active {
           background: linear-gradient(135deg, #ec4899, #a855f7) !important;
@@ -432,8 +482,24 @@ export function FullCalendarView({
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
+              customButtons={{
+                prevMonth: {
+                  text: "❮",
+                  hint: "Previous month",
+                  click: () => {
+                    calendarRef.current?.getApi().prev();
+                  },
+                },
+                nextMonth: {
+                  text: "❯",
+                  hint: "Next month",
+                  click: () => {
+                    calendarRef.current?.getApi().next();
+                  },
+                },
+              }}
               headerToolbar={{
-                left: "prev,next today",
+                left: "prevMonth,nextMonth today",
                 center: "title",
                 right: "dayGridMonth,timeGridWeek,timeGridDay",
               }}

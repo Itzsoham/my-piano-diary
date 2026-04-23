@@ -16,7 +16,6 @@ import {
   WalletCards,
 } from "lucide-react";
 import {
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -37,18 +36,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { StudentSheet } from "./student-sheet";
 import Image from "next/image";
 import Link from "next/link";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -355,6 +348,11 @@ export function StudentsTable({ data }: StudentsTableProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <BirthdayBanner
+        text="Your students are lucky to have you 💖"
+        icon="💖"
+        storageKey="students"
+      />
       <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-sm">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -391,67 +389,14 @@ export function StudentsTable({ data }: StudentsTableProps) {
       </div>
 
       {viewMode === "table" ? (
-        <div className="-mx-4 overflow-x-auto sm:mx-0">
-          <div className="inline-block min-w-full align-middle">
-            <div className="mx-4 overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-md sm:mx-0">
-              <Table>
-                <TableHeader className="bg-rose-50/60">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => {
-                        return (
-                          <TableHead
-                            key={header.id}
-                            className="whitespace-nowrap"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                          </TableHead>
-                        );
-                      })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                        className="transition-colors hover:bg-pink-50"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell
-                            key={cell.id}
-                            className="whitespace-nowrap"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        No students found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </div>
+        <DataTable
+          className="-mx-4 sm:mx-0"
+          viewportClassName="inline-block min-w-full align-middle"
+          surfaceClassName="mx-4 sm:mx-0"
+          table={table}
+          emptyMessage="No students found."
+          tanstackRowClassName="transition-colors hover:bg-pink-50"
+        />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {table.getRowModel().rows?.length ? (

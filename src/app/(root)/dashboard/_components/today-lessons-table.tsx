@@ -1,31 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/trpc/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, DollarSign, Music } from "lucide-react";
-import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { format, isSameDay, startOfDay } from "date-fns";
+import { Music } from "lucide-react";
+import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { formatCurrency } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrency } from "@/lib/currency";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
 
 type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
 
@@ -37,8 +30,31 @@ const toLessonStatus = (status: string): LessonStatus => {
   return "PENDING";
 };
 
-export function TodayLessonsTable() {
+type TodayLessonsTableProps = {
+  className?: string;
+  contentClassName?: string;
+};
+
+type SelectedLesson = {
+  id: string;
+  studentName: string;
+  duration: number;
+  status: LessonStatus;
+  actualMin: number | null;
+  cancelReason: string | null;
+  note: string | null;
+  date: Date;
+};
+
+export function TodayLessonsTable({
+  className,
+  contentClassName,
+}: TodayLessonsTableProps = {}) {
   const [date, setDate] = useState<Date>(() => startOfDay(new Date()));
+  const [open, setOpen] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<SelectedLesson | null>(
+    null,
+  );
   const { currency } = useCurrency();
 
   const {
@@ -47,31 +63,40 @@ export function TodayLessonsTable() {
     refetch,
   } = api.earnings.getTodayLessons.useQuery({ date });
 
-  const [open, setOpen] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState<{
-    id: string;
-    studentName: string;
-    duration: number;
-    status: LessonStatus;
-    actualMin: number | null;
-    cancelReason: string | null;
-    note: string | null;
-    date: Date;
-  } | null>(null);
+  const totalEarnings = lessons.reduce(
+    (sum, lesson) => sum + lesson.earnings,
+    0,
+  );
+  const formattedDate = format(date, "EEEE, MMMM do");
+  const isToday = isSameDay(date, new Date());
 
-  const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString("en-US", {
+  const formatTime = (lessonDate: Date) => {
+    return new Date(lessonDate).toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
     });
   };
 
+  const openAttendanceDialog = (lesson: (typeof lessons)[number]) => {
+    setSelectedLesson({
+      id: lesson.id,
+      studentName: lesson.student.name,
+      duration: lesson.duration,
+      status: toLessonStatus(lesson.status),
+      actualMin: lesson.actualMin,
+      cancelReason: lesson.cancelReason,
+      note: lesson.note,
+      date: lesson.date,
+    });
+    setOpen(true);
+  };
+
   const getStatusBadge = (status: LessonStatus) => {
     switch (status) {
       case "COMPLETE":
         return (
-          <Badge className="border-none bg-green-100 text-green-700 shadow-none hover:bg-green-200">
+          <Badge className="border-none bg-emerald-100 text-emerald-700 shadow-none hover:bg-emerald-200">
             Complete
           </Badge>
         );
@@ -83,232 +108,276 @@ export function TodayLessonsTable() {
         );
       default:
         return (
-          <Badge
-            variant="outline"
-            className="text-muted-foreground border-pink-200 bg-white/50"
-          >
+          <Badge className="border-none bg-amber-100 text-amber-700 shadow-none hover:bg-amber-200">
             Pending
           </Badge>
         );
     }
   };
 
-  const totalEarnings =
-    lessons?.reduce((sum, lesson) => sum + lesson.earnings, 0) ?? 0;
+  const desktopSkeletonRows = Array.from({ length: 4 }, (_, index) => (
+    <tr key={`desktop-skeleton-${index}`} className="border-b border-rose-100">
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-9 rounded-full" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        <Skeleton className="h-4 w-20" />
+      </td>
+      <td className="px-5 py-3">
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </td>
+      <td className="hidden px-5 py-3 lg:table-cell">
+        <Skeleton className="h-8 w-16 rounded-full" />
+      </td>
+      <td className="px-5 py-3 text-right">
+        <Skeleton className="ml-auto h-4 w-24" />
+      </td>
+    </tr>
+  ));
+
+  const mobileSkeletonCards = Array.from({ length: 3 }, (_, index) => (
+    <div
+      key={`mobile-skeleton-${index}`}
+      className="rounded-[1.6rem] bg-white/80 p-4 shadow-sm backdrop-blur-md"
+    >
+      <div className="mb-3 flex items-start justify-between">
+        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </div>
+
+      <div className="mb-4 flex items-center gap-3">
+        <Skeleton className="size-10 rounded-full" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-3 border-t border-pink-50 pt-3">
+        <div className="space-y-2">
+          <Skeleton className="h-2.5 w-12" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="h-9 w-16 rounded-full" />
+      </div>
+    </div>
+  ));
 
   return (
-    <Card className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-sm backdrop-blur">
-      <CardHeader className="bg-transparent pb-2">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-lg text-rose-950 sm:text-xl">
+    <Card
+      className={cn(
+        "flex h-full flex-col overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur",
+        className,
+      )}
+    >
+      <CardHeader className="bg-transparent">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2 text-2xl text-rose-950 sm:text-[1.75rem]">
               Today&apos;s Focus <span className="text-lg sm:text-xl">🎹</span>
             </CardTitle>
+
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="h-auto p-0 text-sm font-normal text-rose-600/80 italic hover:bg-transparent hover:text-rose-700 sm:text-base"
+                <button
+                  type="button"
+                  className="cursor-pointer text-left text-sm text-rose-500 italic transition-colors duration-200 hover:text-rose-700 sm:text-base"
                 >
-                  {format(date, "EEEE, MMMM do")}
-                </Button>
+                  {formattedDate}
+                </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(d) => d && setDate(d)}
+                  onSelect={(day) => day && setDate(day)}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
-          <div className="flex items-center gap-2 self-start rounded-2xl border border-pink-100 bg-white/60 px-3 py-2 shadow-sm backdrop-blur sm:gap-3 sm:self-auto sm:px-4">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-pink-100 text-pink-500 sm:h-8 sm:w-8">
-              <DollarSign className="size-3 sm:size-4" />
-            </div>
+
+          <div className="flex flex-wrap items-center gap-3 rounded-[1.2rem] border border-rose-100 bg-rose-50/40 px-4 py-2.5">
             <div>
-              <div className="text-muted-foreground text-[9px] font-medium tracking-wider uppercase sm:text-[10px]">
-                {isSameDay(date, new Date())
-                  ? "Today&apos;s Total"
-                  : "Day&apos;s Total"}
+              <div>
+                <div className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
+                  {isToday ? "Today's Total" : "Day Total"}
+                </div>
+                <div className="text-sm font-semibold text-rose-950 sm:text-base">
+                  {formatCurrency(totalEarnings, currency)}
+                </div>
               </div>
-              <div className="text-sm font-semibold text-rose-950 sm:text-base">
-                {formatCurrency(totalEarnings, currency)}
-              </div>
+            </div>
+            <div className="text-sm text-rose-700">
+              <span className="font-semibold text-rose-950">
+                {lessons.length}
+              </span>{" "}
+              lessons
             </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 sm:p-6 sm:pt-2">
+
+      <CardContent
+        className={cn(
+          "min-h-0 flex-1 px-0 pt-0 pb-0 sm:px-6 sm:pt-0 sm:pb-6",
+          contentClassName,
+        )}
+      >
         {isLoading ? (
-          <div className="flex h-32 items-center justify-center px-4 text-rose-400 italic">
-            Gathering your lessons...
-          </div>
-        ) : lessons && lessons.length > 0 ? (
-          <>
-            {/* Desktop Table View */}
-            <div className="hidden sm:-mx-4 sm:block sm:overflow-x-auto">
-              <div className="inline-block min-w-full align-middle">
-                <div className="mx-4 overflow-hidden rounded-xl border border-pink-100 bg-white/60 shadow-sm backdrop-blur sm:mx-0">
-                  <Table>
-                    <TableHeader className="bg-pink-50/50">
-                      <TableRow className="border-pink-100 hover:bg-transparent">
-                        <TableHead className="whitespace-nowrap text-rose-900/70">
-                          Time
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap text-rose-900/70">
-                          Student
-                        </TableHead>
-                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 sm:table-cell">
-                          Piece
-                        </TableHead>
-                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 md:table-cell">
-                          Duration
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap text-rose-900/70">
-                          Status
-                        </TableHead>
-                        <TableHead className="hidden whitespace-nowrap text-rose-900/70 lg:table-cell">
-                          Attendance
-                        </TableHead>
-                        <TableHead className="text-right whitespace-nowrap text-rose-900/70">
-                          Earnings
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lessons.map((lesson) => (
-                        <TableRow
-                          key={lesson.id}
-                          className="border-pink-50 hover:bg-pink-50/30"
-                        >
-                          <TableCell className="font-medium whitespace-nowrap text-rose-950">
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                              <Clock className="size-3 shrink-0 text-rose-400 sm:size-4" />
-                              <span className="text-xs sm:text-sm">
-                                {formatTime(lesson.date)}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <Avatar className="size-6 shrink-0 border border-pink-100 sm:size-8">
-                                <AvatarImage
-                                  src={lesson.student.avatar ?? undefined}
-                                />
-                                <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
-                                  {lesson.student.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs font-medium text-rose-950 sm:text-sm">
-                                {lesson.student.name}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            {lesson.piece?.title ? (
-                              <span className="text-xs text-rose-800 sm:text-sm">
-                                {lesson.piece.title}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs italic">
-                                No piece
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground hidden text-xs sm:text-sm md:table-cell">
-                            {lesson.duration} min
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(toLessonStatus(lesson.status))}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className={cn(
-                                "h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap sm:px-4",
-                                lesson.status !== "PENDING"
-                                  ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
-                                  : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
-                              )}
-                              onClick={() => {
-                                setSelectedLesson({
-                                  id: lesson.id,
-                                  studentName: lesson.student.name,
-                                  duration: lesson.duration,
-                                  status: toLessonStatus(lesson.status),
-                                  actualMin: lesson.actualMin,
-                                  cancelReason: lesson.cancelReason,
-                                  note: lesson.note,
-                                  date: lesson.date,
-                                });
-                                setOpen(true);
-                              }}
-                            >
-                              {lesson.status !== "PENDING" ? "Update" : "Mark"}
-                            </Button>
-                          </TableCell>
-                          <TableCell className="text-right font-semibold whitespace-nowrap">
-                            {lesson.status === "CANCELLED" ? (
-                              <span className="text-xs text-rose-400 line-through opacity-70 sm:text-sm">
-                                {formatCurrency(lesson.earnings, currency)}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-rose-600 sm:text-sm">
-                                {formatCurrency(lesson.earnings, currency)}
-                              </span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+          <div className="space-y-4 pb-4">
+            <div className="hidden h-full sm:block">
+              <div className="overflow-hidden rounded-[1.5rem] border border-rose-100 bg-white">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b border-rose-100 bg-rose-50/60">
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Student
+                      </th>
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Schedule
+                      </th>
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Status
+                      </th>
+                      <th className="hidden px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase lg:table-cell">
+                        Attendance
+                      </th>
+                      <th className="px-5 py-2.5 text-right text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Earnings
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>{desktopSkeletonRows}</tbody>
+                </table>
               </div>
             </div>
 
-            {/* Mobile Card View */}
+            <div className="mb-4 grid grid-cols-1 gap-3 px-4 sm:hidden">
+              {mobileSkeletonCards}
+            </div>
+          </div>
+        ) : lessons.length > 0 ? (
+          <>
+            <div className="hidden h-full sm:block">
+              <div className="overflow-hidden rounded-[1.5rem] border border-rose-100 bg-white">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b border-rose-100 bg-rose-50/60">
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Student
+                      </th>
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Schedule
+                      </th>
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Status
+                      </th>
+                      <th className="hidden px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase lg:table-cell">
+                        Attendance
+                      </th>
+                      <th className="px-5 py-2.5 text-right text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
+                        Earnings
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-rose-100">
+                    {lessons.map((lesson, index) => (
+                      <tr
+                        key={lesson.id}
+                        className={cn(
+                          "group transition-colors duration-200 hover:bg-rose-50/30",
+                          index === lessons.length - 1 && "border-b-0",
+                        )}
+                      >
+                        <td className="px-5 py-2.5">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="size-9 shrink-0 border border-white/50 ring-2 ring-pink-500/10">
+                              <AvatarImage
+                                src={lesson.student.avatar ?? undefined}
+                              />
+                              <AvatarFallback className="bg-pink-100 text-xs text-pink-600">
+                                {lesson.student.name
+                                  .split(" ")
+                                  .map((name) => name[0])
+                                  .join("")
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="truncate text-sm font-medium text-rose-950">
+                              {lesson.student.name}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-2.5">
+                          <span className="text-sm font-medium text-rose-950">
+                            {formatTime(lesson.date)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-2.5">
+                          {getStatusBadge(toLessonStatus(lesson.status))}
+                        </td>
+                        <td className="hidden px-5 py-2.5 lg:table-cell">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-8 rounded-full px-3.5 text-xs font-medium whitespace-nowrap transition-all duration-300 active:scale-[0.98]",
+                              lesson.status !== "PENDING"
+                                ? "bg-pink-100 text-pink-700 hover:bg-pink-200 hover:text-pink-800"
+                                : "text-muted-foreground border border-pink-200 bg-white hover:bg-rose-50 hover:text-rose-600",
+                            )}
+                            onClick={() => openAttendanceDialog(lesson)}
+                          >
+                            {lesson.status !== "PENDING" ? "Update" : "Mark"}
+                          </Button>
+                        </td>
+                        <td className="px-5 py-2.5 text-right">
+                          {lesson.status === "CANCELLED" ? (
+                            <span className="text-sm font-semibold text-rose-400 line-through opacity-70">
+                              {formatCurrency(lesson.earnings, currency)}
+                            </span>
+                          ) : (
+                            <span className="text-sm font-semibold text-rose-600">
+                              {formatCurrency(lesson.earnings, currency)}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div className="mb-4 grid grid-cols-1 gap-3 px-4 sm:hidden">
               {lessons.map((lesson) => (
                 <div
                   key={lesson.id}
-                  className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
+                  className="rounded-[1.6rem] bg-white/80 p-4 shadow-sm backdrop-blur-md transition-all duration-300 ease-in-out hover:-translate-y-1 hover:bg-white/90 hover:shadow-md"
                 >
                   <div className="mb-3 flex items-start justify-between">
-                    <div className="flex items-center gap-1.5 rounded-full border border-pink-100/50 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-600">
-                      <Clock className="size-3" />
+                    <div className="flex items-center gap-1.5 rounded-full border border-pink-100/70 bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-600">
                       {formatTime(lesson.date)}
                     </div>
                     {getStatusBadge(toLessonStatus(lesson.status))}
                   </div>
 
                   <div className="mb-4 flex items-center gap-3">
-                    <Avatar className="size-9 border border-pink-100">
+                    <Avatar className="size-10 border border-white/50 ring-2 ring-pink-500/15">
                       <AvatarImage src={lesson.student.avatar ?? ""} />
                       <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
                         {lesson.student.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-[15px] font-semibold text-rose-950">
-                        {lesson.student.name}
-                      </span>
-                      <span className="text-muted-foreground truncate text-xs">
-                        {lesson.piece?.title ?? "No piece"} • {lesson.duration}{" "}
-                        min
-                      </span>
-                    </div>
+                    <span className="truncate text-[15px] font-semibold text-rose-950">
+                      {lesson.student.name}
+                    </span>
                   </div>
 
                   <div className="mt-2 flex items-center justify-between gap-3 border-t border-pink-50 pt-3">
                     <div className="flex items-center gap-1">
-                      <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                      <span className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase">
                         Earned
                       </span>
                       <span
@@ -325,24 +394,12 @@ export function TodayLessonsTable() {
                     <Button
                       size="sm"
                       className={cn(
-                        "h-8 rounded-full px-4 text-xs font-medium shadow-none transition-all active:scale-[0.98]",
+                        "h-9 rounded-full px-4 text-xs font-medium shadow-none transition-all duration-300 active:scale-[0.98]",
                         lesson.status !== "PENDING"
                           ? "bg-pink-100 text-pink-700 hover:bg-pink-200"
                           : "bg-pink-500 text-white hover:bg-pink-600",
                       )}
-                      onClick={() => {
-                        setSelectedLesson({
-                          id: lesson.id,
-                          studentName: lesson.student.name,
-                          duration: lesson.duration,
-                          status: toLessonStatus(lesson.status),
-                          actualMin: lesson.actualMin,
-                          cancelReason: lesson.cancelReason,
-                          note: lesson.note,
-                          date: lesson.date,
-                        });
-                        setOpen(true);
-                      }}
+                      onClick={() => openAttendanceDialog(lesson)}
                     >
                       {lesson.status !== "PENDING" ? "Update" : "Mark"}
                     </Button>
@@ -352,8 +409,10 @@ export function TodayLessonsTable() {
             </div>
           </>
         ) : (
-          <div className="py-12 text-center">
-            <Music className="mx-auto mb-4 size-10 animate-bounce text-pink-400" />
+          <div className="py-14 text-center">
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-pink-50 shadow-sm">
+              <Music className="size-8 text-pink-400" />
+            </div>
             <p className="text-muted-foreground font-medium">
               No lessons today 🎀
             </p>
@@ -366,7 +425,7 @@ export function TodayLessonsTable() {
         {selectedLesson && (
           <AttendanceDialog
             open={open}
-            onOpenChange={(o) => setOpen(o)}
+            onOpenChange={(nextOpen) => setOpen(nextOpen)}
             lesson={selectedLesson}
             onSuccess={() => {
               void refetch();

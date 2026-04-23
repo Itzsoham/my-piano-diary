@@ -2,6 +2,7 @@
 
 import { keepPreviousData } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import {
   Eye,
   FileText,
@@ -33,14 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { api, type RouterOutputs } from "@/trpc/react";
 
 const STORAGE_KEY = "reports-filters";
@@ -153,6 +147,97 @@ export function ReportsPage({
   const isLoading = isPending && reports.length === 0;
   const yearOptions = getYearOptions(initialYear);
 
+  const columns: DataTableColumn<Report>[] = [
+    {
+      id: "student",
+      header: "Student",
+      cell: (report) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="size-8 border border-pink-100">
+            <AvatarImage src={report.student.avatar ?? ""} />
+            <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
+              {report.student.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="font-medium">{report.student.name}</div>
+        </div>
+      ),
+    },
+    {
+      id: "month",
+      header: "Month",
+      cell: (report) => (
+        <Badge className="rounded-full bg-rose-100 px-3 py-1 text-rose-700 hover:bg-rose-100">
+          {report.month}/{report.year}
+        </Badge>
+      ),
+    },
+    {
+      id: "preview",
+      header: "Preview",
+      cell: (report) => getSummaryPreview(report),
+      cellClassName: "max-w-md text-sm text-gray-600",
+    },
+    {
+      id: "updated",
+      header: "Updated",
+      cell: (report) => format(new Date(report.updatedAt), "MMM d, yyyy"),
+      cellClassName: "text-sm text-gray-600",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+      cell: (report) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="rounded-xl border-pink-100 bg-white shadow-lg"
+          >
+            <DropdownMenuItem
+              onSelect={() =>
+                router.push(
+                  buildReportHref(report.studentId, report.month, report.year),
+                )
+              }
+              className="rounded-lg hover:bg-pink-50"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View report
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() =>
+                router.push(
+                  buildReportHref(report.studentId, report.month, report.year),
+                )
+              }
+              className="rounded-lg hover:bg-pink-50"
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit report
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => setDeleteReport(report)}
+              className="rounded-lg text-rose-500 hover:bg-rose-50"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
   const deleteMutation = api.report.delete.useMutation({
     onMutate: async (input) => {
       await utils.report.getAll.cancel(filters);
@@ -209,8 +294,13 @@ export function ReportsPage({
 
   return (
     <div className="container mx-auto">
+      <BirthdayBanner
+        text="You're building something beautiful ✨"
+        icon="✨"
+        storageKey="reports"
+      />
       <div className="mb-6">
-        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+        <h1 className="bday-animate-title flex items-center gap-2 text-3xl font-bold tracking-tight">
           Monthly Reports
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -274,7 +364,7 @@ export function ReportsPage({
           <Button
             variant="outline"
             onClick={resetFilters}
-            className="h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10"
+            className="bday-animate-button h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10"
           >
             Reset
           </Button>
@@ -303,7 +393,7 @@ export function ReportsPage({
                     buildReportHref(studentId, filters.month, filters.year),
                   );
                 }}
-                className="min-w-44"
+                className="bday-animate-button min-w-44"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Generate Report
@@ -351,108 +441,13 @@ export function ReportsPage({
           </div>
         ) : (
           <>
-            <div className="hidden overflow-x-auto rounded-2xl border border-pink-100 bg-white shadow-md md:block">
-              <Table>
-                <TableHeader className="bg-rose-50/60">
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">Student</TableHead>
-                    <TableHead className="whitespace-nowrap">Month</TableHead>
-                    <TableHead>Preview</TableHead>
-                    <TableHead className="whitespace-nowrap">Updated</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reports.map((report) => (
-                    <TableRow
-                      key={report.id}
-                      className="transition-colors hover:bg-pink-50"
-                    >
-                      <TableCell className="whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="size-8 border border-pink-100">
-                            <AvatarImage src={report.student.avatar ?? ""} />
-                            <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
-                              {report.student.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="font-medium">
-                            {report.student.name}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Badge className="rounded-full bg-rose-100 px-3 py-1 text-rose-700 hover:bg-rose-100">
-                          {report.month}/{report.year}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-md text-sm text-gray-600">
-                        {getSummaryPreview(report)}
-                      </TableCell>
-                      <TableCell className="text-sm whitespace-nowrap text-gray-600">
-                        {format(new Date(report.updatedAt), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="rounded-xl border-pink-100 bg-white shadow-lg"
-                          >
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                router.push(
-                                  buildReportHref(
-                                    report.studentId,
-                                    report.month,
-                                    report.year,
-                                  ),
-                                )
-                              }
-                              className="rounded-lg hover:bg-pink-50"
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View report
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                router.push(
-                                  buildReportHref(
-                                    report.studentId,
-                                    report.month,
-                                    report.year,
-                                  ),
-                                )
-                              }
-                              className="rounded-lg hover:bg-pink-50"
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit report
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onSelect={() => setDeleteReport(report)}
-                              className="rounded-lg text-rose-500 hover:bg-rose-50"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              className="hidden md:block"
+              columns={columns}
+              data={reports}
+              getRowKey={(report) => report.id}
+              itemRowClassName="transition-colors hover:bg-pink-50"
+            />
 
             <div className="grid grid-cols-1 gap-4 md:hidden">
               {reports.map((report) => (
