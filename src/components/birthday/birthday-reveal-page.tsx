@@ -38,9 +38,9 @@ type PhotoBubble = {
   delay: number;
 };
 
-const FLOATING_ICONS = ["🎵", "🎶", "✨", "💖", "💛", "🌸"];
-const BURST_ICONS = ["✨", "💛", "🎵", "💖", "🎶"];
-const LIGHT_BEAMS = [10, 24, 38, 53, 68, 82];
+const FLOATING_ICONS = ["🎈", "🎂", "🥳", "🎁", "🎉", "✨", "🕯️"];
+const BURST_ICONS = ["🎉", "🎂", "🎈", "🥳", "🎁", "✨"];
+const LIGHT_BEAMS = [8, 18, 29, 41, 54, 67, 79, 90];
 const PHOTO_BUBBLES: PhotoBubble[] = [
   { id: 1, left: "8%", top: "20%", size: 18, delay: 0 },
   { id: 2, left: "18%", top: "7%", size: 26, delay: 0.2 },
@@ -279,8 +279,8 @@ export function BirthdayRevealPage() {
         className="pointer-events-none fixed inset-0 -z-20"
         style={{
           backgroundImage:
-            "radial-gradient(1200px 700px at 20% 8%, rgba(251,207,232,0.5), transparent 65%), radial-gradient(900px 600px at 90% 20%, rgba(233,213,255,0.45), transparent 62%), linear-gradient(180deg, #fff7fb 0%, #fff9ed 52%, #faf5ff 100%)",
-          backgroundSize: "100% 120%",
+            "radial-gradient(1200px 700px at 50% -8%, rgba(255,244,198,0.75), transparent 54%), radial-gradient(800px 420px at 14% 18%, rgba(244,114,182,0.22), transparent 72%), radial-gradient(840px 480px at 86% 14%, rgba(251,191,36,0.2), transparent 68%), linear-gradient(180deg, #7f4a45 0%, #c47e67 26%, #f5d6b7 62%, #a26f55 62.5%, #8e5f47 100%)",
+          backgroundSize: "100% 100%",
           animation: "birthdayGradientFloat 16s ease-in-out infinite alternate",
         }}
       />
@@ -295,41 +295,64 @@ export function BirthdayRevealPage() {
           repeat: Number.POSITIVE_INFINITY,
         }}
       >
-        <div className="absolute top-[12%] left-[8%] h-48 w-48 rounded-full bg-pink-200/40 blur-3xl sm:h-64 sm:w-64" />
-        <div className="absolute right-[12%] bottom-[14%] h-52 w-52 rounded-full bg-amber-200/35 blur-3xl sm:h-72 sm:w-72" />
+        <div className="absolute inset-x-[6%] top-[7%] h-[58%] rounded-[3rem] border border-white/18 bg-white/7 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
+        <div className="absolute inset-x-[10%] top-[11%] h-[44%] rounded-[2.5rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,247,210,0.26),transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.02))]" />
+        <div className="absolute bottom-0 left-[-8%] h-[34%] w-[116%] bg-[linear-gradient(180deg,rgba(76,43,29,0)_0%,rgba(76,43,29,0.18)_10%,rgba(88,51,35,0.84)_11%,rgba(126,84,58,0.98)_100%)] [clip-path:polygon(0_0,100%_0,92%_100%,8%_100%)]" />
+        <div className="absolute top-[12%] left-[12%] h-52 w-52 rounded-full bg-amber-100/18 blur-3xl sm:h-72 sm:w-72" />
+        <div className="absolute right-[10%] bottom-[24%] h-60 w-60 rounded-full bg-rose-200/16 blur-3xl sm:h-80 sm:w-80" />
       </motion.div>
 
       <div
-        className="pointer-events-none fixed top-0 right-0 left-0 z-10 h-44 overflow-hidden"
+        className="pointer-events-none fixed top-0 right-0 left-0 z-0 h-[52vh] overflow-hidden"
         aria-hidden="true"
       >
         {LIGHT_BEAMS.map((left, index) => (
           <motion.div
             key={left}
-            className="absolute -top-4.5 h-56 w-20 origin-top"
+            className="absolute -top-10 h-[68vh] origin-top"
             style={{
               left: `${left}%`,
               transform: "translateX(-50%)",
+              width: index % 2 === 0 ? "20vw" : "16vw",
               background:
                 index % 2 === 0
-                  ? "linear-gradient(to bottom, rgba(253,224,71,0.34), rgba(253,224,71,0.0))"
-                  : "linear-gradient(to bottom, rgba(244,114,182,0.3), rgba(244,114,182,0.0))",
-              filter: "blur(1px)",
-              clipPath: "polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%)",
+                  ? "linear-gradient(to bottom, rgba(255,240,167,0.72), rgba(255,240,167,0.14) 45%, rgba(255,240,167,0.0) 100%)"
+                  : "linear-gradient(to bottom, rgba(255,219,121,0.62), rgba(255,219,121,0.12) 48%, rgba(255,219,121,0.0) 100%)",
+              filter: "blur(6px)",
+              clipPath: "polygon(47% 0%, 53% 0%, 100% 100%, 0% 100%)",
             }}
             animate={{
-              rotate: [index % 2 === 0 ? -10 : 8, index % 2 === 0 ? 9 : -8],
-              opacity: [0.2, 0.58, 0.24],
-              scaleY: [0.9, 1.06, 0.95],
+              rotate: [index % 2 === 0 ? -15 : 12, index % 2 === 0 ? 14 : -11],
+              opacity: [0.14, 0.74, 0.18, 0.85, 0.2],
+              scaleY: [0.82, 1.12, 0.9, 1.18, 0.88],
             }}
             transition={{
-              duration: 3.6 + index * 0.3,
+              duration: 2.2 + index * 0.22,
               repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut",
               repeatType: "mirror",
             }}
           />
         ))}
+        <motion.div
+          className="absolute top-0 left-1/2 h-20 w-[84%] -translate-x-1/2 rounded-b-[2.8rem] border-x border-b border-white/20 bg-[linear-gradient(180deg,rgba(104,60,47,0.98),rgba(147,98,74,0.95))] shadow-[0_18px_40px_rgba(65,32,20,0.35)]"
+          animate={{ opacity: [0.92, 1, 0.95] }}
+          transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY }}
+        >
+          {LIGHT_BEAMS.map((left, index) => (
+            <motion.span
+              key={`lamp-${left}`}
+              className="absolute top-5 h-3.5 w-10 -translate-x-1/2 rounded-full bg-amber-100 shadow-[0_0_24px_rgba(255,236,179,0.92)]"
+              style={{ left: `${left}%` }}
+              animate={{ opacity: [0.55, 1, 0.66], scale: [0.92, 1.08, 0.95] }}
+              transition={{
+                duration: 1 + index * 0.14,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "mirror",
+              }}
+            />
+          ))}
+        </motion.div>
       </div>
 
       <div
@@ -401,7 +424,7 @@ export function BirthdayRevealPage() {
       <style>{`
         @keyframes birthdayGradientFloat {
           0% { transform: scale(1) translateY(0px); }
-          100% { transform: scale(1.06) translateY(-1.5%); }
+          100% { transform: scale(1.02) translateY(-0.8%); }
         }
       `}</style>
 
@@ -413,24 +436,29 @@ export function BirthdayRevealPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
           >
-            <p className="mx-auto mb-2 w-fit rounded-full border border-white/65 bg-white/45 px-3 py-1 text-[10px] tracking-[0.18em] text-pink-700/75 uppercase backdrop-blur-md sm:text-xs">
+            <p
+              className="mx-auto mb-2 w-fit rounded-full border border-amber-100/60 bg-white/25 px-4 py-1.5 text-[10px] tracking-[0.24em] text-amber-50/95 uppercase backdrop-blur-md sm:text-xs"
+              style={{ fontFamily: '"Times New Roman", "Georgia", serif' }}
+            >
               My Piano Diary • Birthday Reveal
             </p>
 
             <motion.h1
-              className="text-center text-3xl leading-tight font-semibold text-balance text-pink-900/90 sm:text-5xl lg:text-6xl"
+              className="text-center text-3xl leading-[0.95] font-semibold text-balance text-amber-50 drop-shadow-[0_6px_16px_rgba(70,31,20,0.35)] sm:text-5xl lg:text-6xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.25 }}
+              style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
             >
               Happy Birthday, Thùy <span className="text-amber-500">🎂💛</span>
             </motion.h1>
 
             <motion.p
-              className="mx-auto mt-2 max-w-2xl text-center text-sm text-pretty text-violet-800/75 sm:text-lg"
+              className="mx-auto mt-3 max-w-2xl text-center text-sm text-pretty text-amber-50/90 italic sm:text-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
+              style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
             >
               You make every note beautiful… today is your melody.
             </motion.p>
@@ -443,7 +471,7 @@ export function BirthdayRevealPage() {
             transition={{ duration: 0.75, delay: 0.52 }}
           >
             <motion.div
-              className="relative rounded-[2rem] border border-white/65 bg-white/56 px-4 py-3 shadow-[0_12px_36px_rgba(189,147,246,0.16)] backdrop-blur-xl sm:px-5 sm:py-4"
+              className="relative overflow-hidden rounded-[2.5rem] border border-amber-100/55 bg-[linear-gradient(180deg,rgba(255,245,219,0.9),rgba(255,225,169,0.78))] px-5 py-4 shadow-[0_20px_48px_rgba(79,37,15,0.18)] backdrop-blur-xl sm:px-6 sm:py-5"
               animate={{ y: [0, -3, 0] }}
               transition={{
                 duration: 3.8,
@@ -451,16 +479,27 @@ export function BirthdayRevealPage() {
                 ease: "easeInOut",
               }}
             >
-              <span className="absolute -top-2 -right-2 text-lg">💖</span>
-              <span className="absolute -bottom-2 left-4 text-sm">✨</span>
-              <p className="text-[10px] tracking-[0.16em] text-pink-700/70 uppercase sm:text-xs">
+              <div className="absolute inset-x-4 top-0 h-3 rounded-b-full bg-rose-400/80" />
+              <div className="absolute top-0 bottom-0 left-1/2 w-3 -translate-x-1/2 bg-rose-400/65" />
+              <span className="absolute -top-2 right-4 text-xl">🎀</span>
+              <span className="absolute bottom-2 left-4 text-base">🎈</span>
+              <p
+                className="relative text-[10px] tracking-[0.2em] text-rose-700/85 uppercase sm:text-xs"
+                style={{ fontFamily: '"Times New Roman", "Georgia", serif' }}
+              >
                 Memory
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-violet-900/80 sm:text-base">
+              <p
+                className="relative mt-3 text-sm leading-relaxed text-stone-800 italic sm:text-base"
+                style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
+              >
                 Every lesson you teach, every note you play, you bring joy into
-                the world 🎹✨
+                the world 🎂✨
               </p>
-              <p className="mt-2 text-xs text-pink-800/75 sm:text-sm">
+              <p
+                className="relative mt-2 text-xs text-rose-800/80 italic sm:text-sm"
+                style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
+              >
                 This little world was built for you…
               </p>
             </motion.div>
@@ -473,6 +512,31 @@ export function BirthdayRevealPage() {
                 transition={{ duration: 0.85, delay: 0.6 }}
               >
                 <div className="pointer-events-none absolute -inset-9 sm:-inset-11">
+                  <motion.div
+                    aria-hidden="true"
+                    className="absolute inset-x-[20%] -top-8 h-[125%] rounded-[50%] bg-[radial-gradient(circle_at_top,rgba(255,248,196,0.95),rgba(255,248,196,0.2)_38%,rgba(255,248,196,0)_72%)] blur-xl"
+                    animate={{
+                      opacity: [0.45, 0.92, 0.56],
+                      scaleX: [0.9, 1.08, 0.96],
+                    }}
+                    transition={{
+                      duration: 1.8,
+                      repeat: Number.POSITIVE_INFINITY,
+                    }}
+                  />
+                  <motion.div
+                    aria-hidden="true"
+                    className="absolute -top-10 left-1/2 h-[135%] w-[85%] -translate-x-1/2 bg-[linear-gradient(180deg,rgba(255,245,179,0.7),rgba(255,245,179,0.15)_40%,rgba(255,245,179,0)_100%)] blur-[3px] [clip-path:polygon(49%_0,51%_0,100%_100%,0_100%)]"
+                    animate={{
+                      opacity: [0.28, 0.72, 0.36],
+                      scaleY: [0.92, 1.08, 0.96],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Number.POSITIVE_INFINITY,
+                      repeatType: "mirror",
+                    }}
+                  />
                   <AnimatePresence>
                     {PHOTO_BUBBLES.filter(
                       (bubble) => !poppedBubbleIds.includes(bubble.id),
@@ -481,7 +545,7 @@ export function BirthdayRevealPage() {
                         key={bubble.id}
                         type="button"
                         aria-label="Pop bubble"
-                        className="pointer-events-auto absolute rounded-full border border-white/70 bg-linear-to-br from-white/70 via-pink-100/40 to-violet-200/40 shadow-[0_8px_16px_rgba(255,255,255,0.35)]"
+                        className="pointer-events-auto absolute rounded-full border border-white/70 bg-linear-to-br from-white/70 via-amber-100/45 to-rose-200/40 shadow-[0_8px_16px_rgba(255,255,255,0.35)]"
                         style={{
                           left: bubble.left,
                           top: bubble.top,
@@ -512,7 +576,7 @@ export function BirthdayRevealPage() {
                 </div>
 
                 <motion.div
-                  className="absolute inset-0 rounded-3xl bg-linear-to-br from-pink-200/55 via-amber-200/45 to-violet-200/50 blur-2xl"
+                  className="absolute inset-0 rounded-[2rem] bg-linear-to-br from-amber-100/65 via-rose-200/45 to-orange-200/40 blur-2xl"
                   animate={{
                     scale: [0.96, 1.08, 0.96],
                     opacity: [0.55, 0.85, 0.55],
@@ -526,7 +590,7 @@ export function BirthdayRevealPage() {
                 <motion.img
                   src="https://images.unsplash.com/photo-1507838153414-b4b713384a76?auto=format&fit=crop&w=900&q=80"
                   alt="A soft piano-themed portrait placeholder"
-                  className="relative h-44 w-56 rounded-3xl border border-white/70 object-cover shadow-[0_16px_45px_rgba(251,182,216,0.35)] sm:h-52 sm:w-72 lg:h-64 lg:w-80"
+                  className="relative h-44 w-56 rounded-[2rem] border-[6px] border-[#f8dfb1] object-cover shadow-[0_18px_55px_rgba(88,44,17,0.28)] sm:h-52 sm:w-72 lg:h-64 lg:w-80"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{
                     duration: 5.4,
@@ -538,7 +602,7 @@ export function BirthdayRevealPage() {
             </div>
 
             <motion.div
-              className="relative overflow-hidden rounded-[2rem] border border-amber-200/60 bg-linear-to-br from-white/60 via-pink-50/55 to-violet-100/40 px-4 py-3 shadow-[0_12px_38px_rgba(251,191,36,0.18)] backdrop-blur-xl sm:px-5 sm:py-4"
+              className="relative overflow-hidden rounded-[2.5rem] border border-rose-100/60 bg-[linear-gradient(180deg,rgba(255,238,211,0.92),rgba(255,214,171,0.82))] px-5 py-4 shadow-[0_20px_50px_rgba(107,52,24,0.16)] backdrop-blur-xl sm:px-6 sm:py-5"
               animate={{ y: [0, -4, 0] }}
               transition={{
                 duration: 4.1,
@@ -547,8 +611,10 @@ export function BirthdayRevealPage() {
                 delay: 0.3,
               }}
             >
-              <span className="absolute -top-2 -left-2 text-lg">💛</span>
-              <span className="absolute right-5 -bottom-2 text-sm">🌸</span>
+              <div className="absolute inset-x-4 top-0 h-3 rounded-b-full bg-amber-500/80" />
+              <div className="absolute top-0 bottom-0 left-1/2 w-3 -translate-x-1/2 bg-amber-500/65" />
+              <span className="absolute -top-2 left-4 text-xl">🎀</span>
+              <span className="absolute right-5 bottom-2 text-base">🥳</span>
               <motion.div
                 aria-hidden="true"
                 className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-amber-200/30 blur-2xl"
@@ -562,12 +628,18 @@ export function BirthdayRevealPage() {
                   ease: "easeInOut",
                 }}
               />
-              <p className="text-[10px] tracking-[0.16em] text-amber-700/75 uppercase sm:text-xs">
+              <p
+                className="relative text-[10px] tracking-[0.2em] text-amber-800/85 uppercase sm:text-xs"
+                style={{ fontFamily: '"Times New Roman", "Georgia", serif' }}
+              >
                 Surprise
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-violet-900/85 sm:text-base">
+              <p
+                className="relative mt-3 text-sm leading-relaxed text-stone-800 italic sm:text-base"
+                style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
+              >
                 You thought this was just a simple app… but today, it&apos;s
-                your special stage 💛
+                your special stage 🎉
               </p>
             </motion.div>
           </motion.div>
@@ -578,16 +650,25 @@ export function BirthdayRevealPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.75 }}
           >
-            <h2 className="text-xl leading-tight font-semibold text-balance text-pink-900/90 sm:text-3xl lg:text-4xl">
+            <h2
+              className="text-xl leading-tight font-semibold text-balance text-amber-50 drop-shadow-[0_4px_14px_rgba(68,30,18,0.35)] sm:text-3xl lg:text-4xl"
+              style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
+            >
               You are loved, appreciated,
               <br />
               and truly special.
             </h2>
-            <p className="mt-2 text-base text-violet-800/80 sm:text-xl">
-              Happy Birthday again 🎂✨
+            <p
+              className="mt-3 text-base text-amber-50/92 italic sm:text-xl"
+              style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
+            >
+              Happy Birthday again 🎂🎈
             </p>
-            <p className="mt-2 text-[10px] tracking-[0.16em] text-violet-700/65 uppercase sm:text-xs">
-              Tap anywhere to hear the first birthday note ✨
+            <p
+              className="mt-2 text-[10px] tracking-[0.18em] text-amber-100/80 uppercase italic sm:text-xs"
+              style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
+            >
+              Tap anywhere to hear the first birthday note and wake the room ✨
             </p>
           </motion.div>
         </motion.section>
