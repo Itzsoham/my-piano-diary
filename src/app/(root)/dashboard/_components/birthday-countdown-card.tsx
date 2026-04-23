@@ -103,8 +103,10 @@ export function BirthdayCountdownCard() {
   const [rings, setRings] = useState<number[]>([]);
   const [clickCount, setClickCount] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  const [isMessageFadingOut, setIsMessageFadingOut] = useState(false);
   const [sparkleKey, setSparkleKey] = useState(0);
   const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
   const { isBirthdayDay, isBirthdayMode, activateBirthdayMode } = useBirthday();
@@ -113,6 +115,9 @@ export function BirthdayCountdownCard() {
     return () => {
       if (messageTimerRef.current) {
         clearTimeout(messageTimerRef.current);
+      }
+      if (fadeTimerRef.current) {
+        clearTimeout(fadeTimerRef.current);
       }
     };
   }, []);
@@ -173,34 +178,31 @@ export function BirthdayCountdownCard() {
     });
   };
 
-  const CLICK_MESSAGES: Array<{ threshold: number; text: string }> = [
-    { threshold: 5, text: "hmm… curious already? 🤭✨" },
-    { threshold: 10, text: "hey hey… easy there, pianist 🎹💛" },
-    { threshold: 20, text: "you’re not giving up, are you… 😌" },
-    { threshold: 30, text: "something tells me you *really* want to know… ✨" },
-    { threshold: 50, text: "okay… now I’m getting a little nervous 😳💛" },
-    { threshold: 70, text: "you’re getting closer… don’t stop now 🎵✨" },
-    { threshold: 100, text: "alright… I think you’ve earned this 💛" },
-  ];
-
-  const getClickMessage = (count: number) => {
-    if (count >= 100) return CLICK_MESSAGES[CLICK_MESSAGES.length - 1].text;
-    const next = [...CLICK_MESSAGES]
-      .reverse()
-      .find((item) => count >= item.threshold);
-    return next?.text ?? null;
+  const CLICK_MESSAGES: Record<number, string> = {
+    5: "hmm… curious already? 🤭✨",
+    10: "hey hey… easy there, baby 🎹💛",
+    20: "you’re not giving up, are you… 😌",
+    30: "something tells me you *really* want to know… ✨",
+    50: "okay… now I’m getting a little nervous 😳💛",
+    70: "you’re getting closer… don’t stop now 🎵✨",
+    100: "alright… I think you’ve earned this 💛",
   };
+
+  const getClickMessage = (count: number) => CLICK_MESSAGES[count] ?? null;
 
   const clearMessageTimeout = () => {
     if (messageTimerRef.current) {
       clearTimeout(messageTimerRef.current);
       messageTimerRef.current = null;
     }
+    if (fadeTimerRef.current) {
+      clearTimeout(fadeTimerRef.current);
+      fadeTimerRef.current = null;
+    }
   };
 
   const handleBirthdayClick = () => {
     handleBurst();
-    if (isBirthdayMode) return;
 
     const next = clickCount + 1;
     setClickCount(next);
@@ -219,20 +221,27 @@ export function BirthdayCountdownCard() {
     const nextMessage = getClickMessage(next);
     if (nextMessage) {
       setMessage(nextMessage);
+      setIsMessageFadingOut(false);
       clearMessageTimeout();
-      messageTimerRef.current = setTimeout(() => setMessage(null), 4200);
+      fadeTimerRef.current = setTimeout(
+        () => setIsMessageFadingOut(true),
+        29200,
+      );
+      messageTimerRef.current = setTimeout(() => {
+        setMessage(null);
+        setIsMessageFadingOut(false);
+      }, 30000);
     }
 
-    if (next >= 2 && next < 101) {
-      if (next === 2) {
-        activateBirthdayMode();
-      }
+    if (!isBirthdayMode && next === 2) {
+      activateBirthdayMode();
     }
   };
 
   if (!mounted) return null;
 
   const sharedStyles = `
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap');
     @keyframes bcd-float {
       0%   { opacity: 1;   transform: translateY(0)     scale(0.85); }
       60%  { opacity: 0.7; }
@@ -257,6 +266,10 @@ export function BirthdayCountdownCard() {
     @keyframes bday-hint-in {
       0%   { opacity: 0; transform: translateY(6px); }
       100% { opacity: 1; transform: translateY(0);   }
+    }
+    @keyframes bday-hint-out {
+      0%   { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.12); }
     }
     @keyframes bcd-sparkle {
       0%   { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
@@ -346,26 +359,16 @@ export function BirthdayCountdownCard() {
           {message ? (
             <div
               key={sparkleKey}
-              className="relative mt-3 overflow-hidden rounded-full border border-rose-200/50 bg-white/80 px-4 py-2 text-sm text-rose-600 shadow-[0_12px_36px_rgba(251,207,232,0.22)] transition-all duration-500 ease-in-out"
+              className="mt-3 text-center text-base leading-relaxed text-rose-600"
               style={{
-                animation:
-                  "bday-hint-in 0.35s ease-out both, bcd-digit-float 2.5s ease-in-out infinite",
-                fontFamily: '"Cormorant Garamond", serif',
+                animation: isMessageFadingOut
+                  ? "bday-hint-out 0.8s ease-in forwards"
+                  : "bday-hint-in 0.35s ease-out both",
+                fontFamily: '"Poppins", sans-serif',
+                fontWeight: 400,
               }}
             >
-              <span
-                className="pointer-events-none absolute top-2 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-rose-300/95 shadow-[0_0_12px_rgba(251,207,232,0.75)]"
-                style={{ animation: "bcd-sparkle 0.75s ease-out forwards" }}
-              />
-              <span
-                className="pointer-events-none absolute top-2 left-1/3 h-2 w-2 -translate-x-1/2 rounded-full bg-rose-300/75 shadow-[0_0_8px_rgba(251,207,232,0.55)]"
-                style={{ animation: "bcd-sparkle 0.85s ease-out forwards" }}
-              />
-              <span
-                className="pointer-events-none absolute top-3 right-1/4 h-2 w-2 rounded-full bg-rose-300/70 shadow-[0_0_8px_rgba(251,207,232,0.55)]"
-                style={{ animation: "bcd-sparkle 0.95s ease-out forwards" }}
-              />
-              <span className="text-rose-500/90">✨</span> {message}
+              {message}
             </div>
           ) : null}
         </div>
