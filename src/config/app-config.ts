@@ -18,7 +18,7 @@ export const BIRTHDAY_CONFIG = {
   /** Master toggle — set false to disable entirely */
   enabled: true,
   /** The birthday date string (YYYY-MM-DD) */
-  birthdayDate: "2026-04-23", // TEMP: testing — change back to 2026-04-24
+  birthdayDate: "2026-04-24", // TEMP: testing — change back to 2026-04-24
 } as const;
 
 /** Returns true if today is the actual birthday */
