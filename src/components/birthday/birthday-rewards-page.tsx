@@ -3,6 +3,8 @@
 import { useMemo, useState, type MouseEvent } from "react";
 import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+import { LayoutDashboard } from "lucide-react";
 
 type RewardCard = {
   id: number;
@@ -366,6 +368,21 @@ export function BirthdayRewardsPage() {
               ? "All rewards unlocked. These are yours forever, no expiry date ❤️"
               : "Three boxes, three surprises. Open them all to collect every reward."}
           </p>
+        </motion.div>
+
+        <motion.div
+          className="mx-auto mt-12 mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Link
+            href="/"
+            className="font-poppins inline-flex items-center gap-2 rounded-xl border border-cyan-300/30 bg-white/5 px-6 py-3 text-xs tracking-widest text-cyan-300 uppercase backdrop-blur-sm transition-all hover:bg-white/10 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] active:scale-95"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span>Back to Dashboard</span>
+          </Link>
         </motion.div>
       </section>
     </main>
