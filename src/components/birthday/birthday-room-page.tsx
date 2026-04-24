@@ -3,6 +3,7 @@
 import { useMemo, useState, type MouseEvent } from "react";
 import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 
 type GiftCard = {
   id: number;
@@ -445,13 +446,26 @@ export function BirthdayRoomPage() {
                             {card.description}
                           </p>
 
-                          <div className="mt-5 flex flex-wrap gap-3">
-                            <span className="font-poppins rounded-full border border-violet-300/70 bg-violet-100/75 px-4 py-1 text-xs text-violet-700">
-                              🎯 Play To Unlock
-                            </span>
-                            <span className="font-poppins rounded-full border border-sky-300/70 bg-sky-100/70 px-4 py-1 text-xs text-sky-700">
-                              ✨ Unknown Reward
-                            </span>
+                          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-wrap gap-3">
+                              <span className="font-poppins rounded-full border border-violet-300/70 bg-violet-100/75 px-4 py-1 text-xs text-violet-700">
+                                🎯 Play To Unlock
+                              </span>
+                              <span className="font-poppins rounded-full border border-sky-300/70 bg-sky-100/70 px-4 py-1 text-xs text-sky-700">
+                                ✨ Unknown Reward
+                              </span>
+                            </div>
+
+                            <Link
+                              href="/birthday-game"
+                              className="font-poppins group/play inline-flex items-center gap-2 rounded-2xl border border-violet-400/70 bg-[linear-gradient(135deg,#8b5cf6,#ec4899_58%,#fb7185)] px-6 py-3 text-sm tracking-[0.14em] text-white uppercase shadow-[0_14px_28px_rgba(113,73,201,0.34)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(113,73,201,0.44)] active:translate-y-0 active:scale-[0.98]"
+                            >
+                              <span className="text-base leading-none">🎮</span>
+                              <span>Play Now</span>
+                              <span className="transition-transform duration-300 group-hover/play:translate-x-1">
+                                ➜
+                              </span>
+                            </Link>
                           </div>
                         </div>
                       </div>
