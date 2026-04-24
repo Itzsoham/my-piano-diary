@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { DoorOpen } from "lucide-react";
 import { useBirthday } from "@/components/birthday/birthday-provider";
 import { ComingSoon } from "@/components/ui/coming-soon";
 
 export default function UpdatesPage() {
+  const router = useRouter();
   const { isBirthdayMode, isBirthdayDay } = useBirthday();
   const [isBirthdayBoxOpen, setIsBirthdayBoxOpen] = useState(false);
   const [isPasscodeCopied, setIsPasscodeCopied] = useState(false);
@@ -50,8 +53,7 @@ export default function UpdatesPage() {
           }
         `}</style>
 
-        <button
-          type="button"
+        <div
           onClick={() => {
             if (!isBirthdayBoxOpen) {
               setIsBirthdayBoxOpen(true);
@@ -60,8 +62,15 @@ export default function UpdatesPage() {
           className={`group relative w-full max-w-4xl overflow-hidden p-8 text-center transition-transform duration-300 sm:p-10 ${
             isBirthdayBoxOpen
               ? "border border-pink-200/75 bg-linear-to-br from-[#fff8fd] via-[#fff4f9] to-[#fff1f6] shadow-[0_28px_85px_rgba(244,114,182,0.24)]"
-              : "border border-transparent bg-transparent shadow-none"
+              : "cursor-pointer border border-transparent bg-transparent shadow-none"
           }`}
+          role={isBirthdayBoxOpen ? undefined : "button"}
+          tabIndex={isBirthdayBoxOpen ? undefined : 0}
+          onKeyDown={(e) => {
+            if (!isBirthdayBoxOpen && (e.key === "Enter" || e.key === " ")) {
+              setIsBirthdayBoxOpen(true);
+            }
+          }}
           aria-expanded={isBirthdayBoxOpen}
           aria-label={
             isBirthdayBoxOpen
@@ -145,10 +154,21 @@ export default function UpdatesPage() {
                 >
                   {isPasscodeCopied ? "Copied" : "Copy"}
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push("/birthday-room");
+                  }}
+                  className="flex items-center justify-center rounded-full border border-rose-300/70 bg-rose-50/90 p-1.5 text-rose-700 transition hover:scale-[1.03] active:scale-[0.97]"
+                  aria-label="Enter birthday room"
+                >
+                  <DoorOpen className="size-4" />
+                </button>
               </div>
             </div>
           )}
-        </button>
+        </div>
       </div>
     );
   }

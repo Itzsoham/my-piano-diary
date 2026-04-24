@@ -22,26 +22,58 @@ type MemoryCard = {
 
 const QUESTIONS = [
   {
-    question: "What do you think makes you special?",
-    options: ["Your smile 😊", "Your kindness 💖", "Your voice 🎶"],
-    reveal: "All of it ❤️",
+    question: "Be honest… what do you think is your most dangerous power? 😏",
+    options: [
+      "That smile that ruins my focus 😊",
+      "Your voice that melts me 🎶",
+      "Your cuteness that I can't fight 💖",
+    ],
   },
   {
-    question: "What do you think I love the most about you?",
-    options: ["Your personality", "Your energy", "Everything ❤️"],
-    reveal: "You are the kind of person people don't forget.",
+    question: "If I had to survive one day without you… what would happen? 😭",
+    options: [
+      "I’ll be fine 🙂",
+      "I’ll miss you a little 🥺",
+      "I’ll completely lose my mind 💀",
+    ],
   },
   {
-    question: "What makes you different from everyone else?",
-    options: ["Your heart", "Your mind", "Your soul"],
-    reveal: "You make everything feel better just by being there.",
+    question: "What do you think I secretly replay in my head the most? 🤭",
+    options: [
+      "Your random cute moments",
+      "Your voice when you talk to me",
+      "Every single moment with you",
+    ],
   },
   {
-    question: "What do you think I feel when I hear your voice?",
-    options: ["Calm", "Happy", "In love"],
-    reveal: "Your voice is my favorite sound.",
+    question: "If loving you was a game… what level am I on? 🎮",
+    options: [
+      "Beginner 😌",
+      "Addicted 😳",
+      "No escape, forever trapped ❤️",
+    ],
+  },
+  {
+    question: "Final question… who do you think you are in my life? 💭",
+    options: [
+      "Just someone special",
+      "Someone important",
+      "Everything ❤️",
+    ],
   },
 ] as const;
+
+const FINAL_REVEAL = [
+  "You thought this was a game… 😌",
+  "But I already knew every answer.",
+  "",
+  "Your smile? It ruins me.",
+  "Your voice? My favorite sound.",
+  "Your presence? My peace.",
+  "",
+  "You are not just special…",
+  "You are everything ❤️",
+];
 
 const MEMORY_MESSAGES = [
   { text: "You are cute", emoji: "🌸" },
@@ -111,7 +143,7 @@ export function BirthdayGamePage() {
   // Love game
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [showReveal, setShowReveal] = useState(false);
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
 
   // Transition
   const [tranStage, setTranStage] = useState(0);
@@ -127,11 +159,16 @@ export function BirthdayGamePage() {
   useEffect(() => {
     if (phase !== "transition") return;
     setTranStage(0);
-    const t1 = setTimeout(() => setTranStage(1), 500);
-    const t2 = setTimeout(() => setTranStage(2), 2200);
+
+    const MAX_STAGES = 15; // covers answers recap + 12 personalized lines + CTA
+    const intervals: NodeJS.Timeout[] = [];
+
+    for (let i = 0; i < MAX_STAGES; i++) {
+      intervals.push(setTimeout(() => setTranStage(i + 1), 500 + i * 900));
+    }
+
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      intervals.forEach(clearTimeout);
     };
   }, [phase]);
 
@@ -190,21 +227,21 @@ export function BirthdayGamePage() {
   // ── Handlers ──────────────────────────────────────────────────────────────────
 
   const handleStart = () => {
+    setSelectedAnswers([]);
+    sessionStorage.removeItem("loveGameAnswers");
     setStep(1);
-    setProgress(25);
+    setProgress(Math.round((1 / QUESTIONS.length) * 100));
   };
 
-  const handleOptionClick = () => {
-    if (showReveal) return;
-    setShowReveal(true);
-  };
+  const handleOptionClick = (answer: string) => {
+    const updated = [...selectedAnswers, answer];
+    setSelectedAnswers(updated);
+    sessionStorage.setItem("loveGameAnswers", JSON.stringify(updated));
 
-  const handleContinue = () => {
     if (step < QUESTIONS.length) {
       const next = step + 1;
       setStep(next);
-      setProgress(next * 25);
-      setShowReveal(false);
+      setProgress(Math.round((next / QUESTIONS.length) * 100));
     } else {
       setProgress(100);
       setPhase("transition");
@@ -275,10 +312,8 @@ export function BirthdayGamePage() {
             key="love-game"
             step={step}
             progress={progress}
-            showReveal={showReveal}
             onStart={handleStart}
             onOptionClick={handleOptionClick}
-            onContinue={handleContinue}
           />
         )}
 
@@ -286,6 +321,7 @@ export function BirthdayGamePage() {
           <TransitionSection
             key="transition"
             stage={tranStage}
+            answers={selectedAnswers}
             onStart={() => {
               setCards(buildMemoryCards());
               setPhase("memory-game");
@@ -317,17 +353,13 @@ export function BirthdayGamePage() {
 function LoveGameSection({
   step,
   progress,
-  showReveal,
   onStart,
   onOptionClick,
-  onContinue,
 }: {
   step: number;
   progress: number;
-  showReveal: boolean;
   onStart: () => void;
-  onOptionClick: () => void;
-  onContinue: () => void;
+  onOptionClick: (answer: string) => void;
 }) {
   return (
     <motion.div
@@ -383,7 +415,7 @@ function LoveGameSection({
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="mb-6 text-7xl"
+              className="mb-5 text-5xl sm:text-7xl"
             >
               🎮
             </motion.div>
@@ -391,10 +423,10 @@ function LoveGameSection({
             <p className="font-poppins mb-3 rounded-full border border-cyan-300/18 bg-slate-950/44 px-4 py-1.5 text-[10px] tracking-[0.28em] text-cyan-200/75 uppercase backdrop-blur-md">
               Love Quest Mode
             </p>
-            <h1 className="font-great-vibes mb-4 text-6xl leading-tight text-white drop-shadow-[0_0_28px_rgba(96,165,250,0.32)] sm:text-7xl">
+            <h1 className="font-great-vibes mb-4 text-5xl leading-tight text-white drop-shadow-[0_0_28px_rgba(96,165,250,0.32)] sm:text-6xl lg:text-7xl">
               Its game time baby ❤️
             </h1>
-            <p className="font-cormorant mb-10 max-w-sm text-xl text-cyan-50/78 italic sm:text-2xl">
+            <p className="font-cormorant mb-8 max-w-xs px-2 text-lg text-cyan-50/78 italic sm:max-w-sm sm:text-2xl">
               A cute little arcade made just for you...
             </p>
 
@@ -402,7 +434,7 @@ function LoveGameSection({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               onClick={onStart}
-              className="font-poppins rounded-2xl border border-cyan-300/30 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-12 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_18px_38px_rgba(59,130,246,0.36)] transition"
+              className="font-poppins w-full max-w-xs rounded-2xl border border-cyan-300/30 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-8 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_18px_38px_rgba(59,130,246,0.36)] transition sm:w-auto sm:px-12"
             >
               Start ✨
             </motion.button>
@@ -419,77 +451,39 @@ function LoveGameSection({
             transition={{ duration: 0.42 }}
             className="flex flex-1 flex-col justify-center"
           >
-            <div className="min-h-[70vh] overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-slate-950/54 shadow-[0_22px_52px_rgba(7,10,32,0.44)] backdrop-blur-xl">
+            <div className="overflow-hidden rounded-[1.5rem] border border-cyan-300/18 bg-slate-950/54 shadow-[0_22px_52px_rgba(7,10,32,0.44)] backdrop-blur-xl sm:rounded-[2rem]">
               {/* Question header */}
-              <div className="border-b border-white/10 bg-white/3 px-6 py-5 sm:px-8">
+              <div className="border-b border-white/10 bg-white/3 px-4 py-4 sm:px-8 sm:py-5">
                 <p className="font-poppins text-[10px] tracking-[0.26em] text-cyan-200/70 uppercase">
                   Question {step} of {QUESTIONS.length}
                 </p>
-                <h2 className="font-great-vibes mt-2 text-4xl leading-snug text-white drop-shadow-[0_0_18px_rgba(96,165,250,0.22)] sm:text-5xl">
+                <h2 className="font-great-vibes mt-2 text-3xl leading-snug text-white drop-shadow-[0_0_18px_rgba(96,165,250,0.22)] sm:text-4xl lg:text-5xl">
                   {QUESTIONS[step - 1]!.question}
                 </h2>
               </div>
 
-              {/* Options / Reveal */}
-              <div className="p-6 sm:p-8">
-                <AnimatePresence mode="wait">
-                  {!showReveal ? (
-                    <motion.div
-                      key="options"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0, scale: 0.96 }}
-                      className="flex flex-col gap-3"
+              {/* Options */}
+              <div className="p-4 sm:p-6 lg:p-8">
+                <div className="flex flex-col gap-2.5 sm:gap-3">
+                  {QUESTIONS[step - 1]!.options.map((opt) => (
+                    <motion.button
+                      key={opt}
+                      whileHover={{
+                        scale: 1.02,
+                        x: 4,
+                        boxShadow: "0 0 28px rgba(34, 211, 238, 0.2)",
+                      }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => onOptionClick(opt)}
+                      className="font-poppins w-full rounded-xl border border-cyan-300/18 bg-[linear-gradient(135deg,rgba(15,23,42,0.88),rgba(30,41,59,0.72))] px-4 py-3.5 text-left text-sm text-cyan-50 shadow-[0_14px_28px_rgba(7,10,32,0.24)] transition hover:border-fuchsia-300/30 hover:text-white sm:rounded-2xl sm:px-5 sm:py-4"
                     >
-                      {QUESTIONS[step - 1]!.options.map((opt) => (
-                        <motion.button
-                          key={opt}
-                          whileHover={{
-                            scale: 1.02,
-                            x: 4,
-                            boxShadow: "0 0 28px rgba(34, 211, 238, 0.2)",
-                          }}
-                          whileTap={{ scale: 0.97 }}
-                          onClick={onOptionClick}
-                          className="font-poppins w-full rounded-2xl border border-cyan-300/18 bg-[linear-gradient(135deg,rgba(15,23,42,0.88),rgba(30,41,59,0.72))] px-5 py-4 text-left text-sm text-cyan-50 shadow-[0_14px_28px_rgba(7,10,32,0.24)] transition hover:border-fuchsia-300/30 hover:text-white"
-                        >
-                          <span className="flex items-center justify-between gap-3">
-                            <span>{opt}</span>
-                            <span className="text-cyan-300/80">✦</span>
-                          </span>
-                        </motion.button>
-                      ))}
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="reveal"
-                      initial={{ opacity: 0, scale: 0.92, y: 12 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{ duration: 0.45, ease: "easeOut" }}
-                      className="rounded-[1.8rem] border border-fuchsia-300/20 bg-linear-to-br from-slate-900/95 via-indigo-950/92 to-fuchsia-950/72 p-6 text-center shadow-[0_20px_46px_rgba(17,24,39,0.4)]"
-                    >
-                      <motion.p
-                        animate={{ scale: [1, 1.14, 1] }}
-                        transition={{ duration: 1.4, repeat: Infinity }}
-                        className="mb-3 text-3xl"
-                      >
-                        🎁
-                      </motion.p>
-                      <p className="font-great-vibes text-4xl leading-snug text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.28)] sm:text-5xl">
-                        {QUESTIONS[step - 1]!.reveal}
-                      </p>
-
-                      <motion.button
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={onContinue}
-                        className="font-poppins mt-6 rounded-2xl border border-cyan-300/22 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-8 py-3 text-sm tracking-[0.18em] text-white uppercase shadow-[0_12px_28px_rgba(59,130,246,0.34)] transition"
-                      >
-                        {step === QUESTIONS.length ? "Finish 💖" : "Continue →"}
-                      </motion.button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="leading-snug">{opt}</span>
+                        <span className="shrink-0 text-cyan-300/80">✦</span>
+                      </span>
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -499,74 +493,179 @@ function LoveGameSection({
   );
 }
 
+// ─── Personalized reveal builder ─────────────────────────────────────────────
+
+function buildPersonalizedReveal(answers: string[]): string[] {
+  const a0 = answers[0] ?? "";
+  const a1 = answers[1] ?? "";
+  const a2 = answers[2] ?? "";
+  const a3 = answers[3] ?? "";
+  const a4 = answers[4] ?? "";
+
+  const power = a0.includes("smile")
+    ? "That smile of yours? It literally ruins me 😊"
+    : a0.includes("voice")
+    ? "Your voice? It melts me every single time 🎶"
+    : "Your cuteness? Completely impossible to resist 💖";
+
+  const survive = a1.includes("fine")
+    ? "You said I'd be fine without you… lol, no. 😅"
+    : a1.includes("little")
+    ? "Miss you a little? I'd miss you every second. 🥺"
+    : "Lose my mind completely — yes. Exactly that. 💀";
+
+  const replay = a2.includes("cute")
+    ? "I replay your random cute moments on repeat… 🤭"
+    : a2.includes("voice")
+    ? "Your voice when you talk to me — it plays all day. 🎵"
+    : "Every single moment with you — I replay them all. 🌙";
+
+  const level = a3.includes("Beginner")
+    ? "Beginner? Please — I passed that stage long ago. 😌"
+    : a3.includes("Addicted")
+    ? "Addicted. Yes. No cure. No escape. 😳"
+    : "No escape, forever trapped — and I'd choose it again. ❤️";
+
+  const whoAmI = a4.includes("special")
+    ? "You said 'just someone special'… you are so much more. 🌟"
+    : a4.includes("important")
+    ? "Someone important? You are the most important. 💎"
+    : "Everything. You said it yourself. ❤️";
+
+  return [
+    "You thought this was a game… 😌",
+    "But I already knew every answer.",
+    "",
+    power,
+    survive,
+    replay,
+    level,
+    "",
+    whoAmI,
+    "",
+    "You are not just special…",
+    "You are everything ❤️",
+  ];
+}
+
 // ─── Transition Section ────────────────────────────────────────────────────────
 
 function TransitionSection({
   stage,
+  answers,
   onStart,
 }: {
   stage: number;
+  answers: string[];
   onStart: () => void;
 }) {
+  const lines = buildPersonalizedReveal(answers);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.7 }}
-      className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center"
+      className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-10 text-center sm:px-6"
     >
-      <div className="w-full max-w-3xl rounded-[2rem] border border-cyan-300/16 bg-slate-950/42 px-6 py-10 shadow-[0_24px_60px_rgba(7,10,32,0.34)] backdrop-blur-xl sm:px-8 lg:px-10">
-        <AnimatePresence>
-          {stage >= 1 && (
-            <motion.p
-              key="l1"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.85 }}
-              className="font-great-vibes mb-4 text-5xl text-white drop-shadow-[0_0_22px_rgba(103,232,249,0.22)] sm:text-6xl"
-            >
-              This wasn&apos;t really a game…
-            </motion.p>
-          )}
+      <div className="w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-white/8 bg-[linear-gradient(160deg,rgba(15,23,42,0.9),rgba(17,12,40,0.95))] shadow-[0_40px_90px_rgba(7,10,32,0.65)] backdrop-blur-2xl">
+        {/* Rainbow top accent */}
+        <div className="h-[3px] w-full bg-linear-to-r from-cyan-400 via-fuchsia-500 to-rose-400" />
 
-          {stage >= 2 && (
-            <motion.p
-              key="l2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.85, delay: 0.15 }}
-              className="font-cormorant mb-10 text-2xl text-cyan-50/78 italic sm:text-3xl"
-            >
-              I just wanted to remind you how special you are ❤️
-            </motion.p>
-          )}
-
-          {stage >= 2 && (
+        <div className="flex flex-col items-center gap-5 px-6 py-10 sm:px-10">
+          {/* Stage 1: Answers recap */}
+          {stage > 0 && answers.length > 0 && (
             <motion.div
-              key="cta"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 1.1 }}
-              className="flex flex-col items-center gap-3"
+              initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.7 }}
+              className="w-full rounded-2xl border border-white/6 bg-white/[0.04] px-5 py-4 text-left"
             >
-              <p className="font-poppins text-[10px] tracking-[0.26em] text-cyan-200/60 uppercase">
-                ok time to get serious
+              <p className="font-poppins mb-3 text-[9px] tracking-[0.32em] text-cyan-300/55 uppercase">
+                Your answers 💬
               </p>
-              <p className="font-poppins text-sm tracking-[0.12em] text-fuchsia-100/72 lowercase">
-                really game time 🎮
+              <div className="flex flex-col gap-2.5">
+                {answers.map((ans, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <span className="font-poppins mt-0.5 shrink-0 rounded-full bg-fuchsia-500/18 px-2 py-0.5 text-[9px] tracking-widest text-fuchsia-300/75">
+                      Q{i + 1}
+                    </span>
+                    <p className="font-cormorant text-sm leading-snug text-cyan-50/80 italic">
+                      {ans}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Stages 2+: Personalized reveal lines */}
+          {lines.map((line, idx) => (
+            <AnimatePresence key={idx}>
+              {stage > idx + 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 18, filter: "blur(12px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className={`w-full ${line === "" ? "h-3" : ""}`}
+                >
+                  {line !== "" && (
+                    <p
+                      className={`${
+                        idx < 2
+                          ? "font-great-vibes text-4xl text-white drop-shadow-[0_0_22px_rgba(103,232,249,0.18)] sm:text-5xl"
+                          : idx >= 10
+                          ? "font-great-vibes text-5xl text-rose-400 drop-shadow-[0_0_24px_rgba(251,113,133,0.4)] sm:text-6xl"
+                          : "font-cormorant text-lg leading-relaxed text-cyan-50/85 italic sm:text-xl"
+                      }`}
+                    >
+                      {line}
+                    </p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          ))}
+
+          {/* CTA — appears after all lines */}
+          {stage > lines.length + 1 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.15 }}
+              className="mt-4 flex w-full flex-col items-center gap-4"
+            >
+              <div className="h-px w-44 bg-linear-to-r from-transparent via-fuchsia-400/50 to-transparent" />
+
+              <p className="font-great-vibes text-3xl text-cyan-200/90 drop-shadow-[0_0_12px_rgba(103,232,249,0.2)] sm:text-4xl">
+                Ok ok… serious game time now 🎮
               </p>
+              <p className="font-cormorant text-base text-fuchsia-200/50 italic">
+                and your reward is waiting for you… 🎁
+              </p>
+
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{
+                  scale: 1.06,
+                  boxShadow: "0 0 50px rgba(34,211,238,0.55)",
+                }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onStart}
-                className="font-poppins mt-3 rounded-2xl border border-cyan-300/28 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-12 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_16px_36px_rgba(59,130,246,0.34)] transition"
+                className="font-poppins relative mt-2 overflow-hidden rounded-2xl border border-cyan-300/28 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-14 py-4 text-sm tracking-[0.28em] text-white uppercase shadow-[0_20px_50px_rgba(59,130,246,0.45)] transition"
               >
-                Lets Start 🎮
+                {/* Shimmer sweep */}
+                <motion.span
+                  className="pointer-events-none absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent"
+                  initial={{ x: "-100%" }}
+                  animate={{ x: "200%" }}
+                  transition={{ duration: 1.4, repeat: Infinity, repeatDelay: 1.8, ease: "easeInOut" }}
+                />
+                Start Now →
               </motion.button>
             </motion.div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
     </motion.div>
   );
@@ -599,11 +698,11 @@ function MemoryGameSection({
       className="relative z-10 mx-auto w-full max-w-5xl px-3 py-8 sm:px-5 lg:px-8"
     >
       {/* Header */}
-      <div className="mb-5 text-center">
+      <div className="mb-4 text-center">
         <p className="font-poppins text-[10px] tracking-[0.26em] text-cyan-200/65 uppercase">
           Real Game 🎮
         </p>
-        <h2 className="font-great-vibes mt-1 text-4xl text-white drop-shadow-[0_0_20px_rgba(96,165,250,0.26)] sm:text-5xl">
+        <h2 className="font-great-vibes mt-1 text-3xl text-white drop-shadow-[0_0_20px_rgba(96,165,250,0.26)] sm:text-4xl lg:text-5xl">
           Tap to reveal 💕
         </h2>
       </div>
@@ -719,10 +818,10 @@ function MemoryCardTile({
           }`}
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
-          <span className="text-base leading-none sm:text-xl">
+          <span className="text-sm leading-none sm:text-base lg:text-xl">
             {card.emoji}
           </span>
-          <p className="font-poppins mt-0.5 text-[7px] leading-tight text-cyan-50 sm:text-[9px]">
+          <p className="font-poppins mt-0.5 hidden text-[7px] leading-tight text-cyan-50 sm:block sm:text-[9px]">
             {card.text}
           </p>
         </div>
@@ -766,7 +865,7 @@ function CompleteSection({ moves }: { moves: number }) {
         initial={{ opacity: 0, y: 36, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.7, ease: "easeOut" }}
-        className="relative w-full max-w-3xl overflow-hidden rounded-[2.5rem] border border-cyan-300/18 bg-slate-950/58 shadow-[0_24px_64px_rgba(7,10,32,0.44)] backdrop-blur-xl"
+        className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-slate-950/58 shadow-[0_24px_64px_rgba(7,10,32,0.44)] backdrop-blur-xl sm:max-w-2xl sm:rounded-[2.5rem] lg:max-w-3xl"
       >
         <div className="pointer-events-none absolute -top-14 right-4 h-40 w-40 rounded-full bg-cyan-400/24 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-fuchsia-400/24 blur-2xl" />
@@ -780,14 +879,14 @@ function CompleteSection({ moves }: { moves: number }) {
             🎊
           </motion.p>
 
-          <h1 className="font-great-vibes mt-3 text-5xl leading-tight text-white drop-shadow-[0_0_24px_rgba(56,189,248,0.24)] sm:text-6xl">
+          <h1 className="font-great-vibes mt-3 text-4xl leading-tight text-white drop-shadow-[0_0_24px_rgba(56,189,248,0.24)] sm:text-5xl lg:text-6xl">
             You did it baby!
           </h1>
 
-          <p className="font-cormorant mt-4 text-xl text-cyan-50/86 italic sm:text-2xl">
+          <p className="font-cormorant mt-3 text-lg text-cyan-50/86 italic sm:text-xl lg:text-2xl">
             All {MEMORY_MESSAGES.length} pairs found in {moves} moves.
           </p>
-          <p className="font-cormorant mt-1 text-lg text-fuchsia-100/76 italic sm:text-xl">
+          <p className="font-cormorant mt-1 text-base text-fuchsia-100/76 italic sm:text-lg lg:text-xl">
             Just like you always find your way into my heart 💖
           </p>
 
@@ -812,11 +911,11 @@ function CompleteSection({ moves }: { moves: number }) {
           </div>
 
           {/* CTA */}
-          <Link href="/birthday-room">
+          <Link href="/birthday-game/rewards">
             <motion.div
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className="font-poppins mt-7 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-cyan-300/24 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-6 py-4 text-sm tracking-[0.2em] text-white uppercase shadow-[0_16px_40px_rgba(59,130,246,0.38)] transition"
+              className="font-poppins mt-6 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-cyan-300/24 bg-linear-to-r from-cyan-400 via-sky-500 to-fuchsia-500 px-4 py-4 text-sm tracking-[0.18em] text-white uppercase shadow-[0_16px_40px_rgba(59,130,246,0.38)] transition sm:px-6 sm:tracking-[0.2em]"
             >
               <span>Claim Your Rewards</span>
               <span className="text-base">🎁</span>
