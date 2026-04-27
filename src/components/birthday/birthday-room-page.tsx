@@ -4,6 +4,7 @@ import { useMemo, useState, type MouseEvent } from "react";
 import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { LayoutDashboard } from "lucide-react";
 
 type GiftCard = {
   id: number;
@@ -488,6 +489,21 @@ export function BirthdayRoomPage() {
               ? "Your love vouchers are revealed. Keep opening all 3 to see every surprise."
               : "Only three floating gift boxes are here first. Tap any one to reveal your ticket."}
           </p>
+        </motion.div>
+
+        <motion.div
+          className="mx-auto mt-12 mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Link
+            href="/"
+            className="font-poppins inline-flex items-center gap-2 rounded-xl border border-rose-300/50 bg-white/40 px-6 py-3 text-xs tracking-widest text-rose-700 uppercase backdrop-blur-sm transition-all hover:bg-white/60 hover:shadow-lg active:scale-95"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span>Back to Dashboard</span>
+          </Link>
         </motion.div>
       </section>
     </main>
