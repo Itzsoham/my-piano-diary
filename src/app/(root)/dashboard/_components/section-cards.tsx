@@ -52,6 +52,7 @@ export function SectionCards() {
     };
   const { currency } = useCurrency();
   const { isBirthdayMode } = useBirthday();
+  const [isMissedRevealed, setIsMissedRevealed] = useState(false);
 
   const currentMonthEarnings = earnings?.currentMonthEarnings ?? 0;
   const missedAmount = earnings?.currentMonthLoss ?? 0;
@@ -85,6 +86,7 @@ export function SectionCards() {
     icon: LucideIcon;
     glowDelay: string;
     bdaySubtitle: string;
+    isSpoiler?: boolean;
   }> = [
     {
       title: "This Month Revenue",
@@ -113,6 +115,7 @@ export function SectionCards() {
       icon: ArrowDownRight,
       glowDelay: "0.75s",
       bdaySubtitle: bdaySubtitles[1]!,
+      isSpoiler: true,
     },
     {
       title: "Collected Last Month",
@@ -156,10 +159,12 @@ export function SectionCards() {
                 currency,
               );
 
+          const isHidden = card.isSpoiler && !isMissedRevealed;
+
           return (
             <Card
               key={card.title}
-              className={`overflow-hidden rounded-[2rem] border ${card.borderClass} shadow-xs backdrop-blur-xl transition-all duration-300 ease-out ${card.hoverShadow} ${card.shell}`}
+              className={`overflow-hidden rounded-[2rem] border ${card.borderClass} shadow-xs backdrop-blur-xl transition-all duration-300 ease-out ${card.hoverShadow} ${card.shell} ${isHidden ? "cursor-pointer group" : ""}`}
               style={
                 isBirthdayMode
                   ? {
@@ -168,8 +173,11 @@ export function SectionCards() {
                     }
                   : undefined
               }
+              onClick={() => {
+                if (card.isSpoiler) setIsMissedRevealed(true);
+              }}
             >
-              <div className="flex h-full flex-col items-start justify-start p-8">
+              <div className={`flex h-full flex-col items-start justify-start p-8 transition-all duration-300 ${isHidden ? "blur-md select-none opacity-40" : ""}`}>
                 <div className="flex items-center gap-2">
                   <div
                     className={`flex size-5 shrink-0 items-center justify-center ${card.titleClass}`}
@@ -183,7 +191,7 @@ export function SectionCards() {
                   </p>
                 </div>
                 <p
-                  className={`mt-3 text-[2rem] font-semibold tracking-tight tabular-nums ${card.valueClass}`}
+                  className={`mt-3 text-[2rem] font-semibold tracking-tight tabular-nums transition-all duration-300 ${card.valueClass}`}
                 >
                   {displayValue}
                 </p>
@@ -193,6 +201,11 @@ export function SectionCards() {
                   </p>
                 )}
               </div>
+              {isHidden && (
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-rose-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  Click to reveal
+                </div>
+              )}
             </Card>
           );
         })}
