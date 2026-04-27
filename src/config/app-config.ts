@@ -21,9 +21,17 @@ export const BIRTHDAY_CONFIG = {
   birthdayDate: "2026-04-24", // TEMP: testing — change back to 2026-04-24
 } as const;
 
-/** Returns true if today is the actual birthday */
+/** Returns true if today is the actual birthday or if manual override is active */
 export function isBirthdayToday(): boolean {
+  // Check for manual override (client-side only)
+  if (typeof window !== "undefined") {
+    if (localStorage.getItem("manual_birthday_mode") === "true") {
+      return true;
+    }
+  }
+
   if (!BIRTHDAY_CONFIG.enabled) return false;
+
   const today = new Date();
   const [year, month, day] = BIRTHDAY_CONFIG.birthdayDate
     .split("-")

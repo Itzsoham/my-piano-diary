@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { isBirthdayToday } from "@/config/app-config";
+import { useBirthday } from "@/components/birthday/birthday-provider";
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 const START_DATE = new Date("2025-09-15T00:00:00");
@@ -41,6 +43,7 @@ interface HeartParticle {
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 export default function ForeverPage() {
   const [time, setTime] = useState(getTimeDiff());
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicStarted, setMusicStarted] = useState(false);
@@ -54,10 +57,14 @@ export default function ForeverPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cuteAudioRef = useRef<HTMLAudioElement | null>(null);
   const birthdayConfettiFired = useRef(false);
-  const isHerBirthday = isBirthdayToday();
+  const [isMounted, setIsMounted] = useState(false);
+  const isHerBirthday = isMounted && isBirthdayToday();
+
+  const { forceActivateBirthday } = useBirthday();
 
   // ── Console Easter Egg ─────────────────────────────────────────────────────
   useEffect(() => {
+    setIsMounted(true);
     console.log(
       "%c You found the secret page ❤️",
       "color: #ff69b4; font-size: 16px; font-weight: bold;",
@@ -488,6 +495,35 @@ export default function ForeverPage() {
             <br />
             has been my favorite moments of my life.
           </motion.p>
+
+          {/* ─ QUICK ACTIONS ────────────────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.2 }}
+            className="mb-8 flex gap-3"
+          >
+            <button
+              id="enable-birthday-mode"
+              onClick={() => {
+                localStorage.setItem("manual_birthday_mode", "true");
+                forceActivateBirthday();
+                router.push("/dashboard");
+              }}
+              className="flex-1 rounded-xl border border-pink-500/20 bg-white/5 px-4 py-3 text-[10px] font-bold text-pink-300 backdrop-blur-sm transition-all hover:bg-pink-500/10 hover:text-pink-100 active:scale-95 sm:text-xs"
+            >
+              🎂 Enable Birthday Mode
+            </button>
+            <button
+              id="gift-button"
+              onClick={() =>
+                window.open("https://happybirthdaythuy.vercel.app/", "_blank")
+              }
+              className="flex-1 rounded-xl border border-pink-500/20 bg-white/5 px-4 py-3 text-[10px] font-bold text-pink-300 backdrop-blur-sm transition-all hover:bg-pink-500/10 hover:text-pink-100 active:scale-95 sm:text-xs"
+            >
+              Gift Button 🎁
+            </button>
+          </motion.div>
 
           {/* ─ BIRTHDAY BLOCK ────────────────────────────────────────────── */}
           {isHerBirthday && (

@@ -20,6 +20,8 @@ interface BirthdayContextValue {
   isActivating: boolean;
   /** Call this on the 2nd card click to trigger the reveal */
   activateBirthdayMode: () => void;
+  /** Immediately activate (no overlay/animation) */
+  forceActivateBirthday: () => void;
 }
 
 const BirthdayContext = createContext<BirthdayContextValue>({
@@ -27,6 +29,7 @@ const BirthdayContext = createContext<BirthdayContextValue>({
   isBirthdayMode: false,
   isActivating: false,
   activateBirthdayMode: () => void 0,
+  forceActivateBirthday: () => void 0,
 });
 
 export function useBirthday() {
@@ -236,6 +239,11 @@ export function BirthdayProvider({ children }: { children: ReactNode }) {
     }, 2800);
   }, [activated, isActivating]);
 
+  const forceActivateBirthday = useCallback(() => {
+    setActivated(true);
+    sessionStorage.setItem("bday-activated", "1");
+  }, []);
+
   return (
     <BirthdayContext.Provider
       value={{
@@ -243,6 +251,7 @@ export function BirthdayProvider({ children }: { children: ReactNode }) {
         isBirthdayMode: mounted ? isMode : false,
         isActivating: mounted ? isActivating : false,
         activateBirthdayMode,
+        forceActivateBirthday,
       }}
     >
       {children}
