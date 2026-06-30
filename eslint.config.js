@@ -32,6 +32,18 @@ export default tseslint.config(
     },
   },
   {
+    // eslint-config-next 16 bundles eslint-plugin-react-hooks 7, whose
+    // recommended set promotes these React Compiler readiness rules to
+    // errors. They flag many pre-existing, working patterns (setState in
+    // effects, a Math.random() skeleton width). Keep them as warnings so
+    // they stay visible without breaking `lint`/`check` — revisit if/when
+    // we adopt the React Compiler.
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
+    },
+  },
+  {
     linterOptions: {
       reportUnusedDisableDirectives: true,
     },

@@ -13,7 +13,7 @@ function hasSessionCookie(req: NextRequest) {
 
 const PUBLIC_PATHS = ["/login", "/register", "/forever"];
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const isLoggedIn = hasSessionCookie(req);
   const isPublicPage = PUBLIC_PATHS.some((p) =>
     req.nextUrl.pathname.startsWith(p),
