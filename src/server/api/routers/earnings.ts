@@ -48,6 +48,8 @@ interface TodayLesson {
   date: Date;
   duration: number;
   status: string;
+  isOnline: boolean;
+  rate: number;
   cancelReason: string | null;
   pieceId: string | null;
   createdAt: Date;
@@ -103,22 +105,18 @@ export const earningsRouter = createTRPCRouter({
         timezone,
       );
 
-      // Get all completed lessons with student data
+      // Get all completed lessons (rate is snapshotted per-lesson)
       const completedLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
           status: "COMPLETE",
         },
-        include: {
-          student: {
-            select: {
-              lessonRate: true,
-            },
-          },
+        select: {
+          rate: true,
         },
       });
 
-      // Get current month completed lessons with student data
+      // Get current month completed lessons
       const currentMonthCompletedLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
@@ -128,16 +126,12 @@ export const earningsRouter = createTRPCRouter({
           },
           status: "COMPLETE",
         },
-        include: {
-          student: {
-            select: {
-              lessonRate: true,
-            },
-          },
+        select: {
+          rate: true,
         },
       });
 
-      // Get current month cancelled lessons with student data
+      // Get current month cancelled lessons
       const currentMonthCancelledLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
@@ -147,30 +141,26 @@ export const earningsRouter = createTRPCRouter({
           },
           status: "CANCELLED",
         },
-        include: {
-          student: {
-            select: {
-              lessonRate: true,
-            },
-          },
+        select: {
+          rate: true,
         },
       });
 
       // Calculate total earnings (all time)
       const totalEarnings = completedLessons.reduce(
-        (sum, lesson) => sum + lesson.student.lessonRate,
+        (sum, lesson) => sum + lesson.rate,
         0,
       );
 
       // Calculate current month earnings
       const currentMonthEarnings = currentMonthCompletedLessons.reduce(
-        (sum, lesson) => sum + lesson.student.lessonRate,
+        (sum, lesson) => sum + lesson.rate,
         0,
       );
 
       // Calculate current month loss from cancelled lessons
       const currentMonthLoss = currentMonthCancelledLessons.reduce(
-        (sum, lesson) => sum + lesson.student.lessonRate,
+        (sum, lesson) => sum + lesson.rate,
         0,
       );
 
@@ -220,23 +210,16 @@ export const earningsRouter = createTRPCRouter({
           },
           status: "COMPLETE",
         },
-        include: {
-          student: {
-            select: {
-              id: true,
-              lessonRate: true,
-            },
-          },
+        select: {
+          studentId: true,
+          rate: true,
         },
       });
 
       const expectedByStudent = new Map<string, number>();
       lastMonthLessons.forEach((lesson) => {
         const current = expectedByStudent.get(lesson.studentId) ?? 0;
-        expectedByStudent.set(
-          lesson.studentId,
-          current + lesson.student.lessonRate,
-        );
+        expectedByStudent.set(lesson.studentId, current + lesson.rate);
       });
 
       // 2. Get all payment month records for last month to know received amount by student
@@ -331,7 +314,7 @@ export const earningsRouter = createTRPCRouter({
 
       return lessons.map((lesson) => ({
         ...lesson,
-        earnings: lesson.status !== "CANCELLED" ? lesson.student.lessonRate : 0,
+        earnings: lesson.status !== "CANCELLED" ? lesson.rate : 0,
       }));
     }),
 
@@ -390,7 +373,7 @@ export const earningsRouter = createTRPCRouter({
       const studentEarnings = lessons.reduce(
         (acc, lesson) => {
           const studentId = lesson.student.id;
-          const earnings = lesson.student.lessonRate;
+          const earnings = lesson.rate;
 
           acc[studentId] ??= {
             studentId,
@@ -491,7 +474,7 @@ export const earningsRouter = createTRPCRouter({
             lessonRate: lesson.student.lessonRate,
           };
 
-          acc[studentId].earnings += lesson.student.lessonRate;
+          acc[studentId].earnings += lesson.rate;
           acc[studentId].lessonCount += 1;
 
           return acc;
@@ -647,12 +630,9 @@ export const earningsRouter = createTRPCRouter({
             lte: monthEnd,
           },
         },
-        include: {
-          student: {
-            select: {
-              lessonRate: true,
-            },
-          },
+        select: {
+          date: true,
+          rate: true,
         },
       });
 
@@ -673,7 +653,7 @@ export const earningsRouter = createTRPCRouter({
           continue;
         }
 
-        point.earned += lesson.student.lessonRate;
+        point.earned += lesson.rate;
       }
 
       return points.filter((point) => point.day <= nowInUserTz.getDate());

@@ -40,6 +40,8 @@ type SelectedLesson = {
   studentName: string;
   duration: number;
   status: LessonStatus;
+  isOnline: boolean;
+  rate: number;
   actualMin: number | null;
   cancelReason: string | null;
   note: string | null;
@@ -84,6 +86,8 @@ export function TodayLessonsTable({
       studentName: lesson.student.name,
       duration: lesson.duration,
       status: toLessonStatus(lesson.status),
+      isOnline: lesson.isOnline,
+      rate: lesson.rate,
       actualMin: lesson.actualMin,
       cancelReason: lesson.cancelReason,
       note: lesson.note,
@@ -129,7 +133,7 @@ export function TodayLessonsTable({
       <td className="px-5 py-3">
         <Skeleton className="h-6 w-20 rounded-full" />
       </td>
-      <td className="hidden px-5 py-3 lg:table-cell">
+      <td className="px-5 py-3">
         <Skeleton className="h-8 w-16 rounded-full" />
       </td>
       <td className="px-5 py-3 text-right">
@@ -240,7 +244,7 @@ export function TodayLessonsTable({
                       <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
                         Status
                       </th>
-                      <th className="hidden px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase lg:table-cell">
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
                         Attendance
                       </th>
                       <th className="px-5 py-2.5 text-right text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
@@ -273,7 +277,7 @@ export function TodayLessonsTable({
                       <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
                         Status
                       </th>
-                      <th className="hidden px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase lg:table-cell">
+                      <th className="px-5 py-2.5 text-left text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
                         Attendance
                       </th>
                       <th className="px-5 py-2.5 text-right text-[11px] font-semibold tracking-[0.14em] text-rose-500 uppercase">
@@ -317,7 +321,7 @@ export function TodayLessonsTable({
                         <td className="px-5 py-2.5">
                           {getStatusBadge(toLessonStatus(lesson.status))}
                         </td>
-                        <td className="hidden px-5 py-2.5 lg:table-cell">
+                        <td className="px-5 py-2.5">
                           <Button
                             size="sm"
                             variant="ghost"

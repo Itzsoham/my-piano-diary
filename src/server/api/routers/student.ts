@@ -6,6 +6,7 @@ import {
   updateStudentSchema,
   idSchema,
 } from "@/lib/validations/common-schemas";
+import { fromUTC, getStartOfMonthUTC } from "@/lib/timezone";
 
 export const studentRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -104,6 +105,9 @@ export const studentRouter = createTRPCRouter({
           ...(input.lessonRate !== undefined && {
             lessonRate: input.lessonRate,
           }),
+          ...(input.onlineLessonRate !== undefined && {
+            onlineLessonRate: input.onlineLessonRate,
+          }),
           teacher: { connect: { id: teacher.id } },
         },
       });
@@ -134,10 +138,69 @@ export const studentRouter = createTRPCRouter({
         throw new Error("Student not found");
       }
 
-      return ctx.db.student.update({
+      // Only write real Student columns (the input schema also carries
+      // form-only fields like email/phoneNumber that aren't on the model).
+      const updated = await ctx.db.student.update({
         where: { id },
-        data,
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.notes !== undefined && { notes: data.notes }),
+          ...(data.avatar !== undefined && { avatar: data.avatar }),
+          ...(data.lessonRate !== undefined && { lessonRate: data.lessonRate }),
+          ...(data.onlineLessonRate !== undefined && {
+            onlineLessonRate: data.onlineLessonRate,
+          }),
+        },
       });
+
+      // When a rate changes, re-price the CURRENT month and all FUTURE lessons.
+      // Past months are never touched, so their snapshots stay frozen.
+      const offlineRateChanged = updated.lessonRate !== student.lessonRate;
+      const onlineRateChanged =
+        updated.onlineLessonRate !== student.onlineLessonRate;
+
+      if (offlineRateChanged || onlineRateChanged) {
+        const timezone = ctx.session.user.timezone ?? "UTC";
+        const now = fromUTC(new Date(), timezone);
+        const monthStart = getStartOfMonthUTC(
+          now.getMonth() + 1,
+          now.getFullYear(),
+          timezone,
+        );
+
+        // Only re-stamp lessons still priced at the OLD rate. Lessons given a
+        // manual per-lesson override (a different rate) are left untouched.
+        const restampOps = [];
+        if (offlineRateChanged) {
+          restampOps.push(
+            ctx.db.lesson.updateMany({
+              where: {
+                studentId: id,
+                isOnline: false,
+                date: { gte: monthStart },
+                rate: student.lessonRate,
+              },
+              data: { rate: updated.lessonRate },
+            }),
+          );
+        }
+        if (onlineRateChanged) {
+          restampOps.push(
+            ctx.db.lesson.updateMany({
+              where: {
+                studentId: id,
+                isOnline: true,
+                date: { gte: monthStart },
+                rate: student.onlineLessonRate,
+              },
+              data: { rate: updated.onlineLessonRate },
+            }),
+          );
+        }
+        await Promise.all(restampOps);
+      }
+
+      return updated;
     }),
 
   delete: protectedProcedure

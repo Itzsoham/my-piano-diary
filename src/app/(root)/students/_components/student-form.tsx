@@ -33,6 +33,11 @@ const studentFormSchema = z.object({
     .int("Lesson rate must be an integer")
     .min(0, "Lesson rate must be 0 or greater")
     .max(10000000, "Lesson rate seems unreasonably high"),
+  onlineLessonRate: z
+    .number()
+    .int("Online lesson rate must be an integer")
+    .min(0, "Online lesson rate must be 0 or greater")
+    .max(10000000, "Online lesson rate seems unreasonably high"),
 });
 
 type StudentFormValues = z.infer<typeof studentFormSchema>;
@@ -104,6 +109,7 @@ export function StudentForm({
       avatar: "",
       notes: "",
       lessonRate: 0,
+      onlineLessonRate: 0,
     },
   });
 
@@ -126,6 +132,7 @@ export function StudentForm({
         avatar: student.avatar ?? "",
         notes: student.notes ?? "",
         lessonRate: student.lessonRate ?? 0,
+        onlineLessonRate: student.onlineLessonRate ?? 0,
       });
     }
   }, [student, form]);
@@ -138,6 +145,7 @@ export function StudentForm({
         avatar: data.avatar ?? undefined,
         notes: data.notes ?? undefined,
         lessonRate: data.lessonRate,
+        onlineLessonRate: data.onlineLessonRate,
       });
     } else {
       createMutation.mutate({
@@ -145,6 +153,7 @@ export function StudentForm({
         avatar: data.avatar ?? undefined,
         notes: data.notes ?? undefined,
         lessonRate: data.lessonRate,
+        onlineLessonRate: data.onlineLessonRate,
       });
     }
   };
@@ -252,7 +261,47 @@ export function StudentForm({
                       </div>
                     </FormControl>
                     <FormDescription>
-                      Charge amount per completed lesson
+                      Charge amount per completed in-person lesson
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="onlineLessonRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Online Rate Per Lesson</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2">
+                          đ
+                        </span>
+                        <Input
+                          placeholder="0"
+                          type="text"
+                          inputMode="numeric"
+                          className="h-11 rounded-2xl bg-pink-50 pl-8 text-base font-semibold focus-visible:ring-pink-400"
+                          {...field}
+                          onChange={(e) => {
+                            const numValue =
+                              parseInt(
+                                e.target.value.replace(/\./g, "") || "0",
+                              ) || 0;
+                            field.onChange(numValue);
+                          }}
+                          value={
+                            field.value
+                              ? formatNumberWithSeparators(field.value)
+                              : ""
+                          }
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Charge amount per completed online lesson
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

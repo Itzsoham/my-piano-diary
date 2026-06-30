@@ -90,6 +90,12 @@ export const createStudentSchema = z.object({
     .min(0, "Lesson rate must be 0 or greater")
     .max(10000000, "Lesson rate seems unreasonably high")
     .default(0),
+  onlineLessonRate: z
+    .number()
+    .int("Online lesson rate must be an integer")
+    .min(0, "Online lesson rate must be 0 or greater")
+    .max(10000000, "Online lesson rate seems unreasonably high")
+    .default(0),
 });
 
 export const updateStudentSchema = createStudentSchema.partial().extend({
@@ -107,6 +113,7 @@ export const createLessonSchema = z.object({
     .max(480, "Lesson must be at most 480 minutes"),
   status: lessonStatusSchema.optional(),
   pieceId: idSchema.optional(),
+  isOnline: z.boolean().optional().default(false),
 });
 
 export const updateLessonSchema = z.object({
@@ -120,6 +127,7 @@ export const updateLessonSchema = z.object({
     .optional(),
   status: lessonStatusSchema.optional(),
   pieceId: idSchema.optional().nullable(),
+  isOnline: z.boolean().optional(),
 });
 
 // Piece validation

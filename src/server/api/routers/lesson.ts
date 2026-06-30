@@ -11,6 +11,7 @@ import {
   createRecurringLessonSchema,
 } from "@/lib/validations/api-schemas";
 import { getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
+import { effectiveLessonRate } from "@/lib/rate";
 import { fromZonedTime } from "date-fns-tz";
 
 export const lessonRouter = createTRPCRouter({
@@ -207,6 +208,9 @@ export const lessonRouter = createTRPCRouter({
           date: input.date, // Date is already in UTC from client serialization
           duration: input.duration,
           status: "PENDING",
+          isOnline: input.isOnline,
+          // Snapshot the applicable rate onto the lesson so history stays frozen.
+          rate: effectiveLessonRate(student, input.isOnline),
           pieceId: input.pieceId,
         },
         include: {
@@ -255,6 +259,24 @@ export const lessonRouter = createTRPCRouter({
         }
       }
 
+      // Toggling a lesson's online flag re-stamps its rate to the student's
+      // CURRENT applicable rate — even on older lessons (a deliberate per-lesson
+      // change, unlike a bulk student-rate edit which leaves the past frozen).
+      let onlinePatch: { isOnline: boolean; rate: number } | undefined;
+      if (data.isOnline !== undefined) {
+        const student = await ctx.db.student.findUnique({
+          where: { id: lesson.studentId },
+          select: { lessonRate: true, onlineLessonRate: true },
+        });
+
+        if (student) {
+          onlinePatch = {
+            isOnline: data.isOnline,
+            rate: effectiveLessonRate(student, data.isOnline),
+          };
+        }
+      }
+
       return ctx.db.lesson.update({
         where: { id },
         data: {
@@ -262,6 +284,7 @@ export const lessonRouter = createTRPCRouter({
           ...(data.duration && { duration: data.duration }),
           ...(data.status && { status: data.status }),
           ...(data.pieceId !== undefined && { pieceId: data.pieceId }),
+          ...onlinePatch,
         },
         include: {
           student: true,
@@ -322,6 +345,26 @@ export const lessonRouter = createTRPCRouter({
         throw new Error("Lesson not found");
       }
 
+      // Rate handling, in priority order:
+      // 1. An explicit per-lesson rate override always wins.
+      // 2. Otherwise, flipping online/in-person re-derives from the student rate.
+      const ratePatch: { isOnline?: boolean; rate?: number } = {};
+      if (input.isOnline !== undefined) {
+        ratePatch.isOnline = input.isOnline;
+      }
+      if (input.rate !== undefined) {
+        ratePatch.rate = input.rate;
+      } else if (input.isOnline !== undefined) {
+        const student = await ctx.db.student.findUnique({
+          where: { id: lesson.studentId },
+          select: { lessonRate: true, onlineLessonRate: true },
+        });
+
+        if (student) {
+          ratePatch.rate = effectiveLessonRate(student, input.isOnline);
+        }
+      }
+
       // Update lesson with attendance information
       return ctx.db.lesson.update({
         where: {
@@ -332,6 +375,7 @@ export const lessonRouter = createTRPCRouter({
           actualMin: input.actualMin,
           cancelReason: input.cancelReason,
           note: input.note,
+          ...ratePatch,
         },
         include: {
           student: true,
@@ -488,6 +532,7 @@ export const lessonRouter = createTRPCRouter({
       }
 
       // No conflicts, create all lessons
+      const recurringRate = effectiveLessonRate(student, input.isOnline);
       for (const lessonDate of potentialDates) {
         lessonsToCreate.push({
           studentId: input.studentId,
@@ -495,6 +540,8 @@ export const lessonRouter = createTRPCRouter({
           date: lessonDate,
           duration: input.duration,
           status: "PENDING" as const,
+          isOnline: input.isOnline,
+          rate: recurringRate,
           pieceId: input.pieceId,
         });
       }

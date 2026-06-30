@@ -19,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -32,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
 import { api } from "@/trpc/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,6 +43,7 @@ const LessonEditSchema = z.object({
   time: z.string().min(1, "Time is required"),
   duration: z.string().min(1, "Duration is required"),
   status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
+  isOnline: z.boolean(),
   pieceId: z.string().optional(),
 });
 
@@ -55,6 +58,7 @@ interface LessonEditDialogProps {
     date: Date;
     duration: number;
     status: "PENDING" | "COMPLETE" | "CANCELLED";
+    isOnline: boolean;
     pieceId: string | null;
   };
   onSuccess?: () => void;
@@ -118,6 +122,7 @@ export function LessonEditDialog({
       time: format(lesson.date, "HH:mm"),
       duration: lesson.duration.toString(),
       status: lesson.status,
+      isOnline: lesson.isOnline,
       pieceId: lesson.pieceId ?? "none",
     },
   });
@@ -147,6 +152,7 @@ export function LessonEditDialog({
       date: dateTime,
       duration: parseInt(data.duration),
       status: data.status,
+      isOnline: data.isOnline,
       pieceId,
     });
   };
@@ -247,6 +253,29 @@ export function LessonEditDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="isOnline"
+              render={({ field }) => (
+                <FormItem className="bg-card flex flex-row items-center justify-between rounded-xl border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base font-medium">
+                      Online lesson
+                    </FormLabel>
+                    <FormDescription className="text-sm">
+                      Re-prices this lesson at the student&apos;s current rate
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

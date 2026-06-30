@@ -15,6 +15,8 @@ interface Lesson {
   date: Date;
   duration: number;
   status: "PENDING" | "COMPLETE" | "CANCELLED";
+  isOnline: boolean;
+  rate: number;
   student: {
     id: string;
     name: string;
@@ -121,6 +123,8 @@ export default function CalendarPage() {
             studentName: selectedLesson.student.name,
             duration: selectedLesson.duration,
             status: selectedLesson.status,
+            isOnline: selectedLesson.isOnline,
+            rate: selectedLesson.rate,
             actualMin: selectedLesson.actualMin,
             cancelReason: selectedLesson.cancelReason,
             note: selectedLesson.note,

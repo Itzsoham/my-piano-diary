@@ -133,7 +133,7 @@ const buildMonthPaymentRows = async ({
 
   const studentIds = students.map((student) => student.id);
 
-  const [lessonCounts, paymentMonths] = await Promise.all([
+  const [lessonRateSums, paymentMonths] = await Promise.all([
     db.lesson.groupBy({
       by: ["studentId"],
       where: {
@@ -145,8 +145,8 @@ const buildMonthPaymentRows = async ({
           lte: endDate,
         },
       },
-      _count: {
-        _all: true,
+      _sum: {
+        rate: true,
       },
     }),
     db.paymentMonth.findMany({
@@ -166,8 +166,9 @@ const buildMonthPaymentRows = async ({
     }),
   ]);
 
-  const lessonCountByStudent = new Map(
-    lessonCounts.map((entry) => [entry.studentId, entry._count._all]),
+  // Expected = sum of each completed lesson's frozen rate (online/offline aware).
+  const expectedByStudent = new Map(
+    lessonRateSums.map((entry) => [entry.studentId, entry._sum.rate ?? 0]),
   );
 
   const paymentMonthByStudent = new Map(
@@ -178,8 +179,7 @@ const buildMonthPaymentRows = async ({
   const fallbackTimestamp = new Date(0);
 
   for (const student of students) {
-    const completedLessonCount = lessonCountByStudent.get(student.id) ?? 0;
-    const expectedAmount = completedLessonCount * student.lessonRate;
+    const expectedAmount = expectedByStudent.get(student.id) ?? 0;
     const existingPaymentMonth = paymentMonthByStudent.get(student.id);
 
     if (!existingPaymentMonth && expectedAmount <= 0 && !studentId) {
@@ -217,7 +217,7 @@ export const paymentRouter = createTRPCRouter({
   getOverallSummary: protectedProcedure.query(async ({ ctx }) => {
     const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
 
-    const [students, completedLessonsByStudent, receivedByStudent] =
+    const [students, expectedLessonsByStudent, receivedByStudent] =
       await Promise.all([
         ctx.db.student.findMany({
           where: {
@@ -225,7 +225,6 @@ export const paymentRouter = createTRPCRouter({
           },
           select: {
             id: true,
-            lessonRate: true,
           },
         }),
         ctx.db.lesson.groupBy({
@@ -234,8 +233,8 @@ export const paymentRouter = createTRPCRouter({
             teacherId: teacher.id,
             status: "COMPLETE",
           },
-          _count: {
-            _all: true,
+          _sum: {
+            rate: true,
           },
         }),
         ctx.db.paymentTransaction.groupBy({
@@ -249,10 +248,10 @@ export const paymentRouter = createTRPCRouter({
         }),
       ]);
 
-    const lessonCountByStudent = new Map(
-      completedLessonsByStudent.map((entry) => [
+    const expectedAmountByStudent = new Map(
+      expectedLessonsByStudent.map((entry) => [
         entry.studentId,
-        entry._count._all,
+        entry._sum.rate ?? 0,
       ]),
     );
     const receivedAmountByStudent = new Map(
@@ -267,8 +266,7 @@ export const paymentRouter = createTRPCRouter({
     let totalOutstanding = 0;
 
     for (const student of students) {
-      const lessonCount = lessonCountByStudent.get(student.id) ?? 0;
-      const expected = lessonCount * student.lessonRate;
+      const expected = expectedAmountByStudent.get(student.id) ?? 0;
       const received = receivedAmountByStudent.get(student.id) ?? 0;
 
       totalExpected += expected;
@@ -323,16 +321,17 @@ export const paymentRouter = createTRPCRouter({
       const startDate = getStartOfMonthUTC(input.month, input.year, timezone);
       const endDate = getEndOfMonthUTC(input.month, input.year, timezone);
 
-      const completedCount = await ctx.db.lesson.count({
+      const completedRateSum = await ctx.db.lesson.aggregate({
         where: {
           studentId: input.studentId,
           teacherId: teacher.id,
           status: "COMPLETE",
           date: { gte: startDate, lte: endDate },
         },
+        _sum: { rate: true },
       });
 
-      const expectedAmount = completedCount * student.lessonRate;
+      const expectedAmount = completedRateSum._sum.rate ?? 0;
 
       // Create paymentMonth only now — not on page load or dialog open
       const paymentMonth = await ctx.db.paymentMonth.upsert({

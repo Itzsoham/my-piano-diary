@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -16,23 +16,32 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/trpc/react";
 import { format } from "date-fns";
-import { Check, X, Clock, Music2 } from "lucide-react";
+import { Check, X, Clock, Music2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatNumberWithSeparators } from "@/lib/format";
 import { useSession } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const AttendanceFormSchema = z
   .object({
     status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
+    isOnline: z.boolean(),
+    rate: z
+      .number()
+      .int("Rate must be an integer")
+      .min(0, "Rate must be 0 or greater")
+      .max(10000000, "Rate seems unreasonably high"),
     cancelReason: z.string().optional(),
     note: z.string().optional(),
   })
@@ -56,6 +65,8 @@ interface AttendanceDialogProps {
     studentName: string;
     duration: number;
     status: "PENDING" | "COMPLETE" | "CANCELLED";
+    isOnline: boolean;
+    rate: number;
     actualMin: number | null;
     cancelReason: string | null;
     note: string | null;
@@ -145,8 +156,11 @@ export function AttendanceDialog({
             actualMin: input.actualMin ?? l.actualMin,
             cancelReason: input.cancelReason ?? l.cancelReason,
             note: input.note ?? l.note,
-            // Recalculate earnings: cancelled lessons earn 0
-            earnings: newStatus === "CANCELLED" ? 0 : l.student.lessonRate,
+            rate: input.rate ?? l.rate,
+            // Recalculate earnings: cancelled lessons earn 0 (uses the
+            // override if provided, else the lesson's frozen rate; the
+            // server reconciles on refetch).
+            earnings: newStatus === "CANCELLED" ? 0 : (input.rate ?? l.rate),
           };
         });
       });
@@ -190,10 +204,17 @@ export function AttendanceDialog({
     resolver: zodResolver(AttendanceFormSchema),
     defaultValues: {
       status: lesson.status,
+      isOnline: lesson.isOnline,
+      rate: lesson.rate,
       cancelReason: lesson.cancelReason ?? "",
       note: lesson.note ?? "",
     },
   });
+
+  // Whether the inline rate editor is open, and whether the teacher actually
+  // changed the rate (so we only send an override when they did).
+  const [isEditingRate, setIsEditingRate] = useState(false);
+  const [rateEdited, setRateEdited] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -202,12 +223,17 @@ export function AttendanceDialog({
 
     form.reset({
       status: lesson.status,
+      isOnline: lesson.isOnline,
+      rate: lesson.rate,
       cancelReason: lesson.cancelReason ?? "",
       note: lesson.note ?? "",
     });
+    setIsEditingRate(false);
+    setRateEdited(false);
   }, [open, lesson, form]);
 
   const selectedStatus = form.watch("status");
+  const rateValue = form.watch("rate");
 
   const onSubmit = async (data: AttendanceFormValues) => {
     const cancelReason = data.cancelReason?.trim();
@@ -216,6 +242,10 @@ export function AttendanceDialog({
     markAttendance.mutate({
       lessonId: lesson.id,
       status: data.status,
+      isOnline: data.isOnline,
+      // Only send a rate when the teacher edited it — otherwise the server
+      // keeps the lesson's existing/derived rate.
+      rate: rateEdited ? data.rate : undefined,
       cancelReason: cancelReason === "" ? undefined : cancelReason,
       note: note === "" ? undefined : note,
     });
@@ -349,6 +379,94 @@ export function AttendanceDialog({
                         </button>
                       </div>
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isOnline"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-xl border border-pink-100 bg-white/70 p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-sm font-semibold text-pink-900/70">
+                        Online lesson 💻
+                      </FormLabel>
+                      <FormDescription className="text-xs">
+                        Charged at the student&apos;s online rate
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="rate"
+                render={({ field }) => (
+                  <FormItem className="rounded-xl border border-pink-100 bg-white/70 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm font-semibold text-pink-900/70">
+                          Lesson rate
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          {lesson.studentName}&apos;s rate for this lesson
+                        </FormDescription>
+                      </div>
+                      {isEditingRate ? (
+                        <FormControl>
+                          <div className="relative w-32">
+                            <span className="text-muted-foreground absolute top-1/2 left-2 -translate-y-1/2 text-sm">
+                              đ
+                            </span>
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              autoFocus
+                              className="h-9 rounded-lg bg-pink-50 pl-6 text-right text-sm font-semibold focus-visible:ring-pink-400"
+                              value={
+                                field.value
+                                  ? formatNumberWithSeparators(field.value)
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const numValue =
+                                  parseInt(
+                                    e.target.value.replace(/\./g, "") || "0",
+                                  ) || 0;
+                                field.onChange(numValue);
+                                setRateEdited(true);
+                              }}
+                            />
+                          </div>
+                        </FormControl>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingRate(true)}
+                          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-bold text-pink-900 transition hover:bg-pink-50"
+                        >
+                          <span>
+                            đ {formatNumberWithSeparators(rateValue ?? 0)}
+                          </span>
+                          <Pencil className="h-3.5 w-3.5 text-pink-400" />
+                        </button>
+                      )}
+                    </div>
+                    {rateEdited && (
+                      <p className="mt-1 text-xs text-pink-500">
+                        Custom rate for this lesson only — totals update
+                        accordingly.
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

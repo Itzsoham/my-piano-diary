@@ -496,6 +496,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
             date: new Date(editLesson.date),
             duration: editLesson.duration,
             status: editLesson.status as LessonStatus,
+            isOnline: editLesson.isOnline,
             pieceId: editLesson.piece?.id ?? editLesson.pieceId ?? null,
           }}
         />
@@ -510,6 +511,8 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
             studentName: attendanceLesson.student.name,
             duration: attendanceLesson.duration,
             status: attendanceLesson.status as LessonStatus,
+            isOnline: attendanceLesson.isOnline,
+            rate: attendanceLesson.rate,
             actualMin: attendanceLesson.actualMin,
             cancelReason: attendanceLesson.cancelReason,
             note: attendanceLesson.note,

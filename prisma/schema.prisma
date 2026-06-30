@@ -76,6 +76,7 @@ model Student {
   avatar     String?
   notes      String?
   lessonRate Int             @default(0)
+  onlineLessonRate Int       @default(0)
   createdAt  DateTime        @default(now()) @db.Timestamptz
   lessons    Lesson[]
   teacher    Teacher         @relation(fields: [teacherId], references: [id])
@@ -103,6 +104,8 @@ model Lesson {
   date         DateTime     @db.Timestamptz
   duration     Int
   status       LessonStatus @default(PENDING)
+  isOnline     Boolean      @default(false)
+  rate         Int          @default(0)
   actualMin    Int?
   cancelReason String?
   note         String?

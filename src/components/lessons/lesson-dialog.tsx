@@ -41,6 +41,7 @@ const LessonFormSchema = z.object({
   date: z.date({ required_error: "Date is required." }),
   time: z.string().min(1, { message: "Time is required." }),
   duration: z.string().min(1, { message: "Duration is required." }),
+  isOnline: z.boolean(),
   isRecurring: z.boolean(),
   dayOfWeek: z.string().optional(),
   recurrenceMonths: z.string().optional(),
@@ -143,6 +144,7 @@ export function LessonDialog({
       date: initialDate ?? new Date(),
       time: "10:00",
       duration: "60",
+      isOnline: false,
       isRecurring: false,
       dayOfWeek: "0", // Sunday
       recurrenceMonths: "1",
@@ -158,6 +160,7 @@ export function LessonDialog({
         date: date,
         time: "10:00",
         duration: "60",
+        isOnline: false,
         isRecurring: false,
         dayOfWeek: date.getDay().toString(),
         recurrenceMonths: "1",
@@ -203,6 +206,7 @@ export function LessonDialog({
           time: data.time,
           duration: parseInt(data.duration),
           recurrenceMonths: parseInt(data.recurrenceMonths ?? "1"),
+          isOnline: data.isOnline,
           timezone,
         });
       } else {
@@ -216,6 +220,7 @@ export function LessonDialog({
           pieceId,
           date: dateTime,
           duration: parseInt(data.duration),
+          isOnline: data.isOnline,
         });
       }
     } catch (error) {
@@ -358,6 +363,29 @@ export function LessonDialog({
                         />
                       </FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isOnline"
+                  render={({ field }) => (
+                    <FormItem className="bg-card flex flex-row items-center justify-between rounded-xl border border-pink-200/60 p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base font-medium">
+                          Online lesson
+                        </FormLabel>
+                        <FormDescription className="text-sm">
+                          Charged at the student&apos;s online rate 💻
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />

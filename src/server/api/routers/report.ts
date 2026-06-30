@@ -103,13 +103,15 @@ export const reportRouter = createTRPCRouter({
       });
 
       const totalLessons = lessons.length;
-      const totalFee = totalLessons * student.lessonRate;
+      // Sum each lesson's frozen rate (online/in-person aware).
+      const totalFee = lessons.reduce((sum, lesson) => sum + lesson.rate, 0);
 
       return {
         lessons,
         totalLessons,
         totalFee,
         studentLessonRate: student.lessonRate,
+        studentOnlineLessonRate: student.onlineLessonRate,
       };
     }),
   // Get student report for a specific month
@@ -176,6 +178,7 @@ export const reportRouter = createTRPCRouter({
         lessons,
         student,
         studentLessonRate: student.lessonRate,
+        studentOnlineLessonRate: student.onlineLessonRate,
         teacherName: teacher.user?.name ?? null,
       };
     }),

@@ -149,6 +149,7 @@ export const createRecurringLessonSchema = z.object({
     .min(1, "Recurrence must be at least 1 month")
     .max(2, "Recurrence cannot exceed 2 months"),
   pieceId: z.string().cuid("Invalid piece ID").optional(),
+  isOnline: z.boolean().optional().default(false),
   // IANA timezone string (e.g., "Asia/Kolkata", "America/New_York")
   // Server will validate this is a valid timezone
   timezone: z.string().min(1, "Timezone is required"),
@@ -178,6 +179,15 @@ export const getMonthLessonsSchema = z.object({
 export const markAttendanceSchema = z.object({
   lessonId: z.string().cuid("Invalid lesson ID"),
   status: z.enum(["PENDING", "COMPLETE", "CANCELLED", "MAKEUP"]),
+  isOnline: z.boolean().optional(),
+  // Per-lesson rate override (đ). When set, it wins over the online/in-person
+  // derived rate for this single lesson.
+  rate: z
+    .number()
+    .int("Rate must be an integer")
+    .min(0, "Rate must be 0 or greater")
+    .max(10000000, "Rate seems unreasonably high")
+    .optional(),
   actualMin: z
     .number()
     .int()

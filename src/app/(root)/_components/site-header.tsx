@@ -81,26 +81,7 @@ const moods = {
 
 type MoodCategory = keyof typeof moods;
 
-// Birthday mood messages — shown 50% of the time when birthday mode is active
-const bdayMoods = [
-  {
-    primary: "Something beautiful is coming 💛",
-    secondary: "Your special day is almost here 🎂",
-  },
-  {
-    primary: "You're doing amazing today ✨",
-    secondary: "Teaching is love in motion 🎹",
-  },
-  {
-    primary: "Teaching is art in motion 🎹",
-    secondary: "Every note you share is a gift.",
-  },
-  {
-    primary: "The world is sweeter because of you 🌸",
-    secondary: "Happy almost-birthday 🎂✨",
-  },
-] as const;
-
+// Birthday moods — only shown once birthday mode is actually activated
 const birthdayDayMoods = [
   {
     primary: "Happy Birthday! 🎂✨",
@@ -128,7 +109,7 @@ function getMoodCategory(count: number): MoodCategory {
 export function SiteHeader() {
   const { data: session } = useSession();
   const { user: storeUser } = useUserStore();
-  const { isBirthdayMode, isBirthdayDay } = useBirthday();
+  const { isBirthdayMode } = useBirthday();
 
   const user = storeUser ?? session?.user ?? null;
   const userName = user?.name ?? "Teacher";
@@ -145,40 +126,21 @@ export function SiteHeader() {
 
   const [moodIndex, setMoodIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [useBdayMood, setUseBdayMood] = useState(false);
   const [bdayMoodIndex, setBdayMoodIndex] = useState(0);
 
   // Set random mood when category changes
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * moods[category].length);
     setMoodIndex(randomIndex);
-    // 50% chance to show birthday mood when mode active
-    if (isBirthdayMode && !isBirthdayDay) {
-      setUseBdayMood(Math.random() > 0.5);
-      setBdayMoodIndex(Math.floor(Math.random() * bdayMoods.length));
-    }
-  }, [category, isBirthdayMode, isBirthdayDay]);
+  }, [category]);
 
   const changeMood = useCallback(() => {
     if (isAnimating) return;
     setIsAnimating(true);
 
     setTimeout(() => {
-      if (isBirthdayDay) {
+      if (isBirthdayMode) {
         setBdayMoodIndex((i) => (i + 1) % birthdayDayMoods.length);
-      } else if (isBirthdayMode) {
-        // Toggle between bday and normal, pick new index
-        const showBday = Math.random() > 0.5;
-        setUseBdayMood(showBday);
-        if (showBday) {
-          setBdayMoodIndex(Math.floor(Math.random() * bdayMoods.length));
-        } else {
-          let newIndex: number;
-          do {
-            newIndex = Math.floor(Math.random() * moods[category].length);
-          } while (newIndex === moodIndex && moods[category].length > 1);
-          setMoodIndex(newIndex);
-        }
       } else {
         let newIndex: number;
         do {
@@ -189,13 +151,12 @@ export function SiteHeader() {
 
       setTimeout(() => setIsAnimating(false), 300);
     }, 150);
-  }, [category, moodIndex, isAnimating, isBirthdayMode, isBirthdayDay]);
+  }, [category, moodIndex, isAnimating, isBirthdayMode]);
 
+  // Birthday moods only appear once birthday mode is activated
   let currentMood: { primary: string; secondary: string };
-  if (isBirthdayDay) {
+  if (isBirthdayMode) {
     currentMood = birthdayDayMoods[bdayMoodIndex] ?? birthdayDayMoods[0];
-  } else if (isBirthdayMode && useBdayMood) {
-    currentMood = bdayMoods[bdayMoodIndex] ?? bdayMoods[0];
   } else {
     currentMood = moods[category][moodIndex] ?? moods[category][0];
   }

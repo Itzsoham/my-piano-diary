@@ -156,6 +156,8 @@ export function ReportView({
       totalLessons: (count: number) => `${count} BUỔI`,
       tuitionLine: (sessions: number, rate: string, total: string) =>
         `${sessions} buổi x ${rate} = ${total}`,
+      inPersonLabel: "Tại lớp",
+      onlineLabel: "Trực tuyến",
     },
     en: {
       monthPlaceholder: "Month",
@@ -198,6 +200,8 @@ export function ReportView({
       totalLessons: (count: number) => `${count} LESSONS`,
       tuitionLine: (sessions: number, rate: string, total: string) =>
         `${sessions} sessions x ${rate} = ${total}`,
+      inPersonLabel: "In-person",
+      onlineLabel: "Online",
     },
   } as const;
 
@@ -308,16 +312,24 @@ export function ReportView({
   const { student, lessons } = data;
   const teacherName = data?.teacherName ?? "";
   const perSessionRate = data?.studentLessonRate ?? 0;
+  const onlineRate = data?.studentOnlineLessonRate ?? 0;
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from(
     { length: 5 },
     (_, index) => currentYear - 2 + index,
   );
 
-  // Calculate Stats
+  // Calculate Stats — tuition is the sum of each completed lesson's frozen
+  // rate (online lessons priced at the online rate), so it stays correct
+  // for past months even if the student's current rate later changes.
   const validLessons = lessons.filter((l) => l.status === "COMPLETE");
   const totalSessions = validLessons.length;
-  const totalTuition = totalSessions * perSessionRate;
+  const totalTuition = validLessons.reduce((sum, l) => sum + l.rate, 0);
+  const onlineSessions = validLessons.filter((l) => l.isOnline);
+  const inPersonSessions = validLessons.filter((l) => !l.isOnline);
+  const onlineTuition = onlineSessions.reduce((sum, l) => sum + l.rate, 0);
+  const inPersonTuition = inPersonSessions.reduce((sum, l) => sum + l.rate, 0);
+  const hasOnlineSessions = onlineSessions.length > 0;
 
   // Attendance Grid Logic
   const weeksData: Record<
@@ -652,14 +664,40 @@ export function ReportView({
                   <div className="text-base font-bold italic">
                     {t.totalLabel}: {t.totalLessons(totalSessions)}
                   </div>
-                  <div className="mt-1 italic">
-                    {t.tuitionLabel}{" "}
-                    {t.tuitionLine(
-                      totalSessions,
-                      formatCurrencyNumber(perSessionRate, currency),
-                      formatCurrency(totalTuition, currency),
-                    )}
-                  </div>
+                  {hasOnlineSessions ? (
+                    <div className="mt-1 space-y-0.5">
+                      {inPersonSessions.length > 0 && (
+                        <div className="italic">
+                          {t.inPersonLabel}:{" "}
+                          {t.tuitionLine(
+                            inPersonSessions.length,
+                            formatCurrencyNumber(perSessionRate, currency),
+                            formatCurrency(inPersonTuition, currency),
+                          )}
+                        </div>
+                      )}
+                      <div className="italic">
+                        {t.onlineLabel}:{" "}
+                        {t.tuitionLine(
+                          onlineSessions.length,
+                          formatCurrencyNumber(onlineRate, currency),
+                          formatCurrency(onlineTuition, currency),
+                        )}
+                      </div>
+                      <div className="font-semibold italic">
+                        {t.tuitionLabel}: {formatCurrency(totalTuition, currency)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-1 italic">
+                      {t.tuitionLabel}{" "}
+                      {t.tuitionLine(
+                        totalSessions,
+                        formatCurrencyNumber(perSessionRate, currency),
+                        formatCurrency(totalTuition, currency),
+                      )}
+                    </div>
+                  )}
                   <div className="mt-3 text-right italic">
                     {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
                   </div>

@@ -24,6 +24,8 @@ interface Lesson {
   date: Date;
   duration: number;
   status: "PENDING" | "COMPLETE" | "CANCELLED";
+  isOnline: boolean;
+  rate: number;
   student: {
     id: string;
     name: string;
