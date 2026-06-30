@@ -16,7 +16,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -269,8 +268,87 @@ export function AttendanceDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 sm:space-y-6"
+            className="space-y-4"
           >
+            {/* Compact top bar — rate (shown as text since it rarely changes)
+                + online toggle, kept slim so the modal stays short */}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl border border-pink-100 bg-white/70 px-3 py-2.5">
+              <FormField
+                control={form.control}
+                name="rate"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormLabel className="text-xs font-semibold whitespace-nowrap text-pink-900/70">
+                      {lesson.studentName}&apos;s rate
+                    </FormLabel>
+                    {isEditingRate ? (
+                      <FormControl>
+                        <div className="relative w-28">
+                          <span className="text-muted-foreground absolute top-1/2 left-2 -translate-y-1/2 text-sm">
+                            đ
+                          </span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            autoFocus
+                            className="h-8 rounded-lg bg-pink-50 pl-6 text-right text-sm font-semibold focus-visible:ring-pink-400"
+                            value={
+                              field.value
+                                ? formatNumberWithSeparators(field.value)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const numValue =
+                                parseInt(
+                                  e.target.value.replace(/\./g, "") || "0",
+                                ) || 0;
+                              field.onChange(numValue);
+                              setRateEdited(true);
+                            }}
+                          />
+                        </div>
+                      </FormControl>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingRate(true)}
+                        className="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-sm font-bold text-pink-900 transition hover:bg-pink-50"
+                      >
+                        <span>
+                          đ {formatNumberWithSeparators(rateValue ?? 0)}
+                        </span>
+                        <Pencil className="h-3.5 w-3.5 text-pink-400" />
+                      </button>
+                    )}
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isOnline"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormLabel className="text-xs font-semibold whitespace-nowrap text-pink-900/70">
+                      Online 💻
+                    </FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {rateEdited && (
+                <p className="w-full text-xs text-pink-500">
+                  Custom rate for this lesson only — totals update accordingly.
+                </p>
+              )}
+            </div>
+
             <div className="space-y-3 rounded-xl bg-linear-to-br from-pink-50/50 to-purple-50/50 p-3 sm:space-y-4 sm:p-4">
               <FormField
                 control={form.control}
@@ -379,94 +457,6 @@ export function AttendanceDialog({
                         </button>
                       </div>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isOnline"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-xl border border-pink-100 bg-white/70 p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-sm font-semibold text-pink-900/70">
-                        Online lesson 💻
-                      </FormLabel>
-                      <FormDescription className="text-xs">
-                        Charged at the student&apos;s online rate
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="rate"
-                render={({ field }) => (
-                  <FormItem className="rounded-xl border border-pink-100 bg-white/70 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-sm font-semibold text-pink-900/70">
-                          Lesson rate
-                        </FormLabel>
-                        <FormDescription className="text-xs">
-                          {lesson.studentName}&apos;s rate for this lesson
-                        </FormDescription>
-                      </div>
-                      {isEditingRate ? (
-                        <FormControl>
-                          <div className="relative w-32">
-                            <span className="text-muted-foreground absolute top-1/2 left-2 -translate-y-1/2 text-sm">
-                              đ
-                            </span>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              autoFocus
-                              className="h-9 rounded-lg bg-pink-50 pl-6 text-right text-sm font-semibold focus-visible:ring-pink-400"
-                              value={
-                                field.value
-                                  ? formatNumberWithSeparators(field.value)
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const numValue =
-                                  parseInt(
-                                    e.target.value.replace(/\./g, "") || "0",
-                                  ) || 0;
-                                field.onChange(numValue);
-                                setRateEdited(true);
-                              }}
-                            />
-                          </div>
-                        </FormControl>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setIsEditingRate(true)}
-                          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-bold text-pink-900 transition hover:bg-pink-50"
-                        >
-                          <span>
-                            đ {formatNumberWithSeparators(rateValue ?? 0)}
-                          </span>
-                          <Pencil className="h-3.5 w-3.5 text-pink-400" />
-                        </button>
-                      )}
-                    </div>
-                    {rateEdited && (
-                      <p className="mt-1 text-xs text-pink-500">
-                        Custom rate for this lesson only — totals update
-                        accordingly.
-                      </p>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
