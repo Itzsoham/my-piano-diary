@@ -282,6 +282,7 @@ export const reportRouter = createTRPCRouter({
         summary: z.string().max(5000).optional(),
         comments: z.string().max(5000).optional(),
         nextMonthPlan: z.string().max(5000).optional(),
+        tuitionNote: z.string().max(5000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -337,6 +338,7 @@ export const reportRouter = createTRPCRouter({
         summary: z.string().max(5000).optional(),
         comments: z.string().max(5000).optional(),
         nextMonthPlan: z.string().max(5000).optional(),
+        tuitionNote: z.string().max(5000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

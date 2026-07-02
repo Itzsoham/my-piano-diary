@@ -66,6 +66,7 @@ export function ReportView({
   const [summary, setSummary] = useState("");
   const [comments, setComments] = useState("");
   const [nextMonthPlan, setNextMonthPlan] = useState("");
+  const [tuitionNote, setTuitionNote] = useState("");
 
   // Lesson metadata tracking for custom reasons and colors
   const [lessonMetadata, setLessonMetadata] = useState<
@@ -102,6 +103,7 @@ export function ReportView({
     setSummary("");
     setComments("");
     setNextMonthPlan("");
+    setTuitionNote("");
     setLessonMetadata({});
   }, [studentId, month, year]);
 
@@ -112,6 +114,7 @@ export function ReportView({
     setSummary(data?.report?.summary ?? "");
     setComments(data?.report?.comments ?? "");
     setNextMonthPlan(data?.report?.nextMonthPlan ?? "");
+    setTuitionNote(data?.report?.tuitionNote ?? "");
   }, [data?.report, isLoading]);
 
   const copy = {
@@ -156,6 +159,12 @@ export function ReportView({
       totalLessons: (count: number) => `${count} BUỔI`,
       tuitionLine: (sessions: number, rate: string, total: string) =>
         `${sessions} buổi x ${rate} = ${total}`,
+      tuitionFlat: (sessions: number, total: string) =>
+        `${sessions} buổi = ${total}`,
+      tuitionSpecial: (sessions: number, rate: string, total: string) =>
+        `${sessions} buổi giá riêng x ${rate} = ${total}`,
+      tuitionNoteLabel: "Ghi chú học phí",
+      tuitionNotePlaceholder: "Ghi chú về học phí / giá đặc biệt (nếu có)...",
       inPersonLabel: "Tại lớp",
       onlineLabel: "Trực tuyến",
     },
@@ -200,6 +209,12 @@ export function ReportView({
       totalLessons: (count: number) => `${count} LESSONS`,
       tuitionLine: (sessions: number, rate: string, total: string) =>
         `${sessions} sessions x ${rate} = ${total}`,
+      tuitionFlat: (sessions: number, total: string) =>
+        `${sessions} sessions = ${total}`,
+      tuitionSpecial: (sessions: number, rate: string, total: string) =>
+        `${sessions} session(s) at a different rate x ${rate} = ${total}`,
+      tuitionNoteLabel: "Tuition note",
+      tuitionNotePlaceholder: "Note about tuition / special rate (optional)...",
       inPersonLabel: "In-person",
       onlineLabel: "Online",
     },
@@ -216,6 +231,7 @@ export function ReportView({
         summary,
         comments,
         nextMonthPlan,
+        tuitionNote,
       });
       toast.success(language === "vi" ? "Đã lưu báo cáo" : "Report saved");
     } catch {
@@ -311,25 +327,124 @@ export function ReportView({
 
   const { student, lessons } = data;
   const teacherName = data?.teacherName ?? "";
-  const perSessionRate = data?.studentLessonRate ?? 0;
-  const onlineRate = data?.studentOnlineLessonRate ?? 0;
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from(
     { length: 5 },
     (_, index) => currentYear - 2 + index,
   );
 
-  // Calculate Stats — tuition is the sum of each completed lesson's frozen
-  // rate (online lessons priced at the online rate), so it stays correct
-  // for past months even if the student's current rate later changes.
+  // Calculate Stats — tuition is the sum of each completed lesson's frozen rate.
   const validLessons = lessons.filter((l) => l.status === "COMPLETE");
   const totalSessions = validLessons.length;
   const totalTuition = validLessons.reduce((sum, l) => sum + l.rate, 0);
   const onlineSessions = validLessons.filter((l) => l.isOnline);
   const inPersonSessions = validLessons.filter((l) => !l.isOnline);
-  const onlineTuition = onlineSessions.reduce((sum, l) => sum + l.rate, 0);
-  const inPersonTuition = inPersonSessions.reduce((sum, l) => sum + l.rate, 0);
-  const hasOnlineSessions = onlineSessions.length > 0;
+
+  // Reference rate to show per line: prefer the student's configured rate;
+  // if it isn't set (0), fall back to what the lessons were actually charged.
+  const studentInPersonRate = data?.studentLessonRate ?? 0;
+  const studentOnlineRate = data?.studentOnlineLessonRate ?? 0;
+
+  // Summarize a group into a reference rate + any exceptions (lessons charged
+  // a different rate, e.g. a per-lesson override), so those are noted apart.
+  const summarizeGroup = (items: typeof validLessons, configRate: number) => {
+    const [firstLesson] = items;
+    if (!firstLesson) {
+      return null;
+    }
+
+    const counts = new Map<number, number>();
+    for (const l of items) {
+      counts.set(l.rate, (counts.get(l.rate) ?? 0) + 1);
+    }
+    // Most common rate charged in this group (the mode).
+    let mode = firstLesson.rate;
+    let modeCount = 0;
+    for (const [rate, count] of counts) {
+      if (count > modeCount) {
+        mode = rate;
+        modeCount = count;
+      }
+    }
+    // Prefer the configured rate when set AND actually used, else the mode.
+    let referenceRate = configRate > 0 ? configRate : mode;
+    if (!counts.has(referenceRate)) {
+      referenceRate = mode;
+    }
+
+    const exceptionMap = new Map<
+      number,
+      { rate: number; count: number; sum: number }
+    >();
+    let standardCount = 0;
+    let standardSum = 0;
+    for (const l of items) {
+      if (l.rate === referenceRate) {
+        standardCount += 1;
+        standardSum += l.rate;
+      } else {
+        const existing = exceptionMap.get(l.rate) ?? {
+          rate: l.rate,
+          count: 0,
+          sum: 0,
+        };
+        existing.count += 1;
+        existing.sum += l.rate;
+        exceptionMap.set(l.rate, existing);
+      }
+    }
+
+    return {
+      referenceRate,
+      standardCount,
+      standardSum,
+      exceptions: [...exceptionMap.values()].sort((a, b) => a.rate - b.rate),
+      total: items.reduce((sum, l) => sum + l.rate, 0),
+      count: items.length,
+    };
+  };
+
+  const inPersonSummary = summarizeGroup(inPersonSessions, studentInPersonRate);
+  const onlineSummary = summarizeGroup(onlineSessions, studentOnlineRate);
+  const bothGroups = Boolean(inPersonSummary) && Boolean(onlineSummary);
+
+  // One tuition line: "N x rate = subtotal", plus a distinct line per group of
+  // lessons charged a different rate.
+  const renderTuitionGroup = (
+    label: string,
+    summary: ReturnType<typeof summarizeGroup>,
+  ) => {
+    if (!summary) {
+      return null;
+    }
+    return (
+      <div>
+        <div className="italic">
+          {label}:{" "}
+          {summary.standardCount > 0
+            ? t.tuitionLine(
+                summary.standardCount,
+                formatCurrencyNumber(summary.referenceRate, currency),
+                formatCurrency(summary.standardSum, currency),
+              )
+            : t.tuitionFlat(
+                summary.count,
+                formatCurrency(summary.total, currency),
+              )}
+        </div>
+        {summary.exceptions.map((ex) => (
+          <div key={ex.rate} className="pl-3 text-[13px] text-rose-600 italic">
+            +{" "}
+            {t.tuitionSpecial(
+              ex.count,
+              formatCurrencyNumber(ex.rate, currency),
+              formatCurrency(ex.sum, currency),
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   // Attendance Grid Logic
   const weeksData: Record<
@@ -664,40 +779,44 @@ export function ReportView({
                   <div className="text-base font-bold italic">
                     {t.totalLabel}: {t.totalLessons(totalSessions)}
                   </div>
-                  {hasOnlineSessions ? (
+                  {bothGroups ? (
                     <div className="mt-1 space-y-0.5">
-                      {inPersonSessions.length > 0 && (
-                        <div className="italic">
-                          {t.inPersonLabel}:{" "}
-                          {t.tuitionLine(
-                            inPersonSessions.length,
-                            formatCurrencyNumber(perSessionRate, currency),
-                            formatCurrency(inPersonTuition, currency),
-                          )}
-                        </div>
-                      )}
-                      <div className="italic">
-                        {t.onlineLabel}:{" "}
-                        {t.tuitionLine(
-                          onlineSessions.length,
-                          formatCurrencyNumber(onlineRate, currency),
-                          formatCurrency(onlineTuition, currency),
-                        )}
-                      </div>
+                      {renderTuitionGroup(t.inPersonLabel, inPersonSummary)}
+                      {renderTuitionGroup(t.onlineLabel, onlineSummary)}
                       <div className="font-semibold italic">
                         {t.tuitionLabel}: {formatCurrency(totalTuition, currency)}
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-1 italic">
-                      {t.tuitionLabel}{" "}
-                      {t.tuitionLine(
-                        totalSessions,
-                        formatCurrencyNumber(perSessionRate, currency),
-                        formatCurrency(totalTuition, currency),
+                    <div className="mt-1">
+                      {renderTuitionGroup(
+                        t.tuitionLabel,
+                        inPersonSummary ?? onlineSummary,
                       )}
                     </div>
                   )}
+
+                  {/* Editable tuition note — persists and prints in the PDF */}
+                  <div className="mt-3">
+                    <Label
+                      htmlFor="tuition-note"
+                      className="text-xs font-semibold text-rose-700/70 print:hidden"
+                    >
+                      {t.tuitionNoteLabel}
+                    </Label>
+                    <Textarea
+                      id="tuition-note"
+                      value={tuitionNote}
+                      onChange={(e) => setTuitionNote(e.target.value)}
+                      placeholder={t.tuitionNotePlaceholder}
+                      className="mt-1 min-h-9 resize-none border-rose-200 bg-white/70 text-sm italic print:hidden"
+                    />
+                    {tuitionNote.trim() && (
+                      <p className="mt-1 hidden text-sm whitespace-pre-wrap italic print:block">
+                        {tuitionNote}
+                      </p>
+                    )}
+                  </div>
                   <div className="mt-3 text-right italic">
                     {t.dateLabel} {format(new Date(), "dd/MM/yyyy")}
                   </div>
