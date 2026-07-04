@@ -7,6 +7,15 @@ import {
 } from "@/lib/validations/api-schemas";
 import { getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
 
+const lessonMetadataSchema = z.record(
+  z.object({
+    reason: z.string().max(500),
+    customReason: z.string().max(500),
+    isSpecial: z.boolean(),
+    color: z.string().max(50),
+  }),
+);
+
 export const reportRouter = createTRPCRouter({
   getAll: protectedProcedure
     .input(getReportsSchema.optional())
@@ -283,6 +292,7 @@ export const reportRouter = createTRPCRouter({
         comments: z.string().max(5000).optional(),
         nextMonthPlan: z.string().max(5000).optional(),
         tuitionNote: z.string().max(5000).optional(),
+        lessonMetadata: lessonMetadataSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -339,6 +349,7 @@ export const reportRouter = createTRPCRouter({
         comments: z.string().max(5000).optional(),
         nextMonthPlan: z.string().max(5000).optional(),
         tuitionNote: z.string().max(5000).optional(),
+        lessonMetadata: lessonMetadataSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

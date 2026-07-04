@@ -42,6 +42,40 @@ import { formatCurrency, formatCurrencyNumber } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
+type LessonMetadata = Record<
+  string,
+  {
+    reason: string;
+    customReason: string;
+    isSpecial: boolean;
+    color: string;
+  }
+>;
+
+const normalizeLessonMetadata = (value: unknown): LessonMetadata => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const metadata: LessonMetadata = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+
+    const item = entry as Record<string, unknown>;
+    metadata[key] = {
+      reason: typeof item.reason === "string" ? item.reason : "",
+      customReason:
+        typeof item.customReason === "string" ? item.customReason : "",
+      isSpecial: item.isSpecial === true,
+      color: typeof item.color === "string" ? item.color : "",
+    };
+  }
+
+  return metadata;
+};
+
 interface ReportViewProps {
   studentId: string;
   month: number;
@@ -69,17 +103,7 @@ export function ReportView({
   const [tuitionNote, setTuitionNote] = useState("");
 
   // Lesson metadata tracking for custom reasons and colors
-  const [lessonMetadata, setLessonMetadata] = useState<
-    Record<
-      string,
-      {
-        reason: string;
-        customReason: string;
-        isSpecial: boolean;
-        color: string;
-      }
-    >
-  >({});
+  const [lessonMetadata, setLessonMetadata] = useState<LessonMetadata>({});
   const [selectedLesson, setSelectedLesson] = useState<{
     key: string;
     day: number;
@@ -115,6 +139,7 @@ export function ReportView({
     setComments(data?.report?.comments ?? "");
     setNextMonthPlan(data?.report?.nextMonthPlan ?? "");
     setTuitionNote(data?.report?.tuitionNote ?? "");
+    setLessonMetadata(normalizeLessonMetadata(data?.report?.lessonMetadata));
   }, [data?.report, isLoading]);
 
   const copy = {
@@ -232,6 +257,7 @@ export function ReportView({
         comments,
         nextMonthPlan,
         tuitionNote,
+        lessonMetadata,
       });
       toast.success(language === "vi" ? "Đã lưu báo cáo" : "Report saved");
     } catch {
@@ -784,7 +810,8 @@ export function ReportView({
                       {renderTuitionGroup(t.inPersonLabel, inPersonSummary)}
                       {renderTuitionGroup(t.onlineLabel, onlineSummary)}
                       <div className="font-semibold italic">
-                        {t.tuitionLabel}: {formatCurrency(totalTuition, currency)}
+                        {t.tuitionLabel}:{" "}
+                        {formatCurrency(totalTuition, currency)}
                       </div>
                     </div>
                   ) : (
