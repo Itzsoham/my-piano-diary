@@ -11,8 +11,8 @@
 | Priority     | Open items                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------ |
 | 🔴 High      | Student delete FK crash · Edit-lesson Save silently broken · Profile save rejected when no avatar       |
-| 🟠 Medium    | Payment-history stale totals · Overall-outstanding netting · Calendar timezone mismatch · Recurring-lesson TZ math · Silent query-error empty states · Lost form input on failure · Unbounded payment amount |
-| 🟡 Low       | Dashboard "today" TZ · dead `isPending` guard · loose recurring inputs · unbounded report metadata · `MAKEUP` enum gap · debug logs · missing indexes |
+| 🟠 Medium    | Payment-history stale totals · Overall-outstanding netting · Silent query-error empty states · Lost form input on failure · Unbounded payment amount |
+| 🟡 Low       | dead `isPending` guard · loose recurring inputs · unbounded report metadata · `MAKEUP` enum gap · debug logs · missing indexes |
 | 🔒 Security  | No auth rate-limiting / brute-force protection · weak password policy · account enumeration            |
 | 🧱 Backlog   | No tests · client-only pagination · no prod monitoring · calendar a11y + loading · table DRY cleanup    |
 
@@ -88,7 +88,9 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 ---
 
-### 6. Calendar places lessons in the browser timezone, not the configured one — **NEW**
+### 6. Calendar places lessons in the browser timezone, not the configured one — ✅ FIXED (2026-07-06)
+
+> **Resolved**: `full-calendar-view.tsx` now reads the configured timezone from `useSession()`, shifts each event's start/end and the day-count badge with `fromUTC(…, timezone)`, and converts drag/drop results back to UTC with `toUTC(…, timezone)` on save (stored data stays UTC-correct). A latent bug in `src/lib/timezone.ts` `formatInTimezone` was fixed at the same time — it formatted in the runtime's local zone instead of the target zone (it now `toZonedTime`s first). Original report below for history.
 
 **Where**: `src/app/(root)/calendar/_components/full-calendar-view.tsx:483` (no `timeZone` prop), `:208` (event start), `:140-142` (day-count badge).
 
@@ -98,7 +100,9 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 ---
 
-### 7. Recurring-lesson date math breaks on non-UTC hosts — **NEW**
+### 7. Recurring-lesson date math breaks on non-UTC hosts — ✅ FIXED (2026-07-06)
+
+> **Resolved**: `createRecurring` now walks the recurrence on a UTC "civil calendar" cursor (`Date.UTC` + `getUTC*`/`setUTC*`) and converts each matched day to a real instant via `createDateInTimezone(year, month, day, hours, minutes, timezone)`. Weekday/time no longer depend on the host offset — verified on the IST dev machine (occurrences land Wed 18:30 VN, matching production). The leftover `[SERVER DEBUG]` logs in this block were removed at the same time. Original report below for history.
 
 **Where**: `src/server/api/routers/lesson.ts:441-497` (`createRecurring`).
 
@@ -142,13 +146,13 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 | #   | Issue                                                                  | Where                                                                 | Fix                                                                                             |
 | --- | --------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 11  | **NEW** Dashboard "today" lessons use browser-local midnight, so the header day can disagree with fetched lessons under a TZ mismatch | `today-lessons-table.tsx:55,72,73` + `earnings.ts:280-285`           | Format label / `isToday` with the configured TZ (`formatInTimezone`, `isSameDayInTimezone`); pass the raw `new Date()` instant to the query |
+| 11  | ✅ **FIXED (2026-07-06)** Dashboard "today"/label/times now render in the configured TZ; the day picker interprets selections in that zone | `today-lessons-table.tsx` | Done: label/`isToday`/times use `formatInTimezone` + `isSameDayInTimezone`; the query gets the raw `new Date()` instant and the picker maps days via `createDateInTimezone`/`fromUTC` |
 | 12  | **NEW** `isPending = a ?? b` is dead code (`isPending` is always boolean), so the submit button never disables in edit mode | `student-form.tsx:161`, `piece-form.tsx:132`                         | Use `\|\|` instead of `??`                                                                       |
 | 13  | **NEW** `createRecurring` accepts any non-empty `timezone` string → 500 on invalid IANA | `api-schemas.ts:155`                                                 | `.refine(isValidTimezone, "Invalid timezone")`                                                  |
 | 14  | **NEW** `createRecurring` `startDate` regex accepts impossible dates (`2024-13-45` rolls over) | `api-schemas.ts:131-133`                                             | Use `z.string().date()` (or `dateStringSchema`)                                                 |
 | 15  | **NEW** `MonthlyReport.lessonMetadata` is an unbounded `z.record` with unvalidated keys | `report.ts:10`                                                       | Validate keys as `.cuid()` and `.refine(o => Object.keys(o).length <= 200)`                     |
 | 16  | **NEW** `lessonStatusSchema` omits `MAKEUP` while the Prisma enum includes it | `common-schemas.ts:71`                                               | Add `"MAKEUP"` (or reuse the `api-schemas` enum) so make-up lessons can be set via create/update |
-| 17  | **NEW** Leftover `console.log("[SERVER DEBUG]…")` in production | `lesson.ts:434-503`, `trpc.ts:99`                                    | Remove the debug logging                                                                        |
+| 17  | Leftover `console.log("[SERVER DEBUG]…")` in production — **partly fixed** (the `createRecurring` logs were removed with #7; `trpc.ts:99` still open) | `trpc.ts:99`                                    | Remove the remaining debug logging                                                              |
 | 18  | **NEW** No `@@index` on `Student.teacherId` / `Piece.teacherId`; no index on `Lesson.pieceId` | `prisma/schema.prisma` (Student, Piece, Lesson)                     | Add the indexes for consistency (`prisma db push`). Minor — per-teacher tables are small        |
 
 ---
@@ -249,7 +253,7 @@ Verified fixed in the current codebase — kept here for history:
 
 1. **Ship the three High bugs (#1–#3)** — each breaks a core flow (delete student, edit lesson, save profile) and is a one-to-few-line fix.
 2. **Money correctness (#4, #5, #10)** — teachers trust these numbers; stale/netted totals are silently wrong.
-3. **Timezone & error-surfacing (#6, #7, #8, #9)** — wrong-day display and silent failures erode trust.
+3. **Error-surfacing (#8, #9)** — silent query failures and lost form input erode trust. (Timezone bugs #6 calendar, #11 dashboard, and #7 recurring-on-non-UTC-host all fixed 2026-07-06.)
 4. **Security (#19–#21)** — add auth rate limiting + stronger passwords before wider use.
 5. **Low-priority cleanups (#11–#18)** — batch them; several are one-liners.
 6. **Backlog (#22–#26)** — tests, pagination, monitoring, calendar a11y, table DRY — as scale/quality work.

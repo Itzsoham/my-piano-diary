@@ -332,14 +332,15 @@ Both catch `AuthError` and return structured `{ success, message }` — never th
 
 ## Timezone Handling
 
-> The **backend** is consistently timezone-aware; the **frontend** is not fully, and has known display bugs. See the caveat below.
-
 - **Storage**: all datetimes are UTC in `@db.Timestamptz` columns.
-- **Source of truth**: `User.timezone` (IANA string), carried in the NextAuth JWT → `ctx.session.user.timezone`.
+- **Source of truth**: `User.timezone` (IANA string), carried in the NextAuth JWT → `ctx.session.user.timezone` (also available client-side via `useSession()`).
 - **Helpers** (`src/lib/timezone.ts`): `getStartOfDayUTC`, `getEndOfDayUTC`, `getStartOfMonthUTC`, `getEndOfMonthUTC`, `createDateInTimezone`, `isSameDayInTimezone`, `formatInTimezone`, `toUTC`/`fromUTC`, `isValidTimezone`.
 - **Server queries** bucket lessons/reports/earnings by the configured session timezone using those helpers.
+- **Client display** reads the configured timezone from the session and renders in it: the dashboard "today" table (`formatInTimezone` / `isSameDayInTimezone`) and the calendar (events/day-counts shifted with `fromUTC`; drag-drop written back with `toUTC`). So a lesson shows on the same day everywhere even when the browser TZ differs from the configured one.
 
-> ⚠️ **Known frontend gaps** (tracked in `ISSUES_AND_FIXES.md`): the calendar renders events/day-counts in the **browser** timezone rather than the configured one (#6), and the dashboard "today" table computes the day from browser-local midnight (#11). When the browser TZ differs from the configured TZ, a lesson can display on the wrong day. `createRecurring` date math also assumes a UTC host (#7). These are why the old `TIMEZONE_AUDIT.md` "all green" claim is only true of the server layer.
+> Note: `formatInTimezone` must convert the instant with `toZonedTime` before formatting — `date-fns-tz`'s `format(instant, …, { timeZone })` alone renders the runtime's local time and only applies `timeZone` to zone-name tokens. The helper does this internally; call it with a raw UTC `Date`.
+
+> `createRecurring` computes occurrences host-independently (a UTC civil-calendar cursor → `createDateInTimezone`), so recurring lessons land on the correct weekday/time in both production (UTC) and non-UTC dev machines. (Formerly `ISSUES_AND_FIXES.md` #7, fixed 2026-07-06.)
 
 ---
 
@@ -413,7 +414,7 @@ No `NEXT_PUBLIC_*` client variables. Empty strings treated as `undefined`. Skip 
 - **Student management** ✅ — CRUD via shared `DataTable`; avatar, notes, in-person + online lesson rates.
 - **Lesson scheduling** ✅ — create/update/cancel, link to pieces, block duplicate student+date, recurring creation (weekly, 1–2 months, IANA-timezone), filter by range/status.
 - **Attendance** ✅ — `PENDING`/`COMPLETE`/`CANCELLED`/`MAKEUP`, actual duration, cancel reason + notes, inline `markAttendance`.
-- **Calendar** ✅ — FullCalendar 6, `getInRange` windowed fetch, create/edit/delete, color-coded by status. *(TZ display caveat above.)*
+- **Calendar** ✅ — FullCalendar 6, `getInRange` windowed fetch, create/edit/delete, color-coded by status; events render in the configured timezone.
 - **Monthly reports** ✅ — summary / comments / next-month plan / tuition note, auto-save upsert, preview with attendance + fee totals, print-to-PDF, per-student route.
 - **Music pieces** ✅ — CRUD, star difficulty (1–5), lesson-link count.
 - **Earnings dashboard** ✅ — live section cards + intelligence panel (today, quick insights, trend chart, top students); timezone-aware.

@@ -10,9 +10,12 @@ import {
   markAttendanceSchema,
   createRecurringLessonSchema,
 } from "@/lib/validations/api-schemas";
-import { getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
+import {
+  getStartOfMonthUTC,
+  getEndOfMonthUTC,
+  createDateInTimezone,
+} from "@/lib/timezone";
 import { effectiveLessonRate } from "@/lib/rate";
-import { fromZonedTime } from "date-fns-tz";
 
 export const lessonRouter = createTRPCRouter({
   // Get all lessons with filters
@@ -431,76 +434,39 @@ export const lessonRouter = createTRPCRouter({
         .map(Number);
       const [hours = 0, minutes = 0] = input.time.split(":").map(Number);
 
-      console.log("[SERVER DEBUG] Recurring lesson input:");
-      console.log("  startDate:", input.startDate);
-      console.log("  time:", input.time, "parsed:", { hours, minutes });
-      console.log("  dayOfWeek:", input.dayOfWeek);
-      console.log("  timezone:", timezone);
+      // Walk the recurrence on a UTC "civil calendar" cursor (Date.UTC plus the
+      // getUTC*/setUTC* methods) so the weekday and day arithmetic never depend
+      // on the server's own timezone. Each matched civil day is then converted
+      // to a real UTC instant in the user's timezone via createDateInTimezone.
+      // (Previously this built a local Date but read/mutated it with
+      // getUTCDay/setUTCDate/setUTCHours, so occurrences shifted by the host
+      // offset on any non-UTC host — correct on Vercel, wrong in local dev.)
+      const endCursor = new Date(Date.UTC(year, month - 1, day));
+      endCursor.setUTCMonth(endCursor.getUTCMonth() + input.recurrenceMonths);
 
-      // Create the starting date/time in the user's timezone
-      const startingDateInTimezone = new Date(
-        year,
-        month - 1,
-        day,
-        hours,
-        minutes,
-        0,
-      );
+      const startWeekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+      const daysUntilTarget = (input.dayOfWeek - startWeekday + 7) % 7;
 
-      // Convert to UTC for storage
-      const startingDateUTC = fromZonedTime(startingDateInTimezone, timezone);
+      // First occurrence: the given date if it already falls on the target
+      // weekday, otherwise the next matching weekday after it.
+      const cursor = new Date(Date.UTC(year, month - 1, day));
+      cursor.setUTCDate(cursor.getUTCDate() + daysUntilTarget);
 
-      console.log("  startingDateTime (client local):", startingDateInTimezone);
-      console.log("  startingDateUTC:", startingDateUTC.toISOString());
-
-      // Get the day of week of the starting date in the user's timezone
-      const actualDayOfWeek = startingDateInTimezone.getUTCDay();
-
-      // Calculate the end date (in user's local timezone)
-      const endDateInTimezone = new Date(startingDateInTimezone);
-      endDateInTimezone.setUTCMonth(
-        endDateInTimezone.getUTCMonth() + input.recurrenceMonths,
-      );
-
-      // Start tracking from the given date
-      const currentDateInTimezone = new Date(startingDateInTimezone);
-
-      // If today is not the target day, find the next occurrence of that day
-      if (actualDayOfWeek !== input.dayOfWeek) {
-        // Days until target day
-        let daysUntilTarget = (input.dayOfWeek - actualDayOfWeek + 7) % 7;
-        if (daysUntilTarget === 0) daysUntilTarget = 7; // Move to next week if already past this week
-        currentDateInTimezone.setUTCDate(
-          currentDateInTimezone.getUTCDate() + daysUntilTarget,
-        );
-      }
-
-      console.log("  endDateInTimezone:", endDateInTimezone.toISOString());
-      console.log(
-        "  firstMatch (client local context):",
-        currentDateInTimezone.toISOString(),
-      );
-
-      // Collect all lesson dates by walking week by week
+      // Collect all lesson dates by walking week by week.
       const potentialDates: Date[] = [];
-      while (currentDateInTimezone < endDateInTimezone) {
-        // Set time to the requested hours and minutes
-        currentDateInTimezone.setUTCHours(hours, minutes, 0, 0);
-
-        // Convert from timezone-naive representation to UTC
-        const utcDate = fromZonedTime(currentDateInTimezone, timezone);
-        potentialDates.push(utcDate);
-
-        // Move to next week
-        currentDateInTimezone.setUTCDate(
-          currentDateInTimezone.getUTCDate() + 7,
+      while (cursor < endCursor) {
+        potentialDates.push(
+          createDateInTimezone(
+            cursor.getUTCFullYear(),
+            cursor.getUTCMonth(),
+            cursor.getUTCDate(),
+            hours,
+            minutes,
+            timezone,
+          ),
         );
+        cursor.setUTCDate(cursor.getUTCDate() + 7);
       }
-
-      console.log(
-        "  potentialDates (UTC):",
-        potentialDates.map((date) => date.toISOString()),
-      );
 
       // Check for existing lessons at these dates
       const existingLessons = await ctx.db.lesson.findMany({

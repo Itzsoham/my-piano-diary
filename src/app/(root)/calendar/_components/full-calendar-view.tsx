@@ -12,8 +12,10 @@ import {
 } from "@fullcalendar/core";
 import { type EventResizeDoneArg } from "@fullcalendar/interaction";
 import { format, isSameDay } from "date-fns";
+import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import { fromUTC, getBrowserTimezone, toUTC } from "@/lib/timezone";
 import { useBirthday } from "@/components/birthday/birthday-provider";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -50,6 +52,8 @@ export function FullCalendarView({
   onLessonClick,
 }: FullCalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
+  const { data: session } = useSession();
+  const timezone = session?.user?.timezone ?? getBrowserTimezone();
   const utils = api.useUtils();
   const queryClient = useQueryClient();
   const updateLesson = api.lesson.update.useMutation({
@@ -96,7 +100,9 @@ export function FullCalendarView({
     try {
       await updateLesson.mutateAsync({
         id: lesson.id,
-        date: newDate,
+        // Events render in the configured timezone's wall time, so newDate
+        // carries that zone's local components; convert back to a UTC instant.
+        date: toUTC(newDate, timezone),
       });
 
       const dayOfWeek = format(newDate, "EEEE");
@@ -138,7 +144,7 @@ export function FullCalendarView({
   // Custom render for day cell content (Month View) — upgraded badge
   const renderDayCellContent = (arg: DayCellContentArg) => {
     const count = lessons.filter((l) =>
-      isSameDay(new Date(l.date), arg.date),
+      isSameDay(fromUTC(new Date(l.date), timezone), arg.date),
     ).length;
 
     const isBirthday = isBirthdayMode && isSameDay(arg.date, BIRTHDAY_DATE);
@@ -181,8 +187,14 @@ export function FullCalendarView({
   };
 
   const events = lessons.map((lesson) => {
-    const endDate = new Date(
-      new Date(lesson.date).getTime() + lesson.duration * 60000,
+    // FullCalendar runs in the browser's local zone. Shift each lesson's UTC
+    // instant to the configured timezone's wall time so events land on the
+    // correct day/time regardless of the browser TZ. Drag/drop is converted
+    // back to UTC via toUTC on save (see handleEventDrop).
+    const startDate = fromUTC(new Date(lesson.date), timezone);
+    const endDate = fromUTC(
+      new Date(new Date(lesson.date).getTime() + lesson.duration * 60000),
+      timezone,
     );
 
     let backgroundColor = "";
@@ -205,7 +217,7 @@ export function FullCalendarView({
     return {
       id: lesson.id,
       title: lesson.student.name,
-      start: lesson.date,
+      start: startDate,
       end: endDate,
       backgroundColor,
       borderColor,

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { format, isSameDay, startOfDay } from "date-fns";
 import { Music } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrency } from "@/lib/currency";
 import { formatCurrency } from "@/lib/format";
+import {
+  createDateInTimezone,
+  formatInTimezone,
+  fromUTC,
+  getBrowserTimezone,
+  isSameDayInTimezone,
+} from "@/lib/timezone";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
@@ -52,7 +59,9 @@ export function TodayLessonsTable({
   className,
   contentClassName,
 }: TodayLessonsTableProps = {}) {
-  const [date, setDate] = useState<Date>(() => startOfDay(new Date()));
+  const { data: session } = useSession();
+  const timezone = session?.user?.timezone ?? getBrowserTimezone();
+  const [date, setDate] = useState<Date>(() => new Date());
   const [open, setOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<SelectedLesson | null>(
     null,
@@ -69,16 +78,14 @@ export function TodayLessonsTable({
     (sum, lesson) => sum + lesson.earnings,
     0,
   );
-  const formattedDate = format(date, "EEEE, MMMM do");
-  const isToday = isSameDay(date, new Date());
+  // Render the selected day, the "today" check, and lesson times in the
+  // teacher's configured timezone (not the browser's) so they always agree
+  // with the server, which buckets lessons by the session timezone.
+  const formattedDate = formatInTimezone(date, timezone, "EEEE, MMMM do");
+  const isToday = isSameDayInTimezone(date, new Date(), timezone);
 
-  const formatTime = (lessonDate: Date) => {
-    return new Date(lessonDate).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  const formatTime = (lessonDate: Date) =>
+    formatInTimezone(new Date(lessonDate), timezone, "hh:mm a");
 
   const openAttendanceDialog = (lesson: (typeof lessons)[number]) => {
     setSelectedLesson({
@@ -193,8 +200,20 @@ export function TodayLessonsTable({
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={date}
-                  onSelect={(day) => day && setDate(day)}
+                  selected={fromUTC(date, timezone)}
+                  onSelect={(day) =>
+                    day &&
+                    setDate(
+                      createDateInTimezone(
+                        day.getFullYear(),
+                        day.getMonth(),
+                        day.getDate(),
+                        12,
+                        0,
+                        timezone,
+                      ),
+                    )
+                  }
                   initialFocus
                 />
               </PopoverContent>

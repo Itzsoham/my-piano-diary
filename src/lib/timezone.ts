@@ -105,7 +105,14 @@ export function formatInTimezone(
   timezone: string,
   formatString = "PPp",
 ): string {
-  return formatTz(utcDate, formatString, { timeZone: timezone });
+  // date-fns-tz `format` does NOT shift the wall clock to `timeZone` on its own
+  // — it renders the runtime's local time and only applies `timeZone` to
+  // zone-name tokens (z/zzz/XXX). Convert the instant into the target zone
+  // first so the displayed wall time is correct even when the viewer's browser
+  // timezone differs from `timezone`.
+  return formatTz(toZonedTime(utcDate, timezone), formatString, {
+    timeZone: timezone,
+  });
 }
 
 /**
