@@ -2,6 +2,8 @@
  * Error handling utilities for the application
  */
 
+import { env } from "@/env";
+
 export interface ErrorLog {
   message: string;
   stack?: string;
@@ -58,8 +60,9 @@ export const logError = (
     console.error("[Error Log]", errorLog);
   }
 
-  // In production, you would send this to a service like Sentry, LogRocket, etc.
-  if (process.env.NEXT_PUBLIC_ERROR_TRACKING_URL) {
+  // Forward to the error tracker if one is configured (validated in env.js).
+  // Swap this for Sentry's captureException when a DSN is added.
+  if (env.NEXT_PUBLIC_ERROR_TRACKING_URL) {
     sendErrorToTrackingService(errorLog).catch((err) => {
       console.error("Failed to send error to tracking service:", err);
     });
@@ -73,7 +76,7 @@ const sendErrorToTrackingService = async (
   errorLog: ErrorLog,
 ): Promise<void> => {
   try {
-    await fetch(process.env.NEXT_PUBLIC_ERROR_TRACKING_URL!, {
+    await fetch(env.NEXT_PUBLIC_ERROR_TRACKING_URL!, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

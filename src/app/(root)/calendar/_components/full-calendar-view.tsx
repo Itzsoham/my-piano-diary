@@ -9,6 +9,7 @@ import {
   type EventClickArg,
   type EventDropArg,
   type DayCellContentArg,
+  type EventMountArg,
 } from "@fullcalendar/core";
 import { type EventResizeDoneArg } from "@fullcalendar/interaction";
 import { format, isSameDay } from "date-fns";
@@ -139,6 +140,28 @@ export function FullCalendarView({
       console.error(error);
       revert();
     }
+  };
+
+  // Accessibility: give each event an accessible name and make it operable by
+  // keyboard (FullCalendar events aren't focusable / labelled by default).
+  const handleEventDidMount = (info: EventMountArg) => {
+    const lesson = info.event.extendedProps.lesson as Lesson;
+    const time = info.event.start ? format(info.event.start, "h:mm a") : "";
+    info.el.setAttribute(
+      "aria-label",
+      `${lesson.student.name}, ${time}, ${lesson.status.toLowerCase()}`,
+    );
+    info.el.setAttribute("role", "button");
+    info.el.tabIndex = 0;
+    info.el.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        // Read live event data — FullCalendar can reuse the element across
+        // re-renders without re-running eventDidMount, so the mount-time
+        // `lesson` may be stale. Mirror the mouse path (eventClick).
+        onLessonClick(info.event.extendedProps.lesson as Lesson);
+      }
+    });
   };
 
   // Custom render for day cell content (Month View) — upgraded badge
@@ -534,6 +557,7 @@ export function FullCalendarView({
               dateClick={handleDateClick}
               eventDrop={handleEventDrop}
               eventResize={handleEventResize}
+              eventDidMount={handleEventDidMount}
               dayCellContent={renderDayCellContent}
               navLinks={true}
               height="100%"

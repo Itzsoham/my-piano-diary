@@ -1,19 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Edit,
-  MoreHorizontal,
-  Trash,
-  LayoutGrid,
-  Table as TableIcon,
-  Music,
-  Search,
-} from "lucide-react";
+import { Edit, MoreHorizontal, Trash, Music, Search } from "lucide-react";
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -21,7 +9,6 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type ColumnFiltersState,
   type SortingState,
 } from "@tanstack/react-table";
 
@@ -35,7 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
+import {
+  DataTable,
+  DataTablePagination,
+  DataTableToolbar,
+  DataTableViewToggle,
+} from "@/components/ui/data-table";
+import { useTableViewPersistence } from "@/hooks/use-table-view-persistence";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/ui/star-rating";
 import { PieceSheet } from "./piece-sheet";
@@ -115,47 +108,13 @@ interface PiecesTableProps {
 
 export function PiecesTable({ data }: PiecesTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  );
+  const { viewMode, setViewMode, columnFilters, setColumnFilters } =
+    useTableViewPersistence("pieces-list-view");
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   });
   const [showEditSheet, setShowEditSheet] = React.useState<string | null>(null);
-  const [viewMode, setViewMode] = React.useState<"table" | "grid">("grid");
-  const [isLoaded, setIsLoaded] = React.useState(false);
-
-  const STORAGE_KEY = "pieces-list-view";
-
-  // Load state from sessionStorage on mount
-  React.useEffect(() => {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as {
-          viewMode?: "table" | "grid";
-          columnFilters?: ColumnFiltersState;
-        };
-        if (parsed.viewMode) setViewMode(parsed.viewMode);
-        if (parsed.columnFilters) setColumnFilters(parsed.columnFilters);
-      } catch (e) {
-        console.error("Failed to parse saved piece filters", e);
-      }
-    }
-    setIsLoaded(true);
-  }, []);
-
-  // Save state to sessionStorage whenever it changes
-  React.useEffect(() => {
-    if (!isLoaded) return;
-
-    const stateToSave = {
-      viewMode,
-      columnFilters,
-    };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-  }, [viewMode, columnFilters, isLoaded]);
   const [deleteConfirm, setDeleteConfirm] = React.useState<{
     id: string;
     title: string;
@@ -164,12 +123,10 @@ export function PiecesTable({ data }: PiecesTableProps) {
   const utils = api.useUtils();
   const router = useRouter();
   const deletePiece = api.piece.delete.useMutation({
-    onMutate: async (_vars) => {
+    onSuccess: () => {
+      // Close only after the server confirms the delete.
       toast.success("Piece deleted successfully", { id: "piece-delete" });
       setDeleteConfirm(null);
-    },
-    onSuccess: () => {
-      // Handled in onMutate
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to delete piece", {
@@ -308,7 +265,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
         icon="🎹"
         storageKey="pieces"
       />
-      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+      <DataTableToolbar className="items-stretch">
         <div className="relative w-full sm:max-w-sm">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
@@ -321,27 +278,10 @@ export function PiecesTable({ data }: PiecesTableProps) {
           />
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-muted/40 flex items-center gap-1 rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode("grid")}
-              className={`h-7 rounded-md px-2.5 transition-all ${viewMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <LayoutGrid className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode("table")}
-              className={`h-7 rounded-md px-2.5 transition-all ${viewMode === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <TableIcon className="size-4" />
-            </Button>
-          </div>
+          <DataTableViewToggle value={viewMode} onChange={setViewMode} />
           <PieceSheet mode="create" />
         </div>
-      </div>
+      </DataTableToolbar>
 
       {viewMode === "table" ? (
         <DataTable
@@ -466,57 +406,7 @@ export function PiecesTable({ data }: PiecesTableProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="text-muted-foreground text-sm">
-          Showing {table.getRowModel().rows.length} of {data.length} piece(s)
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <span className="sr-only">Go to first page</span>
-            <ChevronsLeft className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <span className="sr-only">Go to previous page</span>
-            <ChevronLeft className="size-4" />
-          </Button>
-          <div className="flex items-center gap-1 text-sm">
-            <span>Page</span>
-            <span className="font-medium">
-              {table.getState().pagination.pageIndex + 1}
-            </span>
-            <span>of</span>
-            <span className="font-medium">{table.getPageCount()}</span>
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <span className="sr-only">Go to next page</span>
-            <ChevronRight className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
-          >
-            <span className="sr-only">Go to last page</span>
-            <ChevronsRight className="size-4" />
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination table={table} totalCount={data.length} noun="piece" />
 
       <ConfirmDialog
         open={!!deleteConfirm}

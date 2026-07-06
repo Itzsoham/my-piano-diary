@@ -7,8 +7,17 @@ import {
   type RowData,
   type Table as TanstackTable,
 } from "@tanstack/react-table";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  LayoutGrid,
+  Table as TableIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -94,6 +103,122 @@ type DataTableStateProps = React.ComponentProps<"div"> & {
   description?: string;
   icon?: React.ReactNode;
 };
+
+type TableViewMode = "table" | "grid";
+
+/** Grid/table segmented toggle shared by list views. */
+function DataTableViewToggle({
+  value,
+  onChange,
+  className,
+}: {
+  value: TableViewMode;
+  onChange: (mode: TableViewMode) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "bg-muted/40 flex items-center gap-1 rounded-lg p-1",
+        className,
+      )}
+    >
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onChange("grid")}
+        className={cn(
+          "h-7 rounded-md px-2.5 transition-all",
+          value === "grid"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <span className="sr-only">Grid view</span>
+        <LayoutGrid className="size-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onChange("table")}
+        className={cn(
+          "h-7 rounded-md px-2.5 transition-all",
+          value === "table"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <span className="sr-only">Table view</span>
+        <TableIcon className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+/** Standard "Showing X of Y" + first/prev/page/next/last footer for a table. */
+function DataTablePagination<TData extends RowData>({
+  table,
+  totalCount,
+  noun,
+}: {
+  table: TanstackTable<TData>;
+  totalCount: number;
+  noun: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="text-muted-foreground text-sm">
+        Showing {table.getRowModel().rows.length} of {totalCount} {noun}(s)
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => table.setPageIndex(0)}
+          disabled={!table.getCanPreviousPage()}
+        >
+          <span className="sr-only">Go to first page</span>
+          <ChevronsLeft className="size-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          <span className="sr-only">Go to previous page</span>
+          <ChevronLeft className="size-4" />
+        </Button>
+        <div className="flex items-center gap-1 text-sm">
+          <span>Page</span>
+          <span className="font-medium">
+            {table.getState().pagination.pageIndex + 1}
+          </span>
+          <span>of</span>
+          <span className="font-medium">{table.getPageCount()}</span>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          <span className="sr-only">Go to next page</span>
+          <ChevronRight className="size-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+          disabled={!table.getCanNextPage()}
+        >
+          <span className="sr-only">Go to last page</span>
+          <ChevronsRight className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function DataTableState({
   className,
@@ -279,4 +404,10 @@ function DataTable<TData extends RowData>({
 }
 
 export type { DataTableColumn };
-export { DataTable, DataTableState, DataTableToolbar };
+export {
+  DataTable,
+  DataTablePagination,
+  DataTableState,
+  DataTableToolbar,
+  DataTableViewToggle,
+};

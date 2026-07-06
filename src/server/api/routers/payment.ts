@@ -1,6 +1,11 @@
 ﻿import { type PrismaClient } from "@prisma/client";
 
-import { calculateRemaining, derivePaymentStatus } from "@/lib/payment";
+import {
+  calculateRemaining,
+  derivePaymentStatus,
+  expectedByMonth,
+  summarizeOutstanding,
+} from "@/lib/payment";
 import {
   createDateInTimezone,
   fromUTC,
@@ -238,42 +243,21 @@ export const paymentRouter = createTRPCRouter({
       }),
     ]);
 
-    // Bucket expected (completed-lesson rates) and received (a month's
-    // transactions) by student+year+month — assigning each lesson to a month
-    // in the configured timezone — then clamp remaining PER bucket before
-    // summing. Clamping per month stops an overpaid month from cancelling an
-    // underpaid one, matching every other outstanding figure in the app.
-    const expectedByBucket = new Map<string, number>();
-    for (const lesson of completedLessons) {
-      const local = fromUTC(lesson.date, timezone);
-      const key = `${lesson.studentId}|${local.getFullYear()}|${local.getMonth() + 1}`;
-      expectedByBucket.set(key, (expectedByBucket.get(key) ?? 0) + lesson.rate);
-    }
-
-    const receivedByBucket = new Map<string, number>();
-    for (const paymentMonth of paymentMonths) {
-      const received = paymentMonth.transactions.reduce(
-        (sum, transaction) => sum + transaction.amount,
-        0,
+    // Bucket + clamp per student+month lives in a pure helper (unit-tested).
+    const { totalExpected, totalReceived, totalOutstanding } =
+      summarizeOutstanding(
+        completedLessons,
+        paymentMonths.map((paymentMonth) => ({
+          studentId: paymentMonth.studentId,
+          year: paymentMonth.year,
+          month: paymentMonth.month,
+          received: paymentMonth.transactions.reduce(
+            (sum, transaction) => sum + transaction.amount,
+            0,
+          ),
+        })),
+        timezone,
       );
-      const key = `${paymentMonth.studentId}|${paymentMonth.year}|${paymentMonth.month}`;
-      receivedByBucket.set(key, (receivedByBucket.get(key) ?? 0) + received);
-    }
-
-    let totalExpected = 0;
-    let totalReceived = 0;
-    let totalOutstanding = 0;
-    const allKeys = new Set([
-      ...expectedByBucket.keys(),
-      ...receivedByBucket.keys(),
-    ]);
-    for (const key of allKeys) {
-      const expected = expectedByBucket.get(key) ?? 0;
-      const received = receivedByBucket.get(key) ?? 0;
-      totalExpected += expected;
-      totalReceived += received;
-      totalOutstanding += calculateRemaining(expected, received);
-    }
 
     return {
       totalExpected,
@@ -513,12 +497,7 @@ export const paymentRouter = createTRPCRouter({
         select: { date: true, rate: true },
       });
 
-      const expectedByMonth = new Map<string, number>();
-      for (const lesson of completedLessons) {
-        const local = fromUTC(lesson.date, timezone);
-        const key = `${local.getFullYear()}-${local.getMonth() + 1}`;
-        expectedByMonth.set(key, (expectedByMonth.get(key) ?? 0) + lesson.rate);
-      }
+      const expectedByMonthMap = expectedByMonth(completedLessons, timezone);
 
       return paymentMonths.map((paymentMonth) => {
         const receivedAmount = paymentMonth.transactions.reduce(
@@ -526,8 +505,9 @@ export const paymentRouter = createTRPCRouter({
           0,
         );
         const expectedAmount =
-          expectedByMonth.get(`${paymentMonth.year}-${paymentMonth.month}`) ??
-          0;
+          expectedByMonthMap.get(
+            `${paymentMonth.year}-${paymentMonth.month}`,
+          ) ?? 0;
 
         return {
           ...paymentMonth,

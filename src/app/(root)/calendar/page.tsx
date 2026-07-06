@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, CalendarX } from "lucide-react";
+import Link from "next/link";
+import { keepPreviousData } from "@tanstack/react-query";
+import { Plus, CalendarX, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FullCalendarView } from "./_components/full-calendar-view";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
@@ -42,12 +45,15 @@ export default function CalendarPage() {
   const utils = api.useUtils();
   const {
     data: lessons = [],
+    isPending,
     isError,
     refetch,
-  } = api.lesson.getInRange.useQuery({
-    start: dateRange.start,
-    end: dateRange.end,
-  });
+  } = api.lesson.getInRange.useQuery(
+    { start: dateRange.start, end: dateRange.end },
+    // Keep the current month on screen while the next one loads, so navigating
+    // months never flashes an empty grid (which could invite a double-booking).
+    { placeholderData: keepPreviousData },
+  );
 
   const { data: students = [] } = api.student.getAll.useQuery();
 
@@ -89,17 +95,30 @@ export default function CalendarPage() {
               : "Manage lessons and track attendance"}
           </p>
         </div>
-        <Button
-          onClick={() => handleAddLesson(new Date())}
-          className={`bday-animate-button rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
-            isBirthdayMode
-              ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
-              : "hover:from-pink-600 hover:to-purple-600 hover:shadow-md hover:shadow-pink-300/40"
-          }`}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Lesson
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link href="/lessons">
+              <List className="mr-2 h-4 w-4" />
+              List view
+            </Link>
+          </Button>
+          <Button
+            onClick={() => handleAddLesson(new Date())}
+            className={`bday-animate-button rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
+              isBirthdayMode
+                ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
+                : "hover:from-pink-600 hover:to-purple-600 hover:shadow-md hover:shadow-pink-300/40"
+            }`}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Lesson
+          </Button>
+        </div>
       </div>
 
       {isError ? (
@@ -113,7 +132,11 @@ export default function CalendarPage() {
             </Button>
           }
         />
+      ) : isPending ? (
+        <CalendarSkeleton />
       ) : (
+        // keepPreviousData keeps the current month on screen while the next
+        // one loads, so there's no empty-grid flash and nothing to disable.
         <FullCalendarView
           lessons={lessons as Lesson[]}
           onDateRangeChange={(start: Date, end: Date) =>
@@ -152,6 +175,26 @@ export default function CalendarPage() {
           onSuccess={handleSuccess}
         />
       )}
+    </div>
+  );
+}
+
+function CalendarSkeleton() {
+  return (
+    <div
+      className="bg-card w-full overflow-hidden rounded-xl border border-pink-100/60 p-4 shadow-sm"
+      aria-busy="true"
+      aria-label="Loading calendar"
+    >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-8 w-56" />
+      </div>
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+        {Array.from({ length: 42 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 rounded-md sm:h-20" />
+        ))}
+      </div>
     </div>
   );
 }

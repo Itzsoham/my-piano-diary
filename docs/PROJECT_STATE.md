@@ -435,7 +435,7 @@ No `NEXT_PUBLIC_*` client variables. Empty strings treated as `undefined`. Skip 
 | Notifications           | Placeholder page only                                              |
 | Updates / changelog     | Placeholder page only                                              |
 | Cloudinary image upload | `CLOUDINARY_URL` defined but not wired up                          |
-| Automated tests         | No test tooling yet (see `ISSUES_AND_FIXES.md` #22)                |
+| Server-side pagination  | Lists fetch all rows + paginate client-side (deferred; fine at single-user scale — `ISSUES_AND_FIXES.md` #23) |
 
 See `FUTURE_FEATURES.md` for the planned roadmap.
 
@@ -454,6 +454,8 @@ npm run lint         # Run ESLint
 npm run lint:fix     # Fix lint issues
 npm run format:write # Format with Prettier
 npm run check        # lint + tsc --noEmit
+npm run test         # run the Vitest suite (lib / schema / money-logic)
+npm run test:tz      # timezone suite under a forced non-UTC zone
 ```
 
 > ⚠️ **Never run `db:generate` / `db:migrate`** (they call `prisma migrate dev` / `migrate deploy`). This repo syncs schema with **`prisma db push`** only — the Neon migration history is intentionally out of sync, so `migrate` will fail or diverge. Stop the dev server before running `prisma generate`.

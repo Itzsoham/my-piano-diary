@@ -1,0 +1,45 @@
+name: CI
+
+# Runs on every push to main and on pull requests targeting main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# If you push again while a run is in progress, cancel the older one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, typecheck & test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` runs the repo's postinstall (`prisma generate`), which the
+      # typecheck needs. prisma generate never connects to the database, so no
+      # DATABASE_URL / secrets are required here.
+      - name: Install dependencies
+        run: npm ci
+
+      # lint + tsc --noEmit. No secrets needed (env validation isn't run here).
+      - name: Lint & typecheck
+        run: npm run check
+
+      # Vitest suite. The config sets SKIP_ENV_VALIDATION + dummy env, and the
+      # tests are pure (no DB), so this needs no secrets either.
+      - name: Test
+        run: npm run test

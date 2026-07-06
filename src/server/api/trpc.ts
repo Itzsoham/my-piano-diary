@@ -9,6 +9,8 @@
 
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
+
+import { logError } from "@/lib/error-handler";
 import { ZodError } from "zod";
 
 import { auth } from "@/server/auth";
@@ -46,6 +48,14 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
+    // Report only unexpected server errors (not expected 4xx like NOT_FOUND,
+    // UNAUTHORIZED, or validation). No-ops unless a tracking URL is set.
+    if (error.code === "INTERNAL_SERVER_ERROR") {
+      logError(error.message, error, {
+        component: "trpc",
+        context: { code: error.code },
+      });
+    }
     return {
       ...shape,
       data: {

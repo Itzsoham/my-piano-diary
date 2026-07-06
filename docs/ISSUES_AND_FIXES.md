@@ -14,7 +14,7 @@
 | 🟠 Medium    | — none (all fixed 2026-07-06)                                                                            |
 | 🟡 Low       | — none (all fixed 2026-07-06)                                                                            |
 | 🔒 Security  | No auth rate-limiting / brute-force protection · weak password policy · account enumeration            |
-| 🧱 Backlog   | No tests · client-only pagination · no prod monitoring · calendar a11y + loading · table DRY cleanup    |
+| 🧱 Backlog   | Client-only pagination (deferred — fine at single-user scale) · _#22 tests, #24 monitoring, #25 calendar a11y/loading, #26 table DRY: done 2026-07-06_ |
 
 ---
 
@@ -218,6 +218,8 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 ## 🧱 Backlog (real, but improvements not bugs)
 
+> ✅ **Mostly implemented 2026-07-06**: **#22** Vitest suite (27 tests over timezone / payment / rate / schemas, incl. the money-netting & stale-snapshot fixes), **#24** error tracking wired through `env.js` + `logError` at the query/tRPC/boundary seams, **#25** calendar loading skeleton + `keepPreviousData` + event aria-labels/keyboard + list-view link, **#26** shared `useTableViewPersistence` / `DataTablePagination` / `DataTableViewToggle`. Only **#23** (server-side pagination) remains — intentionally deferred for single-user scale.
+
 ### 22. No Unit Tests — **(#1, still open)**
 
 Zero test files and no test tooling. `npm run check` runs only lint + `tsc` (not a substitute).
@@ -281,4 +283,4 @@ Verified fixed in the current codebase — kept here for history:
 All correctness & cleanup bugs (#1–#18) are fixed as of 2026-07-06. Remaining work:
 
 1. **Security (#19–#21)** — add auth rate limiting, stronger passwords, and reduce account enumeration before wider use.
-2. **Backlog (#22–#26)** — tests, server-side pagination, production monitoring, calendar a11y/loading, table DRY cleanup — as scale/quality work.
+2. **Backlog** — #22 tests, #24 monitoring, #25 calendar a11y/loading, and #26 table DRY are done (2026-07-06). Only **#23** server-side pagination remains, deferred until a `getAll` regularly returns hundreds of rows.

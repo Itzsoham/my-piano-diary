@@ -13,6 +13,10 @@ export const createQueryClient = () =>
     // during SSR skips it (toast is client-only).
     queryCache: new QueryCache({
       onError: (error) => {
+        // Surface load failures to the user. Server-side errors are already
+        // reported for monitoring by the tRPC errorFormatter; logging every
+        // query error here (incl. expected 401/404/validation) would just add
+        // noise, so keep this to the toast.
         if (typeof window === "undefined") return;
         toast.error(error.message ?? "Failed to load data");
       },

@@ -24,7 +24,9 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    // Optional error-tracking sink. When set, logError() POSTs here (server +
+    // client). Leave unset to disable. Swap for a Sentry DSN later.
+    NEXT_PUBLIC_ERROR_TRACKING_URL: z.string().url().optional(),
   },
 
   /**
@@ -36,6 +38,7 @@ export const env = createEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     CLOUDINARY_URL: process.env.CLOUDINARY_URL,
     NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_ERROR_TRACKING_URL: process.env.NEXT_PUBLIC_ERROR_TRACKING_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
