@@ -1,8 +1,10 @@
 # My Piano Diary - Current Project State
 
-> A piano lesson management system for teachers to manage students, schedule lessons, track attendance, and generate reports.
+> A personal piano-lesson management diary. **Single user** — one teacher (you) manages students, schedules lessons, tracks attendance, records payments, and generates monthly reports. Students are records you manage, **not** logins; there is no multi-teacher / multi-tenant mode.
 
-**Version**: 0.1.0 | **Status**: ~70% Complete | **Last Updated**: March 17, 2026
+**Version**: 0.1.0 | **Status**: ~85% Complete | **Last Updated**: July 6, 2026
+
+> Known bugs are tracked in `ISSUES_AND_FIXES.md`; planned work is in `FUTURE_FEATURES.md`.
 
 ---
 
@@ -10,13 +12,13 @@
 
 | Layer         | Technology                                                     |
 | ------------- | -------------------------------------------------------------- |
-| Framework     | Next.js 15.2 (App Router), React 19                            |
+| Framework     | Next.js 16 (App Router), React 19                             |
 | Language      | TypeScript 5.8 (strict mode)                                   |
 | API           | tRPC 11 with `httpBatchStreamLink` + SuperJSON transformer     |
 | Database      | PostgreSQL (Neon) via Prisma 6.19, all datetimes `timestamptz` |
 | Auth          | NextAuth.js 5 beta (JWT strategy) — Credentials only           |
 | Server State  | React Query 5 (`@tanstack/react-query`) via tRPC adapter       |
-| Client State  | Zustand 5 (persisted to `localStorage`)                        |
+| Client State  | Zustand 5 (persisted to `localStorage`) — user + currency      |
 | UI            | Tailwind CSS 4, Shadcn/UI, Radix UI primitives                 |
 | Forms         | React Hook Form 7 + Zod 3 + `@hookform/resolvers`              |
 | Charts        | Recharts 2                                                     |
@@ -45,24 +47,25 @@ src/
 │   │   ├── error.tsx
 │   │   ├── login/page.tsx        # Login form (redirects if already authed)
 │   │   ├── register/page.tsx     # Register form (redirects if already authed)
-│   │   └── _components/          # LoginForm, RegisterForm, GoogleOAuthButton
+│   │   └── _components/          # LoginForm, RegisterForm
 │   │
 │   ├── (root)/                   # Protected route group (auth-gated, sidebar layout)
 │   │   ├── layout.tsx            # AppSidebar + SiteHeader layout
 │   │   ├── error.tsx
 │   │   ├── _components/          # AppSidebar, NavMain, NavUser, NavAction, SiteHeader
-│   │   ├── dashboard/            # Earnings dashboard (SectionCards + TodayLessonsTable)
-│   │   ├── students/             # Student CRUD table + /[id]/reports sub-route
+│   │   ├── dashboard/            # SectionCards + DashboardIntelligencePanel (live earnings)
+│   │   ├── students/             # Student CRUD table (+ [id]/reports/ report-view component)
 │   │   ├── calendar/             # FullCalendar view with lesson CRUD
 │   │   ├── lessons/              # Lessons list with month navigation
 │   │   ├── pieces/               # Music pieces CRUD table
-│   │   ├── reports/              # Monthly student reports
-│   │   ├── profile/              # Profile / Password / Teacher settings tabs
+│   │   ├── reports/              # Monthly student reports (+ [studentId]/ detail)
+│   │   ├── payments/             # Per-student, per-month payment tracking
+│   │   ├── profile/              # Profile / Password / Settings (timezone, rates, currency)
 │   │   ├── notifications/        # Coming soon placeholder
 │   │   └── updates/              # Coming soon + hidden /forever easter egg link
 │   │
 │   ├── forever/                  # Hidden anniversary page (easter egg)
-│   │   └── page.tsx
+│   ├── birthday-game/, birthday-room/   # Hidden birthday easter-egg pages
 │   │
 │   └── api/
 │       ├── auth/[...nextauth]/   # NextAuth route handler
@@ -72,7 +75,7 @@ src/
 │   ├── db.ts                     # Prisma client singleton
 │   ├── api/
 │   │   ├── trpc.ts               # tRPC init, context, protectedProcedure
-│   │   ├── root.ts               # appRouter: { student, lesson, report, user, piece, earnings }
+│   │   ├── root.ts               # appRouter: { student, lesson, report, user, piece, earnings, payment }
 │   │   └── routers/              # Individual feature routers (see API section)
 │   ├── auth/
 │   │   ├── config.ts             # NextAuth config (Credentials provider, JWT callbacks)
@@ -89,8 +92,6 @@ src/
 │   │   ├── index.tsx             # Root Providers tree (see Providers section)
 │   │   └── user-store-provider.tsx # Syncs NextAuth session → Zustand
 │   ├── error-boundary.tsx        # React error boundary component
-│   ├── dashboard-container.tsx
-│   ├── error-test-panel.tsx
 │   └── lessons/
 │       ├── lesson-dialog.tsx     # Create lesson dialog
 │       └── lesson-edit-dialog.tsx # Edit lesson dialog
@@ -100,12 +101,14 @@ src/
 │   ├── types.ts                  # Shared TypeScript types
 │   ├── format.ts                 # Date/time formatting utilities
 │   ├── currency.ts               # Currency formatting helpers
-│   ├── timezone.ts               # Timezone utilities (isValidTimezone, etc.)
+│   ├── rate.ts                   # Per-lesson rate resolution (online vs in-person)
+│   ├── payment.ts                # calculateRemaining / derivePaymentStatus helpers
+│   ├── timezone.ts               # Timezone utilities (isValidTimezone, getStartOfMonthUTC, …)
 │   ├── error-handler.ts          # logError() centralized error logging
 │   └── validations/
 │       ├── auth-schemas.ts       # loginSchema, registerSchema
 │       ├── common-schemas.ts     # Reusable base schemas (id, date, pagination, student, lesson)
-│       └── api-schemas.ts        # Full API-layer schemas (lesson, piece, recurring, attendance)
+│       └── api-schemas.ts        # Full API-layer schemas (lesson, piece, recurring, payment)
 │
 ├── trpc/
 │   ├── react.tsx                 # api = createTRPCReact<AppRouter>(); TRPCReactProvider
@@ -113,46 +116,56 @@ src/
 │   └── query-client.ts           # createQueryClient() with 5-min staleTime + SuperJSON dehydration
 │
 ├── store/
-│   └── use-user-store.ts         # Zustand store: { user, setUser, clearUser } persisted to localStorage
+│   ├── use-user-store.ts         # Zustand: { user } persisted to localStorage
+│   └── use-currency-store.ts     # Zustand: selected display currency (persisted)
 │
 ├── hooks/
 │   ├── use-error-handler.ts      # useErrorHandler(), useAsyncError()
 │   └── use-mobile.ts             # useIsMobile() — watches matchMedia max-width: 767px
 │
 ├── config/app-config.ts          # App metadata constants
-├── middleware.ts                  # Cookie-based auth guard (no NextAuth overhead)
+├── proxy.ts                      # Cookie-based auth guard (Next.js proxy/middleware)
 ├── env.js                        # @t3-oss/env-nextjs: DATABASE_URL, AUTH_SECRET, CLOUDINARY_URL
-└── styles/globals.css             # Tailwind directives + global styles
+└── styles/globals.css            # Tailwind directives + global styles
 ```
 
 ---
 
 ## Database Schema
 
-**7 models** (6 app + NextAuth) + `LessonStatus` enum. All datetime fields use `@db.Timestamptz` for proper timezone handling.
+**11 models** (7 app + 4 NextAuth) + `LessonStatus` enum. All datetime fields use `@db.Timestamptz` for proper timezone handling.
 
 ```
 User ──1:1──> Teacher ──1:many──> Student ──1:many──> Lesson
                 │                    │                    │
-                ├──1:many──> Piece ──┼──── pieceId ────────┘
-                │                    │
-                └──1:many──> Lesson  └──1:many──> MonthlyReport
+                ├──1:many──> Piece ──┼──── pieceId ───────┘
+                │                    ├──1:many──> MonthlyReport
+                ├──1:many──> Lesson  ├──1:many──> PaymentMonth ──1:many──> PaymentTransaction
+                ├──1:many──> PaymentMonth
+                └──1:many──> PaymentTransaction
 ```
 
-| Model           | Key Fields                                                                                                                                                                                                             |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `User`          | `id (cuid)`, `name?`, `email? (unique)`, `emailVerified?`, `image?`, `password?`, `timezone (default "UTC")`, `createdAt`                                                                                              |
-| `Account`       | Standard NextAuth OAuth fields; `@@unique([provider, providerAccountId])`                                                                                                                                              |
-| `Session`       | `sessionToken (unique)`, `userId`, `expires`                                                                                                                                                                           |
-| `Teacher`       | `id`, `userId (unique → User)`, `createdAt`                                                                                                                                                                            |
-| `Student`       | `id`, `teacherId → Teacher`, `name`, `avatar?`, `notes?`, `lessonRate (int, default 0)`, `createdAt`                                                                                                                   |
-| `Piece`         | `id`, `teacherId → Teacher`, `title`, `description?`, `level?`, `difficulty? (int 1–5)`, `createdAt`                                                                                                                   |
-| `Lesson`        | `id`, `studentId → Student`, `teacherId → Teacher`, `date (timestamptz)`, `duration (int, minutes)`, `status (LessonStatus, default PENDING)`, `actualMin?`, `cancelReason?`, `note?`, `pieceId? → Piece`, `createdAt` |
-| `MonthlyReport` | `id`, `studentId → Student (cascade delete)`, `month`, `year`, `summary?`, `comments?`, `nextMonthPlan?`, `createdAt`, `updatedAt`; `@@unique([studentId, month, year])`                                               |
+| Model                | Key Fields                                                                                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `User`               | `id`, `name?`, `email? (unique)`, `emailVerified?`, `image?`, `password?`, `timezone (default "UTC")`, `createdAt`                                                                          |
+| `Account`            | Standard NextAuth OAuth fields; `@@unique([provider, providerAccountId])`                                                                                                                   |
+| `Session`            | `sessionToken (unique)`, `userId`, `expires`                                                                                                                                                |
+| `VerificationToken`  | `identifier`, `token (unique)`, `expires`                                                                                                                                                   |
+| `Teacher`            | `id`, `userId (unique → User)`, `timezone (default "UTC")`, `createdAt`. **Note**: `Teacher.timezone` still exists but is legacy — `User.timezone` (carried in the session) is the source of truth actually used. |
+| `Student`            | `id`, `teacherId → Teacher`, `name`, `avatar?`, `notes?`, `lessonRate (int, default 0)`, `onlineLessonRate (int, default 0)`, `createdAt`                                                    |
+| `Piece`              | `id`, `teacherId → Teacher`, `title`, `description?`, `level?`, `difficulty? (int 1–5)`, `createdAt`                                                                                         |
+| `Lesson`             | `id`, `studentId → Student`, `teacherId → Teacher`, `date (timestamptz)`, `duration (min)`, `status (LessonStatus, default PENDING)`, `isOnline (bool)`, `rate (int, snapshot)`, `actualMin?`, `cancelReason?`, `note?`, `pieceId? → Piece`, `createdAt` |
+| `MonthlyReport`      | `id`, `studentId → Student (cascade)`, `month`, `year`, `summary?`, `comments?`, `nextMonthPlan?`, `tuitionNote?`, `lessonMetadata (Json, default {})`, `createdAt`, `updatedAt`; `@@unique([studentId, month, year])` |
+| `PaymentMonth`       | `id`, `studentId → Student (cascade)`, `teacherId → Teacher (cascade)`, `month`, `year`, `expectedAmount (int)`, `createdAt`, `updatedAt`; `@@unique([studentId, month, year])`             |
+| `PaymentTransaction` | `id`, `paymentMonthId → PaymentMonth (cascade)`, `studentId (cascade)`, `teacherId (cascade)`, `amount (int)`, `method?`, `note?`, `date`, `createdAt`, `updatedAt`                          |
 
 **LessonStatus enum**: `PENDING` | `COMPLETE` | `CANCELLED` | `MAKEUP`
 
-**DB Indexes**: `@@index([teacherId, date])` and `@@index([studentId, date])` on Lesson for fast calendar queries.
+**Rate snapshotting**: each `Lesson.rate` is frozen at create/update time from the student's `lessonRate` (in-person) or `onlineLessonRate` (online). Past months never re-price when a student's rate later changes.
+
+**DB Indexes**: `@@index([teacherId, date])` / `@@index([studentId, date])` on Lesson; `@@index` on PaymentMonth (`[teacherId, month, year]`, `[studentId, year]`) and PaymentTransaction (`[teacherId, date]`, `[studentId, date]`, `[paymentMonthId]`).
+
+> ⚠️ `Lesson.student` / `Lesson.teacher` / `Lesson.piece` still lack `onDelete: Cascade` — deleting a student with lessons currently fails (see `ISSUES_AND_FIXES.md` #1).
 
 ---
 
@@ -162,21 +175,9 @@ User ──1:1──> Teacher ──1:many──> Student ──1:many──> Le
 
 ### Transport & Serialization
 
-- **Link**: `httpBatchStreamLink` — batches multiple concurrent calls into one HTTP request; supports streaming responses
-- **Transformer**: SuperJSON — handles `Date`, `Map`, `Set` serialization across the wire
+- **Link**: `httpBatchStreamLink` — batches concurrent calls into one HTTP request; supports streaming
+- **Transformer**: SuperJSON — handles `Date`, `Map`, `Set` across the wire
 - **Endpoint**: `POST /api/trpc/*` (handled by `fetchRequestHandler`)
-- **Source header**: `x-trpc-source: nextjs-react` (client) / `x-trpc-source: rsc` (server components)
-
-### Context
-
-```ts
-// src/server/api/trpc.ts
-createTRPCContext({ headers }) → {
-  db,           // Prisma client
-  session,      // NextAuth session (null if unauthenticated)
-  headers,
-}
-```
 
 ### Procedure Types
 
@@ -185,144 +186,101 @@ createTRPCContext({ headers }) → {
 | `publicProcedure`    | Base — never used directly in any router                 | No            |
 | `protectedProcedure` | All app procedures — throws `UNAUTHORIZED` if no session | Yes           |
 
-Every single router procedure uses `protectedProcedure`. There are no public tRPC endpoints.
+Every router procedure uses `protectedProcedure`. There are no public tRPC endpoints.
 
 ### Router Structure (`src/server/api/root.ts`)
 
 ```ts
-appRouter = createCallerFactory({
-  student, // student.ts
-  lesson, // lesson.ts
-  report, // report.ts
-  user, // user.ts
-  piece, // piece.ts
+appRouter = createTRPCRouter({
+  student,  // student.ts
+  lesson,   // lesson.ts
+  report,   // report.ts
+  user,     // user.ts
+  piece,    // piece.ts
   earnings, // earnings.ts
+  payment,  // payment.ts
 });
 ```
 
 ---
 
-## tRPC Routers — Full Procedure Reference
+## tRPC Routers — Procedure Reference
 
 ### `student` router
 
-| Procedure   | Type     | Input                            | Returns                                                 |
-| ----------- | -------- | -------------------------------- | ------------------------------------------------------- |
-| `getAll`    | query    | —                                | All students for teacher (with `_count.lessons`)        |
-| `getByGuid` | query    | `{ id }`                         | Single student + last 10 lessons + teacher info         |
-| `create`    | mutation | `{ name, avatar?, notes? }`      | Created student; auto-creates Teacher record if missing |
-| `update`    | mutation | `{ id, name?, avatar?, notes? }` | Updated student; verifies ownership                     |
-| `delete`    | mutation | `{ id }`                         | Deleted student; verifies ownership                     |
+| Procedure   | Type     | Notes                                                              |
+| ----------- | -------- | ------------------------------------------------------------------ |
+| `getAll`    | query    | All students for teacher (with `_count.lessons`)                   |
+| `getByGuid` | query    | Single student + recent lessons + teacher info                     |
+| `create`    | mutation | `{ name, avatar?, notes?, lessonRate?, onlineLessonRate? }`; auto-creates Teacher if missing |
+| `update`    | mutation | Updates student (incl. both rates); verifies ownership             |
+| `delete`    | mutation | Deletes student; verifies ownership (see FK bug #1)                |
 
 ### `lesson` router
 
-| Procedure         | Type     | Input                                                                                       | Returns                                                                              |
-| ----------------- | -------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `getAll`          | query    | `{ studentId?, from?, to?, status? }`                                                       | Filtered lessons + student + piece                                                   |
-| `getForMonth`     | query    | `{ year, month }`                                                                           | Calendar-month lessons (timezone-aware boundaries), with student name/avatar + piece |
-| `getInRange`      | query    | `{ start: Date, end: Date }`                                                                | Lessons between two dates + student + piece                                          |
-| `create`          | mutation | `{ studentId, date, duration, pieceId? }`                                                   | Creates lesson; blocks duplicate student+date                                        |
-| `update`          | mutation | `{ id, date?, duration?, status?, pieceId?, cancelReason? }`                                | Updates lesson; verifies ownership                                                   |
-| `delete`          | mutation | `{ id }`                                                                                    | Deletes lesson; verifies ownership                                                   |
-| `markAttendance`  | mutation | `{ lessonId, status, actualMin?, cancelReason?, note? }`                                    | Sets attendance status + metadata                                                    |
-| `createRecurring` | mutation | `{ studentId, startDate, dayOfWeek, time, duration, recurrenceMonths, pieceId?, timezone }` | Bulk-creates weekly recurring lessons using `date-fns-tz.fromZonedTime`              |
+`getAll` · `getForMonth` (timezone-aware boundaries) · `getInRange` · `create` (blocks duplicate student+date, snapshots rate) · `update` · `delete` · `markAttendance` · `createRecurring` (weekly, 1–2 months, IANA timezone via `date-fns-tz`).
 
 ### `piece` router
 
-| Procedure | Type     | Input                                       | Returns                                            |
-| --------- | -------- | ------------------------------------------- | -------------------------------------------------- |
-| `getAll`  | query    | —                                           | All pieces for teacher with `_count.lessons`       |
-| `getById` | query    | `{ id }`                                    | Single piece + last 10 lessons (with student name) |
-| `create`  | mutation | `{ title, difficulty?, description? }`      | Created piece                                      |
-| `update`  | mutation | `{ id, title?, difficulty?, description? }` | Updated piece; verifies ownership                  |
-| `delete`  | mutation | `{ id }`                                    | Deleted piece; verifies ownership                  |
+`getAll` · `getById` · `create` · `update` · `delete`.
 
 ### `report` router
 
-| Procedure          | Type     | Input                                                             | Returns                                                                       |
-| ------------------ | -------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `generatePreview`  | query    | `{ studentId, month, year }`                                      | COMPLETE lessons + `totalLessons`, `totalFee`, `studentLessonRate`            |
-| `getStudentReport` | query    | `{ studentId, month, year }`                                      | `{ report, lessons (all statuses), student, studentLessonRate, teacherName }` |
-| `getByMonth`       | query    | `{ studentId, month, year }`                                      | `MonthlyReport` record or `null`                                              |
-| `upsertReport`     | mutation | `{ studentId, month, year, summary?, comments?, nextMonthPlan? }` | Upserts by `[studentId, month, year]` unique key                              |
-| `createOrUpdate`   | mutation | Same as `upsertReport`                                            | Alias upsert pattern                                                          |
-
-### `user` router
-
-| Procedure        | Type     | Input                              | Returns                                                                                   |
-| ---------------- | -------- | ---------------------------------- | ----------------------------------------------------------------------------------------- |
-| `getProfile`     | query    | —                                  | `{ id, name, email, image, timezone, createdAt, teacher.id, _count.{students, lessons} }` |
-| `updateProfile`  | mutation | `{ name, email, image? }`          | Updated user; checks email uniqueness                                                     |
-| `updateTimezone` | mutation | `{ timezone: string }`             | Validates IANA timezone via `isValidTimezone()`, updates User                             |
-| `updatePassword` | mutation | `{ currentPassword, newPassword }` | bcrypt compare → hash → save                                                              |
+`getAll` · `generatePreview` (COMPLETE lessons + totals) · `getStudentReport` · `getByMonth` · `upsertReport` · `createOrUpdate` (alias) · `delete`. Reports carry `tuitionNote` + `lessonMetadata`.
 
 ### `earnings` router
 
-| Procedure         | Type  | Input             | Returns                                                                                                                                              |
-| ----------------- | ----- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getDashboard`    | query | —                 | `{ totalEarnings, currentMonthEarnings, currentMonthLoss, totalStudents }` — timezone-aware                                                          |
-| `getTodayLessons` | query | `{ date?: Date }` | Today's lessons (timezone-aware day boundaries) with `earnings` field appended                                                                       |
-| `getByStudent`    | query | —                 | Current month COMPLETE lessons grouped by student: `{ studentId, studentName, avatar, lessonCount, earnings, lessonRate }[]` sorted by earnings desc |
+| Procedure                  | Notes                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `getDashboard`             | `{ totalEarnings, currentMonthEarnings, currentMonthLoss, totalStudents, lastMonthCollected, lastMonthOutstanding }` — timezone-aware |
+| `getTodayLessons`          | Today's lessons (timezone-aware day) with per-lesson `earnings`              |
+| `getByStudent`             | Current-month COMPLETE lessons grouped by student                            |
+| `getTopStudentsThisMonth`  | Top students by earnings this month                                          |
+| `getQuickInsights`         | Headline insight metrics for the dashboard panel                             |
+| `getEarningsTrendThisMonth`| Trend series for the dashboard chart                                         |
+
+### `payment` router
+
+| Procedure           | Notes                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `getForMonth`       | All students' payment rows for a month (expected vs received, status)           |
+| `getOverallSummary` | All-time totals for the dashboard tile (see netting bug #5)                     |
+| `getUnpaidSummary`  | Per-month outstanding across students                                           |
+| `getStudentHistory` | Payment history for one student (see stale-snapshot bug #4)                     |
+| `addTransaction`    | Record a payment against a student's month (creates `PaymentMonth` if needed)   |
+| `updateTransaction` | Edit a transaction                                                              |
+| `deleteTransaction` | Remove a transaction                                                            |
+
+### `user` router
+
+`getProfile` · `updateProfile` (`{ name, email, image? }`) · `updateTimezone` (validates IANA via `isValidTimezone`) · `updatePassword` (bcrypt verify → rehash).
 
 ---
 
 ## React Query Integration
 
-> tRPC is wired directly into React Query 5 via `@trpc/react-query`. All tRPC hooks are React Query hooks under the hood.
+> tRPC is wired into React Query 5 via `@trpc/react-query`. All tRPC hooks are React Query hooks under the hood.
 
 ### QueryClient Configuration (`src/trpc/query-client.ts`)
 
-```ts
-createQueryClient() → {
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,  // 5 minutes — data stays fresh, avoids refetch on re-mount
-    },
-    dehydrate: {
-      serializeData: SuperJSON.serialize,        // serialize Dates, Maps, etc.
-      shouldDehydrateQuery: (q) =>
-        inferRouterType(q) === "query" ||
-        q.state.status === "pending",            // include pending queries → enables streaming SSR
-    },
-    hydrate: {
-      deserializeData: SuperJSON.deserialize,
-    },
-  },
-}
-```
+- `staleTime: 5 * 60 * 1000` (5 min) — data stays fresh, avoids refetch on re-mount
+- `dehydrate` / `hydrate` use `SuperJSON.serialize` / `deserialize`
+- `shouldDehydrateQuery` includes `pending` queries → enables streaming SSR
 
-**Singleton pattern**: Browser uses a module-level `clientQueryClientSingleton` to avoid creating a new QueryClient on every render. Server creates a fresh instance per request.
+> ⚠️ No global `QueryCache.onError` / `throwOnError` yet, so failed list queries render as empty states rather than errors (see `ISSUES_AND_FIXES.md` #8).
 
-### SSR Hydration Pattern (RSC + Client Components)
+**Singleton pattern**: browser reuses a module-level QueryClient; server creates a fresh instance per request.
 
-Server components use `void api.procedure.prefetch()` to warm the React Query cache before the page renders. The `HydrateClient` component then dehydrates and streams the cache to the client.
+### SSR Hydration Pattern
 
-```ts
-// In a Server Component page:
-await api.student.getAll.prefetch();       // warms cache server-side
-return <HydrateClient><ClientPage /></HydrateClient>;
+Server components call `void api.procedure.prefetch()` to warm the cache; `HydrateClient` dehydrates and streams it to the client. Pages using SSR prefetch: `lessons`, `students`, `pieces`, `reports`.
 
-// In the Client Component:
-const { data } = api.student.getAll.useQuery();  // already hydrated, no loading flicker
-```
-
-Pages using SSR prefetch: `lessons`, `students`, `pieces`, `reports`.
-
-### Cache Invalidation Pattern
+### Cache Invalidation
 
 ```ts
 const utils = api.useUtils();
-// After a mutation:
-await utils.lesson.invalidate(); // refetches all lesson queries
-await utils.student.getAll.invalidate(); // targeted invalidation
-```
-
-### Provider Setup
-
-```
-TRPCReactProvider
-  ├── QueryClientProvider (React Query context)
-  └── api.Provider (tRPC context, httpBatchStreamLink to /api/trpc)
+await utils.lesson.invalidate();        // refetch all lesson queries
+await utils.student.getAll.invalidate(); // targeted
 ```
 
 ---
@@ -338,7 +296,7 @@ ErrorBoundary (componentName="RootProviders")
                     └── Toaster (sonner)
 ```
 
-**`UserStoreProvider`**: Listens to NextAuth session via `useSession`. On `"authenticated"` → calls `setUser` in Zustand. Has `isHydrated` gate to prevent SSR hydration mismatch (returns `null` until after first client render).
+**`UserStoreProvider`**: listens to NextAuth session via `useSession`; on `"authenticated"` → `setUser` in Zustand. Has an `isHydrated` gate to prevent SSR hydration mismatch.
 
 ---
 
@@ -346,67 +304,62 @@ ErrorBoundary (componentName="RootProviders")
 
 ### Strategy
 
-- **NextAuth v5 beta** (`next-auth@5.0.0-beta.25`) — JWT session strategy (no DB sessions)
-- **Credentials provider only** — email + bcrypt password (no Google despite earlier plans; removed)
-- **JWT callbacks**: copies `id`, `image`, `timezone` from user object into token
-- **Session callbacks**: copies `id`, `image`, `timezone` from token into `session.user`
+- **NextAuth v5 beta** — JWT session strategy (no DB sessions)
+- **Credentials provider only** — email + bcrypt password (no Google)
+- **JWT/session callbacks** copy `id`, `image`, `timezone` between token and `session.user`
 - Module augmentation: `Session.user` has `id: string` + `timezone: string`
 
 ### Route Protection
 
-**Middleware** (`src/middleware.ts`) uses a fast cookie-check approach (no NextAuth `auth()` call in middleware to avoid edge runtime issues):
+**`src/proxy.ts`** uses a fast cookie-check approach (no NextAuth `auth()` call, to avoid edge-runtime issues):
 
-1. Checks for any of: `authjs.session-token`, `__Secure-authjs.session-token`, `next-auth.session-token`, `__Secure-next-auth.session-token`
-2. Public paths (`/login`, `/register`, `/forever`) — always pass through
+1. Checks for any auth session cookie (`authjs.session-token`, `__Secure-*`, legacy `next-auth.*`)
+2. Public paths (`/login`, `/register`, `/forever`) always pass through
 3. No cookie + non-public path → redirect `/login`
 4. Has cookie + on `/login` or `/register` → redirect `/dashboard`
-5. Matcher excludes API routes, `_next/*`, static media files (svg, png, jpg, mp3, mpeg, etc.)
+5. Matcher excludes API routes, `_next/*`, static media
+
+> There is **no** rate limiting / brute-force protection on auth yet (see `ISSUES_AND_FIXES.md` #19–#21).
 
 ### Server Actions (`src/server/actions/auth-actions.ts`)
 
-| Action                     | Description                                                                                                             |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `loginAction(formData)`    | Validates via `loginSchema` → calls `signIn("credentials", ...)` → returns `{ success, message, user? }`                |
-| `registerAction(formData)` | Validates via `registerSchema` → checks email uniqueness → bcrypt hash (rounds=10) → creates User → calls `loginAction` |
+- `loginAction(formData)` — validates via `loginSchema` → `signIn("credentials", …)`
+- `registerAction(formData)` — validates via `registerSchema` → checks email uniqueness → bcrypt hash (rounds=10) → creates User → `loginAction`
 
-Both catch `AuthError` and return structured `{ success: boolean, message: string }` — never throw to client.
+Both catch `AuthError` and return structured `{ success, message }` — never throw to client.
 
 ---
 
-## Validation Schemas
+## Timezone Handling
 
-### `src/lib/validations/auth-schemas.ts`
+> The **backend** is consistently timezone-aware; the **frontend** is not fully, and has known display bugs. See the caveat below.
 
-- `loginSchema` — `{ email, password (min 6), remember? }`
-- `registerSchema` — `{ name, email, password, confirmPassword }` + `.refine` passwords match
+- **Storage**: all datetimes are UTC in `@db.Timestamptz` columns.
+- **Source of truth**: `User.timezone` (IANA string), carried in the NextAuth JWT → `ctx.session.user.timezone`.
+- **Helpers** (`src/lib/timezone.ts`): `getStartOfDayUTC`, `getEndOfDayUTC`, `getStartOfMonthUTC`, `getEndOfMonthUTC`, `createDateInTimezone`, `isSameDayInTimezone`, `formatInTimezone`, `toUTC`/`fromUTC`, `isValidTimezone`.
+- **Server queries** bucket lessons/reports/earnings by the configured session timezone using those helpers.
 
-### `src/lib/validations/common-schemas.ts`
-
-Base building blocks: `idSchema`, `uuidSchema`, `emailSchema`, `nameSchema`, `passwordSchema`, `dateSchema` (union Date | ISO string → transforms to Date), `dateStringSchema` (YYYY-MM-DD), `descriptionSchema`, `paginationSchema`, `searchSchema`, `lessonStatusSchema`, `createStudentSchema`, `updateStudentSchema`, `createLessonSchema`, `updateLessonSchema`
-
-### `src/lib/validations/api-schemas.ts`
-
-Full API schemas with stricter rules: `createStudentSchema`, `updateStudentSchema`, `deleteStudentSchema`, `createPieceSchema`, `updatePieceSchema`, `deletePieceSchema`, `createLessonSchema`, `updateLessonSchema`, `createRecurringLessonSchema` (includes `dayOfWeek`, `time`, `recurrenceMonths 1–2`, `timezone`), `deleteLessonSchema`, `getMonthLessonsSchema`, `markAttendanceSchema`
+> ⚠️ **Known frontend gaps** (tracked in `ISSUES_AND_FIXES.md`): the calendar renders events/day-counts in the **browser** timezone rather than the configured one (#6), and the dashboard "today" table computes the day from browser-local midnight (#11). When the browser TZ differs from the configured TZ, a lesson can display on the wrong day. `createRecurring` date math also assumes a UTC host (#7). These are why the old `TIMEZONE_AUDIT.md` "all green" claim is only true of the server layer.
 
 ---
 
 ## Page Routes
 
-| URL              | Server/Client | Description                                                                                                                                    |
-| ---------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`              | Server        | Immediately `redirect("/dashboard")`                                                                                                           |
-| `/login`         | Server        | If session → redirect `/dashboard`. Renders `LoginForm` in split-panel layout                                                                  |
-| `/register`      | Server        | If session → redirect `/dashboard`. Renders `RegisterForm`                                                                                     |
-| `/dashboard`     | Client        | Renders `SectionCards` (earnings metrics) + `TodayLessonsTable`                                                                                |
-| `/lessons`       | Server+Client | SSR prefetches `student.getAll` + `lesson.getAll` (current month). Client `LessonsPage` handles month navigation                               |
-| `/students`      | Server+Client | SSR prefetches `student.getAll`. Client `StudentsTable` with TanStack Table                                                                    |
-| `/calendar`      | Client        | FullCalendar with `lesson.getInRange` + `student.getAll`; opens `LessonDialog` / `AttendanceDialog`                                            |
-| `/pieces`        | Server+Client | SSR prefetches `piece.getAll`. Client `PiecesTable` with TanStack Table                                                                        |
-| `/reports`       | Server+Client | SSR prefetches `student.getAll`; reads `?studentId` searchParam. Client `ReportsPage`                                                          |
-| `/profile`       | Client        | Three tabs: `ProfileForm` (name/email/avatar), `PasswordForm` (change password), `TeacherSettingsForm` (timezone, lesson rate)                 |
-| `/notifications` | Client        | `ComingSoon` placeholder                                                                                                                       |
-| `/updates`       | Client        | `ComingSoon` placeholder + hidden button → `/forever`                                                                                          |
-| `/forever`       | Client        | Hidden anniversary easter egg: countdown from 2025-09-15, 1-year progress bar, confetti, music playback, photo memories modal, floating hearts |
+| URL                    | Server/Client | Description                                                                    |
+| ---------------------- | ------------- | ----------------------------------------------------------------------------- |
+| `/`                    | Server        | `redirect("/dashboard")`                                                       |
+| `/login` `/register`   | Server        | Redirect to `/dashboard` if already authed                                    |
+| `/dashboard`           | Client        | `SectionCards` (earnings metrics) + `DashboardIntelligencePanel` (today, insights, trend, top students) |
+| `/lessons`             | Server+Client | SSR prefetch `student.getAll` + `lesson.getAll`; client month navigation      |
+| `/students`            | Server+Client | SSR prefetch `student.getAll`; TanStack table                                 |
+| `/calendar`            | Client        | FullCalendar with `lesson.getInRange` + `student.getAll`                       |
+| `/pieces`              | Server+Client | SSR prefetch `piece.getAll`; TanStack table                                   |
+| `/reports`             | Server+Client | Month/year + `?studentId`; redirects to `/reports/[studentId]`                 |
+| `/reports/[studentId]` | Server+Client | Single student's monthly report view/edit                                      |
+| `/payments`            | Server+Client | Per-student, per-month payment tracking + transactions                         |
+| `/profile`            | Client        | Tabs: Profile (name/email/avatar), Password, Settings (timezone, rates, currency) |
+| `/notifications` `/updates` | Client   | `ComingSoon` placeholders (`/updates` hides a link → `/forever`)              |
+| `/forever` + birthday-* | Client       | Hidden anniversary/birthday easter eggs                                        |
 
 ---
 
@@ -414,45 +367,14 @@ Full API schemas with stricter rules: `createStudentSchema`, `updateStudentSchem
 
 ### `src/components/ui/` (Shadcn/UI + Custom)
 
-`app-loader`, `avatar`, `badge`, `breadcrumb`, `button`, `calendar` (react-day-picker), `card`, `chart` (Recharts wrapper), `checkbox`, `coming-soon`, `confirm-dialog`, `date-picker`, `dialog`, `drawer` (vaul), `dropdown-menu`, `error-state`, `form`, `input`, `label`, `popover`, `select`, `separator`, `sheet`, `sidebar`, `skeleton`, `sonner`, `star-rating`, `switch`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`
-
-### `src/app/(root)/_components/`
-
-`app-sidebar.tsx`, `nav-action.tsx`, `nav-main.tsx`, `nav-user.tsx`, `site-header.tsx`
-
-### Shared Lesson Components
-
-- `lesson-dialog.tsx` — Create new lesson (student select, date/time, duration, piece link)
-- `lesson-edit-dialog.tsx` — Edit existing lesson + mark attendance inline
+`app-loader`, `avatar`, `badge`, `breadcrumb`, `button`, `calendar`, `card`, `chart`, `checkbox`, `coming-soon`, `confirm-dialog`, `data-table`, `date-picker`, `dialog`, `drawer`, `dropdown-menu`, `error-state`, `form`, `input`, `label`, `popover`, `select`, `separator`, `sheet`, `sidebar`, `skeleton`, `sonner`, `star-rating`, `switch`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip` — plus a shared `DataTable` used by the students & pieces tables.
 
 ---
 
-## Zustand Store
+## Zustand Stores
 
-```ts
-// src/store/use-user-store.ts
-State: { user: { id, name?, email?, image? } | null }
-Actions: setUser(user), clearUser()
-Persistence: localStorage key "user-storage" (via zustand/middleware persist)
-```
-
-Populated by `UserStoreProvider` which reads the NextAuth session. Used for client-side user display without triggering server round-trips.
-
----
-
-## Custom Hooks
-
-### `useErrorHandler(options?)` (`src/hooks/use-error-handler.ts`)
-
-Returns `{ handleError }`. Logs via `logError`, shows Sonner toast (user-friendly message in prod, raw in dev), calls optional `onError` callback.
-
-### `useAsyncError(options?)` (`src/hooks/use-error-handler.ts`)
-
-Returns `{ executeAsync, handleError }`. `executeAsync(fn)` wraps any async function — catches errors, handles them, returns `null` on failure.
-
-### `useIsMobile()` (`src/hooks/use-mobile.ts`)
-
-Returns `boolean`. Watches `matchMedia("(max-width: 767px)")`, updates on resize. SSR-safe (initial `undefined` → coerced to `false`).
+- `use-user-store.ts` — `{ user: { id, name?, email?, image? } | null }`, persisted (`"user-storage"`); populated by `UserStoreProvider` from the NextAuth session.
+- `use-currency-store.ts` — selected display currency, persisted; consumed via `useCurrency()` and `src/lib/currency.ts` formatters.
 
 ---
 
@@ -460,12 +382,11 @@ Returns `boolean`. Watches `matchMedia("(max-width: 767px)")`, updates on resize
 
 | Layer               | Mechanism                                                                    |
 | ------------------- | ---------------------------------------------------------------------------- |
-| API routes          | `withApiHandler()` wrapper — catches errors, returns typed JSON responses    |
+| API routes          | `withApiHandler()` wrapper — typed JSON responses                            |
 | Server actions      | `tryCatch` wrapper in `server-action-error-handler.ts`                       |
-| tRPC procedures     | Standard tRPC error codes (`UNAUTHORIZED`, `NOT_FOUND`, `BAD_REQUEST`, etc.) |
-| React rendering     | `ErrorBoundary` component wrapping layout subtrees                           |
-| Global pages        | `error.tsx` at root, `(auth)`, and `(root)` route group levels               |
-| 404                 | `not-found.tsx`                                                              |
+| tRPC procedures     | Standard tRPC error codes (`UNAUTHORIZED`, `NOT_FOUND`, `BAD_REQUEST`, …)    |
+| React rendering     | `ErrorBoundary` wrapping layout subtrees                                     |
+| Global pages        | `error.tsx` at root, `(auth)`, and `(root)` levels; `not-found.tsx`          |
 | Client hooks        | `useErrorHandler` + `useAsyncError`                                          |
 | Centralized logging | `logError()` in `src/lib/error-handler.ts`                                   |
 
@@ -482,117 +403,40 @@ Validated with `@t3-oss/env-nextjs`:
 | `CLOUDINARY_URL` | Server | No                        | Image upload (future feature)       |
 | `NODE_ENV`       | Server | No (default: development) | Environment flag                    |
 
-No `NEXT_PUBLIC_*` client variables. Empty strings treated as `undefined`. Can skip validation with `SKIP_ENV_VALIDATION=true`.
+No `NEXT_PUBLIC_*` client variables. Empty strings treated as `undefined`. Skip validation with `SKIP_ENV_VALIDATION=true`.
 
 ---
 
 ## Implemented Features
 
-### Authentication & Authorization ✅
-
-- Email/password registration and login
-- bcrypt password hashing (10 rounds)
-- JWT session management (no DB sessions)
-- Protected routes via fast cookie-check middleware
-- Auto Teacher profile creation on first sign-up
-- Timezone stored on User model, user can update it
-
-### Student Management ✅
-
-- Full CRUD with TanStack Table (sorting, filtering, pagination)
-- Student avatars, notes, lesson rate
-- SSR-prefetched data (no loading flicker)
-
-### Lesson Scheduling ✅
-
-- Schedule/update/cancel lessons
-- Link lessons to music pieces
-- Block duplicate lessons for same student+date
-- Recurring lesson creation (weekly, 1–2 months, timezone-aware)
-- Filter by date range / status
-
-### Attendance Tracking ✅
-
-- Four statuses: `PENDING`, `COMPLETE`, `CANCELLED`, `MAKEUP`
-- Actual duration recording
-- Cancel reason + lesson notes
-- `markAttendance` mutation for inline updates
-
-### Calendar View ✅
-
-- FullCalendar 6 (daygrid + timegrid + interaction plugins)
-- `getInRange` query for efficient date-window fetching
-- Create / edit / delete lessons from calendar
-- Color-coded lessons by status
-
-### Recurring Lessons ✅
-
-- Weekly recurring lesson creation over 1–2 months
-- Full IANA timezone support via `date-fns-tz.fromZonedTime`
-- Day-of-week + time selection
-
-### Monthly Reports ✅
-
-- Three editable sections: Summary, Comments, Next Month Plan
-- Auto-save via `upsertReport` mutation
-- Preview mode with attendance stats and fee calculation
-- Month/year navigation with searchParam (`?studentId`)
-- Print-to-PDF support
-
-### Music Pieces ✅
-
-- Full CRUD with TanStack Table
-- Star-based difficulty rating (1–5)
-- Lesson link count per piece
-- SSR-prefetched data
-
-### Earnings Dashboard ✅
-
-- Total earnings, current month earnings, current month losses
-- Today's lessons with earnings per lesson
-- Earnings grouped by student (current month)
-- All queries timezone-aware (teacher's IANA timezone)
-
-### Profile Management ✅
-
-- Edit user profile (name, email, avatar)
-- Timezone selector with `updateTimezone` procedure
-- Change password (bcrypt verify + rehash)
-- Teacher settings (lesson rate)
-
-### Error Handling ✅
-
-- Multi-layer error handling (see Error Handling section)
-- User-friendly toast messages
-- Dev mode shows raw errors
-
-### UI/UX ✅
-
-- Responsive sidebar navigation with collapse
-- Dark/light theme (next-themes)
-- Toast notifications (Sonner)
-- Form validation with inline error messages
-- 35+ Shadcn/UI components
-- Skeleton loading states
-- Framer Motion animations
-- Mobile-responsive (useIsMobile hook + sheet drawer)
-
-### Hidden Easter Egg 🎹
-
-- `/forever` page: anniversary countdown, progress bar, confetti rain, music player, floating hearts, photo memories modal
+- **Auth** ✅ — email/password register + login, bcrypt (10 rounds), JWT sessions, cookie-check route guard, auto Teacher creation, per-user timezone.
+- **Student management** ✅ — CRUD via shared `DataTable`; avatar, notes, in-person + online lesson rates.
+- **Lesson scheduling** ✅ — create/update/cancel, link to pieces, block duplicate student+date, recurring creation (weekly, 1–2 months, IANA-timezone), filter by range/status.
+- **Attendance** ✅ — `PENDING`/`COMPLETE`/`CANCELLED`/`MAKEUP`, actual duration, cancel reason + notes, inline `markAttendance`.
+- **Calendar** ✅ — FullCalendar 6, `getInRange` windowed fetch, create/edit/delete, color-coded by status. *(TZ display caveat above.)*
+- **Monthly reports** ✅ — summary / comments / next-month plan / tuition note, auto-save upsert, preview with attendance + fee totals, print-to-PDF, per-student route.
+- **Music pieces** ✅ — CRUD, star difficulty (1–5), lesson-link count.
+- **Earnings dashboard** ✅ — live section cards + intelligence panel (today, quick insights, trend chart, top students); timezone-aware.
+- **Payment tracking** ✅ — per-student, per-month expected vs received, partial payments, transactions, history, unpaid/outstanding summaries. *(See money-correctness bugs #4/#5/#10.)*
+- **Currency** ✅ — selectable display currency (persisted) with shared formatters.
+- **Profile/settings** ✅ — edit profile, timezone selector, change password, lesson rates.
+- **Error handling** ✅ — multi-layer with user-friendly toasts.
+- **UI/UX** ✅ — responsive collapsible sidebar, dark/light theme (next-themes), Sonner toasts, inline validation, skeletons, Framer Motion, mobile drawer.
+- **Easter eggs** 🎹 — `/forever` anniversary page + birthday-game/room pages.
 
 ---
 
 ## Not Yet Implemented
 
-| Feature                   | Notes                                                          |
-| ------------------------- | -------------------------------------------------------------- |
-| Student detail page       | Route files exist (`students/[id]/reports/`) but no `page.tsx` |
-| Notifications             | Placeholder page only                                          |
-| Updates / changelog       | Placeholder page only                                          |
-| Cloudinary image upload   | `CLOUDINARY_URL` env var defined but not wired up              |
-| Google OAuth              | Removed; only Credentials provider active                      |
-| Advanced dashboard charts | Recharts imported but limited use                              |
+| Feature                 | Notes                                                              |
+| ----------------------- | ------------------------------------------------------------------ |
+| Student detail page     | `students/[id]/reports/` has a report-view component but no `page.tsx` |
+| Notifications           | Placeholder page only                                              |
+| Updates / changelog     | Placeholder page only                                              |
+| Cloudinary image upload | `CLOUDINARY_URL` defined but not wired up                          |
+| Automated tests         | No test tooling yet (see `ISSUES_AND_FIXES.md` #22)                |
+
+See `FUTURE_FEATURES.md` for the planned roadmap.
 
 ---
 
@@ -603,15 +447,15 @@ npm install          # Install dependencies
 npm run dev          # Start dev server (Turbopack)
 npm run build        # Production build
 npm start            # Start production server
-npm run db:generate  # Generate Prisma client
-npm run db:migrate   # Run migrations (dev)
-npm run db:push      # Deploy migrations (prod)
+npm run db:push      # Push schema to DB (prisma db push) — USE THIS
 npm run db:studio    # Open Prisma Studio
 npm run lint         # Run ESLint
 npm run lint:fix     # Fix lint issues
 npm run format:write # Format with Prettier
-npm run typecheck    # TypeScript type check
+npm run check        # lint + tsc --noEmit
 ```
+
+> ⚠️ **Never run `db:generate` / `db:migrate`** (they call `prisma migrate dev` / `migrate deploy`). This repo syncs schema with **`prisma db push`** only — the Neon migration history is intentionally out of sync, so `migrate` will fail or diverge. Stop the dev server before running `prisma generate`.
 
 ---
 
@@ -620,8 +464,7 @@ npm run typecheck    # TypeScript type check
 ### tRPC + React Query on Server (SSR Prefetch)
 
 ```ts
-// server component
-const { api, HydrateClient } = await import("~/trpc/server");
+const { api, HydrateClient } = await import("@/trpc/server");
 void api.student.getAll.prefetch();
 return <HydrateClient><ClientPage /></HydrateClient>;
 ```
@@ -629,7 +472,6 @@ return <HydrateClient><ClientPage /></HydrateClient>;
 ### tRPC + React Query on Client
 
 ```ts
-// client component
 const { data, isLoading } = api.student.getAll.useQuery();
 const utils = api.useUtils();
 const createMutation = api.student.create.useMutation({
@@ -644,8 +486,7 @@ export const lessonRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createLessonSchema)
     .mutation(async ({ ctx, input }) => {
-      // ctx.session.user.id is guaranteed to exist
-      // ctx.db is the Prisma client
+      // ctx.session.user.id guaranteed; ctx.db is Prisma
     }),
 });
 ```
@@ -657,7 +498,3 @@ const form = useForm<Schema>({ resolver: zodResolver(schema) });
 const mutation = api.xxx.create.useMutation({ onSuccess, onError });
 const onSubmit = form.handleSubmit((data) => mutation.mutate(data));
 ```
-
-### Data Table Pattern
-
-TanStack React Table v8 with column definitions, `useReactTable`, sorting, filtering, and pagination. Used in Students and Pieces pages.
