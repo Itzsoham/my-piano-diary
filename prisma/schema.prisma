@@ -83,6 +83,8 @@ model Student {
   reports    MonthlyReport[]
   payments   PaymentMonth[]
   paymentTransactions PaymentTransaction[]
+
+  @@index([teacherId])
 }
 
 model Piece {
@@ -95,6 +97,8 @@ model Piece {
   createdAt   DateTime @default(now()) @db.Timestamptz
   teacher     Teacher  @relation(fields: [teacherId], references: [id])
   lessons     Lesson[]
+
+  @@index([teacherId])
 }
 
 model Lesson {
@@ -111,19 +115,19 @@ model Lesson {
   note         String?
   pieceId      String?
   createdAt    DateTime     @default(now()) @db.Timestamptz
-  piece        Piece?       @relation(fields: [pieceId], references: [id])
-  student      Student      @relation(fields: [studentId], references: [id])
-  teacher      Teacher      @relation(fields: [teacherId], references: [id])
+  piece        Piece?       @relation(fields: [pieceId], references: [id], onDelete: SetNull)
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher      Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([teacherId, date])
   @@index([studentId, date])
+  @@index([pieceId])
 }
 
 enum LessonStatus {
   PENDING
   COMPLETE
   CANCELLED
-  MAKEUP
 }
 
 model MonthlyReport {

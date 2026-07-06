@@ -7,14 +7,19 @@ import {
 } from "@/lib/validations/api-schemas";
 import { getStartOfMonthUTC, getEndOfMonthUTC } from "@/lib/timezone";
 
-const lessonMetadataSchema = z.record(
-  z.object({
-    reason: z.string().max(500),
-    customReason: z.string().max(500),
-    isSpecial: z.boolean(),
-    color: z.string().max(50),
-  }),
-);
+const lessonMetadataSchema = z
+  .record(
+    z.string().max(50),
+    z.object({
+      reason: z.string().max(500),
+      customReason: z.string().max(500),
+      isSpecial: z.boolean(),
+      color: z.string().max(50),
+    }),
+  )
+  .refine((value) => Object.keys(value).length <= 200, {
+    message: "Too many lesson entries",
+  });
 
 export const reportRouter = createTRPCRouter({
   getAll: protectedProcedure

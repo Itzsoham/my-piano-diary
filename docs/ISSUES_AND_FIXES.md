@@ -10,15 +10,38 @@
 
 | Priority     | Open items                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------ |
-| 🔴 High      | Student delete FK crash · Edit-lesson Save silently broken · Profile save rejected when no avatar       |
-| 🟠 Medium    | Payment-history stale totals · Overall-outstanding netting · Silent query-error empty states · Lost form input on failure · Unbounded payment amount |
-| 🟡 Low       | dead `isPending` guard · loose recurring inputs · unbounded report metadata · `MAKEUP` enum gap · debug logs · missing indexes |
+| 🔴 High      | — none (all fixed 2026-07-06)                                                                            |
+| 🟠 Medium    | — none (all fixed 2026-07-06)                                                                            |
+| 🟡 Low       | — none (all fixed 2026-07-06)                                                                            |
 | 🔒 Security  | No auth rate-limiting / brute-force protection · weak password policy · account enumeration            |
 | 🧱 Backlog   | No tests · client-only pagination · no prod monitoring · calendar a11y + loading · table DRY cleanup    |
 
 ---
 
+## ✅ Fixed 2026-07-06 (this batch)
+
+All correctness & cleanup bugs #1–#18 are resolved (timezone bugs #6, #7, #11 earlier the same day; see their entries). The detailed entries below are kept for history.
+
+- **#1** Student-delete FK crash — `Lesson.student`/`.teacher` now `onDelete: Cascade`, `Lesson.piece` `SetNull`; applied via `prisma db push` and verified against the DB.
+- **#2** Edit-lesson silent save — added `isOnline` to the on-open `form.reset` + a `<FormMessage/>` on the field.
+- **#3** Profile save without avatar — `updateUserSchema.image` now accepts `""` (`.or(z.literal(""))`).
+- **#4** Payment-history stale totals — `getStudentHistory` recomputes expected live from `COMPLETE` lessons per timezone-month.
+- **#5** Overall-outstanding netting — `getOverallSummary` buckets by student+year+month and clamps remaining per bucket.
+- **#8** Silent query errors — global `QueryCache.onError` toast (browser-only) + calendar renders `ErrorState` on `isError`.
+- **#9** Lost form input on failure — lesson/student/piece forms close+reset in `onSuccess` (not `onMutate`); lesson dialog disables submit while pending.
+- **#10** Unbounded payment amount — `.max(10000000)` on add/update transaction amount.
+- **#12** Dead `isPending` guard — `??` → `||` in student/piece forms.
+- **#13/#14** Loose recurring inputs — `timezone` `.refine(isValidTimezone)`, `startDate` `z.string().date()`.
+- **#15** Unbounded report metadata — key schema `z.string().max(50)` + `.refine(≤ 200 keys)`.
+- **#16** `MAKEUP` status — **removed** everywhere (it's a retired, unused status; 0 rows in the DB): dropped from `lessonStatusSchema`, both `api-schemas` enums, and the Prisma `LessonStatus` enum (applied via `prisma db push`). Supersedes the earlier "add it" fix.
+- **#17** Debug logs — `[TRPC]` timing log gated to dev; the `createRecurring` `[SERVER DEBUG]` logs were removed with #7.
+- **#18** Missing indexes — `@@index` on `Student.teacherId`, `Piece.teacherId`, `Lesson.pieceId` (applied + verified).
+
+---
+
 ## 🔴 High-Priority Bugs (confirmed, user-facing)
+
+> ✅ **All resolved 2026-07-06** — entries kept below for history.
 
 ### 1. Deleting a student with any lesson crashes (foreign-key violation) — **NEW**
 
@@ -67,6 +90,8 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 ---
 
 ## 🟠 Medium-Priority Bugs (confirmed)
+
+> ✅ **All resolved 2026-07-06** — entries kept below for history.
 
 ### 4. Payment-history dialog shows stale expected amount & wrong status — **NEW**
 
@@ -144,6 +169,8 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 ## 🟡 Low-Priority Bugs & Cleanups
 
+> ✅ **All resolved 2026-07-06** (except the `trpc.ts` timing log, now dev-gated) — entries kept below for history.
+
 | #   | Issue                                                                  | Where                                                                 | Fix                                                                                             |
 | --- | --------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | 11  | ✅ **FIXED (2026-07-06)** Dashboard "today"/label/times now render in the configured TZ; the day picker interprets selections in that zone | `today-lessons-table.tsx` | Done: label/`isToday`/times use `formatInTimezone` + `isSameDayInTimezone`; the query gets the raw `new Date()` instant and the picker maps days via `createDateInTimezone`/`fromUTC` |
@@ -151,7 +178,7 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 | 13  | **NEW** `createRecurring` accepts any non-empty `timezone` string → 500 on invalid IANA | `api-schemas.ts:155`                                                 | `.refine(isValidTimezone, "Invalid timezone")`                                                  |
 | 14  | **NEW** `createRecurring` `startDate` regex accepts impossible dates (`2024-13-45` rolls over) | `api-schemas.ts:131-133`                                             | Use `z.string().date()` (or `dateStringSchema`)                                                 |
 | 15  | **NEW** `MonthlyReport.lessonMetadata` is an unbounded `z.record` with unvalidated keys | `report.ts:10`                                                       | Validate keys as `.cuid()` and `.refine(o => Object.keys(o).length <= 200)`                     |
-| 16  | **NEW** `lessonStatusSchema` omits `MAKEUP` while the Prisma enum includes it | `common-schemas.ts:71`                                               | Add `"MAKEUP"` (or reuse the `api-schemas` enum) so make-up lessons can be set via create/update |
+| 16  | ✅ **RESOLVED by removal** — `MAKEUP` is a retired, unused status (0 DB rows), so instead of adding it, it was dropped from the Prisma enum **and** every Zod schema | `schema.prisma`, `common-schemas.ts`, `api-schemas.ts` | Consistency restored by removing `MAKEUP` everywhere (enum + validation) |
 | 17  | Leftover `console.log("[SERVER DEBUG]…")` in production — **partly fixed** (the `createRecurring` logs were removed with #7; `trpc.ts:99` still open) | `trpc.ts:99`                                    | Remove the remaining debug logging                                                              |
 | 18  | **NEW** No `@@index` on `Student.teacherId` / `Piece.teacherId`; no index on `Lesson.pieceId` | `prisma/schema.prisma` (Student, Piece, Lesson)                     | Add the indexes for consistency (`prisma db push`). Minor — per-teacher tables are small        |
 
@@ -251,9 +278,7 @@ Verified fixed in the current codebase — kept here for history:
 
 ## Recommended Fix Order
 
-1. **Ship the three High bugs (#1–#3)** — each breaks a core flow (delete student, edit lesson, save profile) and is a one-to-few-line fix.
-2. **Money correctness (#4, #5, #10)** — teachers trust these numbers; stale/netted totals are silently wrong.
-3. **Error-surfacing (#8, #9)** — silent query failures and lost form input erode trust. (Timezone bugs #6 calendar, #11 dashboard, and #7 recurring-on-non-UTC-host all fixed 2026-07-06.)
-4. **Security (#19–#21)** — add auth rate limiting + stronger passwords before wider use.
-5. **Low-priority cleanups (#11–#18)** — batch them; several are one-liners.
-6. **Backlog (#22–#26)** — tests, pagination, monitoring, calendar a11y, table DRY — as scale/quality work.
+All correctness & cleanup bugs (#1–#18) are fixed as of 2026-07-06. Remaining work:
+
+1. **Security (#19–#21)** — add auth rate limiting, stronger passwords, and reduce account enumeration before wider use.
+2. **Backlog (#22–#26)** — tests, server-side pagination, production monitoring, calendar a11y/loading, table DRY cleanup — as scale/quality work.

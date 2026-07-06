@@ -216,59 +216,60 @@ const buildMonthPaymentRows = async ({
 export const paymentRouter = createTRPCRouter({
   getOverallSummary: protectedProcedure.query(async ({ ctx }) => {
     const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
+    const timezone = ctx.session.user.timezone ?? "UTC";
 
-    const [students, expectedLessonsByStudent, receivedByStudent] =
-      await Promise.all([
-        ctx.db.student.findMany({
-          where: {
-            teacherId: teacher.id,
-          },
-          select: {
-            id: true,
-          },
-        }),
-        ctx.db.lesson.groupBy({
-          by: ["studentId"],
-          where: {
-            teacherId: teacher.id,
-            status: "COMPLETE",
-          },
-          _sum: {
-            rate: true,
-          },
-        }),
-        ctx.db.paymentTransaction.groupBy({
-          by: ["studentId"],
-          where: {
-            teacherId: teacher.id,
-          },
-          _sum: {
-            amount: true,
-          },
-        }),
-      ]);
+    const [students, completedLessons, paymentMonths] = await Promise.all([
+      ctx.db.student.findMany({
+        where: { teacherId: teacher.id },
+        select: { id: true },
+      }),
+      ctx.db.lesson.findMany({
+        where: { teacherId: teacher.id, status: "COMPLETE" },
+        select: { studentId: true, date: true, rate: true },
+      }),
+      ctx.db.paymentMonth.findMany({
+        where: { teacherId: teacher.id },
+        select: {
+          studentId: true,
+          month: true,
+          year: true,
+          transactions: { select: { amount: true } },
+        },
+      }),
+    ]);
 
-    const expectedAmountByStudent = new Map(
-      expectedLessonsByStudent.map((entry) => [
-        entry.studentId,
-        entry._sum.rate ?? 0,
-      ]),
-    );
-    const receivedAmountByStudent = new Map(
-      receivedByStudent.map((entry) => [
-        entry.studentId,
-        entry._sum.amount ?? 0,
-      ]),
-    );
+    // Bucket expected (completed-lesson rates) and received (a month's
+    // transactions) by student+year+month — assigning each lesson to a month
+    // in the configured timezone — then clamp remaining PER bucket before
+    // summing. Clamping per month stops an overpaid month from cancelling an
+    // underpaid one, matching every other outstanding figure in the app.
+    const expectedByBucket = new Map<string, number>();
+    for (const lesson of completedLessons) {
+      const local = fromUTC(lesson.date, timezone);
+      const key = `${lesson.studentId}|${local.getFullYear()}|${local.getMonth() + 1}`;
+      expectedByBucket.set(key, (expectedByBucket.get(key) ?? 0) + lesson.rate);
+    }
+
+    const receivedByBucket = new Map<string, number>();
+    for (const paymentMonth of paymentMonths) {
+      const received = paymentMonth.transactions.reduce(
+        (sum, transaction) => sum + transaction.amount,
+        0,
+      );
+      const key = `${paymentMonth.studentId}|${paymentMonth.year}|${paymentMonth.month}`;
+      receivedByBucket.set(key, (receivedByBucket.get(key) ?? 0) + received);
+    }
 
     let totalExpected = 0;
     let totalReceived = 0;
     let totalOutstanding = 0;
-
-    for (const student of students) {
-      const expected = expectedAmountByStudent.get(student.id) ?? 0;
-      const received = receivedAmountByStudent.get(student.id) ?? 0;
-
+    const allKeys = new Set([
+      ...expectedByBucket.keys(),
+      ...receivedByBucket.keys(),
+    ]);
+    for (const key of allKeys) {
+      const expected = expectedByBucket.get(key) ?? 0;
+      const received = receivedByBucket.get(key) ?? 0;
       totalExpected += expected;
       totalReceived += received;
       totalOutstanding += calculateRemaining(expected, received);
@@ -457,6 +458,7 @@ export const paymentRouter = createTRPCRouter({
     .input(getPaymentStudentHistorySchema)
     .query(async ({ ctx, input }) => {
       const teacher = await getTeacherOrThrow(ctx.db, ctx.session.user.id);
+      const timezone = ctx.session.user.timezone ?? "UTC";
 
       const student = await ctx.db.student.findFirst({
         where: {
@@ -496,23 +498,43 @@ export const paymentRouter = createTRPCRouter({
         take: input.limit,
       });
 
+      // Recompute expected live from completed lessons (bucketed by the
+      // configured timezone's month), instead of trusting the denormalized
+      // PaymentMonth.expectedAmount snapshot — that snapshot is only written on
+      // a transaction, so it goes stale when a lesson is completed/cancelled/
+      // deleted/re-priced afterward and the history would then disagree with
+      // the payments table.
+      const completedLessons = await ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          studentId: input.studentId,
+          status: "COMPLETE",
+        },
+        select: { date: true, rate: true },
+      });
+
+      const expectedByMonth = new Map<string, number>();
+      for (const lesson of completedLessons) {
+        const local = fromUTC(lesson.date, timezone);
+        const key = `${local.getFullYear()}-${local.getMonth() + 1}`;
+        expectedByMonth.set(key, (expectedByMonth.get(key) ?? 0) + lesson.rate);
+      }
+
       return paymentMonths.map((paymentMonth) => {
         const receivedAmount = paymentMonth.transactions.reduce(
           (sum, transaction) => sum + transaction.amount,
           0,
         );
+        const expectedAmount =
+          expectedByMonth.get(`${paymentMonth.year}-${paymentMonth.month}`) ??
+          0;
 
         return {
           ...paymentMonth,
+          expectedAmount,
           receivedAmount,
-          remainingAmount: calculateRemaining(
-            paymentMonth.expectedAmount,
-            receivedAmount,
-          ),
-          status: derivePaymentStatus(
-            paymentMonth.expectedAmount,
-            receivedAmount,
-          ),
+          remainingAmount: calculateRemaining(expectedAmount, receivedAmount),
+          status: derivePaymentStatus(expectedAmount, receivedAmount),
         };
       });
     }),

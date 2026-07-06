@@ -170,7 +170,7 @@ export const updateReportSchema = createReportSchema.partial().extend({
 export const updateUserSchema = z.object({
   name: nameSchema.optional(),
   email: emailSchema.optional(),
-  image: z.string().url("Invalid image URL").optional(),
+  image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 });
 
 // Batch operations

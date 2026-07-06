@@ -59,20 +59,16 @@ export function StudentForm({
   );
 
   const createMutation = api.student.create.useMutation({
-    onMutate: async () => {
-      // ✅ Close dialog and show toast INSTANTLY — don't wait for server
+    onSuccess: () => {
+      // Close only after the server confirms, so a failed submit keeps the
+      // form open with the entered values intact.
       toast.success("Student created successfully", { id: "student-create" });
       onSuccess?.();
-    },
-    onSuccess: () => {
-      // Modal already closed
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to create student", {
         id: "student-create",
       });
-      // Error handling UI can't reopen if not passed a setter,
-      // but onSuccess?.() might trigger a close, so we just show error
     },
     onSettled: () => {
       void utils.student.getAll.invalidate();
@@ -81,12 +77,9 @@ export function StudentForm({
   });
 
   const updateMutation = api.student.update.useMutation({
-    onMutate: async () => {
+    onSuccess: () => {
       toast.success("Student updated successfully", { id: "student-update" });
       onSuccess?.();
-    },
-    onSuccess: () => {
-      // Modal already closed
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to update student", {
@@ -158,7 +151,7 @@ export function StudentForm({
     }
   };
 
-  const isPending = createMutation.isPending ?? updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   if (studentId && isLoading) {
     return (

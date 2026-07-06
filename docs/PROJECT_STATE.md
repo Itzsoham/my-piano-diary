@@ -159,7 +159,7 @@ User ──1:1──> Teacher ──1:many──> Student ──1:many──> Le
 | `PaymentMonth`       | `id`, `studentId → Student (cascade)`, `teacherId → Teacher (cascade)`, `month`, `year`, `expectedAmount (int)`, `createdAt`, `updatedAt`; `@@unique([studentId, month, year])`             |
 | `PaymentTransaction` | `id`, `paymentMonthId → PaymentMonth (cascade)`, `studentId (cascade)`, `teacherId (cascade)`, `amount (int)`, `method?`, `note?`, `date`, `createdAt`, `updatedAt`                          |
 
-**LessonStatus enum**: `PENDING` | `COMPLETE` | `CANCELLED` | `MAKEUP`
+**LessonStatus enum**: `PENDING` | `COMPLETE` | `CANCELLED`
 
 **Rate snapshotting**: each `Lesson.rate` is frozen at create/update time from the student's `lessonRate` (in-person) or `onlineLessonRate` (online). Past months never re-price when a student's rate later changes.
 
@@ -413,7 +413,7 @@ No `NEXT_PUBLIC_*` client variables. Empty strings treated as `undefined`. Skip 
 - **Auth** ✅ — email/password register + login, bcrypt (10 rounds), JWT sessions, cookie-check route guard, auto Teacher creation, per-user timezone.
 - **Student management** ✅ — CRUD via shared `DataTable`; avatar, notes, in-person + online lesson rates.
 - **Lesson scheduling** ✅ — create/update/cancel, link to pieces, block duplicate student+date, recurring creation (weekly, 1–2 months, IANA-timezone), filter by range/status.
-- **Attendance** ✅ — `PENDING`/`COMPLETE`/`CANCELLED`/`MAKEUP`, actual duration, cancel reason + notes, inline `markAttendance`.
+- **Attendance** ✅ — `PENDING`/`COMPLETE`/`CANCELLED`, actual duration, cancel reason + notes, inline `markAttendance`.
 - **Calendar** ✅ — FullCalendar 6, `getInRange` windowed fetch, create/edit/delete, color-coded by status; events render in the configured timezone.
 - **Monthly reports** ✅ — summary / comments / next-month plan / tuition note, auto-save upsert, preview with attendance + fee totals, print-to-PDF, per-student route.
 - **Music pieces** ✅ — CRUD, star difficulty (1–5), lesson-link count.

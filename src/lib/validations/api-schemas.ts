@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isValidTimezone } from "@/lib/timezone";
+
 /**
  * Student validation schemas
  */
@@ -118,7 +120,7 @@ export const updateLessonSchema = z.object({
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration must be less than 8 hours")
     .optional(),
-  status: z.enum(["PENDING", "COMPLETE", "CANCELLED", "MAKEUP"]).optional(),
+  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]).optional(),
   pieceId: z.union([z.string().cuid("Invalid piece ID"), z.null()]).optional(),
   cancelReason: z
     .string()
@@ -128,9 +130,7 @@ export const updateLessonSchema = z.object({
 
 export const createRecurringLessonSchema = z.object({
   studentId: z.string().cuid("Invalid student ID"),
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Expected YYYY-MM-DD"),
+  startDate: z.string().date("Invalid date format. Expected YYYY-MM-DD"),
   dayOfWeek: z
     .number()
     .int()
@@ -151,8 +151,10 @@ export const createRecurringLessonSchema = z.object({
   pieceId: z.string().cuid("Invalid piece ID").optional(),
   isOnline: z.boolean().optional().default(false),
   // IANA timezone string (e.g., "Asia/Kolkata", "America/New_York")
-  // Server will validate this is a valid timezone
-  timezone: z.string().min(1, "Timezone is required"),
+  timezone: z
+    .string()
+    .min(1, "Timezone is required")
+    .refine(isValidTimezone, "Invalid timezone"),
 });
 
 export const deleteLessonSchema = z.object({
@@ -178,7 +180,7 @@ export const getMonthLessonsSchema = z.object({
  */
 export const markAttendanceSchema = z.object({
   lessonId: z.string().cuid("Invalid lesson ID"),
-  status: z.enum(["PENDING", "COMPLETE", "CANCELLED", "MAKEUP"]),
+  status: z.enum(["PENDING", "COMPLETE", "CANCELLED"]),
   isOnline: z.boolean().optional(),
   // Per-lesson rate override (đ). When set, it wins over the online/in-person
   // derived rate for this single lesson.
@@ -309,7 +311,11 @@ export const addPaymentTransactionSchema = z.object({
     .int()
     .min(2000, "Year must be 2000 or later")
     .max(2100, "Year must be 2100 or earlier"),
-  amount: z.number().int().min(1, "Amount must be at least 1"),
+  amount: z
+    .number()
+    .int()
+    .min(1, "Amount must be at least 1")
+    .max(10000000, "Amount seems unreasonably high"),
   date: z
     .union([
       z.date(),
@@ -330,7 +336,12 @@ export const addPaymentTransactionSchema = z.object({
 
 export const updatePaymentTransactionSchema = z.object({
   transactionId: z.string().cuid("Invalid transaction ID"),
-  amount: z.number().int().min(1, "Amount must be at least 1").optional(),
+  amount: z
+    .number()
+    .int()
+    .min(1, "Amount must be at least 1")
+    .max(10000000, "Amount seems unreasonably high")
+    .optional(),
   date: z
     .union([
       z.date(),

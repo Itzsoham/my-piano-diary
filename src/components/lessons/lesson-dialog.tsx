@@ -74,20 +74,17 @@ export function LessonDialog({
 
   const createLesson = api.lesson.create.useMutation({
     mutationKey: ["lesson-write"],
-    onMutate: async () => {
-      // ✅ Close dialog and show toast INSTANTLY — don't wait for server
+    onSuccess: () => {
+      // Close + reset only after the server confirms, so a failed submit keeps
+      // the dialog open with the entered values intact.
       toast.success("Lesson created successfully! 💗", { id: "lesson-create" });
       onOpenChange(false);
       form.reset();
-    },
-    onSuccess: () => {
-      // Modal already closed
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to create lesson", {
         id: "lesson-create",
       });
-      onOpenChange(true); // Re-open on error
     },
     onSettled: async () => {
       const inFlight = queryClient.isMutating({
@@ -105,22 +102,20 @@ export function LessonDialog({
 
   const createRecurring = api.lesson.createRecurring.useMutation({
     mutationKey: ["lesson-write"],
-    onMutate: async () => {
-      // Optimistic close
+    onMutate: () => {
       toast.loading("Scheduling lessons...", { id: "lesson-recurring" });
-      onOpenChange(false);
-      form.reset();
     },
     onSuccess: (data) => {
       toast.success(`${data.count} lessons scheduled beautifully! ✨`, {
         id: "lesson-recurring",
       });
+      onOpenChange(false);
+      form.reset();
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to create recurring lessons", {
         id: "lesson-recurring",
       });
-      onOpenChange(true);
     },
     onSettled: async () => {
       const inFlight = queryClient.isMutating({
@@ -503,9 +498,12 @@ export function LessonDialog({
                 </Button>
                 <Button
                   type="submit"
+                  disabled={createLesson.isPending || createRecurring.isPending}
                   className="h-10 flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 sm:h-auto"
                 >
-                  Create lesson
+                  {createLesson.isPending || createRecurring.isPending
+                    ? "Creating..."
+                    : "Create lesson"}
                 </Button>
               </div>
             </form>

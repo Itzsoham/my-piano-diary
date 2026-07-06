@@ -1,11 +1,22 @@
 import {
   defaultShouldDehydrateQuery,
+  QueryCache,
   QueryClient,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import SuperJSON from "superjson";
 
 export const createQueryClient = () =>
   new QueryClient({
+    // Surface query failures with a toast instead of silently rendering empty
+    // lists. Runs only in the browser — the per-request QueryClient created
+    // during SSR skips it (toast is client-only).
+    queryCache: new QueryCache({
+      onError: (error) => {
+        if (typeof window === "undefined") return;
+        toast.error(error.message ?? "Failed to load data");
+      },
+    }),
     defaultOptions: {
       queries: {
         // With SSR, we usually want to set some default staleTime

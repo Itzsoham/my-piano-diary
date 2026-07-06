@@ -53,12 +53,11 @@ export function PieceForm({
   );
 
   const createMutation = api.piece.create.useMutation({
-    onMutate: async () => {
-      toast.success("Piece created successfully", { id: "piece-create" });
-      onSuccess?.(); // Close modal immediately
-    },
     onSuccess: () => {
-      // Modal already closed
+      // Close only after the server confirms, so a failed submit keeps the
+      // form open with the entered values intact.
+      toast.success("Piece created successfully", { id: "piece-create" });
+      onSuccess?.();
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to create piece", {
@@ -72,12 +71,9 @@ export function PieceForm({
   });
 
   const updateMutation = api.piece.update.useMutation({
-    onMutate: async () => {
-      toast.success("Piece updated successfully", { id: "piece-update" });
-      onSuccess?.(); // Close modal immediately
-    },
     onSuccess: () => {
-      // Modal already closed
+      toast.success("Piece updated successfully", { id: "piece-update" });
+      onSuccess?.();
     },
     onError: (error) => {
       toast.error(error.message ?? "Failed to update piece", {
@@ -129,7 +125,7 @@ export function PieceForm({
     }
   };
 
-  const isPending = createMutation.isPending ?? updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   if (pieceId && isLoading) {
     return (

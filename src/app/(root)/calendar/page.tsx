@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, CalendarX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/ui/error-state";
 import { FullCalendarView } from "./_components/full-calendar-view";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
@@ -39,7 +40,11 @@ export default function CalendarPage() {
   const { isBirthdayMode } = useBirthday();
 
   const utils = api.useUtils();
-  const { data: lessons = [] } = api.lesson.getInRange.useQuery({
+  const {
+    data: lessons = [],
+    isError,
+    refetch,
+  } = api.lesson.getInRange.useQuery({
     start: dateRange.start,
     end: dateRange.end,
   });
@@ -97,14 +102,27 @@ export default function CalendarPage() {
         </Button>
       </div>
 
-      <FullCalendarView
-        lessons={lessons as Lesson[]}
-        onDateRangeChange={(start: Date, end: Date) =>
-          setDateRange({ start, end })
-        }
-        onAddLesson={handleAddLesson}
-        onLessonClick={handleLessonClick}
-      />
+      {isError ? (
+        <ErrorState
+          icon={CalendarX}
+          title="Couldn't load your calendar"
+          description="Something went wrong fetching lessons for this range. Check your connection and try again."
+          action={
+            <Button variant="outline" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : (
+        <FullCalendarView
+          lessons={lessons as Lesson[]}
+          onDateRangeChange={(start: Date, end: Date) =>
+            setDateRange({ start, end })
+          }
+          onAddLesson={handleAddLesson}
+          onLessonClick={handleLessonClick}
+        />
+      )}
 
       <LessonDialog
         open={lessonDialogOpen}

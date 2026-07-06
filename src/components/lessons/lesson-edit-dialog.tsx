@@ -137,6 +137,7 @@ export function LessonEditDialog({
       time: format(lesson.date, "HH:mm"),
       duration: lesson.duration.toString(),
       status: lesson.status,
+      isOnline: lesson.isOnline,
       pieceId: lesson.pieceId ?? "none",
     });
   }, [open, lesson, form]);
@@ -266,6 +267,7 @@ export function LessonEditDialog({
                     <FormDescription className="text-sm">
                       Re-prices this lesson at the student&apos;s current rate
                     </FormDescription>
+                    <FormMessage />
                   </div>
                   <FormControl>
                     <Switch
