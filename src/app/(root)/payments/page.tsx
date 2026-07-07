@@ -8,6 +8,7 @@ export const metadata = {
 
 export default async function PaymentsPage() {
   const students = await api.student.getAll();
+  const now = new Date();
 
   return (
     <div className="container mx-auto p-6">
@@ -17,6 +18,8 @@ export default async function PaymentsPage() {
           name: student.name,
           avatar: student.avatar,
         }))}
+        defaultMonth={now.getMonth() + 1}
+        defaultYear={now.getFullYear()}
       />
     </div>
   );

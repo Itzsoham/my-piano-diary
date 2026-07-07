@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { useMemo, useState } from "react";
+import { format, parse, startOfDay, endOfDay } from "date-fns";
 import { CheckCircle2, Edit, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
@@ -26,11 +26,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AppLoader } from "@/components/ui/app-loader";
+import { RefreshOverlay } from "@/components/ui/refresh-overlay";
 import { LessonEditDialog } from "@/components/lessons/lesson-edit-dialog";
 import { AttendanceDialog } from "@/app/(root)/calendar/_components/attendance-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useFilterParams } from "@/lib/use-filter-params";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 
 const statusLabels: Record<LessonStatus, string> = {
@@ -53,8 +55,6 @@ type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
 const INITIAL_FROM = startOfDay(new Date());
 const INITIAL_TO = endOfDay(new Date());
 
-const STORAGE_KEY = "lessons-filters";
-
 type Lesson = RouterOutputs["lesson"]["getAll"][number];
 
 type StudentOption = {
@@ -70,49 +70,46 @@ interface LessonsPageProps {
 export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const utils = api.useUtils();
   const queryClient = useQueryClient();
-  const [studentId, setStudentId] = useState("all");
-  const [status, setStatus] = useState<LessonStatus | "all">("all");
-  const [fromDate, setFromDate] = useState<Date | undefined>(INITIAL_FROM);
-  const [toDate, setToDate] = useState<Date | undefined>(INITIAL_TO);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { searchParams, setParams } = useFilterParams();
   const [editLesson, setEditLesson] = useState<Lesson | null>(null);
   const [attendanceLesson, setAttendanceLesson] = useState<Lesson | null>(null);
   const [deleteLesson, setDeleteLesson] = useState<Lesson | null>(null);
 
-  // Load filters from sessionStorage on mount
-  useEffect(() => {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as {
-          studentId?: string;
-          status?: LessonStatus | "all";
-          from?: string;
-          to?: string;
-        };
-        if (parsed.studentId) setStudentId(parsed.studentId);
-        if (parsed.status) setStatus(parsed.status);
-        if (parsed.from) setFromDate(new Date(parsed.from));
-        if (parsed.to) setToDate(new Date(parsed.to));
-      } catch (e) {
-        console.error("Failed to parse saved filters", e);
-      }
-    }
-    setIsLoaded(true);
-  }, []);
+  // Filters live in the URL (shareable + SSR-consistent). Dates are memoised off
+  // the raw `yyyy-MM-dd` params so their identity is stable across renders —
+  // otherwise the query key would change every render and refetch in a loop.
+  const studentId = searchParams.get("student") ?? "all";
+  const statusParam = searchParams.get("status");
+  const status: LessonStatus | "all" =
+    statusParam === "COMPLETE" ||
+    statusParam === "CANCELLED" ||
+    statusParam === "PENDING"
+      ? statusParam
+      : "all";
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
 
-  // Save filters to sessionStorage whenever they change
-  useEffect(() => {
-    if (!isLoaded) return;
+  const fromDate = useMemo(
+    () =>
+      fromParam
+        ? startOfDay(parse(fromParam, "yyyy-MM-dd", new Date()))
+        : INITIAL_FROM,
+    [fromParam],
+  );
+  const toDate = useMemo(
+    () =>
+      toParam ? endOfDay(parse(toParam, "yyyy-MM-dd", new Date())) : INITIAL_TO,
+    [toParam],
+  );
 
-    const filtersToSave = {
-      studentId,
-      status,
-      from: fromDate?.toISOString(),
-      to: toDate?.toISOString(),
-    };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filtersToSave));
-  }, [studentId, status, fromDate, toDate, isLoaded]);
+  const setStudentId = (value: string) =>
+    setParams({ student: value === "all" ? null : value });
+  const setStatus = (value: string) =>
+    setParams({ status: value === "all" ? null : value });
+  const setFromDate = (date: Date | undefined) =>
+    setParams({ from: date ? format(date, "yyyy-MM-dd") : null });
+  const setToDate = (date: Date | undefined) =>
+    setParams({ to: date ? format(date, "yyyy-MM-dd") : null });
 
   const filters = useMemo(
     () => ({
@@ -125,20 +122,21 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   );
 
   const isDefaultFilters =
-    studentId === "all" &&
-    status === "all" &&
-    fromDate === INITIAL_FROM &&
-    toDate === INITIAL_TO;
+    studentId === "all" && status === "all" && !fromParam && !toParam;
 
-  const { data: lessons = [], isPending } = api.lesson.getAll.useQuery(
-    filters,
-    {
-      initialData: isDefaultFilters ? initialLessons : undefined,
-      placeholderData: keepPreviousData,
-    },
-  );
+  const {
+    data: lessons = [],
+    isPending,
+    isFetching,
+  } = api.lesson.getAll.useQuery(filters, {
+    initialData: isDefaultFilters ? initialLessons : undefined,
+    placeholderData: keepPreviousData,
+  });
 
   const isLoading = isPending && lessons.length === 0;
+  // keepPreviousData keeps the old rows on screen during a filter refetch;
+  // surface the in-flight fetch so the swap isn't silent.
+  const isRefreshing = isFetching && !isLoading;
 
   const columns: DataTableColumn<Lesson>[] = [
     {
@@ -274,12 +272,8 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
     },
   });
 
-  const resetFilters = () => {
-    setStudentId("all");
-    setStatus("all");
-    setFromDate(INITIAL_FROM);
-    setToDate(INITIAL_TO);
-  };
+  const resetFilters = () =>
+    setParams({ student: null, status: null, from: null, to: null });
 
   return (
     <div className="container mx-auto">
@@ -319,12 +313,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
 
           <div className="space-y-1 md:space-y-1.5">
             <label className="text-xs font-medium text-pink-700">Status</label>
-            <Select
-              value={status}
-              onValueChange={(value) =>
-                setStatus(value as LessonStatus | "all")
-              }
-            >
+            <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
@@ -367,123 +356,131 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         </div>
       </div>
 
-      <div className="mt-6 border-t pt-6">
-        {isLoading ? (
-          <div className="flex h-32 items-center justify-center">
-            <AppLoader size="sm" />
-          </div>
-        ) : lessons.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-3 text-4xl">🎹</div>
-            <div className="text-lg font-medium text-pink-700">
-              No lessons scheduled yet
+      <div className="relative mt-6 border-t pt-6">
+        <RefreshOverlay active={isRefreshing} />
+        <div
+          className={cn(
+            "transition-opacity",
+            isRefreshing && "pointer-events-none opacity-60",
+          )}
+        >
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center">
+              <AppLoader size="sm" />
             </div>
-            <div className="mt-1 text-sm text-pink-600/70">
-              Your piano week is waiting for music.
+          ) : lessons.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="mb-3 text-4xl">🎹</div>
+              <div className="text-lg font-medium text-pink-700">
+                No lessons scheduled yet
+              </div>
+              <div className="mt-1 text-sm text-pink-600/70">
+                Your piano week is waiting for music.
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Table View */}
-            <DataTable
-              className="hidden md:block"
-              columns={columns}
-              data={lessons}
-              getRowKey={(lesson) => lesson.id}
-              itemRowClassName="transition-colors hover:bg-pink-50"
-            />
+          ) : (
+            <>
+              {/* Desktop Table View */}
+              <DataTable
+                className="hidden md:block"
+                columns={columns}
+                data={lessons}
+                getRowKey={(lesson) => lesson.id}
+                itemRowClassName="transition-colors hover:bg-pink-50"
+              />
 
-            {/* Mobile Card View */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
-              {lessons.map((lesson) => (
-                <div
-                  key={lesson.id}
-                  className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
-                >
-                  <div className="mb-4 flex items-start justify-between">
-                    <span className="rounded-full bg-pink-100 px-3 py-1 text-[11px] font-medium text-pink-600">
-                      {format(new Date(lesson.date), "MMM d • h:mm a")}
-                    </span>
-                    <Badge
-                      className={cn(
-                        statusClasses[lesson.status as LessonStatus],
-                        "px-2 py-0.5 text-[10px] md:text-[10px]",
-                      )}
-                    >
-                      {statusLabels[lesson.status as LessonStatus]}
-                    </Badge>
-                  </div>
+              {/* Mobile Card View */}
+              <div className="grid grid-cols-1 gap-4 md:hidden">
+                {lessons.map((lesson) => (
+                  <div
+                    key={lesson.id}
+                    className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
+                  >
+                    <div className="mb-4 flex items-start justify-between">
+                      <span className="rounded-full bg-pink-100 px-3 py-1 text-[11px] font-medium text-pink-600">
+                        {format(new Date(lesson.date), "MMM d • h:mm a")}
+                      </span>
+                      <Badge
+                        className={cn(
+                          statusClasses[lesson.status as LessonStatus],
+                          "px-2 py-0.5 text-[10px] md:text-[10px]",
+                        )}
+                      >
+                        {statusLabels[lesson.status as LessonStatus]}
+                      </Badge>
+                    </div>
 
-                  <div className="mb-4 flex items-center gap-3">
-                    <Avatar className="size-7 border border-pink-100">
-                      <AvatarImage src={lesson.student.avatar ?? ""} />
-                      <AvatarFallback className="bg-pink-50 text-[10px] font-bold text-pink-600">
-                        {lesson.student.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-[15px] font-semibold text-gray-900">
-                        {lesson.student.name}
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {lesson.piece?.title ?? "No piece"} • {lesson.duration}{" "}
-                        min
-                      </span>
+                    <div className="mb-4 flex items-center gap-3">
+                      <Avatar className="size-7 border border-pink-100">
+                        <AvatarImage src={lesson.student.avatar ?? ""} />
+                        <AvatarFallback className="bg-pink-50 text-[10px] font-bold text-pink-600">
+                          {lesson.student.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-[15px] font-semibold text-gray-900">
+                          {lesson.student.name}
+                        </span>
+                        <span className="text-muted-foreground text-xs">
+                          {lesson.piece?.title ?? "No piece"} •{" "}
+                          {lesson.duration} min
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex gap-3">
+                      <Button
+                        className="flex-1 rounded-xl bg-pink-500 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-pink-600 active:scale-[0.98]"
+                        onClick={() => setAttendanceLesson(lesson)}
+                      >
+                        Mark Attendance
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="size-10 rounded-xl border border-pink-100 text-pink-600 hover:bg-pink-50"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="rounded-xl border-pink-100 bg-white shadow-lg"
+                        >
+                          <DropdownMenuItem
+                            onSelect={() => setEditLesson(lesson)}
+                            className="rounded-lg hover:bg-pink-50"
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onSelect={() => setAttendanceLesson(lesson)}
+                            className="rounded-lg hover:bg-pink-50"
+                          >
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Mark attendance
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => setDeleteLesson(lesson)}
+                            className="rounded-lg text-rose-500 hover:bg-rose-50"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-
-                  <div className="mt-4 flex gap-3">
-                    <Button
-                      className="flex-1 rounded-xl bg-pink-500 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-pink-600 active:scale-[0.98]"
-                      onClick={() => setAttendanceLesson(lesson)}
-                    >
-                      Mark Attendance
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="size-10 rounded-xl border border-pink-100 text-pink-600 hover:bg-pink-50"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className="rounded-xl border-pink-100 bg-white shadow-lg"
-                      >
-                        <DropdownMenuItem
-                          onSelect={() => setEditLesson(lesson)}
-                          className="rounded-lg hover:bg-pink-50"
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem
-                          onSelect={() => setAttendanceLesson(lesson)}
-                          className="rounded-lg hover:bg-pink-50"
-                        >
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Mark attendance
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onSelect={() => setDeleteLesson(lesson)}
-                          className="rounded-lg text-rose-500 hover:bg-rose-50"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {editLesson && (

@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppLoader } from "@/components/ui/app-loader";
@@ -35,9 +35,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { RefreshOverlay } from "@/components/ui/refresh-overlay";
 import { api, type RouterOutputs } from "@/trpc/react";
-
-const STORAGE_KEY = "reports-filters";
+import { cn } from "@/lib/utils";
+import { useFilterParams } from "@/lib/use-filter-params";
 
 type Report = RouterOutputs["report"]["getAll"][number];
 
@@ -74,53 +75,20 @@ export function ReportsPage({
 }: ReportsPageProps) {
   const router = useRouter();
   const utils = api.useUtils();
-  const [studentId, setStudentId] = useState("all");
-  const [month, setMonth] = useState(initialMonth.toString());
-  const [year, setYear] = useState(initialYear.toString());
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { searchParams, setParams } = useFilterParams();
   const [deleteReport, setDeleteReport] = useState<Report | null>(null);
 
-  useEffect(() => {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as {
-          studentId?: string;
-          month?: string;
-          year?: string;
-        };
+  // Filters live in the URL (shareable + SSR-consistent). Note: the reports
+  // server page redirects `?studentId=` to the report editor, so the list's
+  // student filter uses a distinct `student` key.
+  const studentId = searchParams.get("student") ?? "all";
+  const month = searchParams.get("month") ?? initialMonth.toString();
+  const year = searchParams.get("year") ?? initialYear.toString();
 
-        if (parsed.studentId) {
-          setStudentId(parsed.studentId);
-        }
-        if (parsed.month) {
-          setMonth(parsed.month);
-        }
-        if (parsed.year) {
-          setYear(parsed.year);
-        }
-      } catch (error) {
-        console.error("Failed to parse saved reports filters", error);
-      }
-    }
-
-    setIsLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        studentId,
-        month,
-        year,
-      }),
-    );
-  }, [studentId, month, year, isLoaded]);
+  const setStudentId = (value: string) =>
+    setParams({ student: value === "all" ? null : value });
+  const setMonth = (value: string) => setParams({ month: value });
+  const setYear = (value: string) => setParams({ year: value });
 
   const filters = useMemo(
     () => ({
@@ -136,15 +104,19 @@ export function ReportsPage({
     filters.month === initialMonth &&
     filters.year === initialYear;
 
-  const { data: reports = [], isPending } = api.report.getAll.useQuery(
-    filters,
-    {
-      initialData: isDefaultFilters ? initialReports : undefined,
-      placeholderData: keepPreviousData,
-    },
-  );
+  const {
+    data: reports = [],
+    isPending,
+    isFetching,
+  } = api.report.getAll.useQuery(filters, {
+    initialData: isDefaultFilters ? initialReports : undefined,
+    placeholderData: keepPreviousData,
+  });
 
   const isLoading = isPending && reports.length === 0;
+  // keepPreviousData means isPending stays false on a filter change, so the
+  // list would silently swap. Surface the in-flight refetch instead.
+  const isRefreshing = isFetching && !isLoading;
   const yearOptions = getYearOptions(initialYear);
 
   const columns: DataTableColumn<Report>[] = [
@@ -281,11 +253,8 @@ export function ReportsPage({
     },
   });
 
-  const resetFilters = () => {
-    setStudentId("all");
-    setMonth(initialMonth.toString());
-    setYear(initialYear.toString());
-  };
+  const resetFilters = () =>
+    setParams({ student: null, month: null, year: null });
 
   const selectedStudentName =
     studentId === "all"
@@ -424,95 +393,78 @@ export function ReportsPage({
           </Badge>
         </div>
 
-        {isLoading ? (
-          <div className="flex h-32 items-center justify-center">
-            <AppLoader size="sm" />
-          </div>
-        ) : reports.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-3 text-4xl">🎼</div>
-            <div className="text-lg font-medium text-pink-700">
-              No reports saved for this month yet
-            </div>
-            <div className="mt-1 text-sm text-pink-600/70">
-              Generate a report above or adjust the filters to browse past
-              months.
-            </div>
-          </div>
-        ) : (
-          <>
-            <DataTable
-              className="hidden md:block"
-              columns={columns}
-              data={reports}
-              getRowKey={(report) => report.id}
-              itemRowClassName="transition-colors hover:bg-pink-50"
-            />
+        <div className="relative">
+          <RefreshOverlay active={isRefreshing} />
+          <div
+            className={cn(
+              "transition-opacity",
+              isRefreshing && "pointer-events-none opacity-60",
+            )}
+          >
+            {isLoading ? (
+              <div className="flex h-32 items-center justify-center">
+                <AppLoader size="sm" />
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="mb-3 text-4xl">🎼</div>
+                <div className="text-lg font-medium text-pink-700">
+                  No reports saved for this month yet
+                </div>
+                <div className="mt-1 text-sm text-pink-600/70">
+                  Generate a report above or adjust the filters to browse past
+                  months.
+                </div>
+              </div>
+            ) : (
+              <>
+                <DataTable
+                  className="hidden md:block"
+                  columns={columns}
+                  data={reports}
+                  getRowKey={(report) => report.id}
+                  itemRowClassName="transition-colors hover:bg-pink-50"
+                />
 
-            <div className="grid grid-cols-1 gap-4 md:hidden">
-              {reports.map((report) => (
-                <div
-                  key={report.id}
-                  className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="size-10 border border-pink-100">
-                        <AvatarImage src={report.student.avatar ?? ""} />
-                        <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
-                          {report.student.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-semibold text-gray-900">
-                          {report.student.name}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          Updated{" "}
-                          {format(new Date(report.updatedAt), "MMM d, yyyy")}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge className="rounded-full bg-rose-100 px-3 py-1 text-rose-700 hover:bg-rose-100">
-                      {report.month}/{report.year}
-                    </Badge>
-                  </div>
-
-                  <p className="text-sm leading-6 text-gray-600">
-                    {getSummaryPreview(report)}
-                  </p>
-
-                  <div className="mt-4 flex gap-3">
-                    <Button
-                      onClick={() =>
-                        router.push(
-                          buildReportHref(
-                            report.studentId,
-                            report.month,
-                            report.year,
-                          ),
-                        )
-                      }
-                      className="flex-1 rounded-xl bg-pink-500 text-white hover:bg-pink-600"
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                  {reports.map((report) => (
+                    <div
+                      key={report.id}
+                      className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
                     >
-                      <Eye className="mr-2 h-4 w-4" />
-                      View / Edit
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-10 border border-pink-100">
+                            <AvatarImage src={report.student.avatar ?? ""} />
+                            <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
+                              {report.student.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              {report.student.name}
+                            </div>
+                            <div className="text-muted-foreground text-xs">
+                              Updated{" "}
+                              {format(
+                                new Date(report.updatedAt),
+                                "MMM d, yyyy",
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <Badge className="rounded-full bg-rose-100 px-3 py-1 text-rose-700 hover:bg-rose-100">
+                          {report.month}/{report.year}
+                        </Badge>
+                      </div>
+
+                      <p className="text-sm leading-6 text-gray-600">
+                        {getSummaryPreview(report)}
+                      </p>
+
+                      <div className="mt-4 flex gap-3">
                         <Button
-                          variant="ghost"
-                          className="size-10 rounded-xl border border-pink-100 text-pink-600 hover:bg-pink-50"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className="rounded-xl border-pink-100 bg-white shadow-lg"
-                      >
-                        <DropdownMenuItem
-                          onSelect={() =>
+                          onClick={() =>
                             router.push(
                               buildReportHref(
                                 report.studentId,
@@ -521,43 +473,73 @@ export function ReportsPage({
                               ),
                             )
                           }
-                          className="rounded-lg hover:bg-pink-50"
+                          className="flex-1 rounded-xl bg-pink-500 text-white hover:bg-pink-600"
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          View report
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() =>
-                            router.push(
-                              buildReportHref(
-                                report.studentId,
-                                report.month,
-                                report.year,
-                              ),
-                            )
-                          }
-                          className="rounded-lg hover:bg-pink-50"
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit report
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onSelect={() => setDeleteReport(report)}
-                          className="rounded-lg text-rose-500 hover:bg-rose-50"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                          View / Edit
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="size-10 rounded-xl border border-pink-100 text-pink-600 hover:bg-pink-50"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="rounded-xl border-pink-100 bg-white shadow-lg"
+                          >
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                router.push(
+                                  buildReportHref(
+                                    report.studentId,
+                                    report.month,
+                                    report.year,
+                                  ),
+                                )
+                              }
+                              className="rounded-lg hover:bg-pink-50"
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View report
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                router.push(
+                                  buildReportHref(
+                                    report.studentId,
+                                    report.month,
+                                    report.year,
+                                  ),
+                                )
+                              }
+                              className="rounded-lg hover:bg-pink-50"
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit report
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => setDeleteReport(report)}
+                              className="rounded-lg text-rose-500 hover:bg-rose-50"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </>
-        )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       <ConfirmDialog

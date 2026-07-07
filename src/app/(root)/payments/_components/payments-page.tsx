@@ -2,7 +2,6 @@
 
 import { keepPreviousData } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   Clock,
   TrendingUp,
@@ -22,6 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { useFilterParams } from "@/lib/use-filter-params";
+import { RefreshOverlay } from "@/components/ui/refresh-overlay";
 import { api } from "@/trpc/react";
 import { BirthdayBanner } from "@/components/birthday/birthday-banner";
 import { useBirthday } from "@/components/birthday/birthday-provider";
@@ -58,98 +60,44 @@ function useCountUp(target: number, duration = 800) {
 
 interface PaymentsPageContentProps {
   students: { id: string; name: string; avatar: string | null }[];
+  defaultMonth: number;
+  defaultYear: number;
 }
 
-const STORAGE_KEY = "payments-filters";
-
-export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export function PaymentsPageContent({
+  students,
+  defaultMonth,
+  defaultYear,
+}: PaymentsPageContentProps) {
   const { currency } = useCurrency();
+  const { searchParams, setParams } = useFilterParams();
 
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const [month, setMonth] = useState((currentDate.getMonth() + 1).toString());
-  const [year, setYear] = useState(currentYear.toString());
-  const [studentId, setStudentId] = useState("all");
-  const [status, setStatus] = useState<"all" | "UNPAID" | "PARTIAL" | "PAID">(
-    "all",
-  );
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Filters live in the URL (shareable + SSR-consistent). Defaults come from the
+  // server so "current month/year" renders identically on server and client.
+  const month = searchParams.get("month") ?? defaultMonth.toString();
+  const year = searchParams.get("year") ?? defaultYear.toString();
+  const studentId = searchParams.get("studentId") ?? "all";
+  const statusParam = searchParams.get("status");
+  const status: "all" | "UNPAID" | "PARTIAL" | "PAID" =
+    statusParam === "UNPAID" ||
+    statusParam === "PARTIAL" ||
+    statusParam === "PAID"
+      ? statusParam
+      : "all";
+  const currentYear = defaultYear;
+
+  const setMonth = (value: string) => setParams({ month: value });
+  const setYear = (value: string) => setParams({ year: value });
+  const setStudentId = (value: string) =>
+    setParams({ studentId: value === "all" ? null : value });
+  const setStatus = (value: string) =>
+    setParams({ status: value === "all" ? null : value });
+
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [addStudentId, setAddStudentId] = useState<string | undefined>(
     undefined,
   );
   const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const urlMonth = searchParams.get("month");
-    const urlYear = searchParams.get("year");
-    const urlStudentId = searchParams.get("studentId");
-    const urlStatus = searchParams.get("status");
-
-    if (urlMonth && Number(urlMonth) >= 1 && Number(urlMonth) <= 12) {
-      setMonth(urlMonth);
-    }
-    if (urlYear && Number(urlYear) >= 2000 && Number(urlYear) <= 2100) {
-      setYear(urlYear);
-    }
-    if (urlStudentId) {
-      setStudentId(urlStudentId);
-    }
-    if (urlStatus && ["UNPAID", "PARTIAL", "PAID"].includes(urlStatus)) {
-      setStatus(urlStatus as "UNPAID" | "PARTIAL" | "PAID");
-    }
-
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (!urlMonth && !urlYear && saved) {
-      try {
-        const parsed = JSON.parse(saved) as {
-          month?: string;
-          year?: string;
-          studentId?: string;
-          status?: "all" | "UNPAID" | "PARTIAL" | "PAID";
-        };
-        if (parsed.month) setMonth(parsed.month);
-        if (parsed.year) setYear(parsed.year);
-        if (parsed.studentId) setStudentId(parsed.studentId);
-        if (parsed.status) setStatus(parsed.status);
-      } catch (error) {
-        console.error("Failed to parse saved payment filters", error);
-      }
-    }
-
-    setIsLoaded(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        month,
-        year,
-        studentId,
-        status,
-      }),
-    );
-
-    const query = new URLSearchParams();
-    query.set("month", month);
-    query.set("year", year);
-    if (studentId !== "all") {
-      query.set("studentId", studentId);
-    }
-    if (status !== "all") {
-      query.set("status", status);
-    }
-
-    router.replace(`?${query.toString()}`);
-  }, [isLoaded, month, year, studentId, status, router]);
 
   const queryInput = useMemo(
     () => ({
@@ -161,12 +109,17 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
     [month, year, studentId, status],
   );
 
-  const { data: payments = [], isPending } = api.payment.getForMonth.useQuery(
-    queryInput,
-    {
-      placeholderData: keepPreviousData,
-    },
-  );
+  const {
+    data: payments = [],
+    isPending,
+    isFetching,
+  } = api.payment.getForMonth.useQuery(queryInput, {
+    placeholderData: keepPreviousData,
+  });
+
+  // keepPreviousData keeps the current month's rows visible during a filter
+  // refetch, so isPending stays false; surface the in-flight fetch instead.
+  const isRefreshing = isFetching && !isPending;
   const { data: overallSummary, isPending: isOverallSummaryPending } =
     api.payment.getOverallSummary.useQuery();
 
@@ -431,15 +384,27 @@ export function PaymentsPageContent({ students }: PaymentsPageContentProps) {
         </div>
       </div>
 
-      <PaymentsTable
-        payments={payments}
-        isLoading={isPending}
-        onAddPayment={(nextStudentId) => {
-          setAddStudentId(nextStudentId);
-          setShowAddDialog(true);
-        }}
-        onViewHistory={(nextStudentId) => setHistoryStudentId(nextStudentId)}
-      />
+      <div className="relative">
+        <RefreshOverlay active={isRefreshing} />
+        <div
+          className={cn(
+            "transition-opacity",
+            isRefreshing && "pointer-events-none opacity-60",
+          )}
+        >
+          <PaymentsTable
+            payments={payments}
+            isLoading={isPending}
+            onAddPayment={(nextStudentId) => {
+              setAddStudentId(nextStudentId);
+              setShowAddDialog(true);
+            }}
+            onViewHistory={(nextStudentId) =>
+              setHistoryStudentId(nextStudentId)
+            }
+          />
+        </div>
+      </div>
 
       <PaymentTransactionDialog
         open={showAddDialog}

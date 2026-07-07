@@ -226,7 +226,7 @@ appRouter = createTRPCRouter({
 
 ### `report` router
 
-`getAll` · `generatePreview` (COMPLETE lessons + totals) · `getStudentReport` · `getByMonth` · `upsertReport` · `createOrUpdate` (alias) · `delete`. Reports carry `tuitionNote` + `lessonMetadata`.
+`getAll` · `generatePreview` (COMPLETE lessons + totals) · `getStudentReport` · `getByMonth` · `upsertReport` · `delete`. Reports carry `tuitionNote` + `lessonMetadata`.
 
 ### `earnings` router
 

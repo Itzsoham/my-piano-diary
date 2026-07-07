@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { AppLoader } from "@/components/ui/app-loader";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -114,33 +114,41 @@ export function ReportView({
   const [isSpecial, setIsSpecial] = useState(false);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
 
+  const utils = api.useUtils();
   const { data, isLoading } = api.report.getStudentReport.useQuery({
     studentId,
     month,
     year,
   });
 
-  const upsertReport = api.report.upsertReport.useMutation();
+  const upsertReport = api.report.upsertReport.useMutation({
+    // Refresh every cache that reflects this report: the editor's own query,
+    // the reports list (preview/updatedAt columns + newly created rows), and
+    // the raw getByMonth lookup. Without this, the 5-min staleTime keeps stale
+    // data on screen after a save.
+    onSuccess: () => {
+      void utils.report.getAll.invalidate();
+      void utils.report.getStudentReport.invalidate({ studentId, month, year });
+      void utils.report.getByMonth.invalidate({ studentId, month, year });
+    },
+  });
 
-  // Clear transient editor state whenever report context changes.
-  useEffect(() => {
-    setSummary("");
-    setComments("");
-    setNextMonthPlan("");
-    setTuitionNote("");
-    setLessonMetadata({});
-  }, [studentId, month, year]);
+  // The editor holds local, editable copies of the saved report fields. Reset +
+  // rehydrate them from the query whenever we switch to a different report
+  // (student/month/year). This follows React's "adjust state during render"
+  // pattern instead of an effect, so there's no cascading extra render — and it
+  // won't clobber in-progress edits when the same report refetches after a save.
+  const reportKey = `${studentId}-${month}-${year}`;
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
 
-  // Hydrate editor state from fetched report for current student/month/year.
-  useEffect(() => {
-    if (isLoading) return;
-
+  if (!isLoading && hydratedKey !== reportKey) {
+    setHydratedKey(reportKey);
     setSummary(data?.report?.summary ?? "");
     setComments(data?.report?.comments ?? "");
     setNextMonthPlan(data?.report?.nextMonthPlan ?? "");
     setTuitionNote(data?.report?.tuitionNote ?? "");
     setLessonMetadata(normalizeLessonMetadata(data?.report?.lessonMetadata));
-  }, [data?.report, isLoading]);
+  }
 
   const copy = {
     vi: {
