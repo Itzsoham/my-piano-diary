@@ -38,10 +38,16 @@ function useCountUp(target: number, duration = 800) {
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Snap straight to 0 when there's nothing to count up to. Scheduling via rAF
+    // (like the animation frames below) keeps the state update out of the effect
+    // body, which a synchronous setValue(0) would violate.
     if (target === 0) {
-      setValue(0);
-      return;
+      rafRef.current = requestAnimationFrame(() => setValue(0));
+      return () => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      };
     }
+
     const start = performance.now();
     const step = (now: number) => {
       const p = Math.min((now - start) / duration, 1);
