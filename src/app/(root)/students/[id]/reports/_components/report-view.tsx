@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { getWeekOfMonth, getDate, format } from "date-fns";
+import { format } from "date-fns";
 import {
   Loader2,
   Save,
@@ -41,6 +41,8 @@ import { api } from "@/trpc/react";
 import { formatCurrency, formatCurrencyNumber } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { computeTuition, type GroupSummary } from "@/lib/report/tuition";
+import { buildWeeksData, resolveWeeks } from "@/lib/report/attendance";
 
 type LessonMetadata = Record<
   string,
@@ -367,86 +369,28 @@ export function ReportView({
     (_, index) => currentYear - 2 + index,
   );
 
-  // Calculate Stats — tuition is the sum of each completed lesson's frozen rate.
-  const validLessons = lessons.filter((l) => l.status === "COMPLETE");
-  const totalSessions = validLessons.length;
-  const totalTuition = validLessons.reduce((sum, l) => sum + l.rate, 0);
-  const onlineSessions = validLessons.filter((l) => l.isOnline);
-  const inPersonSessions = validLessons.filter((l) => !l.isOnline);
-
-  // Reference rate to show per line: prefer the student's configured rate;
-  // if it isn't set (0), fall back to what the lessons were actually charged.
+  // Tuition stats via the shared lib, so this view and the combined family
+  // sheet compute money identically (frozen per-lesson rate, online/in-person
+  // split, per-lesson rate exceptions).
   const studentInPersonRate = data?.studentLessonRate ?? 0;
   const studentOnlineRate = data?.studentOnlineLessonRate ?? 0;
 
-  // Summarize a group into a reference rate + any exceptions (lessons charged
-  // a different rate, e.g. a per-lesson override), so those are noted apart.
-  const summarizeGroup = (items: typeof validLessons, configRate: number) => {
-    const [firstLesson] = items;
-    if (!firstLesson) {
-      return null;
-    }
-
-    const counts = new Map<number, number>();
-    for (const l of items) {
-      counts.set(l.rate, (counts.get(l.rate) ?? 0) + 1);
-    }
-    // Most common rate charged in this group (the mode).
-    let mode = firstLesson.rate;
-    let modeCount = 0;
-    for (const [rate, count] of counts) {
-      if (count > modeCount) {
-        mode = rate;
-        modeCount = count;
-      }
-    }
-    // Prefer the configured rate when set AND actually used, else the mode.
-    let referenceRate = configRate > 0 ? configRate : mode;
-    if (!counts.has(referenceRate)) {
-      referenceRate = mode;
-    }
-
-    const exceptionMap = new Map<
-      number,
-      { rate: number; count: number; sum: number }
-    >();
-    let standardCount = 0;
-    let standardSum = 0;
-    for (const l of items) {
-      if (l.rate === referenceRate) {
-        standardCount += 1;
-        standardSum += l.rate;
-      } else {
-        const existing = exceptionMap.get(l.rate) ?? {
-          rate: l.rate,
-          count: 0,
-          sum: 0,
-        };
-        existing.count += 1;
-        existing.sum += l.rate;
-        exceptionMap.set(l.rate, existing);
-      }
-    }
-
-    return {
-      referenceRate,
-      standardCount,
-      standardSum,
-      exceptions: [...exceptionMap.values()].sort((a, b) => a.rate - b.rate),
-      total: items.reduce((sum, l) => sum + l.rate, 0),
-      count: items.length,
-    };
-  };
-
-  const inPersonSummary = summarizeGroup(inPersonSessions, studentInPersonRate);
-  const onlineSummary = summarizeGroup(onlineSessions, studentOnlineRate);
-  const bothGroups = Boolean(inPersonSummary) && Boolean(onlineSummary);
+  const {
+    totalSessions,
+    totalTuition,
+    inPersonSummary,
+    onlineSummary,
+    bothGroups,
+  } = computeTuition(lessons, {
+    inPersonRate: studentInPersonRate,
+    onlineRate: studentOnlineRate,
+  });
 
   // One tuition line: "N x rate = subtotal", plus a distinct line per group of
   // lessons charged a different rate.
   const renderTuitionGroup = (
     label: string,
-    summary: ReturnType<typeof summarizeGroup>,
+    summary: GroupSummary | null,
   ) => {
     if (!summary) {
       return null;
@@ -480,31 +424,9 @@ export function ReportView({
     );
   };
 
-  // Attendance Grid Logic
-  const weeksData: Record<
-    number,
-    { day: number; status: string; cancelReason?: string | null }[]
-  > = {
-    1: [],
-    2: [],
-    3: [],
-    4: [],
-    5: [],
-    6: [],
-  };
-
-  lessons.forEach((lesson) => {
-    const week = getWeekOfMonth(lesson.date, { weekStartsOn: 1 });
-    const day = getDate(lesson.date);
-    const status = lesson.status ?? "PENDING";
-    const cancelReason = lesson.cancelReason;
-    if (weeksData[week]) {
-      weeksData[week].push({ day, status, cancelReason });
-    }
-  });
-
-  const hasWeek6 = weeksData[6] && weeksData[6].length > 0;
-  const weeks = hasWeek6 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
+  // Attendance grid — bucket lessons into weeks via the shared lib.
+  const weeksData = buildWeeksData(lessons);
+  const weeks = resolveWeeks([weeksData]);
 
   const reportCardClass = cn(
     "mx-auto min-h-[297mm] max-w-[210mm] bg-white p-8 font-serif text-black print:m-0 print:w-full print:p-0 print:shadow-none [print-color-adjust:exact] [-webkit-print-color-adjust:exact] print:min-h-0 rounded-2xl shadow-xl ring-1 ring-rose-100 print:ring-0",

@@ -1,5 +1,6 @@
 import { api } from "@/trpc/server";
 import { StudentsTable } from "./_components/students-table";
+import { FamiliesManager } from "./_components/families-manager";
 
 export default async function StudentsPage() {
   const students = await api.student.getAll();
@@ -15,6 +16,13 @@ export default async function StudentsPage() {
         </p>
       </div>
       <StudentsTable data={students} />
+      <FamiliesManager
+        students={students.map((student) => ({
+          id: student.id,
+          name: student.name,
+          avatar: student.avatar,
+        }))}
+      />
     </div>
   );
 }

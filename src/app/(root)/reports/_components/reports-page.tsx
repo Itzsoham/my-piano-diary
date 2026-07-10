@@ -10,7 +10,9 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -77,6 +79,8 @@ export function ReportsPage({
   const utils = api.useUtils();
   const { searchParams, setParams } = useFilterParams();
   const [deleteReport, setDeleteReport] = useState<Report | null>(null);
+  const [selectedFamily, setSelectedFamily] = useState("");
+  const { data: families = [] } = api.family.getAll.useQuery();
 
   // Filters live in the URL (shareable + SSR-consistent). Note: the reports
   // server page redirects `?studentId=` to the report editor, so the list's
@@ -372,6 +376,63 @@ export function ReportsPage({
                   ? "Choose a student to create or update a monthly report."
                   : `Open ${selectedStudentName} for ${filters.month}/${filters.year}.`}
               </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-pink-100 bg-linear-to-r from-pink-50 to-rose-50 p-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-base font-semibold text-pink-900">
+                <Users className="h-4 w-4" />
+                Combined Family Report
+              </div>
+              <p className="mt-1 text-sm text-pink-700/80">
+                Merge siblings or a parent + child onto one sheet for{" "}
+                {filters.month}/{filters.year}.
+              </p>
+            </div>
+            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+              {families.length === 0 ? (
+                <p className="text-xs text-pink-700/70">
+                  No families yet — create one on the{" "}
+                  <Link href="/students" className="font-medium underline">
+                    Students
+                  </Link>{" "}
+                  page.
+                </p>
+              ) : (
+                <>
+                  <Select
+                    value={selectedFamily}
+                    onValueChange={setSelectedFamily}
+                  >
+                    <SelectTrigger className="h-11 w-full min-w-48 border-pink-200 bg-white text-sm focus:ring-pink-400 md:h-10">
+                      <SelectValue placeholder="Select a family" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {families.map((family) => (
+                        <SelectItem key={family.id} value={family.id}>
+                          {family.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    disabled={!selectedFamily}
+                    onClick={() => {
+                      if (!selectedFamily) return;
+                      router.push(
+                        `/reports/family/${selectedFamily}?month=${filters.month}&year=${filters.year}`,
+                      );
+                    }}
+                    className="min-w-44"
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Open family report
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

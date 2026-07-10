@@ -66,6 +66,7 @@ model Teacher {
   pieces    Piece[]
   payments  PaymentMonth[]
   paymentTransactions PaymentTransaction[]
+  families  Family[]
   user      User      @relation(fields: [userId], references: [id])
 }
 
@@ -83,6 +84,7 @@ model Student {
   reports    MonthlyReport[]
   payments   PaymentMonth[]
   paymentTransactions PaymentTransaction[]
+  familyMemberships FamilyMember[]
 
   @@index([teacherId])
 }
@@ -187,4 +189,32 @@ model PaymentTransaction {
   @@index([teacherId, date])
   @@index([studentId, date])
   @@index([paymentMonthId])
+}
+
+// A named bundle of students (e.g. siblings, or a parent + child) so their
+// monthly attendance/tuition can be printed on ONE combined sheet. Purely a
+// reporting/billing convenience — individual students are unaffected everywhere
+// else in the app.
+model Family {
+  id        String         @id @default(cuid())
+  teacherId String
+  name      String
+  createdAt DateTime       @default(now()) @db.Timestamptz
+  updatedAt DateTime       @updatedAt @db.Timestamptz
+  teacher   Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  members   FamilyMember[]
+
+  @@index([teacherId])
+}
+
+model FamilyMember {
+  id        String  @id @default(cuid())
+  familyId  String
+  studentId String
+  position  Int     @default(0) // STT order on the combined sheet
+  family    Family  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, studentId])
+  @@index([studentId])
 }
