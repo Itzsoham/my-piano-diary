@@ -1,0 +1,114 @@
+/* ─────────────────────────────────────────────────────────────
+   Piano Diary · Glassmorphism mockup — shared shell (top nav)
+   Static preview only. Palette mapped from src/styles/globals.css
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --primary: oklch(0.58 0.15 340);
+  --ink: oklch(0.25 0.015 280);
+  --muted: oklch(0.5 0.015 280);
+  --line: oklch(0.92 0.01 280 / .7);
+  --glass: rgba(255,255,255,.55);
+  --glass-strong: rgba(255,255,255,.72);
+  --radius: 22px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  color:var(--ink);
+  min-height:100%;
+  display:grid;place-items:center;
+  padding:26px;
+  background:
+    radial-gradient(60% 55% at 8% 6%, #ffd9ec 0%, transparent 60%),
+    radial-gradient(55% 60% at 92% 10%, #d9e2ff 0%, transparent 60%),
+    radial-gradient(70% 70% at 60% 100%, #e9dcff 0%, transparent 65%),
+    linear-gradient(135deg,#f4f0fb,#eef1fb);
+}
+
+/* tablet frame */
+.tablet{
+  width:min(1180px,100%);
+  aspect-ratio:4/3;max-height:90vh;
+  border-radius:34px;padding:14px;
+  background:linear-gradient(160deg,#ffffff55,#ffffff20);
+  box-shadow:0 40px 90px -30px rgba(80,50,120,.45), inset 0 0 0 1px #ffffff70;
+}
+.screen{
+  height:100%;width:100%;border-radius:24px;overflow:hidden;
+  display:flex;flex-direction:column;
+  background:linear-gradient(160deg, rgba(255,255,255,.35), rgba(255,255,255,.15));
+  box-shadow:inset 0 0 0 1px #ffffff80;
+}
+
+/* ── TOP HORIZONTAL NAV ─────────────────────────── */
+.topnav{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 22px;
+  background:var(--glass);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--line);
+}
+.logo{
+  display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;padding-right:8px;
+}
+.logo .mark{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:18px;
+  background:linear-gradient(145deg,#f4a6cd,#b98be6);
+  box-shadow:0 8px 20px -6px rgba(185,139,230,.7);
+}
+.menu{display:flex;align-items:center;gap:4px;flex:1}
+.mlink{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:600;color:var(--muted);
+  padding:9px 14px;border-radius:12px;cursor:pointer;transition:.18s;white-space:nowrap;
+}
+.mlink svg{width:17px;height:17px}
+.mlink:hover{background:#ffffff85;color:var(--ink)}
+.mlink.active{
+  color:#fff;
+  background:linear-gradient(145deg, oklch(0.62 0.16 340), oklch(0.6 0.12 300));
+  box-shadow:0 10px 22px -8px oklch(0.58 0.15 340 / .8);
+}
+.topnav .right{display:flex;align-items:center;gap:12px}
+.iconbtn{
+  width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--muted);
+  background:var(--glass-strong);border:1px solid var(--line);cursor:pointer;transition:.18s;
+}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn:hover{color:var(--ink)}
+.ava{width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(145deg,#f4a6cd,#b98be6);
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;
+  box-shadow:0 8px 18px -6px rgba(185,139,230,.7)}
+
+/* page body */
+.body{flex:1;overflow:auto;padding:22px}
+.body::-webkit-scrollbar{width:0}
+.h1{font-size:20px;font-weight:800;letter-spacing:.3px}
+.sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+/* generic glass card */
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.35));
+  border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(18px);
+  box-shadow:0 20px 50px -30px rgba(80,50,120,.5);
+}
+
+/* gradient status pills */
+.pill{display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:800;letter-spacing:.4px;color:#fff;
+  padding:7px 13px;border-radius:20px}
+.pill svg{width:13px;height:13px}
+.pill.paid{background:linear-gradient(90deg,#c6f24d,#9ede2b);color:#33450a;box-shadow:0 8px 18px -8px #9ede2b}
+.pill.due{background:linear-gradient(90deg,#ff9a6b,#f5624f);box-shadow:0 8px 18px -8px #f5624f}
+.pill.upcoming{background:linear-gradient(90deg,#8fb3ff,#6d8bff);box-shadow:0 8px 18px -8px #6d8bff}
+
+.chip{display:inline-block;font-size:10.5px;font-weight:700;color:var(--muted);
+  background:#ffffff90;border:1px solid var(--line);border-radius:20px;padding:3px 9px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.caption{margin-top:14px;text-align:center;font-size:12px;color:#8a7ca0}
+
+/* nav icon set reused */

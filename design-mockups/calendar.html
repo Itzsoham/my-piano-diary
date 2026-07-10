@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Piano Diary — Calendar (glass)</title>
+<link rel="stylesheet" href="_shell.css" />
+<style>
+  .hdr{display:flex;align-items:center}
+  .hdr h1{font-size:22px;font-weight:800}
+  .hdr .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .hdr .actions{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .ghost{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--muted);padding:9px 14px;border-radius:14px;cursor:pointer}
+  .ghost:hover{color:var(--ink);background:var(--glass-strong)}
+  .ghost svg{width:15px;height:15px}
+  .add{display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;font-weight:800;padding:11px 18px;border-radius:14px;cursor:pointer;
+    background:linear-gradient(145deg, oklch(0.62 0.16 340), oklch(0.6 0.12 300));box-shadow:0 12px 24px -12px oklch(0.58 0.15 340 / .9)}
+  .add svg{width:15px;height:15px}
+
+  .cal{margin-top:16px;display:flex;flex-direction:column;overflow:hidden}
+  .ctool{display:flex;align-items:center;padding:16px 18px 12px}
+  .ctool .lft{display:flex;align-items:center;gap:6px}
+  .nb{width:34px;height:34px;border-radius:10px;background:var(--glass-strong);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;font-size:13px}
+  .todaybtn{font-size:12.5px;font-weight:700;color:var(--ink);background:var(--glass-strong);border:1px solid var(--line);padding:8px 14px;border-radius:10px;cursor:pointer;margin-left:4px}
+  .ctitle{margin:0 auto;font-size:18px;font-weight:800;letter-spacing:-.3px;
+    background:linear-gradient(135deg,#ec4899,#a855f7);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .vtoggle{display:flex;gap:3px;background:var(--glass-strong);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .vtoggle span{font-size:12px;font-weight:700;color:var(--muted);padding:7px 13px;border-radius:9px;cursor:pointer}
+  .vtoggle span.on{background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff}
+
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .dow div{padding:9px 0;text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+  .month{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:76px}
+  .cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px;display:flex;flex-direction:column;transition:.15s;cursor:pointer}
+  .cell:nth-child(7n){border-right:0}
+  .cell:hover{background:#ffffff70}
+  .cell .dn{font-size:13px;font-weight:600;color:var(--ink)}
+  .cell.out .dn{color:oklch(0.8 0.02 300)}
+  .cell.today .dn{background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;width:26px;height:26px;line-height:26px;border-radius:50%;text-align:center}
+  .badge{margin-top:auto;align-self:flex-start;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;
+    color:var(--primary);background:oklch(0.94 0.03 340);border-radius:14px;padding:3px 9px}
+  .badge .d{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+</style>
+</head>
+<body>
+  <div class="tablet"><div class="screen">
+
+    <nav class="topnav">
+      <div class="logo"><span class="mark">♪</span> Piano Diary</div>
+      <div class="menu">
+        <div class="mlink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Dashboard</div>
+        <div class="mlink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M11 4v16M15 4v16"/></svg>Lessons</div>
+        <div class="mlink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>Students</div>
+        <div class="mlink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>Payments</div>
+        <div class="mlink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reports</div>
+        <div class="mlink active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>Calendar</div>
+      </div>
+      <div class="right"><div class="ava">SM</div></div>
+    </nav>
+
+    <div class="body">
+      <div class="hdr">
+        <div><h1>Calendar</h1><div class="sub">Manage lessons and track attendance</div></div>
+        <div class="actions">
+          <div class="ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>List view</div>
+          <div class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Lesson</div>
+        </div>
+      </div>
+
+      <div class="card cal">
+        <div class="ctool">
+          <div class="lft"><div class="nb">❮</div><div class="nb">❯</div><div class="todaybtn">Today</div></div>
+          <div class="ctitle">🎵 July 2026</div>
+          <div class="vtoggle"><span class="on">Month</span><span>Week</span><span>Day</span></div>
+        </div>
+
+        <div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+
+        <div class="month">
+          <div class="cell out"><span class="dn">28</span></div>
+          <div class="cell out"><span class="dn">29</span></div>
+          <div class="cell out"><span class="dn">30</span></div>
+          <div class="cell"><span class="dn">1</span><span class="badge"><span class="d"></span>3 lessons</span></div>
+          <div class="cell"><span class="dn">2</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">3</span><span class="badge"><span class="d"></span>4 lessons</span></div>
+          <div class="cell"><span class="dn">4</span></div>
+
+          <div class="cell"><span class="dn">5</span></div>
+          <div class="cell"><span class="dn">6</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">7</span><span class="badge"><span class="d"></span>5 lessons</span></div>
+          <div class="cell"><span class="dn">8</span><span class="badge"><span class="d"></span>3 lessons</span></div>
+          <div class="cell today"><span class="dn">9</span><span class="badge"><span class="d"></span>5 lessons</span></div>
+          <div class="cell"><span class="dn">10</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">11</span><span class="badge"><span class="d"></span>1 lesson</span></div>
+
+          <div class="cell"><span class="dn">12</span></div>
+          <div class="cell"><span class="dn">13</span><span class="badge"><span class="d"></span>3 lessons</span></div>
+          <div class="cell"><span class="dn">14</span><span class="badge"><span class="d"></span>4 lessons</span></div>
+          <div class="cell"><span class="dn">15</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">16</span><span class="badge"><span class="d"></span>3 lessons</span></div>
+          <div class="cell"><span class="dn">17</span><span class="badge"><span class="d"></span>5 lessons</span></div>
+          <div class="cell"><span class="dn">18</span></div>
+
+          <div class="cell"><span class="dn">19</span></div>
+          <div class="cell"><span class="dn">20</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">21</span><span class="badge"><span class="d"></span>3 lessons</span></div>
+          <div class="cell"><span class="dn">22</span><span class="badge"><span class="d"></span>4 lessons</span></div>
+          <div class="cell"><span class="dn">23</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">24</span><span class="badge"><span class="d"></span>3 lessons</span></div>
+          <div class="cell"><span class="dn">25</span></div>
+
+          <div class="cell"><span class="dn">26</span></div>
+          <div class="cell"><span class="dn">27</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">28</span><span class="badge"><span class="d"></span>5 lessons</span></div>
+          <div class="cell"><span class="dn">29</span><span class="badge"><span class="d"></span>3 lessons</span></div>
+          <div class="cell"><span class="dn">30</span><span class="badge"><span class="d"></span>2 lessons</span></div>
+          <div class="cell"><span class="dn">31</span><span class="badge"><span class="d"></span>1 lesson</span></div>
+          <div class="cell out"><span class="dn">1</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div></div>
+</body>
+</html>

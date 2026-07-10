@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Piano Diary — Monthly Reports (warm cream)</title>
+<style>
+  :root{
+    --ink:#20201c; --muted:#8a897f; --line:#e7e3d6;
+    --cream:#f7f3e8; --cream-2:#efe9d8; --panel:#fffdf7;
+    --accent:#f4c84a; --accent-deep:#e8b62e;
+    --rose:oklch(0.58 0.15 340); --dark:#232320;
+    --r:22px; --shadow:0 18px 40px -28px rgba(60,50,20,.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:ui-sans-serif,system-ui,"Segoe UI",sans-serif;color:var(--ink);
+    min-height:100%;display:grid;place-items:center;padding:22px;background:#a9adb4}
+  .app{width:min(1200px,100%);aspect-ratio:4/3;max-height:94vh;overflow:hidden;border-radius:30px;
+    padding:22px 24px;display:flex;flex-direction:column;gap:14px;
+    background:radial-gradient(120% 90% at 85% 40%, #fbf1cf 0%, #f7f3e8 45%, #efeadd 100%);
+    box-shadow:0 50px 100px -40px rgba(40,35,15,.5)}
+
+  /* top nav (shared) */
+  .top{display:flex;align-items:center;gap:14px}
+  .logo{font-size:19px;font-weight:800;letter-spacing:.3px;border:1px solid var(--line);background:var(--panel);padding:9px 20px;border-radius:22px}
+  .nav{display:flex;align-items:center;gap:2px;margin:0 auto}
+  .nav a{font-size:13px;font-weight:600;color:var(--muted);padding:9px 15px;border-radius:20px;cursor:pointer;transition:.15s}
+  .nav a:hover{color:var(--ink)} .nav a.on{background:var(--dark);color:#fff}
+  .tbtn{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel);border:1px solid var(--line);padding:9px 14px;border-radius:20px;cursor:pointer}
+  .tbtn svg{width:15px;height:15px}
+  .circ{width:38px;height:38px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+  .circ svg{width:17px;height:17px}
+
+  /* page heading */
+  .head h1{font-size:28px;font-weight:800;letter-spacing:-.5px}
+  .head p{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+  /* scroll area holds filter card + list */
+  .scroll{flex:1;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px}
+  .scroll::-webkit-scrollbar{width:0}
+
+  /* filter + generate card */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);animation:rise .5s both}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end}
+  .field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin:0 0 6px 3px}
+  .sel{display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--line);border-radius:12px;
+    padding:11px 14px;font-size:13px;color:var(--ink)}
+  .sel .chev{margin-left:auto;color:var(--muted)}
+  .reset{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 20px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;height:42px}
+
+  .generate{margin-top:14px;background:linear-gradient(135deg,#fbf3d6,#f6eccf);border:1px solid var(--line);border-radius:18px;
+    padding:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .generate .t{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .generate .t svg{width:17px;height:17px}
+  .generate p{font-size:12px;color:var(--muted);margin-top:3px}
+  .genbtn{display:flex;align-items:center;gap:8px;background:var(--dark);color:#fff;font-size:13px;font-weight:800;
+    padding:12px 20px;border-radius:16px;cursor:pointer;white-space:nowrap}
+  .genbtn svg{width:15px;height:15px}
+  .generate .hint{font-size:10.5px;color:var(--muted);text-align:right;margin-top:6px}
+
+  /* existing reports */
+  .exhead{display:flex;align-items:center;justify-content:space-between;padding-top:4px}
+  .exhead h2{font-size:17px;font-weight:800}
+  .exhead p{font-size:12px;color:var(--muted);margin-top:2px}
+  .count{background:var(--accent);color:#5a4700;font-size:12px;font-weight:800;padding:6px 14px;border-radius:16px}
+
+  .list{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;animation:rise .5s both}
+  .lthead,.lrow{display:grid;grid-template-columns:1.4fr .8fr 2fr 1fr .5fr;gap:12px;align-items:center;padding:14px 18px}
+  .lthead{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line)}
+  .lrow{border-bottom:1px solid var(--line);transition:.18s;cursor:pointer}
+  .lrow:last-child{border-bottom:0}
+  .lrow:hover{background:var(--cream)}
+  .stu{display:flex;align-items:center;gap:11px}
+  .stu .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;
+    background:linear-gradient(145deg,#c58bb0,#8a6bd0)}
+  .stu b{font-size:13.5px}
+  .mbadge{font-size:11px;font-weight:800;background:oklch(0.94 0.03 340);color:var(--rose);border-radius:14px;padding:5px 12px;width:max-content}
+  .prev{font-size:12.5px;color:var(--muted);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .upd{font-size:12px;color:var(--muted)}
+  .act{display:flex;justify-content:flex-end;color:var(--muted)}
+  .act .dots{width:30px;height:30px;border-radius:9px;display:grid;place-items:center}
+  .act .dots:hover{background:var(--cream-2)}
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <div class="top">
+      <div class="logo">♪ Diary</div>
+      <div class="nav"><a>Dashboard</a><a>Students</a><a>Lessons</a><a>Payments</a><a>Pieces</a><a class="on">Reports</a><a>Calendar</a></div>
+      <div class="tbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-.1 1.3l2 1.6-2 3.4-2.4-1a7 7 0 01-2.2 1.3l-.3 2.6h-4l-.3-2.6a7 7 0 01-2.2-1.3l-2.4 1-2-3.4 2-1.6A7 7 0 015 12"/></svg>Settings</div>
+      <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg></div>
+      <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.3 3-5 7-5s7 1.7 7 5"/></svg></div>
+    </div>
+
+    <div class="head">
+      <h1>Monthly Reports</h1>
+      <p>Generate a new report or manage archived reports for any student.</p>
+    </div>
+
+    <div class="scroll">
+
+      <!-- filters + generate -->
+      <div class="panel">
+        <div class="filters">
+          <div class="field"><label>Student</label><div class="sel">All students<span class="chev">▾</span></div></div>
+          <div class="field"><label>Month</label><div class="sel">Month 7<span class="chev">▾</span></div></div>
+          <div class="field"><label>Year</label><div class="sel">2026<span class="chev">▾</span></div></div>
+          <div class="field"><div class="reset">Reset</div></div>
+        </div>
+
+        <div class="generate">
+          <div>
+            <div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Generate Monthly Report</div>
+            <p>Open the report editor for the selected student and month.</p>
+          </div>
+          <div>
+            <div class="genbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Generate Report</div>
+            <div class="hint">Choose a student to create or update a report.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- existing reports -->
+      <div class="exhead">
+        <div><h2>Existing Reports</h2><p>Open, update, or remove reports saved for this month filter.</p></div>
+        <div class="count">4 reports</div>
+      </div>
+
+      <div class="list">
+        <div class="lthead"><div>Student</div><div>Month</div><div>Preview</div><div>Updated</div><div style="text-align:right">Actions</div></div>
+
+        <div class="lrow">
+          <div class="stu"><div class="av">E</div><b>Emma Thompson</b></div>
+          <div><span class="mbadge">7/2026</span></div>
+          <div class="prev">Excellent progress on Clair de Lune — pedalling is much cleaner. Next month: focus on dynamic contrast in the middle section.</div>
+          <div class="upd">Jul 8, 2026</div>
+          <div class="act"><div class="dots">⋮</div></div>
+        </div>
+
+        <div class="lrow">
+          <div class="stu"><div class="av">L</div><b>Liam Carter</b></div>
+          <div><span class="mbadge">7/2026</span></div>
+          <div class="prev">Für Elise A-section is steady now. Timing in the B-section still rushes — metronome practice at 80 bpm recommended.</div>
+          <div class="upd">Jul 7, 2026</div>
+          <div class="act"><div class="dots">⋮</div></div>
+        </div>
+
+        <div class="lrow">
+          <div class="stu"><div class="av">O</div><b>Olivia Nguyen</b></div>
+          <div><span class="mbadge">7/2026</span></div>
+          <div class="prev">Beautiful rubato in the Nocturne. Ready to begin exam preparation — start mock performances from next week.</div>
+          <div class="upd">Jul 6, 2026</div>
+          <div class="act"><div class="dots">⋮</div></div>
+        </div>
+
+        <div class="lrow">
+          <div class="stu"><div class="av">A</div><b>Ava Rossi</b></div>
+          <div><span class="mbadge">7/2026</span></div>
+          <div class="prev">Gymnopédie tone is developing nicely. Keep working on legato phrasing and a relaxed wrist through longer lines.</div>
+          <div class="upd">Jul 5, 2026</div>
+          <div class="act"><div class="dots">⋮</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

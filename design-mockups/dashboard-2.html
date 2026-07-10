@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Piano Diary — Dashboard variant 2 (bento)</title>
+<style>
+  :root{
+    --primary: oklch(0.58 0.15 340);
+    --primary-2: oklch(0.62 0.13 300);
+    --ink: oklch(0.22 0.02 300);
+    --muted: oklch(0.56 0.02 300);
+    --line: oklch(0.93 0.008 300);
+    --soft: oklch(0.965 0.012 340);
+    --shadow: 0 16px 36px -26px rgba(90,50,110,.4);
+    --r: 22px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:ui-sans-serif,system-ui,"Segoe UI",sans-serif;color:var(--ink);
+    min-height:100%;display:grid;place-items:center;padding:22px;
+    background:radial-gradient(120% 120% at 50% -10%,#f6f2fb,#e9eaf1)}
+  .app{width:min(1200px,100%);aspect-ratio:4/3;max-height:94vh;background:#fbfafd;border-radius:32px;
+    padding:20px 22px;overflow:hidden;box-shadow:0 50px 100px -40px rgba(80,50,120,.4);
+    display:flex;flex-direction:column;gap:14px}
+
+  /* top bar */
+  .top{display:flex;align-items:center;gap:14px}
+  .round{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex:0 0 auto;
+    background:#fff;border:1px solid var(--line);color:var(--ink);transition:.18s;box-shadow:0 6px 16px -12px rgba(80,50,120,.5)}
+  .round svg{width:19px;height:19px}
+  .round:hover{transform:translateY(-1px)}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:#fff;font-size:20px;
+    background:linear-gradient(145deg,#2a1620,#43242f)}
+  .brand b{font-size:16px;display:block;line-height:1.15}.brand span{font-size:12px;color:var(--muted)}
+  .spacer{flex:1}
+  .who{display:flex;align-items:center;gap:10px}
+  .who .pf{width:40px;height:40px;border-radius:50%;background:linear-gradient(145deg,#f4a6cd,#b98be6);
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}
+  .who .nm b{font-size:13px}.who .nm span{font-size:11px;color:var(--muted)}
+  .search{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:24px;
+    padding:11px 16px;font-size:13px;color:var(--muted);min-width:180px}
+  .search svg{width:17px;height:17px}
+
+  /* greeting / voice band */
+  .band{display:flex;align-items:center;gap:16px}
+  .datepill{display:flex;align-items:center;gap:12px}
+  .datepill .num{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);background:#fff;display:grid;place-items:center;font-size:22px;font-weight:800}
+  .datepill .dl{font-size:13px;color:var(--muted);line-height:1.2}.datepill .dl b{color:var(--ink);display:block}
+  .cta{display:flex;align-items:center;gap:10px;background:linear-gradient(145deg,var(--primary),var(--primary-2));color:#fff;
+    font-size:13px;font-weight:700;padding:14px 22px;border-radius:28px;cursor:pointer;box-shadow:0 14px 26px -12px oklch(0.58 0.15 340 / .9)}
+  .cta svg{width:16px;height:16px}
+  .voice{margin-left:auto;display:flex;align-items:center;gap:16px}
+  .voice h2{font-size:24px;font-weight:800;line-height:1.15;text-align:right}
+  .voice h2 .g{color:oklch(0.72 0.02 300);font-weight:700}
+  .mic{width:58px;height:58px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;
+    box-shadow:0 10px 24px -12px rgba(80,50,120,.5);cursor:pointer}
+  .mic svg{width:22px;height:22px;color:var(--primary)}
+
+  /* bento */
+  .bento{flex:1;display:grid;gap:13px;min-height:0;
+    grid-template-columns:1.5fr 1.5fr .85fr .85fr;grid-template-rows:auto auto;}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:15px 16px;box-shadow:var(--shadow);
+    overflow:hidden;position:relative;animation:rise .5s both}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .tile h4{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+  .tag{font-size:10px;color:var(--muted);background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:3px 9px;display:inline-flex;align-items:center;gap:5px}
+  .tag svg{width:11px;height:11px}
+
+  /* studio card (VISA-like) */
+  .cardpay{display:flex;flex-direction:column;gap:10px}
+  .cardpay .r1{display:flex;align-items:center;justify-content:space-between}
+  .cardpay .r1 .lg{font-weight:800;font-style:italic;font-size:15px;color:var(--ink)}
+  .cardpay .lbl{font-size:11px;color:var(--muted)}
+  .cardpay .acct{letter-spacing:2px;font-weight:700;font-size:15px}
+  .segbtn{display:flex;background:var(--soft);border-radius:22px;padding:4px;width:max-content;margin-top:2px}
+  .segbtn span{font-size:12px;font-weight:700;padding:8px 18px;border-radius:18px;cursor:pointer;color:var(--muted)}
+  .segbtn span.on{background:var(--ink);color:#fff}
+  .cardpay .fee{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+  .cardpay .fee .v{font-size:14px;font-weight:800}
+  .cardpay .fee a{font-size:11px;color:var(--primary);font-weight:700}
+
+  /* income / paid split card */
+  .inc{display:flex;flex-direction:column;gap:12px}
+  .inc .blk .h{display:flex;align-items:center;justify-content:space-between}
+  .inc .blk .h .t{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+  .inc .blk .h .t svg{width:16px;height:16px}
+  .inc .blk .v{font-size:22px;font-weight:800;margin-top:2px}
+  .inc hr{border:0;border-top:1px solid var(--line)}
+  .inc .link{font-size:11px;color:var(--primary);font-weight:700}
+
+  /* small stat tiles */
+  .mini h4{margin-bottom:8px}
+  .mini .v{font-size:19px;font-weight:800}
+  .mini .s{font-size:10.5px;color:var(--muted);margin-top:3px}
+  .lock{display:grid;place-items:center;text-align:center;gap:8px}
+  .lock .ic{width:42px;height:42px;border-radius:14px;background:var(--soft);display:grid;place-items:center;color:var(--primary)}
+  .lock .ic svg{width:20px;height:20px}
+  .lock .t{font-size:12px;font-weight:700}
+
+  /* dots grid (streak) */
+  .dots{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-top:10px}
+  .dots i{width:100%;aspect-ratio:1;border-radius:50%;background:var(--soft)}
+  .dots i.on{background:var(--primary)}
+  .dots i.mid{background:oklch(0.82 0.09 345)}
+
+  /* donut */
+  .donut{display:grid;place-items:center;height:100%}
+  .ring{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;
+    background:conic-gradient(var(--primary) 0 94%, #eee 94% 100%)}
+  .ring i{width:70px;height:70px;border-radius:50%;background:#1f1420;color:#fff;display:grid;place-items:center;
+    font-size:15px;font-weight:800;font-style:normal;text-align:center;line-height:1.1}
+  .ring i small{display:block;font-size:8.5px;color:#ffffff99;font-weight:600}
+
+  /* trend line (wide) */
+  .trend .top2{display:flex;align-items:flex-start;justify-content:space-between}
+  .trend .big{font-size:22px;font-weight:800}
+  .trend .up{font-size:11.5px;color:#5aa02a;font-weight:700}
+  .trend .lbl{font-size:12px;font-weight:700;margin-top:2px}
+  .trend .sub{font-size:10.5px;color:var(--muted)}
+  .spark svg{width:100%;height:56px;display:block;margin-top:6px}
+
+  /* activity manager (wide) */
+  .act .hh{display:flex;align-items:center;gap:8px}
+  .act .hh .ttl{font-size:13px;font-weight:800}
+  .act .hh .ic{margin-left:auto;display:flex;gap:6px}
+  .act .hh .ic .round{width:30px;height:30px}.act .hh .ic .round svg{width:14px;height:14px}
+  .chips{display:flex;gap:6px;margin:10px 0}
+  .chips span{font-size:11px;font-weight:600;color:var(--muted);background:var(--soft);border:1px solid var(--line);
+    border-radius:16px;padding:6px 12px}
+  .chips span.on{background:oklch(0.94 0.03 340);color:var(--primary);border-color:transparent}
+  .actgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .abox{background:var(--soft);border-radius:16px;padding:12px}
+  .abox .amt{font-size:20px;font-weight:800}.abox .amt small{font-size:11px;color:var(--muted)}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:38px;margin-top:8px}
+  .bars i{flex:1;border-radius:3px;background:oklch(0.85 0.06 340)}
+  .bars i.hi{background:var(--primary)}
+  .plan{display:flex;flex-direction:column;gap:9px}
+  .plan .pt{font-size:11.5px;font-weight:700;color:var(--muted)}
+  .plan .pr{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+  .plan .pr .d{width:20px;height:20px;border-radius:7px;background:oklch(0.94 0.03 340);display:grid;place-items:center;color:var(--primary)}
+  .plan .pr .d svg{width:12px;height:12px}
+  .plan .pr .chev{margin-left:auto;color:var(--muted)}
+
+  /* feedback faces (wide-ish) */
+  .fb{display:flex;flex-direction:column}
+  .fb .close{position:absolute;top:14px;right:14px;color:var(--muted);cursor:pointer}
+  .fb .lead{font-size:11px;color:var(--muted);margin-top:8px}
+  .fb .q{font-size:16px;font-weight:800;margin-top:6px;line-height:1.25}
+  .faces{display:flex;gap:9px;margin-top:auto;padding-top:14px}
+  .faces .f{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:.15s}
+  .faces .f:hover{background:oklch(0.94 0.03 340);border-color:transparent;transform:translateY(-2px)}
+  .faces .f svg{width:22px;height:22px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- top bar -->
+    <div class="top">
+      <div class="round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h16M4 16h16"/></svg></div>
+      <div class="brand"><span class="mark">♪</span><div><b>Studio Diary</b><span>Piano teaching</span></div></div>
+      <div class="spacer"></div>
+      <div class="round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div class="who"><div class="pf">SM</div><div class="nm"><b>Sarah Mitchell</b><br><span>Piano Teacher</span></div></div>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Start searching…</div>
+    </div>
+
+    <!-- greeting / voice band -->
+    <div class="band">
+      <div class="datepill"><div class="num">9</div><div class="dl"><b>Wed,</b>July 2026</div></div>
+      <div class="cta">Show my lessons
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div>
+      <div class="voice">
+        <h2>Hey Sarah, ready to teach? 👋<br><span class="g">Ask me about any student</span></h2>
+        <div class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></div>
+      </div>
+    </div>
+
+    <!-- bento -->
+    <div class="bento">
+
+      <!-- studio pay card -->
+      <div class="tile cardpay">
+        <div class="r1"><span class="lg">Studio</span><span class="tag">Direct debits ▾</span></div>
+        <div><div class="lbl">Linked to main account</div><div class="acct">•••• 2719</div></div>
+        <div class="segbtn"><span class="on">Collect</span><span>Refund</span></div>
+        <div class="fee"><div><div class="lbl">Monthly regular fee</div><div class="v">$45.00</div></div><a>Edit rates →</a></div>
+      </div>
+
+      <!-- income / paid -->
+      <div class="tile inc">
+        <div class="blk">
+          <div class="h"><div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Total billed</div><span class="tag">This month ▾</span></div>
+          <div class="v">$4,500.00</div>
+        </div>
+        <hr>
+        <div class="blk">
+          <div class="h"><div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Collected</div><span class="link">View report ↗</span></div>
+          <div class="v">$4,180.00</div>
+        </div>
+      </div>
+
+      <!-- attendance donut -->
+      <div class="tile donut-tile">
+        <h4>Attendance</h4>
+        <div class="donut"><div class="ring"><i>94%<small>TURNOUT</small></i></div></div>
+      </div>
+
+      <!-- streak dots -->
+      <div class="tile mini">
+        <h4>Teaching streak</h4>
+        <div class="v">13 days</div>
+        <div class="s">109 hours taught</div>
+        <div class="dots">
+          <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="mid"></i><i></i><i></i><i></i><i></i>
+          <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="mid"></i><i></i><i></i><i></i>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+
+      <!-- feedback faces -->
+      <div class="tile fb">
+        <span class="close">✕</span>
+        <div class="lead">Weekly check-in</div>
+        <div class="q">How is your studio going this week?</div>
+        <div class="faces">
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 15c1-1.5 6-1.5 7 0M9 9h.01M15 9h.01"/></svg></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 14c1 1 6 1 7 0M9 9h.01M15 9h.01"/></svg></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 14h7M9 9h.01M15 9h.01"/></svg></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 15c1-1.5 6-1.5 7 0M9 9h.01M15 9h.01"/></svg></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 13c1 2 6 2 7 0M9 9h.01M15 9h.01"/></svg></div>
+        </div>
+      </div>
+
+      <!-- activity manager -->
+      <div class="tile act">
+        <div class="hh"><span class="ttl">Activity manager</span>
+          <div class="ic"><div class="round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+          <div class="round"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div></div>
+        </div>
+        <div class="chips"><span class="on">Today</span><span>Unpaid</span><span>Recitals</span></div>
+        <div class="actgrid">
+          <div class="abox"><div class="amt">$43.20 <small>due today</small></div>
+            <div class="bars"><i></i><i class="hi"></i><i></i><i></i><i class="hi"></i><i></i><i class="hi"></i><i></i><i></i><i class="hi"></i></div>
+          </div>
+          <div class="plan">
+            <div class="pt">Focus this week</div>
+            <div class="pr"><span class="d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V6l10-2v12"/></svg></span>Scales & arpeggios<span class="chev">›</span></div>
+            <div class="pr"><span class="d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V6l10-2v12"/></svg></span>Recital prep<span class="chev">›</span></div>
+            <div class="pr"><span class="d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V6l10-2v12"/></svg></span>Sight-reading<span class="chev">›</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- revenue trend (span 2) -->
+      <div class="tile trend" style="grid-column:span 2">
+        <div class="top2">
+          <div><h4>Main revenue</h4><div class="lbl">Term to date</div><div class="sub">Online & in-person</div></div>
+          <div style="text-align:right"><div class="big">$16,073</div><div class="up">▲ +9.3%</div></div>
+        </div>
+        <div class="spark">
+          <svg viewBox="0 0 300 56" preserveAspectRatio="none">
+            <defs><linearGradient id="g2" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="oklch(0.58 0.15 340)" stop-opacity=".22"/>
+              <stop offset="1" stop-color="oklch(0.58 0.15 340)" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,40 C25,32 40,44 60,34 C82,22 100,38 120,30 C145,20 160,35 185,24 C210,14 230,32 255,20 C275,12 290,24 300,17"
+              fill="none" stroke="oklch(0.58 0.15 340)" stroke-width="2.5"/>
+            <path d="M0,40 C25,32 40,44 60,34 C82,22 100,38 120,30 C145,20 160,35 185,24 C210,14 230,32 255,20 C275,12 290,24 300,17 L300,56 L0,56 Z" fill="url(#g2)"/>
+          </svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
