@@ -1,0 +1,1406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Calendar · Week Timeline + Dialog</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+  /* ======================================================================
+     CALENDAR · VARIANT B — "Week Timeline"
+     Screen-specific CSS only. All colour/radius/shadow from _theme.css.
+     ====================================================================== */
+
+  :root{
+    --hh: 62px;          /* height of one hour band */
+    --headh: 60px;       /* day-header row height   */
+    --railw: 62px;       /* time rail width         */
+    --nowpos: 7.3333;    /* now = 14:20 → 7h20m after 07:00 */
+    --tabbar: 0px;
+  }
+
+  body{ overflow-x: clip; }
+
+  /* ── Variant badge ─────────────────────────────────────────────────── */
+  .variant-badge{
+    position: fixed; top: 10px; right: 12px; z-index: 99;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(8px) saturate(1.1);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 600 11px/1 var(--font-sans);
+    letter-spacing: .04em; color: var(--pink-700);
+    pointer-events: none;
+  }
+  .variant-badge::before{
+    content:""; width:7px; height:7px; border-radius:50%;
+    background: var(--grad-pink);
+  }
+
+  /* ── Shell ─────────────────────────────────────────────────────────── */
+  .app{
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0,1fr);
+    min-height: 100dvh;
+  }
+
+  /* ── Icon rail ─────────────────────────────────────────────────────── */
+  .rail{
+    position: sticky; top: 0; align-self: start;
+    height: 100dvh;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 14px 0 16px;
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border-right: 1px solid var(--line);
+    z-index: 30;
+  }
+  .rail__brand{
+    width: 44px; height: 44px; border-radius: var(--r-sm);
+    display: grid; place-items: center; color: var(--ink-invert);
+    background: var(--grad-brand);
+    box-shadow: var(--sh-mint);
+    margin-bottom: 6px;
+  }
+  .rail__add{
+    width: var(--tap); height: var(--tap); border-radius: 50%;
+    display: grid; place-items: center; color: var(--ink-invert);
+    background: var(--grad-pink); box-shadow: var(--sh-pink);
+    margin: 2px 0 10px;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .rail__add:hover{ transform: translateY(-2px) rotate(90deg); }
+  .rail__group{ display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; }
+  .rail__sep{
+    width: 26px; height: 1px; background: var(--line-strong);
+    margin: 10px 0; border: 0; flex: 0 0 auto;
+  }
+  .rail__link{
+    position: relative;
+    width: var(--tap); height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .rail__link:hover{ background: var(--surface-2); color: var(--ink); }
+  .rail__link[aria-current="page"]{
+    background: var(--ok-bg); color: var(--teal-700);
+  }
+  .rail__link[aria-current="page"]::before{
+    content:""; position:absolute; left:-14px; top:50%; translate: 0 -50%;
+    width: 4px; height: 22px; border-radius: 0 4px 4px 0;
+    background: var(--grad-pink);
+  }
+  /* hover tooltip */
+  .rail__link .tip{
+    position:absolute; left: calc(100% + 10px); top:50%; translate: 0 -50%;
+    padding: 6px 10px; border-radius: var(--r-xs);
+    background: var(--ink); color: var(--ink-invert);
+    font: 600 11.5px/1 var(--font-sans); white-space: nowrap;
+    opacity:0; pointer-events:none; transition: opacity var(--dur) var(--ease);
+    box-shadow: var(--sh);
+  }
+  .rail__link:hover .tip, .rail__link:focus-visible .tip{ opacity:1; }
+  .rail__foot{ margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:8px; }
+
+  /* ── Main ──────────────────────────────────────────────────────────── */
+  .main{
+    min-width: 0;
+    padding: var(--pad-page) var(--pad-page) calc(var(--pad-page) + var(--tabbar));
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .topbar{
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .greet{ font: var(--t-h1); letter-spacing:-.01em; }
+  .greet small{ display:block; font: var(--t-small); color: var(--ink-soft); font-weight:400; margin-top:3px; letter-spacing:0; }
+  .search{
+    display:flex; align-items:center; gap:8px;
+    min-height: var(--tap); padding: 0 14px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    border: 1px solid var(--line);
+    color: var(--ink-faint); box-shadow: var(--sh-xs);
+  }
+  .search input{ border:0; background:none; outline:none; width: 160px; font: var(--t-body); color: var(--ink); }
+  .search input::placeholder{ color: var(--ink-faint); }
+
+  /* ── Calendar card ─────────────────────────────────────────────────── */
+  .cal{
+    padding: 0; overflow: hidden;
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .cal__bar{
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(160deg, var(--pink-50), var(--surface) 60%);
+  }
+  .nav{ display:flex; align-items:center; gap: 4px; }
+  .nav__btn{
+    width: var(--tap); height: var(--tap); border-radius: 50%;
+    display:grid; place-items:center; color: var(--ink-soft);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav__btn:hover{ background: var(--surface-3); color: var(--ink); }
+  .cal__range{
+    font: var(--t-h2); letter-spacing:-.01em; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .cal__range em{ font-style: normal; color: var(--ink-soft); font-weight:500; }
+
+  /* segmented view switcher */
+  .seg{
+    display:inline-flex; padding:3px; gap:2px;
+    background: var(--surface-2); border:1px solid var(--line);
+    border-radius: var(--r-pill);
+  }
+  .seg button{
+    min-height: var(--tap); padding: 0 15px; border-radius: var(--r-pill);
+    font: 600 12.5px/1 var(--font-sans); color: var(--ink-soft);
+    transition: all var(--dur) var(--ease);
+  }
+  .seg button[aria-pressed="true"]{
+    background: var(--surface); color: var(--ink); box-shadow: var(--sh-sm);
+  }
+  /* Day / Month are not built in this mockup — say so instead of faking it. */
+  .seg button:disabled{
+    cursor: not-allowed; color: var(--ink-soft);
+    text-decoration: underline dashed color-mix(in srgb, var(--ink-soft) 45%, transparent);
+    text-underline-offset: 3px;
+  }
+  .bar__right{ margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+  /* legend = status filters */
+  .legend{ display:flex; align-items:center; gap:8px; }
+  .lg{
+    display:inline-flex; align-items:center; gap:7px;
+    min-height: var(--tap); padding: 0 12px; border-radius: var(--r-pill);
+    font: 600 11.5px/1 var(--font-sans);
+    border: 1px solid transparent;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    white-space: nowrap;
+  }
+  .lg i{ width:8px; height:8px; border-radius:50%; display:block; }
+  .lg--ok{ background: var(--ok-bg); color: var(--ok-fg); } .lg--ok i{ background: var(--ok-dot); }
+  .lg--no{ background: var(--no-bg); color: var(--no-fg); } .lg--no i{ background: var(--no-dot); }
+  .lg--wait{ background: var(--wait-bg); color: var(--wait-fg); } .lg--wait i{ background: var(--wait-dot); }
+  /* Off = plain surface chip, still fully legible (never dimmed into a ghost) */
+  .lg[aria-pressed="false"]{
+    background: var(--surface); border-color: var(--line); color: var(--ink-soft);
+  }
+  .lg[aria-pressed="false"] i{ background: var(--ink-faint); }
+
+  /* week summary strip */
+  .summary{
+    display:flex; align-items:center; gap: 18px; flex-wrap: wrap;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .sm{ display:flex; align-items:baseline; gap:7px; }
+  .sm b{
+    font: 700 15px/1 var(--font-num); font-variant-numeric: tabular-nums;
+    letter-spacing:-.01em;
+  }
+  .sm span{ font: var(--t-small); color: var(--ink-soft); }
+  .sm--money b{ color: var(--teal-700); }
+  .sm--proj b{ color: var(--pink-700); }
+  .summary .divider{ width:1px; height: 22px; background: var(--line); }
+
+  /* ── The week grid ─────────────────────────────────────────────────── */
+  .week-scroll{
+    overflow: auto;
+    max-height: clamp(430px, calc(100dvh - 268px), 780px);
+    overscroll-behavior: contain;
+    background: var(--surface);
+  }
+  .week{
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--railw) repeat(7, minmax(0,1fr));
+    align-items: start;
+    min-width: 0;
+  }
+
+  .wk-corner{
+    position: sticky; top:0; left:0; z-index: 6;
+    height: var(--headh);
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line-strong);
+    display:grid; place-items:center;
+    font: var(--t-label); letter-spacing: var(--label-tracking);
+    color: var(--ink-faint); text-transform: uppercase;
+  }
+
+  .dh{
+    position: sticky; top: 0; z-index: 4;
+    height: var(--headh);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line-strong);
+    border-left: 1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap: 2px;
+  }
+  .dh__d{
+    font: var(--t-label); letter-spacing: var(--label-tracking);
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .dh__n{
+    font: 700 16px/1 var(--font-num); font-variant-numeric: tabular-nums;
+    color: var(--ink); min-width: 28px; height: 26px;
+    display:grid; place-items:center; border-radius: var(--r-pill);
+    padding: 0 7px;
+  }
+  .dh--today{ background: linear-gradient(180deg, var(--pink-50), var(--surface)); }
+  .dh--today .dh__d{ color: var(--pink-700); }
+  .dh--today .dh__n{
+    background: var(--grad-pink); color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .dh--wknd .dh__d{ color: var(--pink-700); }
+
+  /* time rail */
+  .wk-rail{
+    position: sticky; left: 0; z-index: 5;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    padding-bottom: 24px;
+  }
+  .hr{ height: var(--hh); position: relative; }
+  .hr--edge{ height: 24px; }
+  .hr span{
+    position: absolute; top: 5px; right: 9px;
+    font: 600 10.5px/1 var(--font-num);
+    color: var(--ink-soft); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .now-pill{
+    position: absolute; right: 6px; top: calc(var(--nowpos) * var(--hh));
+    translate: 0 -50%;
+    padding: 3px 6px; border-radius: var(--r-pill);
+    background: var(--pink-600); color: var(--ink-invert);
+    font: 700 10px/1 var(--font-num); font-variant-numeric: tabular-nums;
+    box-shadow: var(--sh-pink);
+    z-index: 2; white-space: nowrap;
+  }
+
+  /* day columns */
+  .wk-col{
+    position: relative;
+    height: calc(14 * var(--hh));
+    border-left: 1px solid var(--line);
+    background-image:
+      repeating-linear-gradient(
+        180deg,
+        var(--line) 0 1px,
+        transparent 1px var(--hh)
+      );
+    background-size: 100% calc(14 * var(--hh));
+    background-repeat: no-repeat;
+  }
+  /* half-hour ticks, fainter */
+  .wk-col::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:
+      repeating-linear-gradient(
+        180deg,
+        transparent 0 calc(var(--hh) / 2),
+        color-mix(in srgb, var(--line) 55%, transparent) calc(var(--hh) / 2) calc(var(--hh) / 2 + 1px),
+        transparent calc(var(--hh) / 2 + 1px) var(--hh)
+      );
+  }
+  .wk-col--wknd{ background-color: color-mix(in srgb, var(--floss) 70%, var(--surface)); }
+  .wk-col--today{ background-color: color-mix(in srgb, var(--pink-50) 75%, var(--surface)); }
+
+  /* now indicator */
+  .now{
+    position: absolute; z-index: 3; pointer-events: none;
+    left: var(--railw); right: 0;
+    top: calc(var(--headh) + var(--nowpos) * var(--hh));
+    height: 0; border-top: 2px solid var(--pink-500);
+  }
+  .now::before{
+    content:""; position:absolute; left:-5px; top:-5px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--pink-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--pink-500) 22%, transparent);
+  }
+
+  /* ── Lesson blocks ─────────────────────────────────────────────────── */
+  .ev{
+    position: absolute;
+    left: 4px; right: 4px;
+    top: calc(var(--s) * var(--hh) + 1px);
+    /* NEVER smaller than a fingertip, whatever the duration. */
+    height: max(var(--tap), calc(var(--d) * var(--hh) - 4px));
+    display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;
+    padding: 5px 7px 6px;
+    text-align: left;
+    border-radius: var(--r-xs);
+    border-left: 3px solid var(--dot);
+    background: var(--bg); color: var(--fg);
+    box-shadow: var(--sh-xs);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+                opacity var(--dur) var(--ease), visibility 0s;
+  }
+  .ev:hover{ transform: translateY(-1px) scale(1.012); box-shadow: var(--sh); z-index: 3; }
+  .ev--ok{   --bg: var(--ok-bg);   --fg: var(--ok-fg);   --dot: var(--ok-dot); }
+  .ev--no{   --bg: var(--no-bg);   --fg: var(--no-fg);   --dot: var(--no-dot); }
+  .ev--wait{ --bg: var(--wait-bg); --fg: var(--wait-fg); --dot: var(--wait-dot); }
+
+  .ev__t{
+    font: 650 12px/1.25 var(--font-sans);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ev--no .ev__t{ text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .ev__m{
+    display:flex; align-items:center; gap:4px;
+    font: 500 10.5px/1.2 var(--font-num); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* Non-colour status backup: a distinct SHAPE per status (+ .sr-only word). */
+  .ev__dot{
+    width: 6px; height: 6px; flex: 0 0 auto;
+    border-radius: 50%; background: currentColor;
+  }
+  .ev--wait .ev__dot{ background: transparent; box-shadow: inset 0 0 0 2px currentColor; }
+  .ev--no .ev__dot{ border-radius: 1px; rotate: 45deg; }
+  .ev__on{ display:inline-flex; align-items:center; font-size: 10px; line-height: 1; }
+  /* 30-min blocks: tighter type, same tappable box */
+  .ev--tiny{ gap: 0; }
+  .ev--tiny .ev__t{ -webkit-line-clamp: 1; white-space: nowrap; font-size: 11.5px; min-width:0; }
+  .ev--tiny .ev__m{ font-size: 10px; }
+  /* overlapping pair */
+  .ev--l{ right: calc(50% + 2px); }
+  .ev--r{ left: calc(50% + 2px); }
+  /* the lesson currently open in the dialog */
+  .ev--active{
+    box-shadow: 0 0 0 2px var(--pink-500), var(--sh);
+    z-index: 4;
+  }
+  /* legend filter — filtered-out lessons leave the tab order too (JS sets
+     [disabled]); visibility keeps them out of the a11y tree entirely. */
+  .ev.is-dim{
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur);
+  }
+
+  /* visually hidden, still read aloud */
+  .sr-only{
+    position: absolute; width: 1px; height: 1px;
+    clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+  }
+
+  /* ── Attendance dialog ─────────────────────────────────────────────── */
+  .scrim{
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in srgb, var(--ink) 32%, transparent);
+    backdrop-filter: blur(7px) saturate(1.08);
+    display: grid; place-items: center;
+    padding: 20px;
+    animation: fade .28s var(--ease) both;
+  }
+  @keyframes fade{ from{opacity:0} to{opacity:1} }
+  .scrim[hidden]{ display: none !important; }
+
+  .dlg{
+    position: relative; z-index: 61;
+    width: min(540px, 100%);
+    max-height: min(88dvh, 780px);
+    overflow: auto;
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    border-radius: var(--r-xl);
+    box-shadow: var(--sh-xl);
+    padding: 22px;
+    display: flex; flex-direction: column; gap: 16px;
+    animation: pop .34s var(--ease) both;
+  }
+  @keyframes pop{ from{opacity:0; transform: translateY(16px) scale(.97)} to{opacity:1; transform:none} }
+
+  .dlg__head{ display:flex; align-items:center; gap: 13px; }
+  .dlg__ava{
+    width: 54px; height: 54px; border-radius: 50%;
+    flex: 0 0 auto; display:grid; place-items:center; color: var(--ink-invert);
+    background: linear-gradient(135deg, var(--mint), var(--wintergreen) 42%, var(--bubblegum));
+    box-shadow: var(--sh-mint);
+  }
+  .dlg__title{ font: 700 17px/1.25 var(--font-sans); letter-spacing:-.01em; }
+  .dlg__sub{ font: var(--t-small); color: var(--ink-soft); margin-top: 2px; }
+  .dlg__x{
+    margin-left:auto; width: var(--tap); height: var(--tap); border-radius:50%;
+    display:grid; place-items:center; color: var(--ink-soft);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .dlg__x:hover{ background: var(--surface-2); color: var(--ink); }
+
+  /* rate + online bar */
+  .ratebar{
+    border: 1px solid var(--line-pink);
+    background: linear-gradient(160deg, var(--pink-50), var(--surface) 70%);
+    border-radius: var(--r);
+    padding: 13px 14px;
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 10px 14px;
+    align-items: center;
+  }
+  .rate__val{
+    display:inline-flex; align-items:center; gap: 8px;
+    min-height: var(--tap); margin-top: 2px;
+    padding: 0 12px; border-radius: var(--r-sm);
+    background: var(--surface); border: 1px solid var(--line-pink);
+    font: 700 15px/1 var(--font-num); font-variant-numeric: tabular-nums;
+    color: var(--ink); box-shadow: var(--sh-xs);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .rate__val:hover{ border-color: var(--bubblegum); }
+  .rate__val svg{ color: var(--pink-600); }
+  .rate__input{
+    display:none; align-items:center; gap:6px;
+    min-height: var(--tap); margin-top: 2px;
+    padding: 0 12px; border-radius: var(--r-sm);
+    background: var(--surface); border: 1.5px solid var(--pink-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--pink-500) 14%, transparent);
+    width: 100%; max-width: 220px;
+  }
+  .rate__input.is-on{ display:inline-flex; }
+  .rate__val.is-off{ display:none; }
+  .rate__input span{ color: var(--ink-soft); font-weight:700; }
+  .rate__input input{
+    border:0; outline:none; background:none; width:100%;
+    font: 700 15px/1 var(--font-num); font-variant-numeric: tabular-nums;
+  }
+  .rate__hint{
+    grid-column: 1 / -1;
+    font: var(--t-small); color: var(--ink-soft);
+    border-top: 1px dashed var(--line-pink); padding-top: 9px;
+  }
+  .online{
+    display:flex; align-items:center; gap: 10px;
+    min-height: var(--tap); padding: 0 4px 0 12px;
+    border-radius: var(--r-pill);
+    background: var(--surface); border: 1px solid var(--line-pink);
+    font: 600 13px/1 var(--font-sans); color: var(--ink);
+    white-space: nowrap;
+  }
+  .switch{
+    position: relative; width: 46px; height: 27px; flex:0 0 auto;
+    border-radius: var(--r-pill);
+    background: var(--line-strong);
+    transition: background var(--dur) var(--ease);
+    /* keep the whole label tappable ≥44px via padding on .online */
+  }
+  .switch::after{
+    content:""; position:absolute; top:3px; left:3px;
+    width: 21px; height: 21px; border-radius:50%;
+    background: var(--ink-invert); box-shadow: var(--sh-sm);
+    transition: translate var(--dur) var(--ease);
+  }
+  .online[aria-pressed="true"] .switch{ background: var(--grad-mint); }
+  .online[aria-pressed="true"] .switch::after{ translate: 19px 0; }
+
+  /* status cards */
+  .status-grid{
+    display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px;
+  }
+  .st{
+    position: relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap: 8px; min-height: 106px; padding: 14px 8px;
+    border-radius: var(--r); border: 1px solid var(--line-pink);
+    background: var(--surface); color: var(--ink-soft);
+    transition: all var(--dur) var(--ease);
+  }
+  /* Unselected ≠ disabled: full-strength label, the ring is the only signal. */
+  .st:hover{ background: var(--surface-2); transform: translateY(-1px); }
+  .st__ic{
+    width: 40px; height: 40px; border-radius: 50%;
+    display:grid; place-items:center;
+    background: var(--surface-2); color: var(--ink-soft);
+    transition: all var(--dur) var(--ease);
+  }
+  .st__l{ font: 650 13px/1 var(--font-sans); }
+  .st[aria-pressed="true"]::after{
+    content:""; position:absolute; top:8px; right:8px;
+    width: 8px; height: 8px; border-radius:50%; background: currentColor;
+  }
+  .st--ok[aria-pressed="true"]{
+    background: var(--ok-bg); border-color: var(--ok-dot); color: var(--ok-fg);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok-dot) 45%, transparent), var(--sh-mint);
+  }
+  .st--ok[aria-pressed="true"] .st__ic{ background: var(--ok-dot); color: var(--ink-invert); }
+  .st--no[aria-pressed="true"]{
+    background: var(--no-bg); border-color: var(--no-dot); color: var(--no-fg);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--no-dot) 45%, transparent), var(--sh-pink);
+  }
+  .st--no[aria-pressed="true"] .st__ic{ background: var(--no-dot); color: var(--ink-invert); }
+  .st--wait[aria-pressed="true"]{
+    background: var(--wait-bg); border-color: var(--wait-dot); color: var(--wait-fg);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--wait-dot) 60%, transparent), var(--sh-sm);
+  }
+  .st--wait[aria-pressed="true"] .st__ic{ background: var(--wait-dot); color: var(--sand-700); }
+
+  /* status-dependent fields — exactly what markAttendance() writes:
+     CANCELLED → cancelReason ; COMPLETE → actualMin + note ; PENDING → none */
+  .detail{
+    margin-top: 12px;
+    display: grid; gap: 10px;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--surface-2);
+    animation: fade .2s var(--ease) both;
+  }
+  .detail__row{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; align-items: end; }
+  .fld{ display:grid; gap: 5px; min-width: 0; }
+  .fld > .label{ color: var(--ink-soft); }
+  .field{
+    width: 100%; min-height: var(--tap);
+    padding: 10px 12px; border-radius: var(--r-sm);
+    background: var(--surface); border: 1px solid var(--line-strong);
+    font: var(--t-body); color: var(--ink); outline: none;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .field::placeholder{ color: var(--ink-faint); }
+  .field:focus{
+    border-color: var(--pink-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--pink-500) 14%, transparent);
+  }
+  .field--area{ resize: vertical; min-height: 62px; line-height: 1.45; }
+  .fld__hint{ font: var(--t-small); color: var(--ink-soft); }
+
+  .dlg__foot{
+    display:flex; justify-content:flex-end; gap: 10px;
+    padding-top: 4px;
+  }
+
+  /* ── Mobile tab bar + more-sheet ───────────────────────────────────── */
+  .tabbar{ display:none; }
+  .sheet{ display:none; }
+
+  /* ══════════════════ RESPONSIVE ══════════════════════════════════════ */
+
+  /* Tablet landscape 1024–1279 (a PRIMARY touch target) : rail stays, columns
+     tighten, but the hour band GROWS so 30 min is a real 44px slot and the
+     three durations stay visually proportional (30→44, 45→68, 60→92). */
+  @media (max-width: 1279px){
+    :root{ --railw: 56px; --hh: 96px; }
+    .ev{ padding: 5px 6px 6px; left:3px; right:3px; }
+    .ev__t{ font-size: 11.5px; }
+    .search{ display:none; }
+  }
+
+  /* TABLET PORTRAIT & below (<1024) : off-canvas nav + bottom tab bar */
+  @media (max-width: 1023px){
+    :root{ --tabbar: 74px; }
+    .app{ grid-template-columns: minmax(0,1fr); }
+    .rail{ display:none; }
+    .main{ padding: 16px 14px calc(16px + var(--tabbar)); }
+    .week-scroll{ max-height: clamp(400px, calc(100dvh - 300px), 720px); }
+
+    .tabbar{
+      position: fixed; left:0; right:0; bottom:0; z-index: 40;
+      display: flex; align-items: center; justify-content: space-around;
+      gap: 4px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      backdrop-filter: blur(16px) saturate(1.2);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -10px 30px -22px color-mix(in srgb, var(--ink) 50%, transparent);
+    }
+    /* Primary nav below 1024px — must be readable, not decorative. */
+    .tb{
+      flex:1; min-width:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+      min-height: var(--tap); padding: 4px 2px; border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 11px/1 var(--font-sans);
+    }
+    .tb[aria-current="page"]{ color: var(--pink-700); }
+    .tb--add{
+      flex: 0 0 auto;
+      width: 54px; height: 54px; border-radius: 50%;
+      background: var(--grad-pink); color: var(--ink-invert);
+      box-shadow: var(--sh-pink);
+      margin-top: -22px;
+    }
+
+    /* off-canvas MANAGE sheet */
+    .sheet{
+      display: block;
+      position: fixed; inset: 0; z-index: 50;
+      pointer-events: none;
+    }
+    .sheet[hidden]{ display:none !important; }
+    .sheet__scrim{
+      position:absolute; inset:0;
+      background: color-mix(in srgb, var(--ink) 30%, transparent);
+      backdrop-filter: blur(4px);
+      pointer-events: auto;
+      animation: fade .24s var(--ease) both;
+    }
+    .sheet__panel{
+      position:absolute; left:0; right:0; bottom:0;
+      pointer-events:auto;
+      background: var(--surface);
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      border-top: 1px solid var(--line-pink);
+      box-shadow: var(--sh-xl);
+      padding: 10px 16px calc(20px + env(safe-area-inset-bottom));
+      animation: up .3s var(--ease) both;
+    }
+    @keyframes up{ from{ transform: translateY(100%);} to{ transform:none; } }
+    .sheet__grab{ width:44px; height:4px; border-radius: var(--r-pill); background: var(--line-strong); margin: 4px auto 14px; }
+    .sheet__nav{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .sheet__nav a{
+      display:flex; align-items:center; gap:10px;
+      min-height: var(--tap); padding: 0 14px;
+      border-radius: var(--r-sm); background: var(--surface-2);
+      border: 1px solid var(--line);
+      font: 600 13.5px/1 var(--font-sans); color: var(--ink);
+    }
+    .sheet__nav a svg{ color: var(--teal-600); }
+    .sheet__user{
+      display:flex; align-items:center; gap:10px;
+      margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+    }
+    .sheet__user b{ display:block; font: 650 13.5px/1.3 var(--font-sans); }
+    .sheet__user span{ font: var(--t-small); color: var(--ink-soft); }
+  }
+
+  /* TABLET PORTRAIT — the key move: day columns become a scrolling strip
+     with the time rail pinned. */
+  @media (max-width: 899px){
+    /* Touch widths: one hour = 96px, so even a 30-min slot is a natural 44px. */
+    :root{ --hh: 96px; --railw: 54px; }
+    .week{ grid-template-columns: var(--railw) repeat(7, minmax(140px, 1fr)); }
+    .cal__range{ font-size: 15px; }
+    .summary{ gap: 12px; }
+  }
+
+  @media (max-width: 767px){
+    .bar__right{ width:100%; margin-left:0; }
+    .legend{ width:100%; overflow-x:auto; }
+    .status-grid{ gap: 8px; }
+  }
+
+  /* PHONE : dialog becomes a bottom sheet
+     (--hh stays at the 96px touch value inherited from ≤899px, so a 30-min
+      block is still a real 44px target and durations stay proportional) */
+  @media (max-width: 639px){
+    .main{ padding: 14px 12px calc(14px + var(--tabbar)); }
+    .greet{ font-size: 19px; }
+    .cal__bar{ padding: 12px; gap: 10px; }
+    .seg{ flex: 1 1 auto; }
+    .seg button{ flex:1; padding: 0 8px; }
+    .cal__range{ order: -1; width: 100%; }
+    .summary{ padding: 10px 12px; }
+    .summary .divider{ display:none; }
+
+    .scrim{ padding: 0; place-items: end stretch; }
+    .dlg{
+      width: 100%; max-width: none;
+      max-height: 92dvh;
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      border-left: 0; border-right: 0; border-bottom: 0;
+      padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+      animation: up .32s var(--ease) both;
+    }
+    .ratebar{ grid-template-columns: minmax(0,1fr); }
+    .online{ justify-content: space-between; }
+    .status-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .st{ min-height: 92px; padding: 12px 4px; gap: 6px; }
+    .st__ic{ width: 34px; height: 34px; }
+    .st__l{ font-size: 11.5px; }
+    .dlg__foot{ display:grid; grid-template-columns: 1fr 1.4fr; }
+    .dlg__foot .btn{ width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Calendar · Week Timeline + Dialog</div>
+
+<div class="app">
+
+  <!-- ══════════════ ICON RAIL ══════════════ -->
+  <nav class="rail print-hide" aria-label="Main">
+    <a class="rail__brand" href="/dashboard" aria-label="My Piano Diary — Personal teaching space">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+      </svg>
+    </a>
+
+    <button class="rail__add" type="button" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
+      </svg>
+    </button>
+
+    <div class="rail__group" role="group" aria-label="Main">
+      <a class="rail__link" href="/dashboard">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+          <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+        </svg>
+        <span class="tip">Dashboard</span>
+      </a>
+      <a class="rail__link" href="/calendar" aria-current="page">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/>
+        </svg>
+        <span class="tip">Calendar</span>
+      </a>
+    </div>
+
+    <hr class="rail__sep">
+
+    <div class="rail__group" role="group" aria-label="Manage">
+      <a class="rail__link" href="/lessons">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h7M8 11h7"/>
+        </svg>
+        <span class="tip">Lessons</span>
+      </a>
+      <a class="rail__link" href="/students">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span class="tip">Students</span>
+      </a>
+      <a class="rail__link" href="/pieces">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+        <span class="tip">Pieces</span>
+      </a>
+      <a class="rail__link" href="/reports">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5M9 13h6M9 17h4"/>
+        </svg>
+        <span class="tip">Reports</span>
+      </a>
+      <a class="rail__link" href="/payments">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h3"/>
+        </svg>
+        <span class="tip">Payments</span>
+      </a>
+    </div>
+
+    <div class="rail__foot">
+      <button class="rail__link" type="button" aria-label="Mai Trần — account menu" aria-haspopup="menu">
+        <span class="av av--sm" aria-hidden="true">MT</span>
+        <span class="tip">Mai Trần · mai@pianodiary.vn</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <main class="main">
+
+    <header class="topbar rise" style="--i:0">
+      <div>
+        <h1 class="greet">Good afternoon, Mai ✨</h1>
+        <small>Tuesday, 14 July 2026 · 5 lessons today, 2 still to teach</small>
+      </div>
+      <label class="search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
+        </svg>
+        <input type="search" placeholder="Search students…" aria-label="Search students">
+      </label>
+    </header>
+
+    <section class="card cal rise" style="--i:1" aria-label="Week calendar">
+
+      <!-- toolbar -->
+      <div class="cal__bar">
+        <div class="nav">
+          <button class="nav__btn" type="button" aria-label="Previous week">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <button class="nav__btn" type="button" aria-label="Next week">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <button class="btn btn--ghost" type="button" style="margin-left:4px">Today</button>
+        </div>
+
+        <h2 class="cal__range">13 – 19 July <em>2026</em></h2>
+
+        <div class="bar__right">
+          <div class="seg" role="group" aria-label="Calendar view">
+            <button type="button" aria-pressed="false" disabled title="Week view only in this mockup">Day</button>
+            <button type="button" aria-pressed="true">Week</button>
+            <button type="button" aria-pressed="false" disabled title="Week view only in this mockup">Month</button>
+          </div>
+          <div class="legend" role="group" aria-label="Filter by status">
+            <button class="lg lg--ok"   type="button" aria-pressed="true" data-filter="ok"><i aria-hidden="true"></i>Complete</button>
+            <button class="lg lg--wait" type="button" aria-pressed="true" data-filter="wait"><i aria-hidden="true"></i>Pending</button>
+            <button class="lg lg--no"   type="button" aria-pressed="true" data-filter="no"><i aria-hidden="true"></i>Cancelled</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- week summary -->
+      <div class="summary">
+        <p class="sm"><b>27</b><span>lessons this week</span></p>
+        <span class="divider" aria-hidden="true"></span>
+        <p class="sm"><b style="color:var(--ok-fg)">6</b><span>complete</span></p>
+        <p class="sm"><b style="color:var(--wait-fg)">18</b><span>pending</span></p>
+        <p class="sm"><b style="color:var(--no-fg)">3</b><span>cancelled</span></p>
+        <span class="divider" aria-hidden="true"></span>
+        <p class="sm sm--money"><span>Billed so far</span><b>1.640.000 ₫</b></p>
+        <p class="sm sm--proj"><span>Projected</span><b>6.600.000 ₫</b></p>
+      </div>
+
+      <!-- the grid -->
+      <div class="week-scroll scroll-x" tabindex="0" role="region" aria-label="Week of 13 July 2026, 7 AM to 9 PM">
+        <div class="week">
+
+          <!-- header row -->
+          <div class="wk-corner">GMT+7</div>
+          <div class="dh"><span class="dh__d">Mon</span><span class="dh__n">13</span></div>
+          <div class="dh dh--today" aria-current="date"><span class="dh__d">Tue</span><span class="dh__n">14</span></div>
+          <div class="dh"><span class="dh__d">Wed</span><span class="dh__n">15</span></div>
+          <div class="dh"><span class="dh__d">Thu</span><span class="dh__n">16</span></div>
+          <div class="dh"><span class="dh__d">Fri</span><span class="dh__n">17</span></div>
+          <div class="dh dh--wknd"><span class="dh__d">Sat</span><span class="dh__n">18</span></div>
+          <div class="dh dh--wknd"><span class="dh__d">Sun</span><span class="dh__n">19</span></div>
+
+          <!-- time rail -->
+          <div class="wk-rail">
+            <div class="hr"><span>7 AM</span></div>
+            <div class="hr"><span>8 AM</span></div>
+            <div class="hr"><span>9 AM</span></div>
+            <div class="hr"><span>10 AM</span></div>
+            <div class="hr"><span>11 AM</span></div>
+            <div class="hr"><span>12 PM</span></div>
+            <div class="hr"><span>1 PM</span></div>
+            <div class="hr"><span>2 PM</span></div>
+            <div class="hr"><span>3 PM</span></div>
+            <div class="hr"><span>4 PM</span></div>
+            <div class="hr"><span>5 PM</span></div>
+            <div class="hr"><span>6 PM</span></div>
+            <div class="hr"><span>7 PM</span></div>
+            <div class="hr"><span>8 PM</span></div>
+            <div class="hr hr--edge"><span>9 PM</span></div>
+            <span class="now-pill">2:20</span>
+          </div>
+
+          <!-- MON 13 -->
+          <div class="wk-col">
+            <button class="ev ev--ok" style="--s:1;--d:1" data-name="Nguyễn Minh Anh" data-day="Monday" data-time="8:00 AM" data-dur="60" data-status="ok" data-rate="300000" data-online="0">
+              <span class="ev__t">Nguyễn Minh Anh</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>8:00 – 9:00</span>
+              <span class="sr-only">Complete</span>
+            </button>
+            <button class="ev ev--ok" style="--s:2.5;--d:0.75" data-name="Liam Carter" data-day="Monday" data-time="9:30 AM" data-dur="45" data-status="ok" data-rate="220000" data-online="1">
+              <span class="ev__t">Liam Carter</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>9:30 – 10:15 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Complete</span>
+            </button>
+            <button class="ev ev--no ev--tiny" style="--s:4;--d:0.5" data-name="Đỗ Khánh Linh" data-day="Monday" data-time="11:00 AM" data-dur="30" data-status="no" data-rate="200000" data-online="0">
+              <span class="ev__t">Đỗ Khánh Linh</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>11:00</span>
+              <span class="sr-only">Cancelled</span>
+            </button>
+            <button class="ev ev--ok" style="--s:8;--d:1" data-name="Emma Thompson" data-day="Monday" data-time="3:00 PM" data-dur="60" data-status="ok" data-rate="350000" data-online="0">
+              <span class="ev__t">Emma Thompson</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>3:00 – 4:00</span>
+              <span class="sr-only">Complete</span>
+            </button>
+          </div>
+
+          <!-- TUE 14 (today) -->
+          <div class="wk-col wk-col--today">
+            <button class="ev ev--ok" style="--s:1.5;--d:0.75" data-name="Trần Bảo Ngọc" data-day="Tuesday" data-time="8:30 AM" data-dur="45" data-status="ok" data-rate="250000" data-online="0">
+              <span class="ev__t">Trần Bảo Ngọc</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>8:30 – 9:15</span>
+              <span class="sr-only">Complete</span>
+            </button>
+            <button class="ev ev--ok" style="--s:3;--d:1" data-name="Phạm Quốc Bảo" data-day="Tuesday" data-time="10:00 AM" data-dur="60" data-status="ok" data-rate="280000" data-online="1">
+              <span class="ev__t">Phạm Quốc Bảo</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>10:00 – 11:00 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Complete</span>
+            </button>
+            <button class="ev ev--ok" style="--s:6.5;--d:0.75" data-name="Vũ Thanh Trúc" data-day="Tuesday" data-time="1:30 PM" data-dur="45" data-status="ok" data-rate="240000" data-online="0">
+              <span class="ev__t">Vũ Thanh Trúc</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>1:30 – 2:15</span>
+              <span class="sr-only">Complete</span>
+            </button>
+            <button class="ev ev--wait ev--active" style="--s:9.5;--d:0.75" data-name="Trần Bảo Ngọc" data-day="Tuesday" data-time="4:30 PM" data-dur="45" data-status="wait" data-rate="250000" data-online="1">
+              <span class="ev__t">Trần Bảo Ngọc</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>4:30 – 5:15 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:11;--d:1" data-name="Olivia Nguyen" data-day="Tuesday" data-time="6:00 PM" data-dur="60" data-status="wait" data-rate="300000" data-online="1">
+              <span class="ev__t">Olivia Nguyen</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>6:00 – 7:00 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Pending</span>
+            </button>
+          </div>
+
+          <!-- WED 15 -->
+          <div class="wk-col">
+            <button class="ev ev--wait" style="--s:2;--d:1" data-name="Lê Gia Hân" data-day="Wednesday" data-time="9:00 AM" data-dur="60" data-status="wait" data-rate="280000" data-online="0">
+              <span class="ev__t">Lê Gia Hân</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>9:00 – 10:00</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait ev--l" style="--s:7;--d:0.75" data-name="Emma Thompson" data-day="Wednesday" data-time="2:00 PM" data-dur="45" data-status="wait" data-rate="350000" data-online="0">
+              <span class="ev__t">Emma Thompson</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>2:00</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait ev--r ev--tiny" style="--s:7;--d:0.5" data-name="Olivia Nguyen" data-day="Wednesday" data-time="2:00 PM" data-dur="30" data-status="wait" data-rate="300000" data-online="1">
+              <span class="ev__t">Olivia Nguyen</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>2:00 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:10;--d:1" data-name="Nguyễn Minh Anh" data-day="Wednesday" data-time="5:00 PM" data-dur="60" data-status="wait" data-rate="300000" data-online="0">
+              <span class="ev__t">Nguyễn Minh Anh</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>5:00 – 6:00</span>
+              <span class="sr-only">Pending</span>
+            </button>
+          </div>
+
+          <!-- THU 16 -->
+          <div class="wk-col">
+            <button class="ev ev--wait" style="--s:1;--d:0.75" data-name="Hoàng Nam Phong" data-day="Thursday" data-time="8:00 AM" data-dur="45" data-status="wait" data-rate="260000" data-online="0">
+              <span class="ev__t">Hoàng Nam Phong</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>8:00 – 8:45</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:4;--d:1" data-name="Đỗ Khánh Linh" data-day="Thursday" data-time="11:00 AM" data-dur="60" data-status="wait" data-rate="230000" data-online="1">
+              <span class="ev__t">Đỗ Khánh Linh</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>11:00 – 12:00 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:8.5;--d:0.75" data-name="Trần Bảo Ngọc" data-day="Thursday" data-time="3:30 PM" data-dur="45" data-status="wait" data-rate="250000" data-online="0">
+              <span class="ev__t">Trần Bảo Ngọc</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>3:30 – 4:15</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--no ev--tiny" style="--s:10;--d:0.5" data-name="Liam Carter" data-day="Thursday" data-time="5:00 PM" data-dur="30" data-status="no" data-rate="220000" data-online="0">
+              <span class="ev__t">Liam Carter</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>5:00</span>
+              <span class="sr-only">Cancelled</span>
+            </button>
+          </div>
+
+          <!-- FRI 17 -->
+          <div class="wk-col">
+            <button class="ev ev--wait" style="--s:2.5;--d:1" data-name="Vũ Thanh Trúc" data-day="Friday" data-time="9:30 AM" data-dur="60" data-status="wait" data-rate="240000" data-online="0">
+              <span class="ev__t">Vũ Thanh Trúc</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>9:30 – 10:30</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:6;--d:0.75" data-name="Phạm Quốc Bảo" data-day="Friday" data-time="1:00 PM" data-dur="45" data-status="wait" data-rate="280000" data-online="0">
+              <span class="ev__t">Phạm Quốc Bảo</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>1:00 – 1:45</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:9;--d:0.75" data-name="Lê Gia Hân" data-day="Friday" data-time="4:00 PM" data-dur="45" data-status="wait" data-rate="250000" data-online="1">
+              <span class="ev__t">Lê Gia Hân</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>4:00 – 4:45 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:11.5;--d:1" data-name="Emma Thompson" data-day="Friday" data-time="6:30 PM" data-dur="60" data-status="wait" data-rate="350000" data-online="0">
+              <span class="ev__t">Emma Thompson</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>6:30 – 7:30</span>
+              <span class="sr-only">Pending</span>
+            </button>
+          </div>
+
+          <!-- SAT 18 -->
+          <div class="wk-col wk-col--wknd">
+            <button class="ev ev--wait" style="--s:1.5;--d:0.75" data-name="Nguyễn Minh Anh" data-day="Saturday" data-time="8:30 AM" data-dur="45" data-status="wait" data-rate="300000" data-online="0">
+              <span class="ev__t">Nguyễn Minh Anh</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>8:30 – 9:15</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:3;--d:1" data-name="Olivia Nguyen" data-day="Saturday" data-time="10:00 AM" data-dur="60" data-status="wait" data-rate="300000" data-online="0">
+              <span class="ev__t">Olivia Nguyen</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>10:00 – 11:00</span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--no ev--tiny" style="--s:4.5;--d:0.5" data-name="Hoàng Nam Phong" data-day="Saturday" data-time="11:30 AM" data-dur="30" data-status="no" data-rate="260000" data-online="0">
+              <span class="ev__t">Hoàng Nam Phong</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>11:30</span>
+              <span class="sr-only">Cancelled</span>
+            </button>
+            <button class="ev ev--wait" style="--s:7;--d:1" data-name="Trần Bảo Ngọc" data-day="Saturday" data-time="2:00 PM" data-dur="60" data-status="wait" data-rate="250000" data-online="0">
+              <span class="ev__t">Trần Bảo Ngọc</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>2:00 – 3:00</span>
+              <span class="sr-only">Pending</span>
+            </button>
+          </div>
+
+          <!-- SUN 19 -->
+          <div class="wk-col wk-col--wknd">
+            <button class="ev ev--wait" style="--s:3;--d:0.75" data-name="Lê Gia Hân" data-day="Sunday" data-time="10:00 AM" data-dur="45" data-status="wait" data-rate="250000" data-online="1">
+              <span class="ev__t">Lê Gia Hân</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>10:00 – 10:45 <span class="ev__on"><span class="sr-only">Online</span><span aria-hidden="true">💻</span></span></span>
+              <span class="sr-only">Pending</span>
+            </button>
+            <button class="ev ev--wait" style="--s:8;--d:1" data-name="Liam Carter" data-day="Sunday" data-time="3:00 PM" data-dur="60" data-status="wait" data-rate="220000" data-online="0">
+              <span class="ev__t">Liam Carter</span>
+              <span class="ev__m"><span class="ev__dot" aria-hidden="true"></span>3:00 – 4:00</span>
+              <span class="sr-only">Pending</span>
+            </button>
+          </div>
+
+          <!-- now indicator (14:20) -->
+          <div class="now" aria-hidden="true"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ══════════════ BOTTOM TAB BAR (<1024px) ══════════════ -->
+<nav class="tabbar print-hide" aria-label="Main">
+  <a class="tb" href="/dashboard">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+    </svg>Dashboard
+  </a>
+  <a class="tb" href="/calendar" aria-current="page">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/>
+    </svg>Calendar
+  </a>
+  <button class="tb tb--add" type="button" aria-label="Add lesson">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
+    </svg>
+  </button>
+  <a class="tb" href="/students">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+    </svg>Students
+  </a>
+  <button class="tb" type="button" id="moreBtn" aria-expanded="false" aria-controls="moreSheet">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>More
+  </button>
+</nav>
+
+<!-- off-canvas MANAGE sheet -->
+<div class="sheet print-hide" id="moreSheet" hidden>
+  <div class="sheet__scrim" data-close-sheet></div>
+  <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="More navigation">
+    <div class="sheet__grab" aria-hidden="true"></div>
+    <p class="label" style="margin-bottom:10px">Manage</p>
+    <nav class="sheet__nav" aria-label="Manage">
+      <a href="/lessons"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h7M8 11h7"/></svg>Lessons</a>
+      <a href="/pieces"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Pieces</a>
+      <a href="/reports"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5M9 13h6"/></svg>Reports</a>
+      <a href="/payments"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h3"/></svg>Payments</a>
+    </nav>
+    <div class="sheet__user">
+      <span class="av" aria-hidden="true">MT</span>
+      <div><b>Mai Trần</b><span>mai@pianodiary.vn</span></div>
+      <button class="btn btn--quiet" type="button" style="margin-left:auto" data-close-sheet>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ ATTENDANCE DIALOG (open) ══════════════ -->
+<div class="scrim print-hide" id="scrim">
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgTitle" aria-describedby="dlgSub">
+
+    <div class="dlg__head">
+      <span class="dlg__ava" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+      </span>
+      <div style="min-width:0">
+        <h2 class="dlg__title" id="dlgTitle">Lesson with <span data-slot="name">Trần Bảo Ngọc</span> 🎹</h2>
+        <p class="dlg__sub" id="dlgSub"><span data-slot="when">Tuesday · 4:30 PM · 45 min</span></p>
+      </div>
+      <button class="dlg__x" type="button" aria-label="Close dialog" data-close-dlg>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- rate + online -->
+    <div class="ratebar">
+      <div>
+        <p class="label"><span data-slot="name">Trần Bảo Ngọc</span>'s rate</p>
+        <button class="rate__val" type="button" id="rateBtn" aria-label="Edit rate for this lesson">
+          <span>đ <span id="rateText">250.000</span></span>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>
+          </svg>
+        </button>
+        <label class="rate__input" id="rateEdit">
+          <span aria-hidden="true">đ</span>
+          <input type="text" id="rateField" value="250.000" inputmode="numeric" aria-label="Rate for this lesson in VND">
+        </label>
+      </div>
+
+      <button class="online" type="button" id="onlineBtn" aria-pressed="true">
+        Online 💻
+        <span class="switch" aria-hidden="true"></span>
+      </button>
+
+      <p class="rate__hint">Custom rate for this lesson only — totals update accordingly.</p>
+    </div>
+
+    <!-- status — LessonStatus: PENDING | COMPLETE | CANCELLED -->
+    <div>
+      <p class="label" style="margin-bottom:9px">Lesson status</p>
+      <div class="status-grid" role="group" aria-label="Lesson status">
+        <button class="st st--ok" type="button" aria-pressed="false" data-status="ok" data-label="Mark Complete">
+          <span class="st__ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>
+          </span>
+          <span class="st__l">Complete</span>
+        </button>
+        <button class="st st--no" type="button" aria-pressed="false" data-status="no" data-label="Mark Cancelled">
+          <span class="st__ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </span>
+          <span class="st__l">Cancelled</span>
+        </button>
+        <button class="st st--wait" type="button" aria-pressed="true" data-status="wait" data-label="Mark Pending">
+          <span class="st__ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </span>
+          <span class="st__l">Pending</span>
+        </button>
+      </div>
+
+      <!-- COMPLETE writes actualMin + note -->
+      <div class="detail" id="detailOk" hidden>
+        <div class="detail__row">
+          <p class="fld">
+            <label class="label" for="actualMin">Actual duration</label>
+            <input class="field" type="number" id="actualMin" name="actualMin" min="0" max="240" step="5" value="45" inputmode="numeric">
+          </p>
+          <p class="fld__hint">Leave as scheduled unless the lesson ran short or long — billing follows the rate, not the minutes.</p>
+        </div>
+        <p class="fld">
+          <label class="label" for="note">Lesson note</label>
+          <textarea class="field field--area" id="note" name="note" rows="2" placeholder="Scales, Burgmüller Op. 100 №2…"></textarea>
+        </p>
+      </div>
+
+      <!-- CANCELLED writes cancelReason (it exists on no other status) -->
+      <div class="detail" id="detailNo" hidden>
+        <p class="fld">
+          <label class="label" for="cancelReason">Cancel reason</label>
+          <input class="field" type="text" id="cancelReason" name="cancelReason" placeholder="Student unwell, teacher away, public holiday…">
+        </p>
+        <p class="fld__hint">Cancelled lessons are never billed — the reason shows on the monthly report.</p>
+      </div>
+    </div>
+
+    <div class="dlg__foot">
+      <button class="btn btn--ghost" type="button" data-close-dlg>Cancel</button>
+      <button class="btn btn--primary" type="button" id="confirmBtn">Mark Complete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $  = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* ── view switcher ────────────────────────────────────────────── */
+  $$('.seg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('.seg button').forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+    });
+  });
+
+  /* ── legend = status filter ───────────────────────────────────────
+     Filtered-out lessons must leave the TAB ORDER too, not just fade. */
+  $$('.lg').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var on = b.getAttribute('aria-pressed') === 'true';
+      b.setAttribute('aria-pressed', on ? 'false' : 'true');
+      var active = $$('.lg').filter(function (x) { return x.getAttribute('aria-pressed') === 'true'; })
+                            .map(function (x) { return x.dataset.filter; });
+      $$('.ev').forEach(function (ev) {
+        var hidden = active.indexOf(ev.dataset.status) === -1;
+        ev.classList.toggle('is-dim', hidden);
+        ev.disabled = hidden;
+      });
+    });
+  });
+
+  /* ── focus management shared by both modals ───────────────────── */
+  var BG = [$('.app'), $('.tabbar')];
+  var lastFocus = null;
+  var FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  function setBackgroundInert(on) {
+    BG.forEach(function (el) { if (el) el.inert = on; });
+  }
+  function trapTab(panel, e) {
+    if (e.key !== 'Tab') return;
+    var items = $$(FOCUSABLE, panel).filter(function (el) { return el.offsetParent !== null; });
+    if (!items.length) return;
+    var first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  /* ── dialog ───────────────────────────────────────────────────── */
+  var scrim = $('#scrim');
+  var dlg = $('.dlg');
+  var confirmBtn = $('#confirmBtn');
+  /* LessonStatus: PENDING | COMPLETE | CANCELLED — no "Present" in the schema. */
+  var LABELS = { ok: 'Mark Complete', no: 'Mark Cancelled', wait: 'Mark Pending' };
+  var current = 'wait';   /* the open lesson's REAL status */
+
+  function money(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+
+  /* The grid shows the status; the fields below it are exactly what
+     markAttendance() writes for that status. */
+  function pick(status) {
+    $$('.st').forEach(function (s) {
+      s.setAttribute('aria-pressed', String(s.dataset.status === status));
+    });
+    $('#detailOk').hidden = status !== 'ok';   /* actualMin + note */
+    $('#detailNo').hidden = status !== 'no';   /* cancelReason     */
+
+    /* Action ≠ state: while the selection is still the lesson's current
+       status, the primary button offers the natural next step. */
+    var action = (status === current && status === 'wait') ? 'ok' : status;
+    confirmBtn.textContent = LABELS[action];
+    confirmBtn.dataset.action = action;
+  }
+
+  function openDlg(ev) {
+    if (ev) {
+      $$('.ev').forEach(function (e) { e.classList.remove('ev--active'); });
+      ev.classList.add('ev--active');
+      $$('[data-slot="name"]').forEach(function (n) { n.textContent = ev.dataset.name; });
+      $('[data-slot="when"]').textContent =
+        ev.dataset.day + ' · ' + ev.dataset.time + ' · ' + ev.dataset.dur + ' min';
+      $('#rateText').textContent = money(ev.dataset.rate);
+      $('#rateField').value = money(ev.dataset.rate);
+      $('#actualMin').value = ev.dataset.dur;
+      $('#onlineBtn').setAttribute('aria-pressed', ev.dataset.online === '1' ? 'true' : 'false');
+      current = ev.dataset.status;
+      pick(current);                      /* report the REAL status */
+    }
+    scrim.hidden = false;
+    lastFocus = document.activeElement;
+    setBackgroundInert(true);
+    $('.dlg__x', scrim).focus();
+  }
+  function closeDlg() {
+    if (scrim.hidden) return;
+    scrim.hidden = true;
+    setBackgroundInert(false);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    lastFocus = null;
+  }
+
+  $$('.ev').forEach(function (ev) {
+    ev.addEventListener('click', function () { openDlg(ev); });
+  });
+  $$('[data-close-dlg]').forEach(function (b) { b.addEventListener('click', closeDlg); });
+  scrim.addEventListener('click', function (e) { if (e.target === scrim) closeDlg(); });
+  dlg.addEventListener('keydown', function (e) { trapTab(dlg, e); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeDlg(); closeSheet(); }
+  });
+
+  /* status cards */
+  $$('.st').forEach(function (s) {
+    s.addEventListener('click', function () { pick(s.dataset.status); });
+  });
+
+  /* online toggle */
+  $('#onlineBtn').addEventListener('click', function () {
+    var b = $('#onlineBtn');
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+  });
+
+  /* rate inline edit */
+  var rateBtn = $('#rateBtn'), rateEdit = $('#rateEdit'), rateField = $('#rateField');
+  rateBtn.addEventListener('click', function () {
+    rateBtn.classList.add('is-off');
+    rateEdit.classList.add('is-on');
+    rateField.focus();
+    rateField.select();
+  });
+  function commitRate() {
+    var digits = rateField.value.replace(/\D/g, '') || '250000';
+    $('#rateText').textContent = money(digits);
+    rateField.value = money(digits);
+    rateEdit.classList.remove('is-on');
+    rateBtn.classList.remove('is-off');
+  }
+  rateField.addEventListener('blur', commitRate);
+  rateField.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); commitRate(); }
+  });
+
+  /* confirm: if the button offers a status the grid doesn't show yet, select
+     it (revealing that status' fields); otherwise pretend-save and close. */
+  confirmBtn.addEventListener('click', function () {
+    var action = confirmBtn.dataset.action;
+    var selected = $('.st[aria-pressed="true"]').dataset.status;
+    if (action !== selected) { pick(action); return; }
+    closeDlg();
+  });
+
+  /* ── more-sheet ───────────────────────────────────────────────── */
+  var sheet = $('#moreSheet'), moreBtn = $('#moreBtn');
+  var sheetPanel = $('.sheet__panel', sheet);
+
+  function openSheet() {
+    sheet.hidden = false;
+    moreBtn.setAttribute('aria-expanded', 'true');
+    lastFocus = document.activeElement;
+    setBackgroundInert(true);
+    var first = $$(FOCUSABLE, sheetPanel)[0];
+    if (first) first.focus();
+  }
+  function closeSheet() {
+    if (sheet.hidden) return;
+    sheet.hidden = true;
+    moreBtn.setAttribute('aria-expanded', 'false');
+    setBackgroundInert(false);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    lastFocus = null;
+  }
+  moreBtn.addEventListener('click', function () {
+    if (sheet.hidden) openSheet(); else closeSheet();
+  });
+  sheetPanel.addEventListener('keydown', function (e) { trapTab(sheetPanel, e); });
+  $$('[data-close-sheet]').forEach(function (b) { b.addEventListener('click', closeSheet); });
+
+  /* ── scroll the grid so 8 AM sits at the top, like the app ────── */
+  var ws = $('.week-scroll');
+  var hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hh')) || 62;
+  ws.scrollTop = hh * 0.6;
+
+  /* The dialog ships OPEN — so it must own focus from the first frame. */
+  pick(current);
+  openDlg();
+})();
+</script>
+</body>
+</html>

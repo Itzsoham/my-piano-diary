@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Dashboard · The Diary</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+/* ==========================================================================
+   DASHBOARD · VARIANT C — "The Diary"
+   Editorial / journal feel. Serif accents, pastel washes, generous air.
+   Shell: slim sidebar ≥1280 · floating frosted tab bar below.
+   Only screen-specific rules live here; every colour comes from _theme.css.
+   ========================================================================== */
+
+/* ── Variant badge (scaffolding — must never occlude product chrome) ─────── */
+.variant-badge{
+  position:fixed; top:12px; right:12px; z-index:99;
+  pointer-events:none;
+  display:inline-flex; align-items:center; gap:7px;
+  padding:7px 13px; border-radius:var(--r-pill);
+  background:rgba(255,255,255,.82); backdrop-filter:blur(10px) saturate(1.4);
+  border:1px solid var(--line); box-shadow:var(--sh-sm);
+  font:600 11px/1 var(--font-sans); letter-spacing:.04em; color:var(--ink-soft);
+}
+.variant-badge::before{
+  content:""; width:8px; height:8px; border-radius:50%; background:var(--grad-brand);
+}
+
+/* ── Screen-reader-only text ─────────────────────────────────────────────── */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%);
+  white-space:nowrap; border:0;
+}
+
+/* ── Shell ───────────────────────────────────────────────────────────────── */
+.app{ display:grid; grid-template-columns:minmax(0,1fr); min-height:100dvh; }
+
+.main{
+  min-width:0;
+  padding:clamp(14px,2.4vw,34px) clamp(14px,2.6vw,40px) 132px;
+}
+.wrap{ width:100%; max-width:1180px; margin-inline:auto; }
+
+/* ── Sidebar (≥1280 only) ────────────────────────────────────────────────── */
+.sidebar{ display:none; }
+
+@media (min-width:1280px){
+  .app{ grid-template-columns:var(--sidebar) minmax(0,1fr); }
+  .main{ padding-bottom:clamp(24px,3vw,44px); }
+
+  .sidebar{
+    display:flex; flex-direction:column; gap:22px;
+    position:sticky; top:0; height:100dvh; overflow-y:auto;
+    padding:22px 16px;
+    background:rgba(255,255,255,.72);
+    backdrop-filter:blur(16px) saturate(1.3);
+    border-right:1px solid var(--line);
+  }
+}
+
+.brand{ display:flex; align-items:center; gap:11px; padding:4px 8px; }
+.brand__mark{
+  width:40px; height:40px; border-radius:13px; flex:0 0 auto;
+  display:grid; place-items:center; color:var(--ink-invert);
+  background:var(--grad-brand); box-shadow:var(--sh-pink);
+}
+.brand__name{ font:700 15px/1.15 var(--font-sans); letter-spacing:-.01em; }
+.brand__sub{ font:400 11px/1.3 var(--font-sans); color:var(--ink-faint); margin-top:2px; }
+
+.nav-group{ margin-top:6px; }
+.nav-group > .label{ padding:0 12px 8px; display:block; }
+.nav{ display:flex; flex-direction:column; gap:2px; }
+.nav a{
+  display:flex; align-items:center; gap:11px;
+  min-height:var(--tap); padding:0 12px; border-radius:var(--r-sm);
+  font:600 13.5px/1 var(--font-sans); color:var(--ink-soft);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav a svg{ width:19px; height:19px; flex:0 0 auto; opacity:.85; }
+.nav a:hover{ background:var(--surface-2); color:var(--ink); }
+.nav a[aria-current="page"]{
+  background:linear-gradient(100deg,var(--pink-100),var(--teal-100));
+  color:var(--ink); box-shadow:var(--sh-xs);
+}
+.nav a[aria-current="page"] svg{ opacity:1; color:var(--pink-600); }
+
+.side-foot{ margin-top:auto; }
+.user{
+  display:flex; align-items:center; gap:10px; width:100%;
+  min-height:var(--tap); padding:8px; border-radius:var(--r-md);
+  border:1px solid var(--line); background:var(--surface); box-shadow:var(--sh-xs);
+  text-align:left;
+}
+.user:hover{ background:var(--surface-2); }
+.user__name{ font:600 12.5px/1.2 var(--font-sans); }
+.user__mail{ font:400 11px/1.2 var(--font-sans); color:var(--ink-soft); margin-top:3px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:118px; }
+.user svg{ width:16px; height:16px; margin-left:auto; color:var(--ink-faint); flex:0 0 auto; }
+
+/* ── Compact top bar (below 1280) ────────────────────────────────────────── */
+/* Below 1280 the fixed .variant-badge (top-right, ~160px wide, ~26px tall)
+   floats over this row, so the row must stay out from under it:
+   phones drop below the badge; tablets simply reserve the width. */
+.topbar{
+  display:flex; align-items:center; gap:10px;
+  width:100%; max-width:1180px; margin:30px auto clamp(14px,2vw,20px);
+}
+@media (min-width:640px){ .topbar{ margin-top:0; padding-right:170px; } }
+.topbar .brand{ padding:0; }
+.topbar__spacer{ margin-left:auto; }
+@media (min-width:1280px){ .topbar{ display:none; } }
+
+/* ── HERO ────────────────────────────────────────────────────────────────── */
+.hero{
+  position:relative; overflow:hidden;
+  border-radius:var(--r-2xl);
+  background:var(--grad-hero);
+  border:1px solid var(--line-pink);
+  box-shadow:var(--sh-lg);
+  padding:clamp(26px,4.4vw,58px) clamp(22px,4vw,56px);
+}
+.hero__blob{ position:absolute; border-radius:50%; filter:blur(2px); pointer-events:none; }
+.hero__blob--a{
+  width:min(300px,42vw); aspect-ratio:1; right:-70px; top:-90px;
+  background:radial-gradient(circle at 35% 35%,
+    color-mix(in srgb, var(--bubblegum) 55%, transparent), transparent 68%);
+  animation:float 11s var(--ease) infinite;
+}
+.hero__blob--b{
+  width:min(230px,34vw); aspect-ratio:1; right:14%; bottom:-110px;
+  background:radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--wintergreen) 45%, transparent), transparent 68%);
+  animation:float 14s var(--ease) infinite reverse;
+}
+@keyframes float{
+  0%,100%{ transform:translate3d(0,0,0) scale(1); }
+  50%{ transform:translate3d(-14px,16px,0) scale(1.06); }
+}
+.hero__inner{ position:relative; max-width:44ch; }
+.hero__eyebrow{
+  display:inline-flex; align-items:center; gap:7px;
+  font:var(--t-label); letter-spacing:var(--label-tracking); text-transform:uppercase;
+  color:var(--teal-700);
+  background:rgba(255,255,255,.6); border:1px solid var(--line);
+  padding:6px 12px; border-radius:var(--r-pill); margin-bottom:18px;
+}
+.hero__eyebrow svg{ width:13px; height:13px; }
+.hero h1{
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(31px,5.4vw,56px); line-height:1.06; letter-spacing:-.015em;
+  color:var(--ink);
+}
+.hero h1 em{ font-style:italic; color:var(--pink-700); }
+.hero__date{
+  font-family:var(--font-serif); font-style:italic;
+  font-size:clamp(15px,1.6vw,19px); color:var(--ink-soft); margin-top:12px;
+}
+.hero__story{
+  margin-top:16px; font-size:clamp(14px,1.4vw,16px); line-height:1.6; color:var(--ink-soft);
+  max-width:38ch;
+}
+.hero__story b{ color:var(--ink); font-weight:650; font-variant-numeric:tabular-nums; }
+.hero__cta{ display:flex; flex-wrap:wrap; gap:10px; margin-top:clamp(20px,2.6vw,30px); }
+.hero__cta .btn{ padding:0 22px; min-height:50px; font-size:14px; }
+
+/* ── KPI stat pills ──────────────────────────────────────────────────────── */
+.kpis{
+  display:grid; gap:clamp(10px,1.4vw,16px);
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  margin-top:clamp(18px,2.4vw,28px);
+}
+@media (min-width:900px){ .kpis{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+.kpi{
+  position:relative; overflow:hidden;
+  background:rgba(255,255,255,.86); backdrop-filter:blur(6px);
+  border:1px solid var(--line); border-radius:var(--r-lg);
+  padding:16px 16px 18px; box-shadow:var(--sh);
+  display:flex; flex-direction:column; gap:8px; min-width:0;
+}
+.kpi__val{
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-weight:700; letter-spacing:-.025em;
+  font-size:clamp(16px,2.15vw,26px); line-height:1.1; color:var(--ink);
+  overflow-wrap:anywhere;
+}
+.kpi__val .cur{ font-size:.72em; font-weight:600; color:var(--ink-soft); margin-left:2px; }
+/* KPI titles + notes carry real meaning — --ink-faint (2.67:1) is decorative-only. */
+.kpi .label{ color:var(--ink-soft); }
+.kpi__note{ font:400 11.5px/1.35 var(--font-sans); color:var(--ink-soft); }
+.kpi__rule{ height:3px; border-radius:2px; margin-top:auto; }
+.kpi--rev .kpi__rule{ background:var(--grad-mint); }
+.kpi--miss .kpi__rule{ background:var(--grad-pink); }
+.kpi--coll .kpi__rule{ background:linear-gradient(90deg,var(--wintergreen),var(--mint)); }
+.kpi--out .kpi__rule{ background:linear-gradient(90deg,var(--sand-300),var(--cotton)); }
+.kpi__delta{
+  display:inline-flex; align-items:center; gap:4px;
+  font:600 11px/1 var(--font-sans); color:var(--ok-fg);
+  background:var(--ok-bg); padding:4px 8px; border-radius:var(--r-pill);
+  align-self:flex-start;
+}
+.kpi__delta svg{ width:12px; height:12px; }
+
+/* Spoiler KPI */
+.kpi--spoiler{ text-align:left; cursor:pointer; }
+.kpi--spoiler .kpi__val,
+.kpi--spoiler .kpi__note{
+  filter:blur(8px); transition:filter .45s var(--ease); user-select:none;
+}
+.kpi__reveal{
+  position:absolute; inset:0; display:grid; place-items:center;
+  background:linear-gradient(160deg,rgba(255,231,238,.5),rgba(255,255,255,.35));
+  transition:opacity .35s var(--ease);
+}
+.kpi__reveal span{
+  display:inline-flex; align-items:center; gap:6px;
+  font:600 11.5px/1 var(--font-sans); color:var(--pink-700);
+  background:rgba(255,255,255,.92); border:1px solid var(--line-pink);
+  padding:9px 13px; border-radius:var(--r-pill); box-shadow:var(--sh-sm);
+}
+.kpi__reveal svg{ width:14px; height:14px; }
+.kpi--spoiler.is-revealed .kpi__val,
+.kpi--spoiler.is-revealed .kpi__note{ filter:none; }
+.kpi--spoiler.is-revealed .kpi__reveal{ opacity:0; pointer-events:none; visibility:hidden; }
+
+/* ── Section headings (serif, editorial) ─────────────────────────────────── */
+.sec{ margin-top:clamp(30px,4vw,52px); }
+.sec__head{
+  display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;
+  margin-bottom:clamp(14px,2vw,20px);
+}
+.sec__title{
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(22px,2.7vw,30px); line-height:1.15; letter-spacing:-.01em;
+}
+.sec__sub{ font:var(--t-small); color:var(--ink-soft); padding-bottom:3px; }
+.sec__act{ margin-left:auto; display:flex; gap:8px; align-items:center; }
+.badge-soft{
+  display:inline-flex; align-items:center; gap:6px;
+  font:600 11.5px/1 var(--font-sans); color:var(--ok-fg);
+  background:var(--ok-bg); border:1px solid color-mix(in srgb,var(--wintergreen) 35%,transparent);
+  padding:8px 12px; border-radius:var(--r-pill); white-space:nowrap;
+}
+.badge-soft svg{ width:13px; height:13px; }
+
+/* ── Today's Focus — vertical timeline ───────────────────────────────────── */
+.tl{ list-style:none; display:flex; flex-direction:column; gap:var(--row-gap,18px); }
+.tl__item{
+  display:grid; grid-template-columns:62px 20px minmax(0,1fr);
+  column-gap:10px; align-items:start;
+}
+@media (min-width:640px){ .tl__item{ grid-template-columns:78px 24px minmax(0,1fr); column-gap:14px; } }
+
+.tl__time{
+  text-align:right; padding-top:16px;
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-weight:700; font-size:clamp(11.5px,1.2vw,13.5px); color:var(--ink);
+  letter-spacing:-.01em; white-space:nowrap;
+}
+.tl__time small{ display:block; font-weight:500; font-size:10.5px; color:var(--ink-soft); margin-top:3px; }
+
+.tl__rail{ position:relative; display:flex; justify-content:center; align-self:stretch; }
+.tl__rail::before{
+  content:""; position:absolute; top:0; bottom:calc(-1 * var(--row-gap,18px)); width:2px;
+  background:linear-gradient(180deg,var(--mint),var(--cotton));
+  border-radius:2px;
+}
+.tl__item:last-child .tl__rail::before{ bottom:auto; height:26px; }
+.tl__dot{
+  position:relative; z-index:1; margin-top:17px;
+  width:14px; height:14px; border-radius:50%;
+  border:3px solid var(--surface); box-shadow:0 0 0 1px var(--line);
+}
+.tl__dot--complete{ background:var(--ok-dot); }
+.tl__dot--cancelled{ background:var(--no-dot); }
+.tl__dot--pending{ background:var(--wait-dot); }
+
+.lesson{
+  display:grid; gap:12px;
+  padding:14px; border-radius:var(--r-lg);
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+@media (min-width:640px){ .lesson{ padding:16px 18px; } }
+/* No hover lift: the card is not clickable — only the button inside it is. */
+.lesson--cancelled{ background:linear-gradient(160deg,var(--pink-50),var(--surface) 62%); border-color:var(--line-pink); }
+.lesson--now{ border-color:color-mix(in srgb,var(--wintergreen) 45%,transparent); box-shadow:var(--sh-mint); }
+
+.lesson__top{ display:flex; align-items:flex-start; gap:12px; min-width:0; }
+.lesson__id{ min-width:0; flex:1; }
+.lesson__name{
+  font:650 15px/1.25 var(--font-sans); letter-spacing:-.01em;
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+}
+.lesson__piece{
+  margin-top:5px; font-family:var(--font-serif); font-style:italic;
+  font-size:14px; color:var(--ink-soft);
+}
+.lesson__meta{
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:8px;
+  font:var(--t-small); color:var(--ink-soft);
+}
+.lesson__meta svg{ width:13px; height:13px; }
+.lesson__meta span{ display:inline-flex; align-items:center; gap:4px; }
+.lesson__reason{
+  margin-top:9px; padding:8px 11px; border-radius:var(--r-xs);
+  background:var(--no-bg); color:var(--no-fg);
+  font:500 12px/1.4 var(--font-sans);
+}
+.lesson__note{
+  margin-top:9px; padding:8px 11px; border-radius:var(--r-xs);
+  background:var(--surface-2); color:var(--ink-soft);
+  font:400 12px/1.4 var(--font-sans);
+}
+.lesson__foot{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding-top:11px; border-top:1px dashed var(--line);
+}
+.lesson__money{
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-weight:700; font-size:15px; letter-spacing:-.02em; color:var(--ink);
+}
+.lesson__money--void{ color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:1.5px; }
+.lesson__money small{ font-weight:600; font-size:.75em; color:var(--ink-soft); margin-left:2px; }
+.lesson__foot .btn{ margin-left:auto; }
+.today-total{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
+  margin-top:18px; padding:14px 18px;
+  border-radius:var(--r-lg); border:1px dashed var(--line-strong);
+  background:rgba(255,255,255,.6);
+  font:var(--t-small); color:var(--ink-soft);
+}
+.today-total b{
+  margin-left:auto; font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-size:17px; font-weight:700; color:var(--ink); letter-spacing:-.02em;
+}
+
+/* ── 2-up: podium + insights ─────────────────────────────────────────────── */
+.duo{ display:grid; gap:clamp(14px,2vw,20px); grid-template-columns:minmax(0,1fr); }
+@media (min-width:1024px){ .duo{ grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); } }
+
+.podium{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(6px,1.2vw,14px); align-items:end; margin-top:6px; }
+.pod{ display:flex; flex-direction:column; align-items:center; text-align:center; min-width:0; }
+.pod .av{ box-shadow:var(--sh); border:3px solid var(--surface); }
+.pod__col{
+  width:100%; margin-top:-14px; padding:20px 6px 12px;
+  border-radius:var(--r-md) var(--r-md) 10px 10px;
+  display:flex; flex-direction:column; align-items:center; gap:4px; justify-content:flex-end;
+  border:1px solid var(--line); min-width:0;
+}
+/* Markup stays in rank order 1-2-3; the staircase is a purely visual reorder. */
+.pod--1{ order:2; }
+.pod--2{ order:1; }
+.pod--3{ order:3; }
+.pod--1 .av{ background:var(--grad-pink); }
+.pod--1 .pod__col{ height:clamp(126px,15vw,158px); background:linear-gradient(180deg,var(--pink-100),var(--surface)); border-color:var(--line-pink); }
+.pod--2 .av{ background:var(--grad-mint); color:var(--teal-700); }
+.pod--2 .pod__col{ height:clamp(104px,12.5vw,128px); background:linear-gradient(180deg,var(--teal-100),var(--surface)); }
+.pod--3 .av{ background:linear-gradient(135deg,var(--sand-300),var(--cotton)); color:var(--sand-700); }
+.pod--3 .pod__col{ height:clamp(88px,10.5vw,108px); background:linear-gradient(180deg,var(--sand-100),var(--surface)); border-color:color-mix(in srgb,var(--sand-300) 45%,transparent); }
+.pod__medal{ font-size:19px; line-height:1; }
+.pod__name{ font:650 11.5px/1.25 var(--font-sans); color:var(--ink); overflow-wrap:anywhere; }
+.pod__n{
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font:600 11px/1 var(--font-num); color:var(--ink-soft);
+}
+.runners{ list-style:none; margin-top:16px; display:flex; flex-direction:column; gap:2px; }
+.runners a{
+  display:flex; align-items:center; gap:10px;
+  min-height:var(--tap); padding:0 8px; border-radius:var(--r-sm);
+  transition:background var(--dur) var(--ease);
+}
+.runners a:hover{ background:var(--surface-2); }
+.runners .rank{ font:700 11px/1 var(--font-num); color:var(--ink-soft); width:16px; flex:0 0 auto; }
+.runners .who{ font:600 13px/1.2 var(--font-sans); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.runners .n{ margin-left:auto; font:600 12px/1 var(--font-num); font-variant-numeric:tabular-nums; color:var(--ink-soft); white-space:nowrap; }
+
+.insights{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+.ins{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; min-height:var(--tap);
+  border-radius:var(--r-md); background:rgba(255,255,255,.72); border:1px solid var(--line);
+}
+.ins__ico{
+  width:36px; height:36px; border-radius:12px; flex:0 0 auto;
+  display:grid; place-items:center; color:var(--teal-700); background:var(--teal-100);
+}
+.ins__ico svg{ width:17px; height:17px; }
+.ins__ico--pink{ color:var(--pink-700); background:var(--pink-100); }
+.ins__ico--sand{ color:var(--sand-700); background:var(--sand-100); }
+.ins__k{ font:var(--t-small); color:var(--ink-soft); }
+.ins__v{ font:650 14px/1.25 var(--font-sans); margin-top:2px; letter-spacing:-.01em; }
+.ins__v em{ font-style:normal; font-variant-numeric:tabular-nums; }
+.ins .btn{ margin-left:auto; flex:0 0 auto; }
+
+/* ── Chart ───────────────────────────────────────────────────────────────── */
+.chart-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.chart{ min-width:520px; }
+.chart svg{ width:100%; height:auto; display:block; }
+.chart-legend{
+  display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center;
+  margin-top:14px; padding-top:14px; border-top:1px solid var(--line);
+  font:var(--t-small); color:var(--ink-soft);
+}
+.chart-legend b{ color:var(--ink); font-variant-numeric:tabular-nums; }
+.chart-legend .sep{ color:var(--line-strong); }
+
+/* ── Floating tab bar (below 1280) ───────────────────────────────────────── */
+.tabbar{
+  position:fixed; z-index:75; /* above .sheet-scrim so "More" stays a real toggle */
+  left:50%; transform:translateX(-50%);
+  bottom:max(14px, env(safe-area-inset-bottom));
+  width:min(540px, calc(100% - 24px));
+  display:flex; gap:4px; padding:7px;
+  border-radius:var(--r-pill);
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(20px) saturate(1.5);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-xl), 0 2px 10px -6px rgba(60,90,92,.35);
+}
+.tabbar a,
+.tabbar button{
+  flex:1; min-width:0; min-height:var(--tap);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  padding:5px 2px; border-radius:var(--r-pill);
+  color:var(--ink-soft); transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.tabbar svg{ width:21px; height:21px; }
+.tabbar span{ font:600 11px/1 var(--font-sans); letter-spacing:.02em; }
+.tabbar a:hover,
+.tabbar button:hover{ color:var(--ink); background:var(--surface-2); }
+.tabbar a[aria-current="page"],
+.tabbar button[aria-expanded="true"]{
+  background:linear-gradient(135deg,var(--pink-100),var(--teal-100));
+  color:var(--pink-700);
+}
+@media (min-width:1280px){ .tabbar{ display:none; } }
+
+/* ── "More" bottom sheet — carries the tabs that don't fit (below 1280) ──── */
+.sheet-scrim{
+  position:fixed; inset:0; z-index:65;
+  background:color-mix(in srgb, var(--ink) 28%, transparent); backdrop-filter:blur(2px);
+}
+.sheet{
+  position:fixed; z-index:70;
+  left:50%; transform:translateX(-50%);
+  bottom:calc(max(14px, env(safe-area-inset-bottom)) + 70px);
+  width:min(540px, calc(100% - 24px));
+  display:flex; flex-direction:column; gap:4px; padding:10px;
+  border-radius:var(--r-lg);
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(20px) saturate(1.5);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-xl);
+}
+.sheet__grab{
+  width:38px; height:4px; border-radius:2px; margin:0 auto 6px;
+  background:var(--line-strong);
+}
+.sheet a{
+  display:flex; align-items:center; gap:12px;
+  min-height:var(--tap); padding:0 14px; border-radius:var(--r-sm);
+  font:600 14px/1 var(--font-sans); color:var(--ink-soft);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.sheet a svg{ width:19px; height:19px; flex:0 0 auto; }
+.sheet a:hover{ background:var(--surface-2); color:var(--ink); }
+@media (min-width:1280px){ .sheet, .sheet-scrim{ display:none; } }
+
+/* Small-phone trims */
+@media (max-width:480px){
+  /* 6 tabs need every pixel — buy width back from padding, not from legibility. */
+  .tabbar{ width:calc(100% - 12px); gap:1px; padding:5px 4px; }
+  .tabbar a, .tabbar button{ padding:5px 0; }
+  .tabbar span{ font-size:10px; letter-spacing:0; }
+}
+@media (max-width:400px){
+  .hero__cta .btn{ width:100%; }
+  .lesson__foot .btn{ width:100%; margin-left:0; }
+  .lesson__money{ width:100%; }
+  /* One column: "19.600.000 ₫" cannot survive a ~129px content box. */
+  .kpis{ grid-template-columns:minmax(0,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Dashboard · The Diary</div>
+
+<div class="app">
+
+  <!-- ══════════ SIDEBAR (≥1280) ══════════ -->
+  <aside class="sidebar print-hide">
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+      </span>
+      <span>
+        <span class="brand__name">My Piano Diary</span>
+        <span class="brand__sub">Personal teaching space</span>
+      </span>
+    </div>
+
+    <button class="btn btn--primary" style="width:100%">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
+      </svg>
+      Add lesson
+    </button>
+
+    <nav class="nav-group" aria-label="Main">
+      <span class="label">Main</span>
+      <div class="nav">
+        <a href="/dashboard" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard
+        </a>
+        <a href="/calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          Calendar
+        </a>
+      </div>
+    </nav>
+
+    <nav class="nav-group" aria-label="Manage">
+      <span class="label">Manage</span>
+      <div class="nav">
+        <a href="/lessons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          Lessons
+        </a>
+        <a href="/students">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M16 3.6a4 4 0 0 1 0 7"/></svg>
+          Students
+        </a>
+        <a href="/pieces">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Pieces
+        </a>
+        <a href="/reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          Reports
+        </a>
+        <a href="/payments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 11h20"/><path d="M6 15.5h3"/></svg>
+          Payments
+        </a>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu: Profile, Updates, Log out">
+        <span class="av" aria-hidden="true">SM</span>
+        <span style="min-width:0">
+          <span class="user__name">Sarah Mitchell</span>
+          <span class="user__mail">sarah@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="main">
+
+    <!-- compact top bar, <1280 only -->
+    <div class="topbar print-hide">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+        </span>
+        <span>
+          <span class="brand__name">My Piano Diary</span>
+          <span class="brand__sub">Personal teaching space</span>
+        </span>
+      </div>
+      <span class="topbar__spacer"></span>
+      <button class="btn btn--icon btn--ghost" aria-label="Search students and lessons">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+      <button class="btn btn--icon btn--ghost" aria-label="Account menu: Profile, Updates, Log out" aria-haspopup="menu" aria-expanded="false" style="border:0;box-shadow:none;padding:0">
+        <span class="av" aria-hidden="true">SM</span>
+      </button>
+    </div>
+
+    <div class="wrap">
+
+      <!-- ── HERO ─────────────────────────────────────────────────────── -->
+      <header class="hero rise" style="--i:0">
+        <span class="hero__blob hero__blob--a" aria-hidden="true"></span>
+        <span class="hero__blob hero__blob--b" aria-hidden="true"></span>
+
+        <div class="hero__inner">
+          <span class="hero__eyebrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+            Da Nang studio
+          </span>
+
+          <h1>Good afternoon,<br><em>Sarah</em> ✨</h1>
+          <p class="hero__date">Tuesday, July 14th</p>
+          <p class="hero__story">
+            <b>6 lessons</b> on the books today · <b>1.050.000 ₫</b> expected.
+            Two are already complete, one was cancelled this morning.
+          </p>
+
+          <div class="hero__cta">
+            <button class="btn btn--primary">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+              Add lesson
+            </button>
+            <a class="btn btn--ghost" href="#today">
+              Today's lessons
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <!-- ── KPI STAT PILLS ───────────────────────────────────────────── -->
+      <section class="kpis" aria-label="Key figures">
+        <article class="kpi kpi--rev rise" style="--i:1">
+          <span class="label">This Month Revenue</span>
+          <span class="kpi__val">10.050.000 <span class="cur">₫</span></span>
+          <span class="kpi__delta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg> +14% vs June</span>
+          <span class="kpi__note">Jul 1–14 · 40 lessons complete</span>
+          <span class="kpi__rule"></span>
+        </article>
+
+        <article class="kpi kpi--miss kpi--spoiler rise" style="--i:2" data-spoiler>
+          <span class="label">Missed This Month</span>
+          <span class="kpi__val">1.480.000 <span class="cur">₫</span></span>
+          <span class="kpi__note">6 lessons cancelled · not billed</span>
+          <span class="kpi__rule"></span>
+          <button class="kpi__reveal" type="button" aria-label="Reveal missed revenue this month">
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+              Click to reveal
+            </span>
+          </button>
+        </article>
+
+        <article class="kpi kpi--coll rise" style="--i:3">
+          <span class="label">Collected Last Month</span>
+          <span class="kpi__val">19.600.000 <span class="cur">₫</span></span>
+          <span class="kpi__note">June · 87% of expected</span>
+          <span class="kpi__rule"></span>
+        </article>
+
+        <article class="kpi kpi--out rise" style="--i:4">
+          <span class="label">Outstanding Last Month</span>
+          <span class="kpi__val">2.850.000 <span class="cur">₫</span></span>
+          <span class="kpi__note">5 students · 2 families unpaid</span>
+          <span class="kpi__rule"></span>
+        </article>
+      </section>
+
+      <!-- ── TODAY'S FOCUS — vertical timeline ────────────────────────── -->
+      <section class="sec" id="today" aria-labelledby="today-h">
+        <div class="sec__head">
+          <h2 class="sec__title" id="today-h">Today's Focus 🎹</h2>
+          <span class="sec__sub">Tue 14 Jul · 6 lessons</span>
+          <span class="sec__act">
+            <a class="btn btn--ghost btn--sm" href="/calendar" style="min-height:var(--tap)">Open calendar</a>
+          </span>
+        </div>
+
+        <ol class="tl">
+
+          <li class="tl__item rise" style="--i:1">
+            <div class="tl__time">9:00 AM<small>45 min</small></div>
+            <div class="tl__rail"><span class="tl__dot tl__dot--complete"></span></div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">NA</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Nguyễn Minh Anh <span class="chip chip--complete">Complete</span></h3>
+                  <p class="lesson__piece">Für Elise · Beethoven</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 45 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 3/5</span>
+                  </p>
+                  <p class="lesson__note">Left hand finally steady at 88bpm — start the coda next week.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">250.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" style="min-height:var(--tap)">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:2">
+            <div class="tl__time">10:30 AM<small>30 min</small></div>
+            <div class="tl__rail"><span class="tl__dot tl__dot--complete"></span></div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">TN</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Trần Bảo Ngọc <span class="chip chip--complete">Complete</span></h3>
+                  <p class="lesson__piece">Minuet in G · Petzold</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 30 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 2/5</span>
+                  </p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">200.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" style="min-height:var(--tap)">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:3">
+            <div class="tl__time">1:30 PM<small>60 min</small></div>
+            <div class="tl__rail"><span class="tl__dot tl__dot--cancelled"></span></div>
+            <article class="card lesson lesson--cancelled">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">ET</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Emma Thompson <span class="chip chip--cancelled">Cancelled</span></h3>
+                  <p class="lesson__piece">Clair de Lune · Debussy</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 60 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 5/5</span>
+                  </p>
+                  <p class="lesson__reason"><b>Reason:</b> Family away in Hội An — asked to reschedule to Thursday 4:30 PM.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money lesson__money--void">300.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" style="min-height:var(--tap)">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:4">
+            <div class="tl__time">3:30 PM<small>45 min</small></div>
+            <div class="tl__rail"><span class="tl__dot tl__dot--pending"></span></div>
+            <article class="card lesson lesson--now">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">LH</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Lê Gia Hân <span class="chip chip--pending">Pending</span></h3>
+                  <p class="lesson__piece">Gymnopédie No.1 · Satie</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 45 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 3/5</span>
+                  </p>
+                  <p class="lesson__note">Bring the pedal chart — she keeps over-holding bar 9.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">200.000 <small>₫</small></span>
+                <button class="btn btn--mint btn--sm" style="min-height:var(--tap)">Mark complete</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:5">
+            <div class="tl__time">4:30 PM<small>45 min</small></div>
+            <div class="tl__rail"><span class="tl__dot tl__dot--pending"></span></div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">PB</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Phạm Quốc Bảo <span class="chip chip--pending">Pending</span> <span class="chip chip--online">Online</span></h3>
+                  <p class="lesson__piece">Turkish March · Mozart</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 45 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg> Online · đ 180.000 rate</span>
+                    <span>Difficulty 4/5</span>
+                  </p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">180.000 <small>₫</small></span>
+                <button class="btn btn--mint btn--sm" style="min-height:var(--tap)">Mark complete</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:6">
+            <div class="tl__time">6:00 PM<small>60 min</small></div>
+            <div class="tl__rail"><span class="tl__dot tl__dot--pending"></span></div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">ON</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Olivia Nguyen <span class="chip chip--pending">Pending</span> <span class="chip chip--online">Online</span></h3>
+                  <p class="lesson__piece">River Flows in You · Yiruma</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 60 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg> Online · đ 220.000 rate</span>
+                    <span>Difficulty 2/5</span>
+                  </p>
+                  <p class="lesson__note">Last of the day — send July invoice to the Nguyen family after.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">220.000 <small>₫</small></span>
+                <button class="btn btn--mint btn--sm" style="min-height:var(--tap)">Mark complete</button>
+              </div>
+            </article>
+          </li>
+
+        </ol>
+
+        <p class="today-total">
+          2 complete · 3 pending · 1 cancelled (not billed)
+          <b>1.050.000 ₫ expected today</b>
+        </p>
+      </section>
+
+      <!-- ── 2-UP: PODIUM + INSIGHTS ──────────────────────────────────── -->
+      <section class="sec duo" aria-label="Students and insights">
+
+        <article class="card rise" style="--i:1">
+          <div class="sec__head" style="margin-bottom:6px">
+            <h2 class="sec__title" style="font-size:clamp(19px,2.1vw,24px)">Top Students This Month</h2>
+            <span class="sec__act"><a class="btn btn--quiet btn--sm" href="/students" style="min-height:var(--tap)">All students</a></span>
+          </div>
+
+          <!-- DOM order is rank order 1-2-3; CSS `order` builds the visual staircase. -->
+          <div class="podium">
+            <div class="pod pod--1">
+              <span class="av av--lg" aria-hidden="true">NA</span>
+              <div class="pod__col">
+                <span class="pod__medal"><span aria-hidden="true">🥇</span><span class="sr-only">1st place</span></span>
+                <span class="pod__name">Nguyễn Minh Anh</span>
+                <span class="pod__n">7 lessons</span>
+              </div>
+            </div>
+            <div class="pod pod--2">
+              <span class="av av--lg" aria-hidden="true">TN</span>
+              <div class="pod__col">
+                <span class="pod__medal"><span aria-hidden="true">🥈</span><span class="sr-only">2nd place</span></span>
+                <span class="pod__name">Trần Bảo Ngọc</span>
+                <span class="pod__n">6 lessons</span>
+              </div>
+            </div>
+            <div class="pod pod--3">
+              <span class="av av--lg" aria-hidden="true">ET</span>
+              <div class="pod__col">
+                <span class="pod__medal"><span aria-hidden="true">🥉</span><span class="sr-only">3rd place</span></span>
+                <span class="pod__name">Emma Thompson</span>
+                <span class="pod__n">5 lessons</span>
+              </div>
+            </div>
+          </div>
+
+          <ol class="runners" start="4">
+            <li><a href="/students/le-gia-han"><span class="rank">4</span><span class="av av--sm" aria-hidden="true">LH</span><span class="who">Lê Gia Hân</span><span class="n">5 lessons</span></a></li>
+            <li><a href="/students/do-khanh-linh"><span class="rank">5</span><span class="av av--sm" aria-hidden="true">ĐL</span><span class="who">Đỗ Khánh Linh</span><span class="n">4 lessons</span></a></li>
+          </ol>
+        </article>
+
+        <article class="card card--mint rise" style="--i:2">
+          <div class="sec__head" style="margin-bottom:6px">
+            <h2 class="sec__title" style="font-size:clamp(19px,2.1vw,24px)">Quick Insights</h2>
+          </div>
+
+          <div class="insights">
+            <div class="ins">
+              <span class="ins__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg></span>
+              <span>
+                <span class="ins__k">Best weekday</span>
+                <span class="ins__v">Saturday · <em>2.350.000 ₫</em> over 2 Saturdays</span>
+              </span>
+            </div>
+
+            <div class="ins">
+              <span class="ins__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span>
+                <span class="ins__k">Taught this month</span>
+                <span class="ins__v"><em>40</em> lessons complete</span>
+              </span>
+            </div>
+
+            <div class="ins">
+              <span class="ins__ico ins__ico--pink" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+              <span>
+                <span class="ins__k">Cancelled this month</span>
+                <span class="ins__v"><em>6</em> lessons · 1.480.000 ₫ lost</span>
+              </span>
+            </div>
+
+            <div class="ins">
+              <span class="ins__ico ins__ico--sand" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.5 17.3A1.9 1.9 0 0 0 4.2 20h15.6a1.9 1.9 0 0 0 1.7-2.7L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"/></svg></span>
+              <span>
+                <span class="ins__k">Follow-up</span>
+                <span class="ins__v"><em>4</em> students inactive 14 days</span>
+              </span>
+              <a class="btn btn--ghost btn--sm" href="/students" style="min-height:var(--tap)">View</a>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- ── EARNINGS TREND ───────────────────────────────────────────── -->
+      <section class="sec" aria-labelledby="trend-h">
+        <div class="sec__head">
+          <h2 class="sec__title" id="trend-h">Earnings Trend This Month</h2>
+          <span class="sec__sub">Daily · July 1–14, 2026</span>
+          <span class="sec__act">
+            <span class="badge-soft">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+              87% completion
+            </span>
+          </span>
+        </div>
+
+        <article class="card rise" style="--i:1; padding:clamp(16px,2.2vw,26px)">
+          <div class="chart-wrap scroll-x">
+            <div class="chart">
+              <svg viewBox="0 0 1000 300" role="img" aria-label="Area chart of daily earnings, 1 to 14 July, in Vietnamese đồng. Best day Saturday 4 July at 1.200.000 ₫; Sundays are closed at zero; today, Tuesday 14 July, is 450.000 ₫ so far; month-to-date total 10.050.000 ₫.">
+                <defs>
+                  <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"  stop-color="var(--bubblegum)" stop-opacity=".55"/>
+                    <stop offset="55%" stop-color="var(--mint)" stop-opacity=".34"/>
+                    <stop offset="100%" stop-color="var(--floss)" stop-opacity="0"/>
+                  </linearGradient>
+                  <linearGradient id="lineStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%"  stop-color="var(--pink-500)"/>
+                    <stop offset="100%" stop-color="var(--wintergreen)"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- soft gridlines -->
+                <g stroke="var(--line)" stroke-width="1">
+                  <line x1="40" y1="50"  x2="972" y2="50"/>
+                  <line x1="40" y1="117" x2="972" y2="117"/>
+                  <line x1="40" y1="184" x2="972" y2="184"/>
+                  <line x1="40" y1="250" x2="972" y2="250" stroke="var(--line-strong)"/>
+                </g>
+                <!-- y axis: same dot-grouped ₫ convention as every other figure on this page -->
+                <g font-family="system-ui, sans-serif" font-size="11" fill="var(--ink-faint)">
+                  <text x="40" y="22" font-size="10" font-weight="600" letter-spacing=".08em">₫</text>
+                  <text x="40" y="44">1.500.000</text>
+                  <text x="40" y="111">1.000.000</text>
+                  <text x="40" y="178">500.000</text>
+                  <text x="40" y="266">0</text>
+                </g>
+
+                <!-- area + line -->
+                <path fill="url(#areaFill)"
+                      d="M 40,157 L 75,140 Q 111,123 146,153 Q 182,183 217,137 Q 252,90 288,170 Q 323,250 359,177 Q 394,103 429,127 Q 465,150 500,140 Q 535,130 571,160 Q 606,190 642,163 Q 677,137 712,117 Q 748,97 783,173 Q 819,250 854,180 Q 889,110 925,150 L 960,190 L 960,250 L 40,250 Z"/>
+                <path fill="none" stroke="url(#lineStroke)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                      d="M 40,157 L 75,140 Q 111,123 146,153 Q 182,183 217,137 Q 252,90 288,170 Q 323,250 359,177 Q 394,103 429,127 Q 465,150 500,140 Q 535,130 571,160 Q 606,190 642,163 Q 677,137 712,117 Q 748,97 783,173 Q 819,250 854,180 Q 889,110 925,150 L 960,190"/>
+
+                <!-- data points -->
+                <g fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2">
+                  <circle cx="40"  cy="157" r="4"/>
+                  <circle cx="111" cy="123" r="4"/>
+                  <circle cx="182" cy="183" r="4"/>
+                  <circle cx="252" cy="90"  r="4"/>
+                  <circle cx="323" cy="250" r="4" stroke="var(--line-strong)"/>
+                  <circle cx="394" cy="103" r="4"/>
+                  <circle cx="465" cy="150" r="4"/>
+                  <circle cx="535" cy="130" r="4"/>
+                  <circle cx="606" cy="190" r="4"/>
+                  <circle cx="677" cy="137" r="4"/>
+                  <circle cx="748" cy="97"  r="4"/>
+                  <circle cx="819" cy="250" r="4" stroke="var(--line-strong)"/>
+                  <circle cx="889" cy="110" r="4" stroke="var(--wintergreen)"/>
+                </g>
+
+                <!-- today marker -->
+                <line x1="960" y1="60" x2="960" y2="250" stroke="var(--bubblegum)" stroke-width="1.5" stroke-dasharray="4 5"/>
+                <circle cx="960" cy="190" r="6.5" fill="var(--pink-600)" stroke="var(--surface)" stroke-width="3"/>
+                <g font-family="system-ui, sans-serif">
+                  <rect x="836" y="30" width="136" height="26" rx="13" fill="var(--pink-100)"/>
+                  <text x="904" y="47" font-size="12" font-weight="600" fill="var(--pink-700)" text-anchor="middle">Today · 450.000 ₫</text>
+                </g>
+
+                <!-- x labels -->
+                <g font-family="system-ui, sans-serif" font-size="11" fill="var(--ink-faint)" text-anchor="middle">
+                  <text x="40"  y="278">Jul 1</text>
+                  <text x="252" y="278">Jul 4</text>
+                  <text x="465" y="278">Jul 7</text>
+                  <text x="677" y="278">Jul 10</text>
+                  <text x="889" y="278">Jul 13</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <p class="chart-legend">
+            <span>Month to date <b>10.050.000 ₫</b></span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span>Avg / teaching day <b>837.500 ₫</b></span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span>Best day <b>Sat 4 Jul — 1.200.000 ₫</b></span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span>Sundays closed</span>
+          </p>
+        </article>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ FLOATING TAB BAR (below 1280) ══════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a href="/dashboard" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    <span>Dashboard</span>
+  </a>
+  <a href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    <span>Calendar</span>
+  </a>
+  <a href="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    <span>Lessons</span>
+  </a>
+  <a href="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M16 3.6a4 4 0 0 1 0 7"/></svg>
+    <span>Students</span>
+  </a>
+  <a href="/reports">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+    <span>Reports</span>
+  </a>
+  <!-- The sidebar's 7 destinations don't fit 6 tabs; Pieces + Payments live here. -->
+  <button type="button" id="more-tab" aria-haspopup="menu" aria-expanded="false" aria-controls="more-sheet">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+    <span>More</span>
+  </button>
+</nav>
+
+<div class="sheet-scrim print-hide" id="more-scrim" hidden></div>
+<div class="sheet print-hide" id="more-sheet" role="menu" aria-label="More destinations" hidden>
+  <span class="sheet__grab" aria-hidden="true"></span>
+  <a role="menuitem" href="/pieces">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    Pieces
+  </a>
+  <a role="menuitem" href="/payments">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 11h20"/><path d="M6 15.5h3"/></svg>
+    Payments
+  </a>
+</div>
+
+<script>
+  /* Spoiler KPI — blur until tapped. */
+  document.querySelectorAll('[data-spoiler]').forEach(function (card) {
+    var btn = card.querySelector('.kpi__reveal');
+    function reveal() {
+      card.classList.add('is-revealed');
+      btn.hidden = true;               /* out of the tab order once dismissed */
+    }
+    btn.addEventListener('click', reveal);
+    card.addEventListener('click', function (e) {
+      if (!card.classList.contains('is-revealed') && e.target !== btn) reveal();
+    });
+  });
+
+  /* "More" tab — bottom sheet holding the destinations the tab bar can't show. */
+  (function () {
+    var tab = document.getElementById('more-tab');
+    var sheet = document.getElementById('more-sheet');
+    var scrim = document.getElementById('more-scrim');
+
+    function open() {
+      sheet.hidden = false;
+      scrim.hidden = false;
+      tab.setAttribute('aria-expanded', 'true');
+      sheet.querySelector('a').focus();
+    }
+    function close(refocus) {
+      sheet.hidden = true;
+      scrim.hidden = true;
+      tab.setAttribute('aria-expanded', 'false');
+      if (refocus) tab.focus();
+    }
+
+    tab.addEventListener('click', function () {
+      if (sheet.hidden) open(); else close(false);
+    });
+    scrim.addEventListener('click', function () { close(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !sheet.hidden) close(true);
+    });
+  })();
+
+  /* Smooth-scroll the "Today's lessons ↓" jump. */
+  document.querySelector('a[href="#today"]').addEventListener('click', function (e) {
+    e.preventDefault();
+    document.getElementById('today').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+</script>
+
+</body>
+</html>

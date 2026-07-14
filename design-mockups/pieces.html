@@ -1,0 +1,2219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Diary — Pieces · Repertoire Shelf</title>
+<link rel="stylesheet" href="_theme.css">
+
+<style>
+  /* ======================================================================
+     PIECES · "REPERTOIRE SHELF" — Sugar Bloom
+     Screen-specific CSS only. Every colour / radius / shadow comes from
+     _theme.css; new shades are derived with color-mix() from its tokens.
+
+     Piece model is SMALL — title, description?, level?, difficulty (Int 1-5),
+     createdAt, _count.lessons. Nothing else is shown, because nothing else
+     exists.
+     ====================================================================== */
+
+  :root {
+    /* the solid colour the header band lands on — the scallop must match it */
+    --head-end: #fdeef2;                                  /* cotton @ ~45% on white */
+    --petal-off: color-mix(in srgb, var(--bubblegum) 42%, var(--surface));
+    --cover-line: color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+
+  /* ── Decorative blob field (fixed, behind everything) ─────────────────── */
+  .blobs { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .blob {
+    position: absolute;
+    border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%;
+    filter: blur(2px);
+    animation: drift 26s var(--ease) infinite alternate;
+  }
+  .blob--1 { width: 46vmax; height: 46vmax; top: -14vmax; right: -12vmax;
+             background: color-mix(in srgb, var(--cotton) 55%, transparent); }
+  .blob--2 { width: 40vmax; height: 40vmax; bottom: -16vmax; left: -12vmax;
+             background: color-mix(in srgb, var(--mint) 48%, transparent);
+             animation-duration: 34s; animation-direction: alternate-reverse; }
+  .blob--3 { width: 26vmax; height: 26vmax; top: 42%; left: 46%;
+             background: color-mix(in srgb, var(--cotton) 28%, transparent);
+             animation-duration: 42s; }
+  @keyframes drift {
+    from { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+    to   { transform: translate3d(2.5vmax,-2vmax,0) rotate(14deg) scale(1.06); }
+  }
+
+  /* ── Shell ───────────────────────────────────────────────────────────── */
+  .shell {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* ── Sidebar (identical contract to dashboard-a) ─────────────────────── */
+  .sidebar {
+    position: sticky; top: 0; align-self: start;
+    height: 100dvh;
+    display: flex; flex-direction: column; gap: 18px;
+    padding: 20px 14px 16px;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto; scrollbar-width: none;
+    z-index: 50;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 2px; }
+  .brand-logo {
+    width: 42px; height: 42px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--grad-brand);
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .brand-text { min-width: 0; display: block; }
+  .brand-name { display: block; font: 700 15px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; }
+  .brand-tag  { display: block; font: var(--t-small); font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+
+  .side-cta { width: 100%; }
+
+  .nav-group + .nav-group { margin-top: 18px; }
+  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  .nav-list { list-style: none; display: grid; gap: 3px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 12px;
+    min-height: var(--tap); padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    font: 600 13.5px/1 var(--font-sans);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-link svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link[aria-current="page"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .nav-link[aria-current="page"] svg { color: var(--pink-600); opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    font: 700 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    background: var(--wait-bg); color: var(--wait-fg);
+    padding: 4px 7px; border-radius: var(--r-pill);
+  }
+
+  .side-foot { margin-top: auto; padding-top: 14px; position: relative; }
+  .user-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 8px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    text-align: left;
+    transition: background var(--dur) var(--ease);
+  }
+  .user-btn:hover { background: var(--surface-2); }
+  .user-meta { min-width: 0; flex: 1; display: block; }
+  .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
+  .user-mail {
+    display: block; font: 400 11px/1.3 var(--font-sans); color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .user-btn svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+
+  .user-menu {
+    list-style: none; margin-top: 6px; padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .user-menu a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .user-menu a:hover { background: var(--surface-2); color: var(--ink); }
+  .user-menu svg { width: 16px; height: 16px; }
+  .user-menu[hidden] { display: none !important; }
+
+  /* ── Main ────────────────────────────────────────────────────────────── */
+  .main {
+    min-width: 0;
+    padding: 0 0 40px;
+    display: grid;
+    gap: clamp(16px, 2vw, 22px);
+    align-content: start;
+  }
+
+  /* ── Header band + the ONE scalloped edge on this page ────────────────── */
+  .page-head {
+    position: relative;
+    padding: clamp(40px, 3vw, 46px) clamp(14px, 2.4vw, 32px) clamp(20px, 2vw, 26px);
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--mint) 34%, var(--surface)) 0%,
+      var(--pink-50) 62%,
+      var(--head-end) 100%);
+    border-bottom: 1px solid color-mix(in srgb, var(--line-pink) 70%, transparent);
+  }
+  .page-head::before {           /* soft pink wash, decorative */
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(120% 90% at 88% -10%,
+      color-mix(in srgb, var(--bubblegum) 26%, transparent), transparent 62%);
+    pointer-events: none;
+  }
+  .scallop {
+    position: absolute; left: 0; right: 0; bottom: -13px;
+    height: 14px;
+    background-image: radial-gradient(circle at 12px 0, var(--head-end) 0 11.5px, transparent 12px);
+    background-size: 24px 14px;
+    background-repeat: repeat-x;
+    filter: drop-shadow(0 4px 6px rgba(60,90,92,.06));
+    pointer-events: none;
+  }
+
+  .head-row {
+    position: relative;
+    display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;
+  }
+  .head-l { min-width: 0; flex: 1 1 260px; }
+  .h1-wrap { position: relative; display: inline-block; padding-bottom: 6px; }
+  h1 { font: var(--t-h1); letter-spacing: -0.015em; color: var(--ink); }
+  .squiggle {
+    position: absolute; left: 0; right: -6px; bottom: -2px;
+    width: calc(100% + 6px); height: 9px;
+    color: var(--bubblegum);
+    pointer-events: none;
+  }
+  .head-sub { margin-top: 8px; font: var(--t-small); color: var(--ink-soft); }
+  .head-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .hamburger { display: none; }
+
+  /* ── Toolbar: search + difficulty filters ────────────────────────────── */
+  .toolbar {
+    padding: 0 clamp(14px, 2.4vw, 32px);
+    display: grid; gap: 12px;
+  }
+  .tool-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .search {
+    position: relative;
+    flex: 1 1 260px; min-width: 0; max-width: 380px;
+  }
+  .search svg {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    width: 17px; height: 17px; color: var(--ink-soft); pointer-events: none;
+  }
+  .search input {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 14px 0 40px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    font: 400 13.5px/1 var(--font-sans);
+    color: var(--ink);
+  }
+  .search input::placeholder { color: var(--ink-soft); }
+  .search input:focus { outline: 2px solid var(--pink-600); outline-offset: 1px; }
+
+  .filters {
+    display: flex; align-items: center; gap: 8px;
+    padding: 2px 2px 4px;
+    min-width: 0;
+  }
+  .fchip {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: var(--tap);
+    padding: 0 14px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    color: var(--ink-soft);
+    font: 650 13px/1 var(--font-sans);
+    white-space: nowrap;
+    flex: 0 0 auto;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+                border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .fchip:hover { background: var(--surface-2); color: var(--ink); }
+  .fchip .b { width: 15px; height: 15px; color: var(--petal-off); }
+  .fchip .fcount {
+    font: 700 11px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    padding: 4px 6px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
+  .fchip[aria-pressed="true"] {
+    background: var(--grad-pink);
+    border-color: transparent;
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .fchip[aria-pressed="true"] .b { color: var(--ink-invert); }
+  .fchip[aria-pressed="true"] .fcount { background: rgba(255,255,255,.24); color: var(--ink-invert); }
+
+  .countline {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .countline b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .countline .sep { color: var(--ink-faint); }
+
+  /* ── The shelf ───────────────────────────────────────────────────────── */
+  .shelf {
+    padding: 0 clamp(14px, 2.4vw, 32px);
+    display: grid;
+    gap: clamp(14px, 1.6vw, 20px);
+    grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+    align-items: start;
+  }
+
+  .piece {
+    position: relative;
+    padding: 0;
+    display: flex; flex-direction: column;
+    min-width: 0;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .piece:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
+  /* a card with its ⋯ menu open must out-paint the cards that follow it */
+  .piece.is-menu-open { z-index: 30; }
+
+  /* Cover: soft gradient spine + piano-key strip along the TOP edge. */
+  .cover {
+    position: relative;
+    height: 84px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 10px 8px;
+    gap: 8px;
+  }
+  .cover--d1 { background: linear-gradient(135deg, color-mix(in srgb, var(--mint) 62%, var(--surface)), var(--floss)); }
+  .cover--d2 { background: linear-gradient(135deg, color-mix(in srgb, var(--mint) 78%, var(--surface)), color-mix(in srgb, var(--cotton) 30%, var(--surface))); }
+  .cover--d3 { background: var(--grad-hero); }
+  .cover--d4 { background: linear-gradient(135deg, color-mix(in srgb, var(--cotton) 82%, var(--surface)), color-mix(in srgb, var(--mint) 34%, var(--surface))); }
+  .cover--d5 { background: linear-gradient(135deg, color-mix(in srgb, var(--bubblegum) 62%, var(--surface)), color-mix(in srgb, var(--cotton) 55%, var(--surface))); }
+
+  /* piano keys — white keys with hairline splits, black keys on top */
+  .keys {
+    position: absolute; top: 0; left: 0; right: 0; height: 22px;
+    background-color: var(--surface);
+    background-image: repeating-linear-gradient(90deg,
+      var(--cover-line) 0 1px, transparent 1px 14px);
+    box-shadow: inset 0 -1px 0 var(--line-strong);
+  }
+  .keys::after {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 13px;
+    background-image: repeating-linear-gradient(90deg,
+      transparent 0 10px, var(--ink) 10px 18px,
+      transparent 18px 24px, var(--ink) 24px 32px,
+      transparent 32px 52px, var(--ink) 52px 60px,
+      transparent 60px 66px, var(--ink) 66px 74px,
+      transparent 74px 80px, var(--ink) 80px 88px,
+      transparent 88px 98px);
+  }
+  .cover-mark {
+    position: absolute; right: 10px; top: 26px;
+    width: 60px; height: 60px;
+    color: var(--ink);
+    opacity: .09;
+    pointer-events: none;
+  }
+
+  .rot {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    color: var(--pink-700);
+    font: 700 11px/1 var(--font-sans);
+    box-shadow: var(--sh-xs);
+    white-space: nowrap;
+  }
+  .rot svg { width: 12px; height: 12px; color: var(--pink-500); animation: twinkle 2.8s var(--ease) infinite; }
+  @keyframes twinkle {
+    0%, 100% { opacity: .55; transform: scale(.86); }
+    50%      { opacity: 1;   transform: scale(1.12); }
+  }
+
+  .kebab {
+    margin-left: auto;
+    width: var(--tap); min-height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: 50%;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    box-shadow: var(--sh-xs);
+  }
+  .kebab:hover { background: var(--surface); }
+  .kebab svg { width: 18px; height: 18px; }
+
+  .pmenu {
+    position: absolute;
+    top: 78px; right: 12px;
+    z-index: 20;
+    width: 168px;
+    list-style: none;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .pmenu[hidden] { display: none !important; }
+  .pmenu button {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    text-align: left;
+  }
+  .pmenu button:hover { background: var(--surface-2); color: var(--ink); }
+  .pmenu button svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  .pmenu .danger { color: var(--no-fg); }
+  .pmenu .danger:hover { background: var(--no-bg); color: var(--no-fg); }
+  .pmenu hr { height: 1px; background: var(--line); border: 0; margin: 2px 0; }
+
+  .pbody { padding: 14px 16px 4px; display: grid; gap: 8px; }
+  .ptitle {
+    font: 700 15.5px/1.3 var(--font-sans);
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .ptags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 0; }
+  .lvl {
+    display: inline-flex; align-items: center;
+    padding: 5px 10px;
+    border-radius: var(--r-pill);
+    background: var(--teal-100);
+    color: var(--teal-700);
+    font: 650 11.5px/1 var(--font-sans);
+    white-space: nowrap;
+  }
+  .lvl--none {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px dashed var(--line-strong);
+    font-weight: 600;
+  }
+
+  /* Difficulty — 5 blossoms + a text label that carries the meaning. */
+  .diff { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .petals { display: inline-flex; align-items: center; gap: 3px; }
+  .b { width: 17px; height: 17px; flex: 0 0 auto; }
+  .b--on  { color: var(--pink-500); }
+  .b--off { color: var(--petal-off); }
+  .diff-label {
+    font: 600 11.5px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .desc {
+    font: 400 12.5px/1.5 var(--font-sans);
+    color: var(--ink-soft);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 37px;
+  }
+  .desc--empty {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .desc--empty svg { width: 14px; height: 14px; flex: 0 0 auto; }
+
+  .pfoot {
+    margin-top: auto;
+    padding: 12px 16px 14px;
+    display: flex; align-items: center; gap: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .stack { display: flex; align-items: center; flex: 0 0 auto; }
+  .stack .av { box-shadow: 0 0 0 2px var(--surface); }
+  .stack .av + .av { margin-left: -10px; }
+  .av--mint { background: var(--grad-mint); color: var(--mint-ink); }
+  .av--sand { background: var(--sand-300); color: var(--sand-700); }
+  .av--more { background: var(--surface-3); color: var(--teal-700); }
+  .learners {
+    font: 600 12px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    min-width: 0;
+  }
+  .learners--none { color: var(--ink-soft); font-weight: 400; font-style: italic; }
+
+  /* ── Add tile ────────────────────────────────────────────────────────── */
+  .add-tile {
+    min-height: 260px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    border-radius: var(--r-lg);
+    border: 2px dashed var(--bubblegum);
+    background: color-mix(in srgb, var(--pink-50) 70%, transparent);
+    color: var(--pink-700);
+    font: 700 13.5px/1 var(--font-sans);
+    text-align: center;
+    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .add-tile:hover { background: var(--pink-50); transform: translateY(-3px); }
+  .add-ring {
+    width: 52px; height: 52px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: var(--sh-sm);
+  }
+  .add-ring svg { width: 24px; height: 24px; }
+  .add-tile small { font: 400 11.5px/1.4 var(--font-sans); color: var(--ink-soft); max-width: 22ch; }
+
+  /* ── Empty state (mascot) ────────────────────────────────────────────── */
+  .empty {
+    grid-column: 1 / -1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px;
+    padding: 44px 24px;
+    border-radius: var(--r-xl);
+    border: 2px dashed var(--bubblegum);
+    background: color-mix(in srgb, var(--surface) 76%, transparent);
+    text-align: center;
+  }
+  .empty[hidden] { display: none !important; }
+  .mascot { width: 132px; height: 108px; }
+  .empty h2 { font: var(--t-h2); color: var(--ink); }
+  .empty p { font: var(--t-small); color: var(--ink-soft); max-width: 42ch; }
+
+  /* ══ SIDE SHEET — Edit piece ══════════════════════════════════════════ */
+  .sheet-scrim {
+    position: fixed; inset: 0;
+    z-index: 70;
+    background: color-mix(in srgb, var(--ink) 26%, transparent);
+    backdrop-filter: blur(2px);
+    transition: opacity var(--dur) var(--ease);
+  }
+  .sheet-scrim[hidden] { display: none !important; }
+
+  .sheet {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    z-index: 75;
+    width: min(460px, 100%);
+    display: flex; flex-direction: column;
+    background: var(--surface);
+    border-left: 1px solid var(--line);
+    box-shadow: var(--sh-xl);
+    overflow: hidden;
+  }
+  .sheet[hidden] { display: none !important; }
+
+  .sheet-head {
+    position: relative;
+    flex: 0 0 auto;
+    padding: 20px 18px 22px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--mint) 30%, var(--surface)), var(--head-end));
+    border-bottom: 1px solid var(--line-pink);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .sheet-head h2 { font: var(--t-h2); font-size: 18px; color: var(--ink); }
+  .sheet-sub { margin-top: 3px; font: var(--t-small); color: var(--ink-soft); }
+  .sheet-close {
+    margin-left: auto;
+    width: var(--tap); min-height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: 50%;
+    color: var(--ink-soft);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+  .sheet-close:hover { background: var(--surface); color: var(--ink); }
+  .sheet-close svg { width: 18px; height: 18px; }
+
+  .sheet-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 20px 18px 24px;
+    display: grid; gap: 18px;
+    align-content: start;
+  }
+
+  .field { display: grid; gap: 7px; }
+  .field > label {
+    font: 650 12.5px/1 var(--font-sans);
+    color: var(--ink);
+  }
+  .field .hint { font: 400 11.5px/1.4 var(--font-sans); color: var(--ink-soft); }
+  .field input[type="text"], .field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    min-height: var(--tap);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    font: 400 13.5px/1.5 var(--font-sans);
+    color: var(--ink);
+    box-shadow: var(--sh-xs);
+  }
+  .field textarea { min-height: 116px; resize: vertical; }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--pink-600); outline-offset: 1px; }
+
+  /* Difficulty picker — 5 tappable blossoms, ≥44px each */
+  .picker {
+    padding: 14px;
+    border-radius: var(--r-md);
+    border: 2px dashed var(--line-pink);
+    background: var(--pink-50);
+    display: grid; gap: 10px; justify-items: center;
+  }
+  .picker-row { display: flex; align-items: center; gap: 4px; }
+  .pick {
+    width: 52px; height: 52px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    color: var(--petal-off);
+    transition: transform var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .pick:hover { background: color-mix(in srgb, var(--cotton) 40%, transparent); transform: scale(1.06); }
+  .pick svg { width: 30px; height: 30px; }
+  .pick.is-on { color: var(--pink-500); }
+  .pick.is-peak { color: var(--pink-600); }
+  .pick-read {
+    font: 700 12.5px/1.3 var(--font-sans);
+    color: var(--pink-700);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+  .pick-read span { display: block; margin-top: 2px; font-weight: 500; color: var(--ink-soft); }
+
+  .info {
+    padding: 14px;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    display: grid; gap: 6px;
+  }
+  .info h3 { font: 650 12.5px/1 var(--font-sans); color: var(--ink); margin-bottom: 2px; }
+  .info p { font: var(--t-small); color: var(--ink-soft); display: flex; gap: 6px; }
+  .info b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .sheet-foot {
+    flex: 0 0 auto;
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-up);
+  }
+
+  /* ── Off-canvas chrome ───────────────────────────────────────────────── */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease);
+  }
+  body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+  .tabbar { display: none; }
+
+  /* ── Variant badge ───────────────────────────────────────────────────── */
+  .variant-badge {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    pointer-events: none;
+  }
+
+  /* ======================================================================
+     RESPONSIVE
+     ====================================================================== */
+
+  /* Tablet landscape 1024–1279: icon rail */
+  @media (max-width: 1279px) {
+    .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+    .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
+    .brand { justify-content: center; padding: 4px 0; }
+    .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
+    .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
+
+    /* Labels are CLIPPED, never display:none — the icons are aria-hidden, so
+       display:none here would strip every rail control of its name. */
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .nav-group + .nav-group { margin-top: 12px; position: relative; padding-top: 12px; }
+    .nav-group + .nav-group::before {
+      content: ""; position: absolute; top: 0; left: 14%; right: 14%;
+      height: 1px; background: var(--line);
+    }
+    .user-btn { width: var(--tap); padding: 0; justify-content: center; border-radius: 50%; }
+    .user-meta, .user-btn > svg { display: none; }
+    .user-menu {
+      position: absolute;
+      bottom: 0; left: calc(100% + 8px);
+      width: 200px; margin-top: 0;
+      z-index: 70;
+    }
+  }
+
+  /* Below 1024: off-canvas drawer + bottom tab bar */
+  @media (max-width: 1023px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 280px;
+      padding: 20px 14px 16px;
+      align-items: stretch;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform .28s var(--ease);
+      z-index: 60;
+    }
+    body.nav-open .sidebar { transform: none; }
+    .brand { justify-content: flex-start; padding: 6px 8px 2px; }
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: static;
+      width: auto; height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+    }
+    .nav-link { justify-content: flex-start; padding: 0 12px; width: auto; }
+    .nav-link .nav-badge { display: inline-block; margin-left: auto; }
+    .side-cta { width: 100%; padding: 0 18px; border-radius: var(--r-pill); }
+    .nav-group + .nav-group { position: static; padding-top: 0; margin-top: 18px; }
+    .nav-group + .nav-group::before { content: none; }
+    .user-btn { width: 100%; padding: 8px 10px; justify-content: flex-start; border-radius: var(--r-md); }
+    .user-meta { display: block; }
+    .user-btn > svg { display: block; }
+    .user-menu { display: grid; position: static; width: auto; margin-top: 6px; }
+
+    .main { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + 20px); }
+    .hamburger { display: inline-flex; }
+
+    /* chips can outnumber the width — they scroll in their OWN box */
+    .filters { overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+    .filters > .fchip { scroll-snap-align: start; }
+
+    .tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+    }
+    .tab {
+      display: grid; place-items: center; gap: 3px;
+      min-height: var(--tap);
+      padding: 5px 2px;
+      border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1.2 var(--font-sans);
+    }
+    .tab svg { width: 21px; height: 21px; }
+    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+
+    /* the sheet keeps clear of the tab bar */
+    .sheet { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  }
+
+  /* Phone: bottom sheet, single column shelf */
+  @media (max-width: 639px) {
+    .sheet {
+      top: auto; left: 0; right: 0;
+      bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+      width: 100%;
+      max-height: 82dvh;
+      border-left: 0;
+      border-top: 1px solid var(--line-pink);
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+    }
+    .sheet-head { border-radius: var(--r-xl) var(--r-xl) 0 0; padding: 16px 16px 18px; }
+    .shelf { grid-template-columns: minmax(0, 1fr); }
+    h1 { font-size: 21px; }
+    .search { max-width: none; flex-basis: 100%; }
+    .picker-row { gap: 0; }
+    .pick { width: 56px; height: 56px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Pieces · Repertoire Shelf</div>
+
+<!-- decorative blob field -->
+<div class="blobs print-hide" aria-hidden="true">
+  <span class="blob blob--1"></span>
+  <span class="blob blob--2"></span>
+  <span class="blob blob--3"></span>
+</div>
+
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<!-- ═══════════ SVG sprite: blossom (the difficulty mark) ═══════════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="blossom-fill" viewBox="0 0 24 24">
+    <circle cx="12" cy="6.6" r="4.7" fill="currentColor"/>
+    <circle cx="17.13" cy="10.33" r="4.7" fill="currentColor"/>
+    <circle cx="15.17" cy="16.37" r="4.7" fill="currentColor"/>
+    <circle cx="8.83" cy="16.37" r="4.7" fill="currentColor"/>
+    <circle cx="6.87" cy="10.33" r="4.7" fill="currentColor"/>
+    <circle cx="12" cy="12" r="2.6" fill="currentColor" fill-opacity=".35"/>
+  </symbol>
+  <symbol id="blossom-line" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.7">
+      <circle cx="12" cy="6.6" r="4.1"/>
+      <circle cx="17.13" cy="10.33" r="4.1"/>
+      <circle cx="15.17" cy="16.37" r="4.1"/>
+      <circle cx="8.83" cy="16.37" r="4.1"/>
+      <circle cx="6.87" cy="10.33" r="4.1"/>
+    </g>
+  </symbol>
+  <symbol id="note-mark" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+    </g>
+  </symbol>
+</svg>
+
+<div class="shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+    <a class="brand" href="/dashboard" title="My Piano Diary">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/dashboard" title="Dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/>
+                <rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+              </svg>
+              <span>Calendar</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/lessons" title="Lessons">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/>
+              </svg>
+              <span>Lessons</span>
+              <span class="nav-badge">5</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/students" title="Students">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+              </svg>
+              <span>Students</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/pieces" aria-current="page" title="Pieces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+              </svg>
+              <span>Pieces</span>
+              <span class="nav-badge">18</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/reports" title="Reports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+              <span>Reports</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/payments" title="Payments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>
+              </svg>
+              <span>Payments</span>
+              <span class="nav-badge">4</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+        <span class="av" aria-hidden="true">LD</span>
+        <span class="user-meta">
+          <span class="user-name">Linh Đặng</span>
+          <span class="user-mail">linh@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+        </svg>
+      </button>
+      <ul class="user-menu" id="userMenu" hidden>
+        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main">
+
+    <!-- ───────── Header band (the page's one scalloped edge) ───────── -->
+    <header class="page-head rise" style="--i:0">
+      <div class="head-row">
+        <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <div class="head-l">
+          <span class="h1-wrap">
+            <h1>Pieces</h1>
+            <svg class="squiggle" viewBox="0 0 220 12" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <path d="M2 8C20 2 38 12 56 6s36-4 54 2 36 4 54-2 34-2 54 3" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <p class="head-sub">Your repertoire library</p>
+        </div>
+
+        <div class="head-r">
+          <button class="btn btn--primary" type="button" id="addPiece">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+            </svg>
+            Add piece
+          </button>
+        </div>
+      </div>
+      <span class="scallop" aria-hidden="true"></span>
+    </header>
+
+    <!-- ───────── Toolbar ───────── -->
+    <section class="toolbar rise" style="--i:1" aria-label="Search and filter pieces">
+      <div class="tool-row">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>
+          </svg>
+          <label class="sr-only" for="q">Filter pieces by title</label>
+          <input id="q" type="search" placeholder="Filter pieces…" autocomplete="off">
+        </div>
+
+        <div class="filters scroll-x no-scrollbar" role="group" aria-label="Filter by difficulty">
+          <button class="fchip" type="button" data-diff="all" aria-pressed="true">
+            All <span class="fcount">18</span>
+          </button>
+          <button class="fchip" type="button" data-diff="1" aria-pressed="false" aria-label="Difficulty 1 of 5 — 2 pieces">
+            <svg class="b" aria-hidden="true"><use href="#blossom-fill"/></svg>
+            <span aria-hidden="true">1</span> <span class="fcount" aria-hidden="true">2</span>
+          </button>
+          <button class="fchip" type="button" data-diff="2" aria-pressed="false" aria-label="Difficulty 2 of 5 — 4 pieces">
+            <svg class="b" aria-hidden="true"><use href="#blossom-fill"/></svg>
+            <span aria-hidden="true">2</span> <span class="fcount" aria-hidden="true">4</span>
+          </button>
+          <button class="fchip" type="button" data-diff="3" aria-pressed="false" aria-label="Difficulty 3 of 5 — 5 pieces">
+            <svg class="b" aria-hidden="true"><use href="#blossom-fill"/></svg>
+            <span aria-hidden="true">3</span> <span class="fcount" aria-hidden="true">5</span>
+          </button>
+          <button class="fchip" type="button" data-diff="4" aria-pressed="false" aria-label="Difficulty 4 of 5 — 5 pieces">
+            <svg class="b" aria-hidden="true"><use href="#blossom-fill"/></svg>
+            <span aria-hidden="true">4</span> <span class="fcount" aria-hidden="true">5</span>
+          </button>
+          <button class="fchip" type="button" data-diff="5" aria-pressed="false" aria-label="Difficulty 5 of 5 — 2 pieces">
+            <svg class="b" aria-hidden="true"><use href="#blossom-fill"/></svg>
+            <span aria-hidden="true">5</span> <span class="fcount" aria-hidden="true">2</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="countline" id="countline" aria-live="polite">
+        <b>18</b> pieces <span class="sep">·</span> <b>6</b> in rotation this month
+      </p>
+    </section>
+
+    <!-- ───────── THE SHELF ───────── -->
+    <section class="shelf" id="shelf" aria-label="Repertoire shelf">
+
+      <!-- 1 · Für Elise -->
+      <article class="piece card rise" style="--i:2" data-diff="3" data-title="für elise" data-level="Grade 4" data-desc="Watch the left hand in the B section — everyone rushes it. Slow the middle down, keep the pedal shallow.">
+        <div class="cover cover--d3">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
+          <button class="kebab" type="button" aria-label="Options for Für Elise" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Für Elise options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Für Elise</h3>
+          <div class="ptags"><span class="lvl">Grade 4</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 3 of 5 · Intermediate</span>
+          </p>
+          <p class="desc">Watch the left hand in the B section — everyone rushes it. Slow the middle down, keep the pedal shallow.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm">MA</span>
+            <span class="av av--sm av--mint">GH</span>
+            <span class="av av--sm av--sand">LC</span>
+            <span class="av av--sm av--more">+2</span>
+          </span>
+          <span class="learners">5 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 2 · Clair de Lune -->
+      <article class="piece card rise" style="--i:3" data-diff="5" data-title="clair de lune" data-level="ABRSM 8" data-desc="Pedal is the whole piece. Only Bảo Ngọc is ready for it — she has the patience for the silences.">
+        <div class="cover cover--d5">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Clair de Lune" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Clair de Lune options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Clair de Lune</h3>
+          <div class="ptags"><span class="lvl">ABRSM 8</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 5 of 5 · Expert</span>
+          </p>
+          <p class="desc">Pedal is the whole piece. Only Bảo Ngọc is ready for it — she has the patience for the silences.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true"><span class="av av--sm av--mint">BN</span></span>
+          <span class="learners">1 student learning</span>
+        </footer>
+      </article>
+
+      <!-- 3 · Nocturne Op.9 No.2 — menu shown OPEN -->
+      <article class="piece card rise is-menu-open" style="--i:4" data-diff="4" data-title="nocturne op.9 no.2" data-level="ABRSM 6" data-desc="Rubato in the right hand, metronome-steady in the left. Make them sing the melody before they touch a key.">
+        <div class="cover cover--d4">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
+          <button class="kebab" type="button" aria-label="Options for Nocturne Op.9 No.2" aria-haspopup="menu" aria-expanded="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Nocturne Op.9 No.2 options">
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Nocturne Op.9 No.2</h3>
+          <div class="ptags"><span class="lvl">ABRSM 6</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 4 of 5 · Advanced</span>
+          </p>
+          <p class="desc">Rubato in the right hand, metronome-steady in the left. Make them sing the melody before they touch a key.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--mint">BN</span>
+            <span class="av av--sm">ET</span>
+            <span class="av av--sm av--sand">KL</span>
+          </span>
+          <span class="learners">3 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 4 · Turkish March -->
+      <article class="piece card rise" style="--i:5" data-diff="4" data-title="turkish march" data-level="Grade 5" data-desc="Light wrist for the octave runs. Start at 60 bpm and add four a week — no faster, no exceptions.">
+        <div class="cover cover--d4">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
+          <button class="kebab" type="button" aria-label="Options for Turkish March" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Turkish March options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Turkish March</h3>
+          <div class="ptags"><span class="lvl">Grade 5</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 4 of 5 · Advanced</span>
+          </p>
+          <p class="desc">Light wrist for the octave runs. Start at 60 bpm and add four a week — no faster, no exceptions.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--sand">QB</span>
+            <span class="av av--sm">NP</span>
+            <span class="av av--sm av--mint">LC</span>
+            <span class="av av--sm av--more">+1</span>
+          </span>
+          <span class="learners">4 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 5 · Gymnopédie No.1 -->
+      <article class="piece card rise" style="--i:6" data-diff="2" data-title="gymnopédie no.1" data-level="Grade 3" data-desc="Slow, floaty and forgiving — the piece I hand to a student who badly needs a win this month.">
+        <div class="cover cover--d2">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
+          <button class="kebab" type="button" aria-label="Options for Gymnopédie No.1" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Gymnopédie No.1 options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Gymnopédie No.1</h3>
+          <div class="ptags"><span class="lvl">Grade 3</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 2 of 5 · Easy</span>
+          </p>
+          <p class="desc">Slow, floaty and forgiving — the piece I hand to a student who badly needs a win this month.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--mint">GH</span>
+            <span class="av av--sm">ON</span>
+            <span class="av av--sm av--sand">TT</span>
+            <span class="av av--sm av--more">+3</span>
+          </span>
+          <span class="learners">6 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 6 · Arabesque No.1 -->
+      <article class="piece card rise" style="--i:7" data-diff="4" data-title="arabesque no.1" data-level="ABRSM 5" data-desc="Three against two. Clap the cross-rhythm away from the piano first, then let the hands try it.">
+        <div class="cover cover--d4">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Arabesque No.1" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Arabesque No.1 options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Arabesque No.1</h3>
+          <div class="ptags"><span class="lvl">ABRSM 5</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 4 of 5 · Advanced</span>
+          </p>
+          <p class="desc">Three against two. Clap the cross-rhythm away from the piano first, then let the hands try it.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm">ET</span>
+            <span class="av av--sm av--mint">BN</span>
+          </span>
+          <span class="learners">2 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 7 · River Flows in You -->
+      <article class="piece card rise" style="--i:8" data-diff="3" data-title="river flows in you" data-level="Grade 4" data-desc="Every single student asks for this one. Loop the ostinato until the left hand forgets it is working.">
+        <div class="cover cover--d3">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
+          <button class="kebab" type="button" aria-label="Options for River Flows in You" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="River Flows in You options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">River Flows in You</h3>
+          <div class="ptags"><span class="lvl">Grade 4</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 3 of 5 · Intermediate</span>
+          </p>
+          <p class="desc">Every single student asks for this one. Loop the ostinato until the left hand forgets it is working.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm">MA</span>
+            <span class="av av--sm av--sand">KL</span>
+            <span class="av av--sm av--mint">ON</span>
+            <span class="av av--sm av--more">+5</span>
+          </span>
+          <span class="learners">8 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 8 · Minuet in G -->
+      <article class="piece card rise" style="--i:9" data-diff="2" data-title="minuet in g" data-level="Grade 2" data-desc="The ornaments can wait. Get the two voices balanced and Bach does the rest of the teaching.">
+        <div class="cover cover--d2">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
+          <button class="kebab" type="button" aria-label="Options for Minuet in G" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Minuet in G options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Minuet in G</h3>
+          <div class="ptags"><span class="lvl">Grade 2</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 2 of 5 · Easy</span>
+          </p>
+          <p class="desc">The ornaments can wait. Get the two voices balanced and Bach does the rest of the teaching.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--mint">GH</span>
+            <span class="av av--sm av--sand">QB</span>
+            <span class="av av--sm">TT</span>
+            <span class="av av--sm av--more">+4</span>
+          </span>
+          <span class="learners">7 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 9 · Prelude in C — NO description (proves the empty case reads fine) -->
+      <article class="piece card rise" style="--i:10" data-diff="2" data-title="prelude in c" data-level="Grade 3" data-desc="">
+        <div class="cover cover--d2">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Prelude in C" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Prelude in C options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Prelude in C</h3>
+          <div class="ptags"><span class="lvl">Grade 3</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 2 of 5 · Easy</span>
+          </p>
+          <p class="desc desc--empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+            No notes yet
+          </p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm">MA</span>
+            <span class="av av--sm av--mint">ET</span>
+            <span class="av av--sm av--sand">NP</span>
+            <span class="av av--sm av--more">+1</span>
+          </span>
+          <span class="learners">4 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 10 · Sonatina in G -->
+      <article class="piece card rise" style="--i:11" data-diff="3" data-title="sonatina in g" data-level="Grade 4" data-desc="Sonata form without the panic. The right stepping stone before anyone touches Beethoven properly.">
+        <div class="cover cover--d3">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Sonatina in G" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Sonatina in G options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Sonatina in G</h3>
+          <div class="ptags"><span class="lvl">Grade 4</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 3 of 5 · Intermediate</span>
+          </p>
+          <p class="desc">Sonata form without the panic. The right stepping stone before anyone touches Beethoven properly.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--sand">LC</span>
+            <span class="av av--sm">ON</span>
+            <span class="av av--sm av--mint">KL</span>
+          </span>
+          <span class="learners">3 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 11 · Ode to Joy -->
+      <article class="piece card rise" style="--i:12" data-diff="1" data-title="ode to joy" data-level="Beginner" data-desc="First recital piece for almost everyone. Two hands, five fingers, instant pride on the face.">
+        <div class="cover cover--d1">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Ode to Joy" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Ode to Joy options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Ode to Joy</h3>
+          <div class="ptags"><span class="lvl">Beginner</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 1 of 5 · Very Easy</span>
+          </p>
+          <p class="desc">First recital piece for almost everyone. Two hands, five fingers, instant pride on the face.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--sand">TT</span>
+            <span class="av av--sm">NP</span>
+            <span class="av av--sm av--mint">QB</span>
+            <span class="av av--sm av--more">+6</span>
+          </span>
+          <span class="learners">9 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 12 · Twinkle, Twinkle Variations -->
+      <article class="piece card rise" style="--i:13" data-diff="1" data-title="twinkle, twinkle variations" data-level="Beginner" data-desc="Six variations in one afternoon. Teaches articulation without ever saying the word articulation.">
+        <div class="cover cover--d1">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Twinkle, Twinkle Variations" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Twinkle, Twinkle Variations options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Twinkle, Twinkle Variations</h3>
+          <div class="ptags"><span class="lvl">Beginner</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 1 of 5 · Very Easy</span>
+          </p>
+          <p class="desc">Six variations in one afternoon. Teaches articulation without ever saying the word articulation.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm">MA</span>
+            <span class="av av--sm av--mint">GH</span>
+            <span class="av av--sm av--sand">ON</span>
+            <span class="av av--sm av--more">+3</span>
+          </span>
+          <span class="learners">6 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 13 · Kiss the Rain — no level -->
+      <article class="piece card rise" style="--i:14" data-diff="2" data-title="kiss the rain" data-level="" data-desc="Requested constantly. Watch that the pedal doesn't turn the whole thing into soup.">
+        <div class="cover cover--d2">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Kiss the Rain" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Kiss the Rain options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Kiss the Rain</h3>
+          <div class="ptags"><span class="lvl lvl--none">No level set</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 2 of 5 · Easy</span>
+          </p>
+          <p class="desc">Requested constantly. Watch that the pedal doesn't turn the whole thing into soup.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--sand">KL</span>
+            <span class="av av--sm av--mint">BN</span>
+            <span class="av av--sm">ET</span>
+            <span class="av av--sm av--more">+2</span>
+          </span>
+          <span class="learners">5 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 14 · The Entertainer -->
+      <article class="piece card rise" style="--i:15" data-diff="3" data-title="the entertainer" data-level="Grade 4" data-desc="A syncopation lesson in disguise. The left hand must stay strict or the joke stops landing.">
+        <div class="cover cover--d3">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for The Entertainer" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="The Entertainer options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">The Entertainer</h3>
+          <div class="ptags"><span class="lvl">Grade 4</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 3 of 5 · Intermediate</span>
+          </p>
+          <p class="desc">A syncopation lesson in disguise. The left hand must stay strict or the joke stops landing.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm">LC</span>
+            <span class="av av--sm av--sand">QB</span>
+            <span class="av av--sm av--mint">NP</span>
+          </span>
+          <span class="learners">3 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 15 · Waltz in A minor -->
+      <article class="piece card rise" style="--i:16" data-diff="3" data-title="waltz in a minor" data-level="ABRSM 4" data-desc="Chopin's easiest, and still the best lesson in phrasing I own. Count in one, never in three.">
+        <div class="cover cover--d3">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Waltz in A minor" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Waltz in A minor options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Waltz in A minor</h3>
+          <div class="ptags"><span class="lvl">ABRSM 4</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 3 of 5 · Intermediate</span>
+          </p>
+          <p class="desc">Chopin's easiest, and still the best lesson in phrasing I own. Count in one, never in three.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--mint">ON</span>
+            <span class="av av--sm">MA</span>
+            <span class="av av--sm av--sand">TT</span>
+            <span class="av av--sm av--more">+1</span>
+          </span>
+          <span class="learners">4 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 16 · Solfeggietto -->
+      <article class="piece card rise" style="--i:17" data-diff="4" data-title="solfeggietto" data-level="ABRSM 6" data-desc="Pure finger work. Hands alone for two full weeks before anyone is allowed to put them together.">
+        <div class="cover cover--d4">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Solfeggietto" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Solfeggietto options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Solfeggietto</h3>
+          <div class="ptags"><span class="lvl">ABRSM 6</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 4 of 5 · Advanced</span>
+          </p>
+          <p class="desc">Pure finger work. Hands alone for two full weeks before anyone is allowed to put them together.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm av--mint">BN</span>
+            <span class="av av--sm">NP</span>
+          </span>
+          <span class="learners">2 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 17 · Moonlight Sonata · 1st mvt -->
+      <article class="piece card rise" style="--i:18" data-diff="4" data-title="moonlight sonata · 1st mvt" data-level="ABRSM 6" data-desc="The triplets must be even and unhurried. A slow piece that punishes rushing more than a fast one.">
+        <div class="cover cover--d4">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Moonlight Sonata, 1st movement" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Moonlight Sonata options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Moonlight Sonata · 1st mvt</h3>
+          <div class="ptags"><span class="lvl">ABRSM 6</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--off"><use href="#blossom-line"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 4 of 5 · Advanced</span>
+          </p>
+          <p class="desc">The triplets must be even and unhurried. A slow piece that punishes rushing more than a fast one.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true">
+            <span class="av av--sm">ET</span>
+            <span class="av av--sm av--sand">KL</span>
+            <span class="av av--sm av--mint">BN</span>
+          </span>
+          <span class="learners">3 students learning</span>
+        </footer>
+      </article>
+
+      <!-- 18 · Fantaisie-Impromptu -->
+      <article class="piece card rise" style="--i:19" data-diff="5" data-title="fantaisie-impromptu" data-level="ABRSM 8" data-desc="Four against three, at speed. Only Khánh Linh has asked for it — we are taking a whole year over it.">
+        <div class="cover cover--d5">
+          <span class="keys" aria-hidden="true"></span>
+          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
+          <button class="kebab" type="button" aria-label="Options for Fantaisie-Impromptu" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+        <ul class="pmenu" role="menu" aria-label="Fantaisie-Impromptu options" hidden>
+          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li><hr></li>
+          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        </ul>
+        <div class="pbody">
+          <h3 class="ptitle">Fantaisie-Impromptu</h3>
+          <div class="ptags"><span class="lvl">ABRSM 8</span></div>
+          <p class="diff">
+            <span class="petals" aria-hidden="true">
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+              <svg class="b b--on"><use href="#blossom-fill"/></svg>
+            </span>
+            <span class="diff-label">Difficulty 5 of 5 · Expert</span>
+          </p>
+          <p class="desc">Four against three, at speed. Only Khánh Linh has asked for it — we are taking a whole year over it.</p>
+        </div>
+        <footer class="pfoot">
+          <span class="stack" aria-hidden="true"><span class="av av--sm av--sand">KL</span></span>
+          <span class="learners">1 student learning</span>
+        </footer>
+      </article>
+
+      <!-- ＋ Add piece tile -->
+      <button class="add-tile" type="button" id="addTile">
+        <span class="add-ring" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </span>
+        Add piece
+        <small>Anything you teach — it starts showing up on lessons straight away.</small>
+      </button>
+
+      <!-- Empty state (mascot: Mochi) -->
+      <div class="empty" id="empty" hidden>
+        <svg class="mascot" viewBox="0 0 160 130" aria-hidden="true" focusable="false">
+          <!-- piano -->
+          <rect x="20" y="74" width="120" height="34" rx="6" fill="var(--ink)"/>
+          <rect x="26" y="80" width="108" height="16" rx="3" fill="var(--surface)"/>
+          <g fill="var(--ink)">
+            <rect x="34" y="80" width="5" height="10" rx="1"/>
+            <rect x="46" y="80" width="5" height="10" rx="1"/>
+            <rect x="66" y="80" width="5" height="10" rx="1"/>
+            <rect x="78" y="80" width="5" height="10" rx="1"/>
+            <rect x="90" y="80" width="5" height="10" rx="1"/>
+            <rect x="110" y="80" width="5" height="10" rx="1"/>
+            <rect x="122" y="80" width="5" height="10" rx="1"/>
+          </g>
+          <rect x="30" y="104" width="8" height="18" rx="3" fill="var(--ink)"/>
+          <rect x="122" y="104" width="8" height="18" rx="3" fill="var(--ink)"/>
+          <!-- cat -->
+          <ellipse cx="80" cy="60" rx="26" ry="22" fill="var(--cotton)"/>
+          <path d="M60 44l-3-16 15 9z" fill="var(--cotton)"/>
+          <path d="M100 44l3-16-15 9z" fill="var(--cotton)"/>
+          <path d="M61 42l-1.5-9 8 5z" fill="var(--bubblegum)"/>
+          <path d="M99 42l1.5-9-8 5z" fill="var(--bubblegum)"/>
+          <circle cx="71" cy="57" r="3" fill="var(--ink)"/>
+          <circle cx="89" cy="57" r="3" fill="var(--ink)"/>
+          <path d="M76 66q4 4 8 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="80" cy="63" r="2.4" fill="var(--bubblegum)"/>
+          <path d="M56 60h-12M56 65h-12M104 60h12M104 65h12" stroke="var(--ink-soft)" stroke-width="1.4" stroke-linecap="round"/>
+          <!-- paws on the keys -->
+          <circle cx="64" cy="78" r="6" fill="var(--cotton)"/>
+          <circle cx="96" cy="78" r="6" fill="var(--cotton)"/>
+          <!-- bow -->
+          <path d="M92 40l7-5 1 8z" fill="var(--wintergreen)"/>
+          <path d="M104 40l-7-5-1 8z" fill="var(--wintergreen)"/>
+          <circle cx="98" cy="39" r="2.4" fill="var(--teal-600)"/>
+          <!-- notes -->
+          <g fill="var(--wintergreen)" opacity=".8">
+            <circle cx="30" cy="34" r="4"/><rect x="33" y="18" width="2" height="17" rx="1"/>
+            <circle cx="126" cy="26" r="3.4"/><rect x="128.6" y="12" width="1.8" height="15" rx="1"/>
+          </g>
+        </svg>
+        <h2 id="emptyTitle">No pieces yet 🎀</h2>
+        <p id="emptyText">Add the first one and your shelf starts filling up. Mochi is warming up already.</p>
+        <button class="btn btn--mint" type="button" id="clearFilters" hidden>Clear filters</button>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- ═══════════════ MOBILE TAB BAR ═══════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/pieces" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/></svg>
+    Pieces
+  </a>
+  <!-- Students, Reports, Payments and Profile all stay reachable through here. -->
+  <button class="tab" type="button" id="tabMore" aria-label="More navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    More
+  </button>
+</nav>
+
+<!-- ═══════════════ SIDE SHEET · Edit piece (rendered OPEN) ═══════════════ -->
+<div class="sheet-scrim print-hide" id="sheetScrim"></div>
+
+<aside class="sheet print-hide" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" aria-describedby="sheetSub">
+  <header class="sheet-head">
+    <div>
+      <h2 id="sheetTitle">Edit piece</h2>
+      <p class="sheet-sub" id="sheetSub">Update piece details and information.</p>
+    </div>
+    <button class="sheet-close" type="button" id="sheetClose" aria-label="Close edit piece panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+
+  <form class="sheet-body" id="sheetForm" novalidate>
+    <div class="field">
+      <label for="f-title">Title</label>
+      <input id="f-title" type="text" value="Nocturne Op.9 No.2" placeholder="Enter piece title">
+    </div>
+
+    <div class="field">
+      <label for="f-desc">Description</label>
+      <textarea id="f-desc" placeholder="Add details about the piece…">Rubato in the right hand, metronome-steady in the left. Make them sing the melody before they touch a key.</textarea>
+      <span class="hint">Add notes about the composer, style, or key details.</span>
+    </div>
+
+    <div class="field">
+      <label for="f-level">Level</label>
+      <input id="f-level" type="text" value="ABRSM 6" placeholder="e.g. Grade 4, ABRSM 5, Beginner">
+      <span class="hint">Free text — whatever wording you use with parents.</span>
+    </div>
+
+    <div class="field">
+      <span id="diffLabel" class="field-label" style="font:650 12.5px/1 var(--font-sans); color:var(--ink)">Difficulty</span>
+      <div class="picker">
+        <div class="picker-row" role="radiogroup" aria-labelledby="diffLabel" id="picker">
+          <button class="pick" type="button" role="radio" aria-checked="false" data-v="1" aria-label="Difficulty 1 of 5, Very Easy">
+            <svg aria-hidden="true"><use href="#blossom-line"/></svg>
+          </button>
+          <button class="pick" type="button" role="radio" aria-checked="false" data-v="2" aria-label="Difficulty 2 of 5, Easy">
+            <svg aria-hidden="true"><use href="#blossom-line"/></svg>
+          </button>
+          <button class="pick" type="button" role="radio" aria-checked="false" data-v="3" aria-label="Difficulty 3 of 5, Intermediate">
+            <svg aria-hidden="true"><use href="#blossom-line"/></svg>
+          </button>
+          <button class="pick" type="button" role="radio" aria-checked="true" data-v="4" aria-label="Difficulty 4 of 5, Advanced">
+            <svg aria-hidden="true"><use href="#blossom-line"/></svg>
+          </button>
+          <button class="pick" type="button" role="radio" aria-checked="false" data-v="5" aria-label="Difficulty 5 of 5, Expert">
+            <svg aria-hidden="true"><use href="#blossom-line"/></svg>
+          </button>
+        </div>
+        <p class="pick-read" id="pickRead" aria-live="polite">
+          Difficulty 4 of 5
+          <span>Advanced · strong technique and expression needed</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="info">
+      <h3>Piece information</h3>
+      <p>Total lessons <b>24</b></p>
+      <p>Created <b>March 2, 2026</b></p>
+    </div>
+  </form>
+
+  <footer class="sheet-foot">
+    <button class="btn btn--quiet" type="button" id="sheetCancel">Cancel</button>
+    <button class="btn btn--primary" type="submit" form="sheetForm">Save piece</button>
+  </footer>
+</aside>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ══ 1. Off-canvas navigation (below 1024px) ══════════════════════════ */
+  var body = document.body;
+  var backdrop = document.getElementById('backdrop');
+  var sidebar = document.getElementById('sidebar');
+  var toggles = [document.getElementById('navToggle'), document.getElementById('tabMore')];
+  var drawerMQ = window.matchMedia('(max-width: 1023px)');
+  var opener = null;
+
+  function isNavOpen() { return body.classList.contains('nav-open'); }
+
+  function syncSidebar() {
+    if (drawerMQ.matches) {
+      sidebar.setAttribute('role', 'dialog');
+      sidebar.setAttribute('aria-modal', 'true');
+      sidebar.setAttribute('aria-label', 'Navigation');
+      if (isNavOpen()) sidebar.removeAttribute('inert');
+      else sidebar.setAttribute('inert', '');
+    } else {
+      sidebar.removeAttribute('role');
+      sidebar.removeAttribute('aria-modal');
+      sidebar.removeAttribute('inert');
+      sidebar.setAttribute('aria-label', 'Main navigation');
+    }
+  }
+
+  function navFocusables() {
+    var nodes = sidebar.querySelectorAll('a[href], button:not([disabled])');
+    return Array.prototype.filter.call(nodes, function (el) {
+      return el.offsetWidth > 0 || el.offsetHeight > 0;
+    });
+  }
+
+  function setNav(open, from) {
+    var was = isNavOpen();
+    body.classList.toggle('nav-open', open);
+    toggles.forEach(function (t) { if (t) t.setAttribute('aria-expanded', String(open)); });
+    if (open) {
+      opener = from || opener || toggles[0];
+      syncSidebar();
+      var first = sidebar.querySelector('.nav-link');
+      if (first) first.focus();
+    } else {
+      userExpand(false);
+      syncSidebar();
+      if (was && drawerMQ.matches && opener) opener.focus();
+      opener = null;
+    }
+  }
+
+  toggles.forEach(function (t) {
+    if (t) t.addEventListener('click', function () { setNav(!isNavOpen(), t); });
+  });
+  backdrop.addEventListener('click', function () { setNav(false); });
+
+  function onBreakpoint() {
+    if (!drawerMQ.matches && isNavOpen()) setNav(false);
+    else syncSidebar();
+  }
+  if (drawerMQ.addEventListener) drawerMQ.addEventListener('change', onBreakpoint);
+  else drawerMQ.addListener(onBreakpoint);
+
+  /* footer account popover */
+  var userBtn = document.getElementById('userBtn');
+  var userMenu = document.getElementById('userMenu');
+  function userExpand(open) {
+    userMenu.hidden = !open;
+    userBtn.setAttribute('aria-expanded', String(open));
+  }
+  userBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    userExpand(userMenu.hidden);
+  });
+
+  /* ══ 2. Filters — difficulty chips + title search ═════════════════════ */
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.fchip'));
+  var pieces = Array.prototype.slice.call(document.querySelectorAll('.piece'));
+  var q = document.getElementById('q');
+  var countline = document.getElementById('countline');
+  var empty = document.getElementById('empty');
+  var emptyTitle = document.getElementById('emptyTitle');
+  var emptyText = document.getElementById('emptyText');
+  var clearBtn = document.getElementById('clearFilters');
+  var addTile = document.getElementById('addTile');
+  var TOTAL = pieces.length;          /* 18 */
+  var ROTATION = 6;                   /* pieces taught at least once this month */
+  var activeDiff = 'all';
+
+  function apply() {
+    var term = q.value.trim().toLowerCase();
+    var shown = 0;
+
+    pieces.forEach(function (p) {
+      var okDiff = activeDiff === 'all' || p.dataset.diff === activeDiff;
+      var okTerm = !term || p.dataset.title.indexOf(term) !== -1;
+      var visible = okDiff && okTerm;
+      p.hidden = !visible;
+      if (visible) shown++;
+      if (!visible) closeMenu(p);   /* never leave a menu open on a hidden card */
+    });
+
+    var filtering = activeDiff !== 'all' || term !== '';
+
+    countline.innerHTML = filtering
+      ? 'Showing <b>' + shown + '</b> of <b>' + TOTAL + '</b> pieces <span class="sep">·</span> <b>' + ROTATION + '</b> in rotation this month'
+      : '<b>' + TOTAL + '</b> pieces <span class="sep">·</span> <b>' + ROTATION + '</b> in rotation this month';
+
+    var none = shown === 0;
+    empty.hidden = !none;
+    addTile.hidden = none;
+    clearBtn.hidden = !filtering;
+
+    if (none) {
+      if (filtering) {
+        emptyTitle.textContent = 'Nothing on that shelf yet 🎀';
+        emptyText.textContent = 'No piece matches this filter. Try another difficulty, or clear the search.';
+      } else {
+        emptyTitle.textContent = 'No pieces yet 🎀';
+        emptyText.textContent = 'Add the first one and your shelf starts filling up. Mochi is warming up already.';
+      }
+    }
+  }
+
+  chips.forEach(function (c) {
+    c.addEventListener('click', function () {
+      activeDiff = c.dataset.diff;
+      chips.forEach(function (o) { o.setAttribute('aria-pressed', String(o === c)); });
+      apply();
+    });
+  });
+  q.addEventListener('input', apply);
+  clearBtn.addEventListener('click', function () {
+    q.value = '';
+    activeDiff = 'all';
+    chips.forEach(function (o) { o.setAttribute('aria-pressed', String(o.dataset.diff === 'all')); });
+    apply();
+    q.focus();
+  });
+
+  /* ══ 3. Card ⋯ menus ═════════════════════════════════════════════════ */
+  function closeMenu(card) {
+    var m = card.querySelector('.pmenu');
+    var k = card.querySelector('.kebab');
+    if (!m || m.hidden) return;
+    m.hidden = true;
+    card.classList.remove('is-menu-open');
+    k.setAttribute('aria-expanded', 'false');
+  }
+  function closeAllMenus(except) {
+    pieces.forEach(function (p) { if (p !== except) closeMenu(p); });
+  }
+
+  pieces.forEach(function (card) {
+    var kebab = card.querySelector('.kebab');
+    var menu = card.querySelector('.pmenu');
+
+    kebab.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var willOpen = menu.hidden;
+      closeAllMenus(card);
+      menu.hidden = !willOpen;
+      card.classList.toggle('is-menu-open', willOpen);
+      kebab.setAttribute('aria-expanded', String(willOpen));
+      if (willOpen) {
+        var first = menu.querySelector('button');
+        if (first) first.focus();
+      }
+    });
+
+    menu.addEventListener('click', function (e) {
+      var act = e.target.closest('button[data-act="edit"]');
+      closeMenu(card);
+      if (act) openSheet(card);
+      else kebab.focus();
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!userMenu.hidden && !userMenu.contains(e.target) && !userBtn.contains(e.target)) userExpand(false);
+    if (!e.target.closest('.piece')) closeAllMenus(null);
+  });
+
+  /* ══ 4. Side sheet — Edit piece ══════════════════════════════════════ */
+  var sheet = document.getElementById('sheet');
+  var scrim = document.getElementById('sheetScrim');
+  var sheetTitle = document.getElementById('sheetTitle');
+  var sheetSub = document.getElementById('sheetSub');
+  var fTitle = document.getElementById('f-title');
+  var fDesc = document.getElementById('f-desc');
+  var fLevel = document.getElementById('f-level');
+  var sheetForm = document.getElementById('sheetForm');
+  var sheetOpener = null;
+
+  /* The five difficulty steps, exactly as the real app names them. */
+  var SCALE = {
+    1: ['Very Easy', 'Perfect for first steps on the piano'],
+    2: ['Easy', 'Simple coordination and smooth rhythm'],
+    3: ['Intermediate', 'Requires steady tempo and control'],
+    4: ['Advanced', 'Strong technique and expression needed'],
+    5: ['Expert', 'Only for serious performers']
+  };
+
+  var picker = document.getElementById('picker');
+  var picks = Array.prototype.slice.call(picker.querySelectorAll('.pick'));
+  var pickRead = document.getElementById('pickRead');
+  var value = 4;
+
+  function paint(v) {
+    value = v;
+    picks.forEach(function (p) {
+      var pv = Number(p.dataset.v);
+      var on = pv <= v;
+      p.classList.toggle('is-on', on);
+      p.classList.toggle('is-peak', on && v === 5);
+      p.setAttribute('aria-checked', String(pv === v));
+      p.tabIndex = pv === v ? 0 : -1;
+      p.querySelector('use').setAttribute('href', on ? '#blossom-fill' : '#blossom-line');
+    });
+    pickRead.innerHTML = 'Difficulty ' + v + ' of 5<span>' + SCALE[v][0] + ' · ' + SCALE[v][1] + '</span>';
+  }
+
+  picks.forEach(function (p) {
+    p.addEventListener('click', function () { paint(Number(p.dataset.v)); });
+    p.addEventListener('keydown', function (e) {
+      var next = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = Math.min(5, value + 1);
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = Math.max(1, value - 1);
+      if (!next) return;
+      e.preventDefault();
+      paint(next);
+      picks[next - 1].focus();
+    });
+  });
+
+  function openSheet(card) {
+    sheetOpener = card ? card.querySelector('.kebab') : document.activeElement;
+    if (card) {
+      sheetTitle.textContent = 'Edit piece';
+      sheetSub.textContent = 'Update piece details and information.';
+      fTitle.value = card.querySelector('.ptitle').textContent.trim();
+      fDesc.value = card.dataset.desc || '';
+      fLevel.value = card.dataset.level || '';
+      paint(Number(card.dataset.diff) || 1);
+    }
+    sheet.hidden = false;
+    scrim.hidden = false;
+    fTitle.focus();
+  }
+
+  function openCreateSheet(from) {
+    sheetOpener = from || document.activeElement;
+    sheetTitle.textContent = 'Add a new piece 🎶';
+    sheetSub.textContent = 'This will appear in your teaching repertoire.';
+    fTitle.value = '';
+    fDesc.value = '';
+    fLevel.value = '';
+    paint(1);
+    sheet.hidden = false;
+    scrim.hidden = false;
+    fTitle.focus();
+  }
+
+  function closeSheet() {
+    sheet.hidden = true;
+    scrim.hidden = true;
+    if (sheetOpener && document.contains(sheetOpener)) sheetOpener.focus();
+    sheetOpener = null;
+  }
+
+  document.getElementById('sheetClose').addEventListener('click', closeSheet);
+  document.getElementById('sheetCancel').addEventListener('click', closeSheet);
+  scrim.addEventListener('click', closeSheet);
+  sheetForm.addEventListener('submit', function (e) { e.preventDefault(); closeSheet(); });
+  document.getElementById('addPiece').addEventListener('click', function (e) { openCreateSheet(e.currentTarget); });
+  addTile.addEventListener('click', function (e) { openCreateSheet(e.currentTarget); });
+
+  /* focus trap while the sheet is open */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (!sheet.hidden) { closeSheet(); return; }
+      if (isNavOpen()) { setNav(false); return; }
+      closeAllMenus(null);
+      userExpand(false);
+      return;
+    }
+
+    if (e.key === 'Tab' && !sheet.hidden) {
+      var nodes = sheet.querySelectorAll('a[href], button:not([disabled]), input, textarea, [tabindex]:not([tabindex="-1"])');
+      var list = Array.prototype.filter.call(nodes, function (el) {
+        return el.offsetWidth > 0 || el.offsetHeight > 0;
+      });
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      return;
+    }
+
+    if (e.key === 'Tab' && isNavOpen() && drawerMQ.matches) {
+      var navList = navFocusables();
+      if (!navList.length) return;
+      var nFirst = navList[0];
+      var nLast = navList[navList.length - 1];
+      if (e.shiftKey && document.activeElement === nFirst) { e.preventDefault(); nLast.focus(); }
+      else if (!e.shiftKey && document.activeElement === nLast) { e.preventDefault(); nFirst.focus(); }
+    }
+  });
+
+  /* ══ 5. Boot — the sheet ships OPEN on "Nocturne Op.9 No.2" ═══════════ */
+  syncSidebar();
+  paint(4);
+  apply();
+})();
+</script>
+
+</body>
+</html>

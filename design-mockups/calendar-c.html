@@ -1,0 +1,1426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Calendar · Agenda Split</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+/* ==========================================================================
+   CALENDAR — VARIANT C · "Agenda Split"
+   Screen-specific CSS only. Every colour/radius/shadow comes from _theme.css.
+   ========================================================================== */
+
+/* One screen-local token: the compact card inset used by the two small
+   left-pane cards. Everything else comes from _theme.css. */
+:root{ --pad-card-sm:16px; }
+
+/* _theme.css ships .label at --ink-faint (#8ba3a2 = 2.67:1 on white — the token
+   is documented "decorative only"). On this screen every .label NAMES REAL DATA
+   (form field labels, "Billed so far", "View"), so it is promoted to --ink-soft
+   (#56706f = 5.32:1 on white). */
+.label{ color:var(--ink-soft); }
+
+/* --grad-pink runs #f7b6cd → --pink-500 (#e0729a). White on those is 1.68:1 and
+   2.98:1 — both fail. --pink-700 (#9e3a62) with white is 6.49:1. */
+.btn--primary{ background:var(--pink-700); }
+
+/* ── Variant badge ─────────────────────────────────────────────────────── */
+.variant-badge{
+  position:fixed; top:10px; right:10px; z-index:99;
+  padding:6px 12px; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter:blur(10px);
+  border:1px solid var(--line-pink); box-shadow:var(--sh-sm);
+  font:600 11px/1 var(--font-sans); letter-spacing:.04em; color:var(--pink-700);
+  pointer-events:none;
+}
+
+/* Safety net only — every grid child below also carries min-width:0 so a
+   fixed-width descendant reports the overflow instead of being cropped. */
+body{ overflow-x:clip; }
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+.shell{ display:grid; grid-template-columns:1fr; min-height:100dvh; }
+
+@media (min-width:1024px){
+  .shell{ grid-template-columns:var(--rail) 1fr; height:100dvh; overflow:hidden; }
+}
+@media (min-width:1280px){
+  .shell{ grid-template-columns:var(--sidebar) 1fr; }
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+.sidebar{
+  position:fixed; inset:0 auto 0 0; z-index:60;
+  width:min(84vw, var(--sidebar));
+  display:flex; flex-direction:column; gap:14px;
+  padding:18px 14px;
+  background:linear-gradient(180deg, var(--surface), var(--floss));
+  border-right:1px solid var(--line);
+  box-shadow:var(--sh-xl);
+  transform:translateX(-102%);
+  /* Closed = out of the tab order AND out of the a11y tree, not just off-screen. */
+  visibility:hidden;
+  transition:transform var(--dur) var(--ease), visibility 0s linear var(--dur);
+  overflow-y:auto;
+}
+.sidebar.is-open{ transform:none; visibility:visible; transition-delay:0s; }
+
+@media (min-width:1024px){
+  .sidebar{
+    position:relative; inset:auto; width:auto; transform:none; box-shadow:none;
+    align-items:center; padding:18px 10px;
+    visibility:visible; transition:none;
+  }
+}
+@media (min-width:1280px){ .sidebar{ align-items:stretch; padding:18px 14px; } }
+
+.scrim{
+  position:fixed; inset:0; z-index:55;
+  background:color-mix(in srgb, var(--ink) 38%, transparent); backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; transition:opacity var(--dur) var(--ease);
+}
+.scrim.is-open{ opacity:1; pointer-events:auto; }
+@media (min-width:1024px){ .scrim{ display:none; } }
+
+.brand{ display:flex; align-items:center; gap:11px; padding:6px 6px 2px; }
+.brand-mark{
+  width:40px; height:40px; flex:0 0 auto; border-radius:var(--r-sm);
+  background:var(--grad-brand); color:var(--ink-invert);
+  display:grid; place-items:center; box-shadow:var(--sh-pink);
+}
+.brand-txt{ min-width:0; }
+.brand-name{ font:700 15px/1.2 var(--font-sans); letter-spacing:-.01em; }
+.brand-sub{ font:var(--t-small); color:var(--ink-soft); white-space:nowrap; }
+@media (min-width:1024px) and (max-width:1279px){ .brand{ justify-content:center; padding:6px 0; } }
+
+.side-cta{ width:100%; }
+@media (min-width:1024px) and (max-width:1279px){
+  .side-cta{ width:var(--tap); padding:0; border-radius:50%; }
+}
+
+.nav-group{ display:flex; flex-direction:column; gap:3px; }
+.nav-group + .nav-group{ margin-top:10px; }
+.nav-label{ padding:8px 12px 4px; }
+
+/* TABLET-LANDSCAPE RAIL (1024–1279): labels go visually-hidden, never
+   display:none — each .nav-item/.side-cta/.user has an aria-hidden icon and its
+   <span> is the ONLY accessible name it has. The 9px --ink-faint rail caption is
+   gone too (2.67:1 at 9px was unreadable); the <nav aria-label> carries it. */
+@media (min-width:1024px) and (max-width:1279px){
+  .brand-txt, .side-cta span, .nav-item span, .user-txt, .nav-label{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+}
+
+.nav-item{
+  display:flex; align-items:center; gap:12px;
+  min-height:var(--tap); padding:0 12px;
+  border-radius:var(--r-sm); color:var(--ink-soft);
+  font:600 13.5px/1 var(--font-sans);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav-item svg{ width:20px; height:20px; flex:0 0 auto; }
+.nav-item:hover{ background:var(--surface-3); color:var(--ink); }
+.nav-item[aria-current="page"]{
+  background:var(--grad-mint); color:var(--teal-700);
+  box-shadow:var(--sh-mint);
+}
+@media (min-width:1024px) and (max-width:1279px){
+  .nav-item{ justify-content:center; padding:0; width:var(--tap); margin-inline:auto; }
+}
+
+.side-foot{ margin-top:auto; padding-top:12px; border-top:1px solid var(--line); }
+.user{
+  display:flex; align-items:center; gap:10px; width:100%;
+  min-height:var(--tap); padding:6px; border-radius:var(--r-sm); text-align:left;
+}
+.user:hover{ background:var(--surface-3); }
+.user-txt{ min-width:0; }
+.user-name{ font:600 13px/1.25 var(--font-sans); }
+.user-mail{ font:400 11.5px/1.25 var(--font-sans); color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; }
+/* The chevron is aria-hidden decoration — display:none is fine for it. */
+@media (min-width:1024px) and (max-width:1279px){ .user{ justify-content:center; } .user > svg{ display:none; } }
+
+/* ── Main column ───────────────────────────────────────────────────────── */
+.main{ display:flex; flex-direction:column; min-width:0; }
+@media (min-width:1024px){ .main{ height:100dvh; overflow:hidden; } }
+
+/* min-height pins the sticky topbar to a KNOWN 76px below 1024px, so .day-head's
+   sticky `top` can land flush against it. Without it the clamped h1 makes the bar
+   72–75px tall and the day pill parks in a scrolling gap. */
+.topbar{
+  display:flex; align-items:center; gap:12px;
+  min-height:76px;
+  padding:14px var(--pad-page);
+  border-bottom:1px solid var(--line);
+  background:color-mix(in srgb, var(--surface) 72%, transparent); backdrop-filter:blur(12px);
+  position:sticky; top:0; z-index:30;
+}
+@media (min-width:1024px){ .topbar{ position:relative; } }
+.greet{ min-width:0; flex:1; }
+.greet h1{ font:var(--t-h1); letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.greet p{ font:var(--t-small); color:var(--ink-soft); }
+.menu-btn{ display:grid; }
+@media (min-width:1024px){ .menu-btn{ display:none; } }
+.topbar .btn--ghost svg{ width:19px; height:19px; }
+.top-actions{ display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+.list-link svg{ width:17px; height:17px; }
+/* Phone: the "List view" link collapses to a circle. Its <span> is its only
+   accessible name, so it is visually-hidden, not display:none. */
+@media (max-width:639px){
+  .list-link{ width:var(--tap); padding:0; border-radius:50%; }
+  .list-link span{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+}
+
+/* ── Calendar page: the split ──────────────────────────────────────────── */
+.calpage{
+  display:grid; grid-template-columns:1fr; gap:var(--gap);
+  padding:var(--pad-page);
+  padding-bottom:calc(96px + var(--pad-page));
+  min-width:0;
+}
+/* Every grid child must be allowed to shrink, so nothing silently overflows. */
+.calpage > *{ min-width:0; }
+@media (min-width:1024px){
+  .calpage{
+    grid-template-columns:minmax(360px, 380px) 1fr;
+    gap:var(--gap-lg);
+    flex:1; min-height:0; overflow:hidden;
+    padding-bottom:var(--pad-page);
+  }
+}
+
+.pane{ display:flex; flex-direction:column; gap:var(--gap); min-width:0; }
+@media (min-width:1024px){
+  .pane-left{ overflow-y:auto; padding-right:4px; padding-bottom:8px; }
+  .pane-agenda{ overflow-y:auto; padding-right:4px; }
+}
+
+/* ── Mini month ────────────────────────────────────────────────────────── */
+.mm-card{ padding:var(--pad-card-sm); }
+.mm-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px; }
+.mm-title{ font:700 15.5px/1.2 var(--font-sans); letter-spacing:-.01em; display:flex; align-items:center; gap:7px; }
+.mm-nav{ display:flex; gap:2px; }
+.mm-nav button{
+  width:var(--tap); height:var(--tap); border-radius:50%;
+  display:grid; place-items:center; color:var(--ink-soft);
+  transition:background var(--dur) var(--ease);
+}
+.mm-nav button:hover{ background:var(--surface-3); color:var(--ink); }
+.mm-nav svg{ width:19px; height:19px; }
+
+.mm-dow{
+  display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:6px;
+}
+/* --ink-faint (#8ba3a2) is 2.67:1 on white — it may not carry the weekday keys. */
+.mm-dow span{
+  text-align:center; font:var(--t-label); letter-spacing:.06em;
+  color:var(--ink-soft); text-transform:uppercase;
+}
+.mm-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+/* Weeks are real ARIA rows; `display:contents` keeps the 7-column grid intact. */
+.mm-grid [role="row"]{ display:contents; }
+.mm-day{
+  position:relative; min-height:var(--tap);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; border-radius:50%;
+  font:600 13px/1 var(--font-num); font-variant-numeric:tabular-nums;
+  color:var(--ink); transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.mm-day:hover{ background:var(--surface-3); }
+.mm-day .dot{ width:5px; height:5px; border-radius:50%; background:var(--bubblegum); }
+.mm-day:not(.has-dot) .dot{ visibility:hidden; }
+/* Adjacent-month dates are still REAL DATES — --ink-faint's 2.67:1 fails them. */
+.mm-day.is-out{ color:var(--ink-soft); font-weight:500; }
+.mm-day.is-weekend{ color:var(--ink-soft); }
+.mm-day.is-selected{
+  /* --pink-600 (#c94f7c) with white is 4.29:1 — fails AA at this 13px size.
+     --pink-700 (#9e3a62) with white is 6.49:1. */
+  background:var(--pink-700); color:var(--ink-invert); box-shadow:var(--sh-pink);
+}
+.mm-day.is-selected .dot{ background:var(--ink-invert); opacity:.9; }
+.mm-day.is-today{ box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--bubblegum); }
+.mm-day.is-today.is-selected{ box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--cotton), var(--sh-pink); }
+.mm-foot{
+  margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
+  display:flex; align-items:center; gap:7px;
+  font:var(--t-small); color:var(--ink-soft);
+}
+.mm-foot .dot{ width:6px; height:6px; border-radius:50%; background:var(--bubblegum); flex:0 0 auto; }
+
+/* ── Week strip (tablet-portrait / phone replacement for the mini-month) ── */
+.weekstrip{ display:none; }
+@media (max-width:1023px){
+  .mm-card{ display:none; }
+  .weekstrip{ display:block; padding:14px 0 14px 14px; }
+  .weekstrip .mm-head{ padding-right:14px; }
+  .ws-rail{ display:flex; gap:8px; padding:2px 14px 4px 0; }
+  .ws-day{
+    flex:0 0 auto; width:58px; min-height:72px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    border-radius:var(--r-md); border:1px solid var(--line); background:var(--surface);
+    transition:transform var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .ws-day:hover:not(.is-selected){ background:var(--surface-2); border-color:var(--line-strong); }
+  .ws-day:active{ transform:scale(.96); }
+  .ws-dow{ font:var(--t-label); letter-spacing:.08em; color:var(--ink-soft); }
+  .ws-num{ font:700 17px/1 var(--font-num); font-variant-numeric:tabular-nums; }
+  .ws-day .dot{ width:5px; height:5px; border-radius:50%; background:var(--bubblegum); }
+  .ws-day:not(.has-dot) .dot{ visibility:hidden; }
+  /* --pink-600 + white = 4.29:1; the 17px/700 date and 11px day key both need 4.5:1. */
+  .ws-day.is-selected{ background:var(--pink-700); border-color:transparent; color:var(--ink-invert); box-shadow:var(--sh-pink); }
+  .ws-day.is-selected .ws-dow{ color:var(--ink-invert); opacity:1; }
+  .ws-day.is-selected .dot{ background:var(--ink-invert); }
+  .ws-day.is-today:not(.is-selected){ border-color:var(--bubblegum); box-shadow:0 0 0 1px var(--bubblegum) inset; }
+}
+
+/* ── Glance card ───────────────────────────────────────────────────────── */
+.glance-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:4px; }
+.glance-total{ display:flex; align-items:baseline; gap:8px; margin-bottom:14px; }
+.glance-total .metric{ font-size:30px; }
+.glance-total .unit{ font:var(--t-small); color:var(--ink-soft); }
+.glance-rows{ display:flex; flex-direction:column; }
+.g-row{
+  display:flex; align-items:center; gap:10px;
+  min-height:var(--tap); padding:0 8px; margin:0 -8px;
+  border-radius:var(--r-xs);
+}
+.g-row + .g-row{ border-top:1px solid var(--line); }
+.g-row:hover{ background:var(--surface-2); }
+.g-dot{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
+.g-dot--ok{ background:var(--ok-dot); }
+.g-dot--no{ background:var(--no-dot); }
+.g-dot--wait{ background:var(--wait-dot); }
+.g-name{ flex:1; font:600 13px/1.3 var(--font-sans); color:var(--ink-soft); }
+.g-count{ font:700 14px/1 var(--font-num); font-variant-numeric:tabular-nums; }
+.g-bar{ width:56px; height:6px; border-radius:var(--r-pill); background:var(--surface-3); overflow:hidden; flex:0 0 auto; }
+.g-bar i{ display:block; height:100%; border-radius:var(--r-pill); }
+.glance-earn{
+  margin-top:14px; padding:12px 14px; border-radius:var(--r-md);
+  background:var(--surface-2); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.glance-earn .money{ font:700 15px/1 var(--font-num); font-variant-numeric:tabular-nums; }
+
+/* ── Segmented control ─────────────────────────────────────────────────── */
+.seg{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:4px;
+  padding:4px; border-radius:var(--r-pill);
+  background:var(--surface-2); border:1px solid var(--line);
+}
+.seg button{
+  min-height:var(--tap); border-radius:var(--r-pill);
+  font:600 13px/1 var(--font-sans); color:var(--ink-soft);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.seg button:hover{ color:var(--ink); }
+.seg button[aria-pressed="true"]{
+  background:var(--surface); color:var(--ink); box-shadow:var(--sh-sm);
+}
+.view-card{ padding:var(--pad-card-sm); }
+.view-card .label{ padding:0 2px 10px; }
+
+/* ── Agenda ────────────────────────────────────────────────────────────── */
+.agenda-top{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; flex-wrap:wrap;
+  padding:12px 16px;
+  border-radius:var(--r-lg);
+  background:color-mix(in srgb, var(--surface) 70%, transparent); backdrop-filter:blur(10px);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-sm);
+}
+.agenda-search{ flex:1 1 100%; }
+.agenda-search[hidden]{ display:none; }
+.agenda-search input{
+  width:100%; min-height:var(--tap); padding:0 14px;
+  border-radius:var(--r-pill); border:1px solid var(--line);
+  background:var(--surface); font:500 13.5px/1 var(--font-sans);
+}
+.agenda-empty{
+  margin:18px 0 4px; padding:20px; text-align:center;
+  border:1.5px dashed var(--line-strong); border-radius:var(--r-md);
+  font:var(--t-small); color:var(--ink-soft);
+}
+.legend{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.lg{ display:inline-flex; align-items:center; gap:6px; font:600 12px/1 var(--font-sans); color:var(--ink-soft); }
+.lg i{ width:8px; height:8px; border-radius:50%; }
+.lg--ok i{ background:var(--ok-dot); }
+.lg--no i{ background:var(--no-dot); }
+.lg--wait i{ background:var(--wait-dot); }
+.lg--on{ color:var(--teal-700); }
+.agenda-actions{ display:flex; align-items:center; gap:8px; }
+/* _theme's .btn--sm is 34px — below the 44px finger minimum this app targets.
+   Restore the tap height on the two .btn--sm instances that live on this screen,
+   keeping their small type so the density is unchanged. */
+.agenda-actions .btn--sm, .empty-day .btn--sm{ min-height:var(--tap); }
+
+.agenda-list{ display:flex; flex-direction:column; }
+/* Wired to #filterBtn (aria-pressed). Billable totals are COMPLETE-only, so
+   hiding cancelled rows never changes a single money figure on the screen. */
+.agenda-list.is-hiding-cancelled .lesson.is-cancelled{ display:none; }
+
+/* Sticky day header */
+.day-head{
+  position:sticky; top:0; z-index:12;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:6px 12px; flex-wrap:wrap;
+  padding:11px 16px; margin:18px 0 10px;
+  border-radius:var(--r-lg);
+  background:color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter:blur(14px);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-sm);
+}
+/* 76px = the pinned .topbar height below 1024px. Flush, no scrolling gap. */
+@media (max-width:1023px){ .day-head{ top:76px; } }
+.dh-left{ display:flex; align-items:baseline; gap:9px; min-width:0; }
+.dh-dow{ font:var(--t-label); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--pink-700); }
+.dh-date{ font:700 14px/1.2 var(--font-sans); letter-spacing:-.01em; white-space:nowrap; }
+/* Wraps rather than overflowing the pill on a 360px phone. */
+.dh-right{ display:flex; align-items:baseline; gap:4px 7px; flex-wrap:wrap; font:var(--t-small); color:var(--ink-soft); }
+.dh-right .money{ font:700 13px/1 var(--font-num); font-variant-numeric:tabular-nums; color:var(--ink); }
+/* The rule, spelled out: a day's money never includes a CANCELLED or a PENDING
+   lesson. Only COMPLETE is billable (src/lib/report/tuition.ts:123 —
+   `validLessons = lessons.filter((l) => l.status === "COMPLETE")`). The caption
+   next to the money says so, and accounts for every remaining lesson. */
+.dh-note{ font:500 11.5px/1.35 var(--font-sans); color:var(--ink-soft); }
+.day-head.is-today{
+  border-color:var(--cotton);
+  background:linear-gradient(120deg,
+    color-mix(in srgb, var(--pink-100) 92%, transparent),
+    color-mix(in srgb, var(--surface) 90%, transparent));
+}
+
+/* TODAY divider */
+.today-rule{
+  display:flex; align-items:center; gap:10px;
+  margin:22px 2px 4px;
+}
+.today-rule::after{ content:""; flex:1; height:2px; border-radius:2px; background:linear-gradient(90deg, var(--bubblegum), transparent); }
+.today-pill{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:var(--r-pill);
+  /* white on --pink-600 = 4.29:1; this is 10.5px text, so it needs 4.5:1. */
+  background:var(--pink-700); color:var(--ink-invert);
+  font:700 10.5px/1 var(--font-sans); letter-spacing:.14em; text-transform:uppercase;
+  box-shadow:var(--sh-pink);
+}
+.today-pill svg{ width:13px; height:13px; }
+
+/* Lesson row */
+.day-rows{ display:flex; flex-direction:column; gap:8px; }
+.lesson{
+  display:grid;
+  grid-template-columns:78px 4px 1fr auto;
+  align-items:center; gap:14px;
+  min-height:76px; padding:12px 16px 12px 12px;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r-md); box-shadow:var(--sh-xs);
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  cursor:pointer; text-align:left; width:100%;
+}
+.lesson:hover{ transform:translateY(-2px); box-shadow:var(--sh); border-color:var(--line-strong); }
+.lesson:active{ transform:translateY(0); }
+
+.l-time{ display:flex; flex-direction:column; gap:3px; text-align:right; }
+.l-time .t{ font:700 13.5px/1 var(--font-num); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.l-time .d{ font:500 11.5px/1 var(--font-sans); color:var(--ink-soft); }
+
+.l-bar{ width:4px; height:44px; border-radius:var(--r-pill); align-self:center; }
+.l-bar--complete{ background:var(--ok-dot); }
+.l-bar--cancelled{ background:var(--no-dot); }
+.l-bar--pending{ background:var(--wait-dot); }
+
+.l-body{ display:flex; align-items:center; gap:12px; min-width:0; }
+.l-txt{ min-width:0; }
+.l-name{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  font:650 14px/1.3 var(--font-sans); letter-spacing:-.01em; color:var(--ink);
+}
+.l-name s{ color:var(--ink-soft); text-decoration-color:var(--no-dot); text-decoration-thickness:1.5px; }
+.l-piece{ font:var(--t-small); color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.l-reason{
+  margin-top:5px; display:inline-flex; align-items:center; gap:5px;
+  font:500 11.5px/1.3 var(--font-sans); color:var(--no-fg);
+  background:var(--no-bg); padding:3px 9px; border-radius:var(--r-pill);
+}
+.chip--online{ font-size:11px; padding:4px 9px; }
+
+.l-meta{ display:flex; flex-direction:column; align-items:flex-end; gap:7px; }
+.money{ font-family:var(--font-num); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.l-rate{ font:700 13.5px/1 var(--font-num); font-variant-numeric:tabular-nums; }
+.l-rate.is-void{ color:var(--ink-soft); font-weight:600; text-decoration:line-through; text-decoration-color:var(--no-dot); }
+
+/* Row card compaction on phones */
+@media (max-width:600px){
+  .lesson{
+    grid-template-columns:64px 4px 1fr;
+    row-gap:10px; padding:12px 14px 12px 10px; gap:11px;
+  }
+  .l-meta{
+    grid-column:3 / -1; flex-direction:row; align-items:center;
+    justify-content:space-between; width:100%;
+  }
+  .l-piece{ white-space:normal; }
+}
+
+/* Empty day */
+.empty-day{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; min-height:120px; padding:24px;
+  border:1.5px dashed var(--line-strong); border-radius:var(--r-md);
+  background:linear-gradient(160deg,
+    color-mix(in srgb, var(--floss) 80%, transparent),
+    color-mix(in srgb, var(--surface) 50%, transparent));
+  text-align:center;
+}
+.empty-day .t{ font:650 14px/1.3 var(--font-sans); }
+.empty-day .s{ font:var(--t-small); color:var(--ink-soft); }
+.empty-day .btn{ margin-top:6px; }
+
+.agenda-end{
+  margin:22px 0 4px; padding:16px; text-align:center;
+  font:var(--t-small); color:var(--ink-soft);
+}
+
+/* NOTE: ~30 lines of .monthview/.mv-* CSS lived here for a component that has
+   never existed in this document, under a comment claiming the "Month" segment
+   "actually swaps it in". Nothing swaps. Dead CSS removed. */
+
+/* ── FAB ───────────────────────────────────────────────────────────────── */
+.fab{
+  position:fixed; right:18px; z-index:45;
+  bottom:calc(88px + env(safe-area-inset-bottom, 0px));
+  width:60px; height:60px; border-radius:50%;
+  display:grid; place-items:center;
+  /* The white "+" glyph on --grad-pink's light stop (#f7b6cd) is 1.68:1 — a
+     non-text control needs 3:1. --pink-700 gives it 6.49:1. */
+  background:var(--pink-700); color:var(--ink-invert);
+  box-shadow:var(--sh-pink), 0 0 0 6px color-mix(in srgb, var(--surface) 50%, transparent);
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.fab:hover{ transform:translateY(-2px) scale(1.03); }
+.fab:active{ transform:scale(.95); }
+.fab svg{ width:26px; height:26px; }
+@media (min-width:1024px){ .fab{ bottom:24px; right:24px; } }
+
+/* ── Bottom tab bar ────────────────────────────────────────────────────── */
+.tabbar{
+  position:fixed; z-index:40;
+  left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+  display:grid; grid-template-columns:repeat(5,1fr);
+  padding:6px; border-radius:var(--r-xl);
+  background:color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter:blur(16px);
+  border:1px solid var(--line); box-shadow:var(--sh-lg);
+}
+@media (min-width:1024px){ .tabbar{ display:none; } }
+.tab{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  min-height:56px; border-radius:var(--r-md); color:var(--ink-soft);
+  font:600 10.5px/1 var(--font-sans);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.tab svg{ width:21px; height:21px; }
+.tab:hover{ background:var(--surface-2); color:var(--ink); }
+.tab[aria-current="page"]{ color:var(--pink-700); background:var(--pink-50); }
+.tab[aria-current="page"]:hover{ color:var(--pink-700); background:var(--pink-100); }
+
+/* ── Add-lesson sheet ──────────────────────────────────────────────────── */
+.sheet-scrim{
+  position:fixed; inset:0; z-index:70;
+  background:color-mix(in srgb, var(--ink) 38%, transparent); backdrop-filter:blur(3px);
+  display:grid; place-items:end center;
+  opacity:0; pointer-events:none; transition:opacity var(--dur) var(--ease);
+}
+.sheet-scrim.is-open{ opacity:1; pointer-events:auto; }
+@media (min-width:1024px){ .sheet-scrim{ place-items:center; } }
+.sheet{
+  width:min(560px, 100%);
+  background:var(--surface);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:var(--sh-xl);
+  padding:18px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+  transform:translateY(14px); transition:transform var(--dur) var(--ease);
+  max-height:88dvh; overflow-y:auto;
+}
+.sheet-scrim.is-open .sheet{ transform:none; }
+@media (min-width:1024px){ .sheet{ border-radius:var(--r-xl); padding-bottom:22px; } }
+.sheet-grab{ width:44px; height:5px; border-radius:var(--r-pill); background:var(--line-strong); margin:0 auto 14px; }
+@media (min-width:1024px){ .sheet-grab{ display:none; } }
+.sheet-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.sheet-head h2{ font:var(--t-h2); }
+.field{ margin-bottom:12px; }
+.field > .label{ display:block; margin-bottom:6px; }
+.control{
+  width:100%; min-height:var(--tap); padding:0 14px;
+  border-radius:var(--r-sm); border:1px solid var(--line);
+  background:var(--surface-2); font:500 13.5px/1 var(--font-sans);
+}
+.field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.switch-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  min-height:var(--tap); padding:0 14px; margin-bottom:14px;
+  border-radius:var(--r-sm); background:var(--surface-2); border:1px solid var(--line);
+  font:600 13px/1 var(--font-sans);
+}
+/* 46×28 track drawn in ::before, inside a full 46×44 hit area.
+   Old version: off-track --line-strong was 1.24:1 against its own --surface-2 row
+   (the control was invisible) and the white knob was 1.33:1 against that track.
+   Now: the track is ringed in --teal-600 (3.30:1 vs the row) and so is the knob,
+   and the ON fill is --teal-600, not raw --wintergreen (1.94:1). */
+.switch{
+  width:46px; height:var(--tap); min-height:var(--tap);
+  border-radius:var(--r-pill);
+  position:relative; flex:0 0 auto;
+}
+.switch::before{
+  content:""; position:absolute; inset:8px 0; border-radius:var(--r-pill);
+  background:var(--surface-3); box-shadow:inset 0 0 0 1px var(--teal-600);
+  transition:background var(--dur) var(--ease);
+}
+.switch::after{
+  content:""; position:absolute; top:11px; left:3px; z-index:1;
+  width:22px; height:22px; border-radius:50%; background:var(--ink-invert);
+  box-shadow:var(--sh-sm), 0 0 0 1px var(--teal-600);
+  transition:transform var(--dur) var(--ease);
+}
+.switch[aria-checked="true"]::before{ background:var(--teal-600); }
+.switch[aria-checked="true"]::after{ transform:translateX(18px); }
+.sheet-foot{ display:flex; gap:10px; margin-top:6px; }
+.sheet-foot .btn{ flex:1; }
+
+/* Scrollbars inside panes stay discreet */
+.pane-left::-webkit-scrollbar, .pane-agenda::-webkit-scrollbar{ width:8px; }
+.pane-left::-webkit-scrollbar-thumb, .pane-agenda::-webkit-scrollbar-thumb{
+  background:var(--line-strong); border-radius:var(--r-pill);
+}
+.pane-left::-webkit-scrollbar-track, .pane-agenda::-webkit-scrollbar-track{ background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Calendar · Agenda Split</div>
+
+<div class="shell">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </span>
+      <span class="brand-txt">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-sub">Personal teaching space</span>
+      </span>
+    </div>
+
+    <button class="btn btn--primary side-cta" data-open-sheet aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav class="nav-group" aria-label="Main">
+      <p class="label nav-label">Main</p>
+      <a class="nav-item" href="/dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" href="/calendar" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        <span>Calendar</span>
+      </a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Manage">
+      <p class="label nav-label">Manage</p>
+      <a class="nav-item" href="/lessons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+        <span>Lessons</span>
+      </a>
+      <a class="nav-item" href="/students">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Students</span>
+      </a>
+      <a class="nav-item" href="/pieces">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span>Pieces</span>
+      </a>
+      <a class="nav-item" href="/reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="4" height="7" rx="1"/><rect x="12" y="6" width="4" height="12" rx="1"/><rect x="19" y="14" width="2" height="4" rx="1"/></svg>
+        <span>Reports</span>
+      </a>
+      <a class="nav-item" href="/payments">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg>
+        <span>Payments</span>
+      </a>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user" aria-haspopup="menu" aria-expanded="false">
+        <span class="av" aria-hidden="true">MN</span>
+        <span class="user-txt">
+          <span class="user-name">Mai Nguyễn</span>
+          <span class="user-mail">mai@pianodiary.studio</span>
+        </span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;color:var(--ink-soft)" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <div class="scrim" id="scrim" hidden></div>
+
+  <!-- ══ MAIN ═════════════════════════════════════════════════════════════ -->
+  <div class="main">
+
+    <header class="topbar">
+      <button class="btn btn--ghost btn--icon menu-btn" id="menuBtn" aria-label="Open navigation menu" aria-controls="sidebar" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="greet">
+        <h1>Calendar</h1>
+        <p>Manage lessons and track attendance</p>
+      </div>
+      <div class="top-actions">
+        <a class="btn btn--ghost list-link" href="/lessons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+          <span>List view</span>
+        </a>
+        <button class="btn btn--ghost btn--icon" id="searchBtn" aria-label="Search lessons and students" aria-expanded="false" aria-controls="agendaSearch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </button>
+        <button class="btn btn--ghost btn--icon" id="filterBtn" type="button" aria-pressed="false" aria-label="Hide cancelled lessons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="calpage">
+
+      <!-- ══ LEFT PANE — navigation ═════════════════════════════════════ -->
+      <section class="pane pane-left" aria-label="Calendar navigation">
+
+        <!-- Mini month (desktop / tablet-landscape) -->
+        <div class="card mm-card rise" style="--i:0">
+          <div class="mm-head">
+            <h2 class="mm-title"><span aria-hidden="true">🎵</span> July 2026</h2>
+            <div class="mm-nav">
+              <button aria-label="Previous month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+              </button>
+              <button aria-label="Next month">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="mm-dow" aria-hidden="true">
+            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+          </div>
+
+          <!-- role="gridcell" is only legal inside a role="row". The five weeks are
+               real rows; `display:contents` keeps the 7-column grid intact. -->
+          <div class="mm-grid" role="grid" aria-label="July 2026">
+            <div role="row">
+              <button class="mm-day is-out" role="gridcell" aria-label="29 June">29<i class="dot"></i></button>
+              <button class="mm-day is-out" role="gridcell" aria-label="30 June">30<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="1 July, has lessons">1<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="2 July, has lessons">2<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="3 July, has lessons">3<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="4 July, no lessons">4<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="5 July, no lessons">5<i class="dot"></i></button>
+            </div>
+            <div role="row">
+              <button class="mm-day has-dot" role="gridcell" aria-label="6 July, has lessons">6<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="7 July, has lessons">7<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="8 July, has lessons">8<i class="dot"></i></button>
+              <button class="mm-day" role="gridcell" aria-label="9 July, no lessons">9<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="10 July, has lessons">10<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="11 July, no lessons">11<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="12 July, no lessons">12<i class="dot"></i></button>
+            </div>
+            <div role="row">
+              <button class="mm-day has-dot" role="gridcell" aria-label="13 July, has lessons">13<i class="dot"></i></button>
+              <button class="mm-day has-dot is-today is-selected" role="gridcell" aria-label="14 July, today, selected, has lessons" aria-current="date" aria-selected="true">14<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="15 July, has lessons">15<i class="dot"></i></button>
+              <button class="mm-day" role="gridcell" aria-label="16 July, no lessons">16<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="17 July, has lessons">17<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="18 July, no lessons">18<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="19 July, no lessons">19<i class="dot"></i></button>
+            </div>
+            <div role="row">
+              <button class="mm-day has-dot" role="gridcell" aria-label="20 July, has lessons">20<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="21 July, has lessons">21<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="22 July, has lessons">22<i class="dot"></i></button>
+              <button class="mm-day" role="gridcell" aria-label="23 July, no lessons">23<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="24 July, has lessons">24<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="25 July, no lessons">25<i class="dot"></i></button>
+              <button class="mm-day is-weekend" role="gridcell" aria-label="26 July, no lessons">26<i class="dot"></i></button>
+            </div>
+            <div role="row">
+              <button class="mm-day has-dot" role="gridcell" aria-label="27 July, has lessons">27<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="28 July, has lessons">28<i class="dot"></i></button>
+              <button class="mm-day has-dot" role="gridcell" aria-label="29 July, has lessons">29<i class="dot"></i></button>
+              <button class="mm-day" role="gridcell" aria-label="30 July, no lessons">30<i class="dot"></i></button>
+              <button class="mm-day" role="gridcell" aria-label="31 July, no lessons">31<i class="dot"></i></button>
+              <button class="mm-day is-out" role="gridcell" aria-label="1 August">1<i class="dot"></i></button>
+              <button class="mm-day is-out" role="gridcell" aria-label="2 August">2<i class="dot"></i></button>
+            </div>
+          </div>
+
+          <p class="mm-foot"><i class="dot" aria-hidden="true"></i> A dot marks a day with lessons · 18 teaching days</p>
+        </div>
+
+        <!-- Week strip (tablet portrait / phone) -->
+        <div class="card weekstrip rise" style="--i:0">
+          <div class="mm-head">
+            <h2 class="mm-title"><span aria-hidden="true">🎵</span> July 2026</h2>
+            <div class="mm-nav">
+              <button aria-label="Previous week">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+              </button>
+              <button aria-label="Next week">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="ws-rail scroll-x no-scrollbar" role="group" aria-label="Week of 13 July">
+            <button class="ws-day has-dot" aria-label="Monday 13 July, has lessons"><span class="ws-dow">Mon</span><span class="ws-num">13</span><i class="dot"></i></button>
+            <button class="ws-day has-dot is-today is-selected" aria-label="Tuesday 14 July, today, selected" aria-current="date"><span class="ws-dow">Tue</span><span class="ws-num">14</span><i class="dot"></i></button>
+            <button class="ws-day has-dot" aria-label="Wednesday 15 July, has lessons"><span class="ws-dow">Wed</span><span class="ws-num">15</span><i class="dot"></i></button>
+            <button class="ws-day" aria-label="Thursday 16 July, no lessons"><span class="ws-dow">Thu</span><span class="ws-num">16</span><i class="dot"></i></button>
+            <button class="ws-day has-dot" aria-label="Friday 17 July, has lessons"><span class="ws-dow">Fri</span><span class="ws-num">17</span><i class="dot"></i></button>
+            <button class="ws-day" aria-label="Saturday 18 July"><span class="ws-dow">Sat</span><span class="ws-num">18</span><i class="dot"></i></button>
+            <button class="ws-day" aria-label="Sunday 19 July"><span class="ws-dow">Sun</span><span class="ws-num">19</span><i class="dot"></i></button>
+          </div>
+        </div>
+
+        <!-- July at a glance -->
+        <div class="card card--mint rise" style="--i:1">
+          <div class="glance-head">
+            <p class="label">July at a glance</p>
+          </div>
+          <!-- 82 = 18 teaching days × ~4.5 lessons/day, which is what the agenda
+               actually shows (Mon 4, Tue 5, Wed 5, Fri 4). The old figures — 31
+               scheduled / 24 complete — averaged 1.7 lessons per teaching day and
+               contradicted every day on screen. 37 + 3 + 42 = 82. -->
+          <div class="glance-total">
+            <span class="metric">82</span>
+            <span class="unit">lessons scheduled</span>
+          </div>
+
+          <div class="glance-rows">
+            <div class="g-row">
+              <i class="g-dot g-dot--ok" aria-hidden="true"></i>
+              <span class="g-name">Complete</span>
+              <span class="g-bar" aria-hidden="true"><i style="width:45%;background:var(--ok-dot)"></i></span>
+              <span class="g-count">37</span>
+            </div>
+            <div class="g-row">
+              <i class="g-dot g-dot--no" aria-hidden="true"></i>
+              <span class="g-name">Cancelled</span>
+              <span class="g-bar" aria-hidden="true"><i style="width:4%;background:var(--no-dot)"></i></span>
+              <span class="g-count">3</span>
+            </div>
+            <div class="g-row">
+              <i class="g-dot g-dot--wait" aria-hidden="true"></i>
+              <span class="g-name">Pending</span>
+              <span class="g-bar" aria-hidden="true"><i style="width:51%;background:var(--wait-dot)"></i></span>
+              <span class="g-count">42</span>
+            </div>
+          </div>
+
+          <!-- 8.950.000 ₫ ÷ 37 COMPLETE = 241.900 ₫ average, inside the 200–350k
+               rate range on the rows. Cancelled and pending are not in it. -->
+          <div class="glance-earn">
+            <span>
+              <span class="label" style="display:block">Billed so far</span>
+              <span style="font:var(--t-small);color:var(--ink-soft)">Complete lessons only</span>
+            </span>
+            <span class="money">8.950.000 ₫</span>
+          </div>
+        </div>
+
+        <!-- View switcher -->
+        <div class="card view-card rise" style="--i:2">
+          <p class="label">View</p>
+          <div class="seg" role="group" aria-label="Calendar view">
+            <button type="button" aria-pressed="false" data-seg>Month</button>
+            <button type="button" aria-pressed="false" data-seg>Week</button>
+            <button type="button" aria-pressed="true" data-seg>Day</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ══ RIGHT PANE — the agenda ════════════════════════════════════ -->
+      <section class="pane pane-agenda" aria-label="Lesson agenda">
+
+        <div class="agenda-top rise" style="--i:1">
+          <div class="legend" aria-label="Status legend">
+            <span class="lg lg--ok"><i aria-hidden="true"></i> Complete</span>
+            <span class="lg lg--no"><i aria-hidden="true"></i> Cancelled</span>
+            <span class="lg lg--wait"><i aria-hidden="true"></i> Pending</span>
+            <span class="lg lg--on"><span aria-hidden="true">💻</span> Online</span>
+          </div>
+          <div class="agenda-actions">
+            <button class="btn btn--ghost btn--sm" type="button">Jump to today</button>
+          </div>
+
+          <!-- #searchBtn declares aria-controls="agendaSearch"; the target now exists. -->
+          <div class="agenda-search" id="agendaSearch" hidden>
+            <label class="sr-only" for="agendaQuery">Search lessons by student or piece</label>
+            <input id="agendaQuery" type="search" placeholder="Search by student or piece…" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="agenda-list" id="agendaList">
+
+          <!-- ── MON 13 JULY ─────────────────────────────────────────── -->
+          <!-- Rows: 250.000 C + 300.000 C + 200.000 CANCELLED + 250.000 C.
+               COMPLETE only ⇒ 800.000 ₫. The old 1.000.000 ₫ billed the cancellation. -->
+          <header class="day-head rise" style="--i:2">
+            <div class="dh-left">
+              <span class="dh-dow">Mon</span>
+              <span class="dh-date">July 13</span>
+            </div>
+            <div class="dh-right">
+              <span class="money">800.000 ₫</span>
+              <span class="dh-note">billable · 3 complete · 1 cancelled</span>
+            </div>
+          </header>
+
+          <div class="day-rows">
+            <button class="lesson rise" style="--i:3" type="button">
+              <span class="l-time"><span class="t">9:00 AM</span><span class="d">60 min</span></span>
+              <span class="l-bar l-bar--complete" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">NA</span>
+                <span class="l-txt">
+                  <span class="l-name">Nguyễn Minh Anh</span>
+                  <span class="l-piece">Für Elise · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--complete">Complete</span>
+                <span class="l-rate money">250.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:4" type="button">
+              <span class="l-time"><span class="t">10:30 AM</span><span class="d">60 min</span></span>
+              <span class="l-bar l-bar--complete" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">ET</span>
+                <span class="l-txt">
+                  <span class="l-name">Emma Thompson <span class="chip chip--online"><span aria-hidden="true">💻</span> Online</span></span>
+                  <span class="l-piece">Clair de Lune</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--complete">Complete</span>
+                <span class="l-rate money">300.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson is-cancelled rise" style="--i:5" type="button">
+              <span class="l-time"><span class="t">2:00 PM</span><span class="d">45 min</span></span>
+              <span class="l-bar l-bar--cancelled" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">PB</span>
+                <span class="l-txt">
+                  <span class="l-name"><s>Phạm Quốc Bảo</s></span>
+                  <span class="l-piece">Minuet in G · In-person</span>
+                  <span class="l-reason">Reason: Sick</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--cancelled">Cancelled</span>
+                <span class="l-rate money is-void">200.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:6" type="button">
+              <span class="l-time"><span class="t">4:30 PM</span><span class="d">60 min</span></span>
+              <span class="l-bar l-bar--complete" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">TN</span>
+                <span class="l-txt">
+                  <span class="l-name">Trần Bảo Ngọc</span>
+                  <span class="l-piece">Nocturne Op.9 No.2 · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--complete">Complete</span>
+                <span class="l-rate money">250.000 ₫</span>
+              </span>
+            </button>
+          </div>
+
+          <!-- ── TODAY divider ───────────────────────────────────────── -->
+          <div class="today-rule rise" style="--i:7" role="separator" aria-label="Today">
+            <span class="today-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Today
+            </span>
+          </div>
+
+          <!-- ── TUE 14 JULY ─────────────────────────────────────────── -->
+          <!-- Rows: 200.000 C + 200.000 C + 250.000 C + 200.000 PENDING + 200.000 PENDING.
+               COMPLETE only ⇒ 650.000 ₫. The old 1.050.000 ₫ billed the two pendings. -->
+          <header class="day-head is-today rise" style="--i:7">
+            <div class="dh-left">
+              <span class="dh-dow">Tue</span>
+              <span class="dh-date">July 14</span>
+            </div>
+            <div class="dh-right">
+              <span class="money">650.000 ₫</span>
+              <span class="dh-note">billable · 3 complete · 2 pending</span>
+            </div>
+          </header>
+
+          <div class="day-rows">
+            <button class="lesson rise" style="--i:8" type="button">
+              <span class="l-time"><span class="t">8:30 AM</span><span class="d">45 min</span></span>
+              <span class="l-bar l-bar--complete" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">LH</span>
+                <span class="l-txt">
+                  <span class="l-name">Lê Gia Hân</span>
+                  <span class="l-piece">Gymnopédie No.1 · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--complete">Complete</span>
+                <span class="l-rate money">200.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:9" type="button">
+              <span class="l-time"><span class="t">10:00 AM</span><span class="d">45 min</span></span>
+              <span class="l-bar l-bar--complete" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">VT</span>
+                <span class="l-txt">
+                  <span class="l-name">Vũ Thanh Trúc</span>
+                  <span class="l-piece">Turkish March · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--complete">Complete</span>
+                <span class="l-rate money">200.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:10" type="button">
+              <span class="l-time"><span class="t">1:30 PM</span><span class="d">60 min</span></span>
+              <span class="l-bar l-bar--complete" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">ON</span>
+                <span class="l-txt">
+                  <span class="l-name">Olivia Nguyen <span class="chip chip--online"><span aria-hidden="true">💻</span> Online</span></span>
+                  <span class="l-piece">River Flows in You</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--complete">Complete</span>
+                <span class="l-rate money">250.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:11" type="button">
+              <span class="l-time"><span class="t">4:30 PM</span><span class="d">45 min</span></span>
+              <span class="l-bar l-bar--pending" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">LC</span>
+                <span class="l-txt">
+                  <span class="l-name">Liam Carter</span>
+                  <span class="l-piece">Arabesque No.1 · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--pending">Pending</span>
+                <span class="l-rate money">200.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:12" type="button">
+              <span class="l-time"><span class="t">6:00 PM</span><span class="d">45 min</span></span>
+              <span class="l-bar l-bar--pending" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">HP</span>
+                <span class="l-txt">
+                  <span class="l-name">Hoàng Nam Phong</span>
+                  <span class="l-piece">Für Elise · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--pending">Pending</span>
+                <span class="l-rate money">200.000 ₫</span>
+              </span>
+            </button>
+          </div>
+
+          <!-- ── WED 15 JULY ─────────────────────────────────────────── -->
+          <!-- Tomorrow: 4 PENDING + 1 CANCELLED, zero COMPLETE ⇒ nothing is billable
+               yet. The old 1.300.000 ₫ billed a future day in full, cancellation included. -->
+          <header class="day-head rise" style="--i:13">
+            <div class="dh-left">
+              <span class="dh-dow">Wed</span>
+              <span class="dh-date">July 15</span>
+            </div>
+            <div class="dh-right">
+              <span class="money">0 ₫</span>
+              <span class="dh-note">billable · 4 pending · 1 cancelled</span>
+            </div>
+          </header>
+
+          <div class="day-rows">
+            <button class="lesson rise" style="--i:13" type="button">
+              <span class="l-time"><span class="t">9:00 AM</span><span class="d">90 min</span></span>
+              <span class="l-bar l-bar--pending" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">ĐL</span>
+                <span class="l-txt">
+                  <span class="l-name">Đỗ Khánh Linh</span>
+                  <span class="l-piece">Nocturne Op.9 No.2 · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--pending">Pending</span>
+                <span class="l-rate money">350.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:14" type="button">
+              <span class="l-time"><span class="t">11:00 AM</span><span class="d">60 min</span></span>
+              <span class="l-bar l-bar--pending" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">TN</span>
+                <span class="l-txt">
+                  <span class="l-name">Trần Bảo Ngọc</span>
+                  <span class="l-piece">Clair de Lune · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--pending">Pending</span>
+                <span class="l-rate money">250.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson is-cancelled rise" style="--i:15" type="button">
+              <span class="l-time"><span class="t">2:00 PM</span><span class="d">45 min</span></span>
+              <span class="l-bar l-bar--cancelled" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">PB</span>
+                <span class="l-txt">
+                  <span class="l-name"><s>Phạm Quốc Bảo</s></span>
+                  <span class="l-piece">Minuet in G · In-person</span>
+                  <span class="l-reason">Reason: Family trip to Hội An</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--cancelled">Cancelled</span>
+                <span class="l-rate money is-void">200.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:16" type="button">
+              <span class="l-time"><span class="t">4:00 PM</span><span class="d">60 min</span></span>
+              <span class="l-bar l-bar--pending" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">ET</span>
+                <span class="l-txt">
+                  <span class="l-name">Emma Thompson <span class="chip chip--online"><span aria-hidden="true">💻</span> Online</span></span>
+                  <span class="l-piece">Turkish March</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--pending">Pending</span>
+                <span class="l-rate money">300.000 ₫</span>
+              </span>
+            </button>
+
+            <button class="lesson rise" style="--i:17" type="button">
+              <span class="l-time"><span class="t">5:30 PM</span><span class="d">45 min</span></span>
+              <span class="l-bar l-bar--pending" aria-hidden="true"></span>
+              <span class="l-body">
+                <span class="av" aria-hidden="true">NA</span>
+                <span class="l-txt">
+                  <span class="l-name">Nguyễn Minh Anh</span>
+                  <span class="l-piece">Für Elise · In-person</span>
+                </span>
+              </span>
+              <span class="l-meta">
+                <span class="chip chip--pending">Pending</span>
+                <span class="l-rate money">200.000 ₫</span>
+              </span>
+            </button>
+          </div>
+
+          <!-- ── THU 16 JULY — empty state ───────────────────────────── -->
+          <header class="day-head rise" style="--i:18">
+            <div class="dh-left">
+              <span class="dh-dow">Thu</span>
+              <span class="dh-date">July 16</span>
+            </div>
+            <div class="dh-right">
+              <span>No lessons</span>
+            </div>
+          </header>
+
+          <div class="day-rows">
+            <!-- The 🎀 that used to sit in this line was ornament inside the agenda's
+                 data region, and it was not aria-hidden — a screen reader read it out. -->
+            <div class="empty-day rise" style="--i:18">
+              <p class="t">A quiet day — no lessons scheduled</p>
+              <p class="s">A good afternoon to practise, or to fill the gap.</p>
+              <button class="btn btn--mint btn--sm" type="button" data-open-sheet>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+                Add lesson on July 16
+              </button>
+            </div>
+          </div>
+
+          <p class="agenda-empty" id="agendaEmpty" hidden>No lessons match that search.</p>
+
+          <!-- Was "keep scrolling ↓" — but this is the end of the document; there was
+               nothing below it to scroll to. -->
+          <p class="agenda-end">End of the loaded range · Fri 17 July has 4 more lessons</p>
+
+        </div>
+      </section>
+
+    </div><!-- /calpage -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ══ FAB ═══════════════════════════════════════════════════════════════ -->
+<button class="fab print-hide" data-open-sheet aria-label="Add lesson">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- ══ BOTTOM TAB BAR (tablet portrait & phone) ══════════════════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+    Students
+  </a>
+  <button class="tab" id="moreBtn" aria-label="More sections" aria-controls="sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+    More
+  </button>
+</nav>
+
+<!-- ══ ADD LESSON SHEET ══════════════════════════════════════════════════ -->
+<div class="sheet-scrim print-hide" id="sheetScrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-grab" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 id="sheetTitle">Add lesson</h2>
+      <button class="btn btn--quiet btn--icon" data-close-sheet aria-label="Close add lesson dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="field">
+      <label class="label" for="f-student">Student</label>
+      <select class="control" id="f-student">
+        <option>Nguyễn Minh Anh</option>
+        <option>Trần Bảo Ngọc</option>
+        <option>Lê Gia Hân</option>
+        <option>Emma Thompson</option>
+        <option>Phạm Quốc Bảo</option>
+        <option>Olivia Nguyen</option>
+        <option>Đỗ Khánh Linh</option>
+        <option>Liam Carter</option>
+        <option>Vũ Thanh Trúc</option>
+        <option>Hoàng Nam Phong</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label" for="f-piece">Piece</label>
+      <select class="control" id="f-piece">
+        <option>Für Elise</option>
+        <option>Clair de Lune</option>
+        <option>Nocturne Op.9 No.2</option>
+        <option>Turkish March</option>
+        <option>Gymnopédie No.1</option>
+        <option>Minuet in G</option>
+        <option>Arabesque No.1</option>
+        <option>River Flows in You</option>
+      </select>
+    </div>
+
+    <div class="field field-row">
+      <span>
+        <label class="label" for="f-date">Date</label>
+        <input class="control" id="f-date" type="text" value="16 July 2026">
+      </span>
+      <span>
+        <label class="label" for="f-time">Time</label>
+        <input class="control" id="f-time" type="text" value="4:30 PM">
+      </span>
+    </div>
+
+    <div class="field field-row">
+      <span>
+        <label class="label" for="f-dur">Duration</label>
+        <select class="control" id="f-dur">
+          <option>45 min</option>
+          <option>60 min</option>
+          <option>90 min</option>
+        </select>
+      </span>
+      <span>
+        <label class="label" for="f-rate">Rate (frozen at creation)</label>
+        <input class="control" id="f-rate" type="text" value="đ 200.000">
+      </span>
+    </div>
+
+    <div class="switch-row">
+      <span>Online lesson <span style="color:var(--ink-soft);font-weight:500">· uses online rate</span></span>
+      <button class="switch" id="onlineSwitch" role="switch" aria-checked="false" aria-label="Online lesson"></button>
+    </div>
+
+    <div class="sheet-foot">
+      <button class="btn btn--ghost" type="button" data-close-sheet>Cancel</button>
+      <button class="btn btn--primary" type="button" data-close-sheet>Save as pending</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var sidebar = document.getElementById('sidebar');
+  var scrim   = document.getElementById('scrim');
+  var menuBtn = document.getElementById('menuBtn');
+  var moreBtn = document.getElementById('moreBtn');
+
+  function openNav(on) {
+    sidebar.classList.toggle('is-open', on);
+    scrim.hidden = !on;
+    // allow the transition to run after `hidden` is removed
+    requestAnimationFrame(function () { scrim.classList.toggle('is-open', on); });
+    [menuBtn, moreBtn].forEach(function (b) { if (b) b.setAttribute('aria-expanded', String(on)); });
+  }
+  if (menuBtn) menuBtn.addEventListener('click', function () { openNav(!sidebar.classList.contains('is-open')); });
+  if (moreBtn) moreBtn.addEventListener('click', function () { openNav(!sidebar.classList.contains('is-open')); });
+  scrim.addEventListener('click', function () { openNav(false); });
+
+  /* Mini-month + week-strip selection */
+  function wireDays(selector) {
+    var days = document.querySelectorAll(selector);
+    days.forEach(function (d) {
+      d.addEventListener('click', function () {
+        days.forEach(function (o) { o.classList.remove('is-selected'); o.setAttribute('aria-selected', 'false'); });
+        d.classList.add('is-selected');
+        d.setAttribute('aria-selected', 'true');
+      });
+    });
+  }
+  wireDays('.mm-day');
+  wireDays('.ws-day');
+
+  /* Segmented control */
+  var segs = document.querySelectorAll('[data-seg]');
+  segs.forEach(function (s) {
+    s.addEventListener('click', function () {
+      segs.forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+      s.setAttribute('aria-pressed', 'true');
+    });
+  });
+
+  /* Search — #searchBtn advertised aria-expanded + aria-controls="agendaSearch"
+     but nothing listened to it and the target element did not exist. */
+  var searchBtn = document.getElementById('searchBtn');
+  var searchBox = document.getElementById('agendaSearch');
+  var query     = document.getElementById('agendaQuery');
+  var emptyMsg  = document.getElementById('agendaEmpty');
+  var lessons   = Array.prototype.slice.call(document.querySelectorAll('.lesson'));
+
+  searchBtn.addEventListener('click', function () {
+    var open = searchBox.hidden;
+    searchBox.hidden = !open;
+    searchBtn.setAttribute('aria-expanded', String(open));
+    if (open) { query.focus(); } else { query.value = ''; applyFilters(); }
+  });
+
+  /* Hide-cancelled — #filterBtn had aria-pressed and no listener either. */
+  var filterBtn  = document.getElementById('filterBtn');
+  var agendaList = document.getElementById('agendaList');
+
+  filterBtn.addEventListener('click', function () {
+    var on = filterBtn.getAttribute('aria-pressed') !== 'true';
+    filterBtn.setAttribute('aria-pressed', String(on));
+    filterBtn.setAttribute('aria-label', on ? 'Show cancelled lessons' : 'Hide cancelled lessons');
+    agendaList.classList.toggle('is-hiding-cancelled', on);
+    applyFilters();
+  });
+
+  function applyFilters() {
+    var q = (query.value || '').trim().toLowerCase();
+    var hideCancelled = filterBtn.getAttribute('aria-pressed') === 'true';
+    var shown = 0;
+    lessons.forEach(function (row) {
+      var isCancelled = row.classList.contains('is-cancelled');
+      var hit = !q || row.textContent.toLowerCase().indexOf(q) !== -1;
+      var visible = hit && !(hideCancelled && isCancelled);
+      row.hidden = !visible;
+      if (visible) shown++;
+    });
+    /* Only speak to the search case; "0 results" is meaningless when the user
+       simply filtered every cancellation away. */
+    emptyMsg.hidden = !(q && shown === 0);
+  }
+  query.addEventListener('input', applyFilters);
+
+  /* Add-lesson sheet */
+  var sheetScrim = document.getElementById('sheetScrim');
+  function openSheet(on) {
+    if (on) sheetScrim.hidden = false;
+    requestAnimationFrame(function () { sheetScrim.classList.toggle('is-open', on); });
+    if (!on) setTimeout(function () { sheetScrim.hidden = true; }, 220);
+    if (on) openNav(false);
+  }
+  document.querySelectorAll('[data-open-sheet]').forEach(function (b) {
+    b.addEventListener('click', function () { openSheet(true); });
+  });
+  document.querySelectorAll('[data-close-sheet]').forEach(function (b) {
+    b.addEventListener('click', function () { openSheet(false); });
+  });
+  sheetScrim.addEventListener('click', function (e) { if (e.target === sheetScrim) openSheet(false); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { openSheet(false); openNav(false); }
+  });
+
+  /* Online switch — flips the rate hint to the online rate */
+  var sw = document.getElementById('onlineSwitch');
+  var rate = document.getElementById('f-rate');
+  sw.addEventListener('click', function () {
+    var on = sw.getAttribute('aria-checked') === 'true';
+    sw.setAttribute('aria-checked', String(!on));
+    rate.value = !on ? 'đ 250.000' : 'đ 200.000';
+  });
+})();
+</script>
+</body>
+</html>

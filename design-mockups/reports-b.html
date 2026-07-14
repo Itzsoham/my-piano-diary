@@ -1,0 +1,1906 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Reports · Split Builder</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+  /* ======================================================================
+     REPORTS · VARIANT B — "Split Builder"
+     Live editor (left) + live A4 preview (right), draggable divider.
+     <1024px the split collapses to one column + [Edit | Preview] segment.
+     Screen-specific CSS only — every colour/radius/shadow from _theme.css.
+     ====================================================================== */
+
+  :root{
+    --tabbar: 0px;
+    --topbar-h: 64px;
+    --cellh: 46px;          /* attendance cell height — ≥ --tap-ish, width ≥44 */
+    --att-head: 20px;
+    --att-gap: 6px;
+    --paper-w: 794px;       /* A4 @96dpi */
+    --paper-h: 1123px;
+    --z: .9;                /* preview zoom */
+    --lfr: 1fr;             /* split: left  */
+    --rfr: 1fr;             /* split: right */
+
+    /* Frosted-glass surface — one token, per-site opacity via --glass.
+       Custom properties substitute lazily, so overriding --glass on the
+       element re-resolves the color-mix there. No raw rgba() anywhere. */
+    --glass: 80%;
+    --surface-glass: color-mix(in srgb, var(--surface) var(--glass), transparent);
+  }
+
+  /* This screen is finger-first, so every control clears 44px — including the
+     theme's compact .btn--sm (34px), which is fine on a desktop-only surface
+     but not on the tablet this redesign targets. */
+  .btn--sm{ min-height: var(--tap); }
+
+  /* ── Variant badge ─────────────────────────────────────────────────────
+     Mockup scaffolding. It lives in the bottom-left gutter, out of the
+     layout flow, so it can never dictate what product chrome gets dropped
+     (the topbar's "Combined sheet" button used to be sacrificed to it). */
+  .variant-badge{
+    position: fixed; bottom: 10px; left: 10px; z-index: 99;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: var(--r-pill);
+    --glass: 86%;
+    background: var(--surface-glass);
+    backdrop-filter: blur(8px) saturate(1.1);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 600 11px/1 var(--font-sans);
+    letter-spacing: .04em; color: var(--pink-700);
+    pointer-events: none;
+  }
+  .variant-badge::before{
+    content:""; width:7px; height:7px; border-radius:50%;
+    background: var(--grad-pink);
+  }
+
+  /* ── Shell : icon rail + main ──────────────────────────────────────── */
+  .app{
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0,1fr);
+    height: 100dvh;
+  }
+
+  .rail{
+    position: sticky; top: 0; align-self: start;
+    height: 100dvh;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 14px 0 16px;
+    --glass: 72%;
+    background: var(--surface-glass);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border-right: 1px solid var(--line);
+    z-index: 30;
+  }
+  .rail__brand{
+    width: 44px; height: 44px; border-radius: 14px;
+    display: grid; place-items: center; color: var(--ink-invert);
+    background: var(--grad-brand);
+    box-shadow: var(--sh-mint);
+    margin-bottom: 6px;
+  }
+  .rail__add{
+    width: var(--tap); height: var(--tap); border-radius: 50%;
+    display: grid; place-items: center; color: var(--ink-invert);
+    background: var(--grad-pink); box-shadow: var(--sh-pink);
+    margin: 2px 0 10px;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .rail__add:hover{ transform: translateY(-2px) rotate(90deg); }
+  .rail__group{ display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; }
+  .rail__sep{ width:26px; height:1px; background: var(--line-strong); margin:10px 0; border:0; }
+  .rail__link{
+    position: relative;
+    width: var(--tap); height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: 14px; color: var(--ink-soft);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .rail__link:hover{ background: var(--surface-2); color: var(--ink); }
+  .rail__link[aria-current="page"]{ background: var(--ok-bg); color: var(--teal-700); }
+  .rail__link[aria-current="page"]::before{
+    content:""; position:absolute; left:-14px; top:50%; translate: 0 -50%;
+    width:4px; height:22px; border-radius:0 4px 4px 0; background: var(--grad-pink);
+  }
+  .rail__link .tip{
+    position:absolute; left: calc(100% + 10px); top:50%; translate: 0 -50%;
+    padding: 6px 10px; border-radius: var(--r-xs);
+    background: var(--ink); color: var(--ink-invert);
+    font: 600 11.5px/1 var(--font-sans); white-space: nowrap;
+    opacity:0; pointer-events:none; transition: opacity var(--dur) var(--ease);
+    box-shadow: var(--sh); z-index: 5;
+  }
+  .rail__link:hover .tip, .rail__link:focus-visible .tip{ opacity:1; }
+  .rail__foot{ margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:8px; }
+
+  /* ── Main : fixed-height column, panes scroll internally ───────────── */
+  .main{
+    min-width: 0; display: flex; flex-direction: column;
+    padding: 16px var(--pad-page) 0;
+    overflow: hidden;
+  }
+  .topbar{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding-bottom: 12px; flex: 0 0 auto;
+  }
+  .greet{ font: var(--t-h1); letter-spacing:-.01em; }
+  .greet small{
+    display:block; font: var(--t-small); color: var(--ink-soft);
+    font-weight:400; margin-top:3px; letter-spacing:0;
+  }
+  .topbar__right{ margin-left:auto; display:flex; align-items:center; gap:8px; }
+  .crumb{
+    display:inline-flex; align-items:center; gap:7px;
+    padding: 0 12px; min-height: 34px; border-radius: var(--r-pill);
+    --glass: 75%;
+    background: var(--surface-glass); border:1px solid var(--line);
+    font: 600 12px/1 var(--font-sans); color: var(--ink-soft);
+  }
+  .crumb b{ color: var(--ink); font-weight:700; }
+
+  /* segmented Edit|Preview — only on <1024 */
+  .paneseg{ display:none; }
+
+  /* ── The split ─────────────────────────────────────────────────────── */
+  /* The divider column is a finger target (--tap), not a hairline: it is live
+     on tablet landscape (1024×768). The rule stays 2px — only the hit area is
+     44px wide. */
+  .split{
+    flex: 1 1 auto; min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, var(--lfr)) var(--tap) minmax(0, var(--rfr));
+    align-items: stretch;
+  }
+  .split.is-dragging{ cursor: col-resize; user-select: none; }
+
+  .pane{ min-width:0; min-height:0; display:flex; flex-direction:column; }
+
+  /* ── Divider ───────────────────────────────────────────────────────── */
+  .divider-h{
+    position: relative;
+    display: grid; place-items: center;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .divider-h::before{
+    content:""; position:absolute; top:8px; bottom:8px; left:50%; translate:-50% 0;
+    width:2px; border-radius:2px; background: var(--line-strong);
+    transition: background var(--dur) var(--ease), width var(--dur) var(--ease);
+  }
+  .divider-h:hover::before, .split.is-dragging .divider-h::before{
+    background: var(--bubblegum); width: 3px;
+  }
+  .grip{
+    position: relative; z-index:2;
+    width: 24px; height: 56px; border-radius: var(--r-pill);
+    display:grid; place-items:center;
+    background: var(--surface); border:1px solid var(--line);
+    box-shadow: var(--sh-sm); color: var(--ink-faint);
+  }
+  .divider-h:hover .grip{ color: var(--pink-600); border-color: var(--line-pink); }
+
+  /* ── LEFT : editor column ──────────────────────────────────────────── */
+  .editor{
+    overflow-y: auto; overflow-x: hidden;
+    padding: 2px 12px 0 2px;
+    display: flex; flex-direction: column; gap: 14px;
+    scrollbar-width: thin;
+  }
+  .editor::-webkit-scrollbar{ width:8px; }
+  .editor::-webkit-scrollbar-thumb{ background: var(--line-strong); border-radius:99px; }
+  /* never let the cards squash — the pane scrolls instead */
+  .editor > *{ flex: 0 0 auto; }
+
+  .ecard{ padding: 16px; border-radius: var(--r-md); }
+  .ecard__head{
+    display:flex; align-items:center; gap:10px; margin-bottom: 12px;
+  }
+  .ecard__head .label{ display:flex; align-items:center; gap:7px; }
+  .ecard__head .spacer{ margin-left:auto; }
+
+  /* context card */
+  .ctx{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .ctx__name{ font: 650 16px/1.2 var(--font-sans); letter-spacing:-.01em; }
+  .ctx__meta{ font: var(--t-small); color: var(--ink-soft); margin-top:3px; }
+  .ctx__meta b{ color: var(--teal-700); font-weight:700; }
+
+  .fields{
+    display:grid; gap:8px; margin-top:14px;
+    grid-template-columns: 1.5fr 1fr 1fr;
+  }
+  .field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .field > .label{ font-size:10px; }
+  .sel{
+    position:relative; display:flex; align-items:center;
+    min-height: var(--tap); padding: 0 34px 0 12px;
+    border-radius: var(--r-sm);
+    background: var(--surface); border:1px solid var(--line);
+    box-shadow: var(--sh-xs);
+  }
+  .sel select{
+    appearance:none; -webkit-appearance:none;
+    border:0; background:none; outline:none; width:100%;
+    font: 600 13px/1 var(--font-sans); color: var(--ink);
+    cursor:pointer; min-height: var(--tap);
+  }
+  .sel svg{ position:absolute; right:11px; color: var(--ink-faint); pointer-events:none; }
+
+  /* VI / EN toggle */
+  .lang{
+    display:inline-flex; padding:3px; gap:2px;
+    background: var(--surface-2); border:1px solid var(--line);
+    border-radius: var(--r-pill);
+  }
+  .lang button{
+    min-width: var(--tap); min-height: var(--tap); padding:0 12px; border-radius: var(--r-pill);
+    font: 700 11.5px/1 var(--font-sans); letter-spacing:.06em; color: var(--ink-soft);
+    transition: all var(--dur) var(--ease);
+  }
+  .lang button[aria-pressed="true"]{
+    background: var(--surface); color: var(--pink-700); box-shadow: var(--sh-sm);
+  }
+
+  /* ── AUTO-CALCULATED card ──────────────────────────────────────────── */
+  .auto{ position: relative; overflow: hidden; }
+  .auto::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(135deg,
+      transparent 0 12px,
+      color-mix(in srgb, var(--wintergreen) 5%, transparent) 12px 13px);
+  }
+  .auto__rows{ display:flex; flex-direction:column; gap:2px; position:relative; z-index:1; }
+  .arow{
+    display:grid; grid-template-columns: 1fr auto;
+    align-items:center; gap:10px;
+    padding: 9px 10px; border-radius: var(--r-xs);
+    font-size: 13px;
+  }
+  .arow:nth-child(odd){ --glass: 55%; background: var(--surface-glass); }
+  .arow__k{ display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; min-width:0; color: var(--ink-soft); }
+  .arow__k b{ color: var(--ink); font-weight:650; }
+  .arow__v{
+    font-family: var(--font-num); font-variant-numeric: tabular-nums;
+    font-weight:700; white-space:nowrap;
+  }
+  /* real price math, not decoration → --ink-soft (5.1:1), never --ink-faint */
+  .arow__calc{
+    font-size: 11.5px; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums; white-space:nowrap;
+  }
+  .arow__k .muted{ color: var(--ink-soft); }
+  .arow--total{
+    margin-top: 6px; padding: 12px 10px;
+    background: var(--surface) !important;
+    border: 1px solid var(--line-strong);
+    box-shadow: var(--sh-xs);
+  }
+  .arow--total .arow__k b{ font-size: 13.5px; }
+  .arow--total .arow__v{
+    font-size: 19px; color: var(--teal-700); letter-spacing:-.02em;
+  }
+  .lock{
+    display:inline-flex; align-items:center; gap:5px;
+    padding: 3px 8px; border-radius: var(--r-pill);
+    background: var(--ok-bg); color: var(--ok-fg);
+    font: 700 10px/1 var(--font-sans); letter-spacing:.06em;
+  }
+  .frozen-note{
+    display:flex; gap:8px; align-items:flex-start;
+    margin-top: 12px; padding: 10px 11px;
+    border-radius: var(--r-xs);
+    --glass: 70%;
+    background: var(--surface-glass);
+    border: 1px dashed var(--line-strong);
+    font: var(--t-small); color: var(--ink-soft);
+    position:relative; z-index:1;
+  }
+  .frozen-note svg{ flex:0 0 auto; color: var(--teal-600); margin-top:1px; }
+  .frozen-note b{ color: var(--teal-700); }
+  /* A rate exception is a MONEY fact, not a cancellation reason. --special-*
+     stays reserved for the purple special-reason cell (18/07) and its legend
+     entry, so the purple in this pane always points at the same lesson. */
+  .exception-pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding: 4px 9px; border-radius: var(--r-pill);
+    background: var(--pink-100); color: var(--pink-700);
+    font: 700 10.5px/1 var(--font-sans);
+    white-space: nowrap; flex: 0 0 auto;
+  }
+  /* Lesson TYPE (isOnline), not LessonStatus — must not borrow a status chip. */
+  .chip--type{
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line-strong);
+  }
+
+  /* ── Textarea cards ────────────────────────────────────────────────── */
+  .ta-wrap{ position:relative; }
+  textarea.ta{
+    width:100%; display:block; resize: vertical;
+    min-height: 104px;
+    padding: 12px 13px;
+    border-radius: var(--r-sm);
+    background: var(--floss);
+    border: 1px solid var(--line);
+    outline: none;
+    font: var(--t-body); color: var(--ink);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  textarea.ta::placeholder{ color: var(--ink-soft); }
+  textarea.ta:hover{ background: var(--surface-2); }
+  textarea.ta:focus{
+    background: var(--surface);
+    border-color: var(--bubblegum);
+    box-shadow: 0 0 0 4px var(--line-pink);
+  }
+  textarea.ta--sm{ min-height: 78px; }
+  .ta-foot{
+    display:flex; align-items:center; gap:8px;
+    margin-top: 7px; font: var(--t-small); color: var(--ink-soft);
+  }
+  .ta-foot .count{ margin-left:auto; font-variant-numeric: tabular-nums; }
+  .ta-foot .count.is-over{ color: var(--no-fg); font-weight:700; }
+  .sec-no{
+    width:24px; height:24px; border-radius:8px; flex:0 0 auto;
+    display:grid; place-items:center;
+    background: var(--pink-100); color: var(--pink-700);
+    font: 700 10.5px/1 var(--font-sans);
+  }
+
+  /* ── Attendance editor ─────────────────────────────────────────────── */
+  .att-wrap{ position: relative; }
+  /* the grid genuinely scrolls on a phone (min-width 382px) — the scrollbar is
+     the only affordance saying so, so it stays visible (thin, like .editor) */
+  .att-scroll{ overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .att-scroll::-webkit-scrollbar{ height: 8px; }
+  .att-scroll::-webkit-scrollbar-thumb{ background: var(--line-strong); border-radius: 99px; }
+  .att-grid{
+    display: grid;
+    grid-template-columns: 26px repeat(7, minmax(44px, 1fr));
+    grid-template-rows: var(--att-head) repeat(5, var(--cellh));
+    gap: var(--att-gap);
+    min-width: 382px;
+  }
+  .att-dow{
+    display:grid; place-items:center;
+    font: var(--t-label); letter-spacing:.1em; color: var(--ink-soft);
+  }
+  .att-wk{
+    display:grid; place-items:center;
+    font: 700 10px/1 var(--font-sans); color: var(--ink-soft);
+  }
+  .cell{
+    position: relative;
+    border-radius: var(--r-xs);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+    min-height: var(--cellh);
+    color: var(--ink-soft);
+    font: 600 11px/1 var(--font-sans);
+    transition: transform .16s var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .cell:hover{ transform: translateY(-2px); box-shadow: var(--sh-sm); border-color: var(--line-strong); }
+  /* days with no Lesson row have no lessonMetadata to edit — inert, not clickable */
+  .cell:disabled{ cursor: default; }
+  .cell:disabled:hover{ transform: none; box-shadow: none; border-color: var(--line); }
+  .cell__d{ font: 700 12px/1 var(--font-num); font-variant-numeric: tabular-nums; }
+  /* Status is NOT hue-only: every state carries its own glyph, so the grid
+     survives colour-blindness and a greyscale print. */
+  .cell__m{
+    display:grid; place-items:center;
+    min-width:11px; height:11px;
+    font: 700 10px/1 var(--font-sans); color: currentColor;
+  }
+  .cell--ok   .cell__m::before{ content:"✓"; }
+  .cell--no   .cell__m::before{ content:"✕"; }
+  .cell--wait .cell__m::before{ content:"·"; font-size:16px; line-height:.6; }
+  .cell--special .cell__m::before{ content:"✨"; font-size:9px; }
+  .cell--out{ background: transparent; border-style: dashed; border-color: var(--line); opacity:.5; color: var(--ink-faint); }
+  .cell--empty{ background: var(--surface-2); }
+  .cell--empty .cell__d{ color: var(--ink-soft); font-weight:500; }
+  .cell--ok{ background: var(--ok-bg); border-color: transparent; color: var(--ok-fg); }
+  .cell--no{ background: var(--no-bg); border-color: transparent; color: var(--no-fg); }
+  .cell--wait{ background: var(--wait-bg); border-color: transparent; color: var(--wait-fg); }
+  .cell--special{ background: var(--special-bg); border-color: transparent; color: var(--special-fg); }
+  .cell--online::after{
+    content:""; position:absolute; top:4px; right:4px;
+    width:6px; height:6px; border-radius:50%;
+    background: var(--wintergreen);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .cell[aria-pressed="true"]{
+    box-shadow: 0 0 0 3px var(--special-dot), var(--sh-sm);
+    border-color: transparent;
+    transform: translateY(-1px);
+  }
+  .cell__note{
+    position:absolute; bottom:3px; left:50%; translate:-50% 0;
+    width: 14px; height: 2px; border-radius:2px;
+    background: currentColor; opacity:.45;
+  }
+
+  .att-legend{
+    display:flex; flex-wrap:wrap; gap: 6px 14px;
+    margin-top: 12px; padding-top: 11px;
+    border-top: 1px dashed var(--line);
+    font: var(--t-small); color: var(--ink-soft);
+  }
+  .lg{ display:inline-flex; align-items:center; gap:6px; }
+  /* the legend swatch carries the SAME glyph as the cell, so the key still
+     works when the sheet comes out of a black-and-white printer */
+  .lg i{
+    width:15px; height:15px; border-radius:5px; flex:0 0 auto;
+    display:grid; place-items:center;
+    font: 700 9px/1 var(--font-sans); font-style: normal;
+    border: 1px solid currentColor;
+  }
+  .lg i.lg--ok{ background: var(--ok-bg); color: var(--ok-fg); }
+  .lg i.lg--no{ background: var(--no-bg); color: var(--no-fg); }
+  .lg i.lg--wait{ background: var(--wait-bg); color: var(--wait-fg); }
+  .lg i.lg--special{ background: var(--special-bg); color: var(--special-fg); font-size:8px; }
+  .lg i.lg--online{
+    width:10px; height:10px; border-radius:50%;
+    background: var(--wintergreen); border-color: var(--teal-600);
+  }
+
+  /* Popover editor.
+     It sits BELOW the grid in normal flow rather than floating over it: an
+     overlay here would cover weeks 4–5, i.e. the very cells the teacher wants
+     to click next. The arrow tracks the selected column (--arrow-x, set in JS)
+     so it still reads as attached to the cell. */
+  .att-pop{
+    position: relative;
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    box-shadow: var(--sh);
+    animation: rise .28s var(--ease) both;
+  }
+  .att-pop::before{
+    content:""; position:absolute; top:-7px;
+    left: var(--arrow-x, 75%); translate: -50% 0;
+    width:12px; height:12px; rotate:45deg;
+    background: var(--surface);
+    border-left:1px solid var(--line-strong);
+    border-top:1px solid var(--line-strong);
+  }
+  .att-pop__head{
+    display:flex; align-items:center; gap:8px; margin-bottom:11px;
+  }
+  .att-pop__title{ font: 650 13px/1.2 var(--font-sans); min-width:0; }
+  .att-pop__title span{ display:block; font: var(--t-small); color: var(--ink-soft); font-weight:400; margin-top:2px; }
+  .att-pop__close{
+    margin-left:auto; flex: 0 0 auto;          /* must not be squeezed by the flex row */
+    width: var(--tap); height: var(--tap);
+    border-radius:50%; display:grid; place-items:center; color: var(--ink-soft);
+  }
+  .att-pop__close:hover{ background: var(--surface-2); color: var(--ink); }
+  .inp{
+    width:100%; min-height: var(--tap);
+    padding: 0 12px; border-radius: var(--r-sm);
+    background: var(--floss); border:1px solid var(--line);
+    outline:none; font: var(--t-body);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .inp:focus{ background: var(--surface); border-color: var(--bubblegum); box-shadow: 0 0 0 4px var(--line-pink); }
+  .check{
+    display:flex; align-items:center; gap:10px;
+    margin-top: 10px; padding: 9px 10px;
+    min-height: var(--tap);
+    border-radius: var(--r-sm);
+    background: var(--special-bg);
+    color: var(--special-fg);
+    font: 600 12.5px/1.3 var(--font-sans);
+    cursor: pointer;
+  }
+  .check input{ appearance:none; -webkit-appearance:none; margin:0; flex:0 0 auto;
+    width:20px; height:20px; border-radius:6px;
+    border: 1.5px solid var(--special-dot); background: var(--surface);
+    display:grid; place-items:center; cursor:pointer;
+  }
+  .check input::after{
+    content:""; width:10px; height:10px; scale: 0;
+    background: var(--special-fg);
+    clip-path: polygon(14% 44%, 0 60%, 39% 100%, 100% 18%, 84% 4%, 37% 68%);
+    transition: scale .18s var(--ease);
+  }
+  .check input:checked{ border-color: var(--special-fg); }
+  .check input:checked::after{ scale: 1; }
+  .att-pop__acts{
+    display:flex; align-items:center; gap:8px; margin-top: 12px;
+  }
+  .att-pop__acts .btn--quiet{ padding: 0 10px; }
+  .att-pop__acts .spacer{ margin-left:auto; }
+
+  /* ── Sticky save bar (inside left pane) ────────────────────────────── */
+  .savebar{
+    position: sticky; bottom: 0; z-index: 14;
+    margin-top: auto;
+    display:flex; align-items:center; gap: 10px;
+    padding: 12px;
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    --glass: 86%;
+    background: var(--surface-glass);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    box-shadow: var(--sh-up);
+  }
+  .savebar__hint{
+    margin-left:auto; display:flex; align-items:center; gap:6px;
+    font: var(--t-small); color: var(--ink-soft); white-space:nowrap;
+  }
+  .savebar__hint i{
+    width:7px; height:7px; border-radius:50%; background: var(--wintergreen);
+    box-shadow: 0 0 0 3px var(--ok-bg);
+  }
+
+  /* ── RIGHT : preview pane ──────────────────────────────────────────── */
+  .preview{
+    position: relative;
+    overflow: auto;
+    padding: 0 2px 20px;
+    scrollbar-width: thin;
+  }
+  .preview::-webkit-scrollbar{ width:8px; height:8px; }
+  .preview::-webkit-scrollbar-thumb{ background: var(--line-strong); border-radius:99px; }
+
+  .ptools{
+    position: sticky; top: 0; z-index: 10; flex: 0 0 auto;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding: 4px 0 12px;
+  }
+  .ptools__grp{
+    display:inline-flex; align-items:center; gap:2px; padding:3px;
+    border-radius: var(--r-pill);
+    --glass: 90%;
+    background: var(--surface-glass);
+    backdrop-filter: blur(10px);
+    border:1px solid var(--line);
+    box-shadow: var(--sh-sm);
+  }
+  .ptools__grp button{
+    width: var(--tap); height: var(--tap); border-radius:50%;
+    display:grid; place-items:center; color: var(--ink-soft);
+  }
+  .ptools__grp button:hover{ background: var(--surface-2); color: var(--ink); }
+  .zoomval{
+    min-width: 52px; text-align:center;
+    font: 700 12px/1 var(--font-num); font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .ptools .spacer{ margin-left:auto; }
+  .fitbadge{
+    display:inline-flex; align-items:center; gap:6px;
+    padding: 0 11px; min-height: 32px; border-radius: var(--r-pill);
+    background: var(--ok-bg); color: var(--ok-fg);
+    font: 700 10.5px/1 var(--font-sans); letter-spacing:.05em;
+  }
+
+  .stage{
+    flex: 0 0 auto;                       /* must not shrink to fit the pane */
+    width: calc(var(--paper-w) * var(--z));
+    height: calc(var(--paper-h) * var(--z));
+    margin: 0 auto;
+  }
+  .paper{
+    width: var(--paper-w); height: var(--paper-h);
+    transform: scale(var(--z));
+    transform-origin: top left;
+    background: var(--surface);
+    box-shadow: var(--sh-xl), 0 0 0 1px var(--line);
+    border-radius: 3px;
+    padding: 54px 56px 40px;
+    font-family: var(--font-serif);
+    color: var(--ink);
+    display: flex; flex-direction: column;
+  }
+
+  /* paper : header */
+  .ph{ display:flex; align-items:flex-start; gap:14px; }
+  .ph__mark{
+    width:44px; height:44px; border-radius:13px; flex:0 0 auto;
+    display:grid; place-items:center; color: var(--ink-invert);
+    background: var(--grad-brand);
+  }
+  .ph__brand{ font: 700 13px/1.2 var(--font-sans); letter-spacing:.02em; }
+  .ph__brand span{ display:block; font: 400 10.5px/1.4 var(--font-sans); color: var(--ink-soft); letter-spacing:.06em; text-transform:uppercase; margin-top:2px; }
+  .ph__right{ margin-left:auto; text-align:right; }
+  .ph__right .k{ font: 400 10px/1.4 var(--font-sans); letter-spacing:.14em; text-transform:uppercase; color: var(--ink-soft); }
+  .ph__right .v{ font: 600 12.5px/1.4 var(--font-sans); color: var(--ink-soft); }
+
+  .ptitle{
+    text-align:center; margin: 22px 0 4px;
+    font: 700 25px/1.2 var(--font-serif);
+    letter-spacing: .02em;
+  }
+  .psub{
+    text-align:center;
+    font: 400 13px/1.5 var(--font-serif); color: var(--ink-soft);
+    font-style: italic;
+  }
+  .prule{
+    height:3px; margin: 16px auto 20px; width: 120px; border-radius:3px;
+    background: var(--grad-brand);
+  }
+
+  .pinfo{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 4px 20px;
+    padding: 13px 16px; border-radius: var(--r-sm);
+    background: var(--floss);
+    border: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+  .pinfo div{ font-size: 13px; }
+  .pinfo .k{ color: var(--ink-soft); }
+  .pinfo b{ font-weight:700; }
+
+  .psec{ margin-bottom: 15px; }
+  .psec h3{
+    font: 700 13.5px/1.3 var(--font-serif);
+    letter-spacing:.03em; margin-bottom: 5px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .psec h3::after{ content:""; flex:1; height:1px; background: var(--line); }
+  .psec p{
+    font-size: 12.8px; line-height: 1.62; color: color-mix(in srgb, var(--ink) 88%, var(--ink-soft));
+    text-align: justify; hyphens:auto;
+    white-space: pre-wrap;
+  }
+
+  /* paper : attendance */
+  .patt{ margin: 4px 0 16px; }
+  .patt__grid{
+    display:grid;
+    grid-template-columns: 46px repeat(7, 1fr);   /* week col fits "Tuần 5" */
+    gap: 4px;
+  }
+  .patt__dow{
+    text-align:center; padding: 4px 0;
+    font: 700 9.5px/1 var(--font-sans); letter-spacing:.1em;
+    color: var(--ink-soft); text-transform:uppercase;
+  }
+  .patt__wk{
+    display:grid; place-items:center;
+    font: 700 9px/1 var(--font-sans); color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  /* Day numbers print — they must be real ink, never the decorative faint. */
+  .pcell{
+    position: relative;
+    height: 30px; border-radius:6px;
+    display:grid; place-items:center;
+    border:1px solid var(--line);
+    font: 700 11px/1 var(--font-num); font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .pcell--out{ border-style:dashed; opacity:.45; }
+  .pcell--ok{ background: var(--ok-bg); border:1px solid var(--ok-fg); color: var(--ok-fg); }
+  .pcell--no{ background: var(--no-bg); border:1px dashed var(--no-fg); color: var(--no-fg); }
+  .pcell--wait{ background: var(--wait-bg); border:1px dotted var(--sand-700); color: var(--wait-fg); }
+  .pcell--special{ background: var(--special-bg); border:1px double var(--special-fg); color: var(--special-fg); }
+  /* fill + border style + glyph — three redundant channels, so a greyscale
+     print of this grid is still readable */
+  .pcell--ok::after, .pcell--no::after, .pcell--wait::after, .pcell--special::after{
+    position:absolute; right:2px; bottom:0;
+    font: 700 8px/1 var(--font-sans);
+  }
+  .pcell--ok::after{ content:"✓"; }
+  .pcell--no::after{ content:"✕"; }
+  .pcell--wait::after{ content:"·"; font-size:12px; bottom:2px; }
+  .pcell--special::after{ content:"✨"; font-size:7px; bottom:2px; }
+  .patt__legend{
+    display:flex; flex-wrap:wrap; gap: 5px 14px; margin-top: 9px;
+    font: 400 10.5px/1.4 var(--font-sans); color: var(--ink-soft);
+  }
+  .patt__legend .lg i{ width:13px; height:13px; border-radius:4px; font-size:8px; }
+
+  /* paper : totals */
+  .ptot{
+    margin-top: auto;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+  }
+  .ptot__h{
+    padding: 8px 14px;
+    background: var(--teal-100);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing:.14em; text-transform:uppercase; color: var(--teal-700);
+  }
+  .ptot__r{
+    display:grid; grid-template-columns: 1fr auto auto;
+    gap: 14px; align-items:center;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    border-top: 1px solid var(--line);
+  }
+  .ptot__r:first-of-type{ border-top:0; }
+  .ptot__r .q{ color: var(--ink-soft); font: 400 11.5px/1 var(--font-num); font-variant-numeric: tabular-nums; white-space:nowrap; }
+  .ptot__r .m{ font: 600 12.5px/1 var(--font-num); font-variant-numeric: tabular-nums; white-space:nowrap; min-width: 92px; text-align:right; }
+  .ptot__r--grand{
+    background: linear-gradient(160deg, var(--pink-50), var(--surface) 70%);
+    border-top: 1.5px solid var(--line-strong);
+    padding: 11px 14px;
+  }
+  .ptot__r--grand .lab{ font: 700 13px/1 var(--font-sans); }
+  .ptot__r--grand .m{ font: 700 17px/1 var(--font-num); color: var(--pink-700); letter-spacing:-.01em; }
+  .pnote{
+    padding: 10px 14px;
+    background: var(--floss);
+    border-top: 1px solid var(--line);
+    font-size: 11.6px; line-height:1.55; color: var(--ink-soft);
+    white-space: pre-wrap;
+  }
+  .pnote b{ color: var(--ink); font-weight:700; }
+
+  .psign{
+    display:flex; justify-content:flex-end;
+    margin-top: 16px; padding-top: 4px;
+  }
+  .psign__box{ text-align:center; min-width: 210px; }
+  .psign__date{ font-size: 12.5px; font-style: italic; color: var(--ink-soft); }
+  .psign__role{ font: 700 11px/1.4 var(--font-sans); letter-spacing:.1em; text-transform:uppercase; margin-top:4px; color: var(--ink-soft); }
+  .psign__ink{ margin: 2px auto -4px; color: var(--pink-600); }
+  .psign__name{ font: 700 13.5px/1.3 var(--font-serif); }
+
+  /* ── Mobile tab bar ────────────────────────────────────────────────── */
+  .tabbar{ display:none; }
+  .sheet{ display:none; }
+
+  /* ══════════════════════ RESPONSIVE ═══════════════════════════════════ */
+
+  /* Tablet landscape 1024–1279 : rail stays, tighten everything */
+  @media (max-width: 1279px){
+    :root{ --pad-page: 14px; --cellh: 44px; }
+    .greet{ font-size: 19px; }
+    /* Only the breadcrumb — pure decoration — goes. "Combined sheet" is the
+       one entry point to the family combined report, so it survives on every
+       tablet; it just collapses to a 44px icon button. */
+    .crumb{ display:none; }
+    #combinedBtn{
+      width: var(--tap); min-height: var(--tap);
+      padding: 0; border-radius: 50%;
+    }
+    #combinedBtn .btn__t{ display:none; }
+    .ecard{ padding: 14px; }
+    .fields{ grid-template-columns: 1fr 1fr; }
+    .fields .field:first-child{ grid-column: 1 / -1; }
+    .att-pop{ width: min(290px, 100%); }
+  }
+
+  /* TABLET PORTRAIT & below (<1024) : bottom tab bar, single pane */
+  @media (max-width: 1023px){
+    :root{ --tabbar: 74px; }
+    .app{ grid-template-columns: minmax(0,1fr); }
+    .rail{ display:none; }
+    .main{ padding: 14px 14px 0; }
+
+    /* the key responsive move — segmented Edit / Preview */
+    .paneseg{
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3px; padding: 4px;
+      width: 100%; max-width: 420px; margin: 0 auto 12px;
+      --glass: 80%;
+      background: var(--surface-glass);
+      border:1px solid var(--line);
+      border-radius: var(--r-pill);
+      box-shadow: var(--sh-sm);
+      flex: 0 0 auto;
+    }
+    .paneseg button{
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      min-height: var(--tap);
+      border-radius: var(--r-pill);
+      font: 650 13.5px/1 var(--font-sans);
+      color: var(--ink-soft);
+      transition: all var(--dur) var(--ease);
+    }
+    .paneseg button[aria-selected="true"]{
+      background: var(--grad-mint); color: var(--ink);
+      box-shadow: var(--sh-mint);
+    }
+
+    .split{
+      display:block; position:relative;
+      padding-bottom: var(--tabbar);
+    }
+    .divider-h{ display:none; }
+    .pane{ height: 100%; }
+    .pane[hidden]{ display:none !important; }
+    .editor{ padding: 2px 2px 0; height:100%; }
+    .preview{ height:100%; padding-bottom: 24px; }
+    .savebar{ border-radius: var(--r-md); border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+  }
+
+  /* Phone */
+  @media (max-width: 639px){
+    :root{ --pad-page: 12px; --att-gap: 5px; }
+    .main{ padding: 12px 12px 0; }
+    .greet{ font-size: 17px; }
+    .ecard{ padding: 13px; border-radius: var(--r-sm); }
+    .fields{ grid-template-columns: 1fr 1fr; }
+    .att-scroll{ overflow-x: auto; }
+    /* the grid scrolls horizontally here, so an arrow pointing at a column
+       that may be scrolled out of view would lie — drop it */
+    .att-pop::before{ display:none; }
+    .savebar{ flex-wrap: wrap; }
+    .savebar__hint{ width:100%; margin-left:0; justify-content:center; padding-top:2px; }
+    .ptools__grp button{ width: var(--tap); height: var(--tap); }
+    .psign__box{ min-width: 170px; }
+  }
+
+  @media (max-width: 1023px){
+    .tabbar{
+      position: fixed; left:0; right:0; bottom:0; z-index: 40;
+      display: flex; align-items: center; justify-content: space-around;
+      gap: 4px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      --glass: 90%;
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px) saturate(1.2);
+      border-top: 1px solid var(--line);
+      box-shadow: var(--sh-up);
+    }
+    .tb{
+      flex:1; min-width:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+      min-height: var(--tap); padding: 4px 2px; border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1 var(--font-sans);
+    }
+    .tb[aria-current="page"]{ color: var(--pink-700); }
+    .tb--add{
+      flex: 0 0 auto;
+      width: 54px; height: 54px; border-radius: 50%;
+      background: var(--grad-pink); color: var(--ink-invert);
+      box-shadow: var(--sh-pink);
+      margin-top: -22px;
+    }
+
+    .sheet{ display:block; position: fixed; inset:0; z-index: 50; }
+    .sheet[hidden]{ display:none !important; }
+    .sheet__scrim{
+      position:absolute; inset:0;
+      background: color-mix(in srgb, var(--ink) 32%, transparent);
+      backdrop-filter: blur(4px);
+    }
+    .sheet__panel{
+      position:absolute; left:0; right:0; bottom:0;
+      padding: 12px 16px calc(20px + env(safe-area-inset-bottom));
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      animation: rise .3s var(--ease) both;
+    }
+    .sheet__grab{
+      width:44px; height:4px; border-radius:99px;
+      background: var(--line-strong); margin: 0 auto 14px;
+    }
+    /* a modal must be dismissible without a pointer — visible close + Esc */
+    .sheet__head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .sheet__close{
+      margin-left:auto; flex:0 0 auto;
+      width: var(--tap); height: var(--tap); border-radius:50%;
+      display:grid; place-items:center; color: var(--ink-soft);
+      background: var(--surface-2); border:1px solid var(--line);
+    }
+    .sheet__close:hover{ background: var(--surface-3); color: var(--ink); }
+    .sheet__nav{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+    .sheet__nav a{
+      display:flex; align-items:center; gap:10px;
+      min-height: var(--tap); padding: 0 14px;
+      border-radius: var(--r-sm);
+      background: var(--surface-2);
+      font: 600 13.5px/1 var(--font-sans);
+    }
+    .sheet__nav a[aria-current="page"]{ background: var(--ok-bg); color: var(--teal-700); }
+  }
+
+  /* ── Print : only the paper survives ───────────────────────────────── */
+  @media print{
+    .app{ display:block; height:auto; }
+    .main{ padding:0; overflow:visible; }
+    .split{ display:block; padding-bottom:0; }
+    .pane.editor, .divider-h, .ptools, .paneseg{ display:none !important; }
+    /* the preview may be [hidden] because the Edit tab is active on tablet —
+       printing must still produce the sheet */
+    .pane.preview[hidden]{ display:block !important; }
+    .preview{ overflow:visible; padding:0; height:auto; }
+    .stage{ width:auto; height:auto; }
+    .paper{
+      transform:none !important; width:100%; height:auto;
+      box-shadow:none !important; border-radius:0; padding: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Reports · Split Builder</div>
+
+<div class="app">
+
+  <!-- ══════════════ ICON RAIL (≥1024px) ══════════════ -->
+  <nav class="rail print-hide" aria-label="Main">
+    <a class="rail__brand" href="/dashboard" aria-label="My Piano Diary — Personal teaching space">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 4v9M11 4v9M15 4v9M19 4v9M3 13h18"/>
+      </svg>
+    </a>
+
+    <button class="rail__add" type="button" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
+      </svg>
+    </button>
+
+    <div class="rail__group" role="group" aria-label="Main">
+      <a class="rail__link" href="/dashboard">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+        </svg><span class="tip">Dashboard</span>
+      </a>
+      <a class="rail__link" href="/calendar">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/>
+        </svg><span class="tip">Calendar</span>
+      </a>
+    </div>
+
+    <hr class="rail__sep">
+
+    <div class="rail__group" role="group" aria-label="Manage">
+      <a class="rail__link" href="/lessons">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h7M8 11h7"/>
+        </svg><span class="tip">Lessons</span>
+      </a>
+      <a class="rail__link" href="/students">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+        </svg><span class="tip">Students</span>
+      </a>
+      <a class="rail__link" href="/pieces">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg><span class="tip">Pieces</span>
+      </a>
+      <a class="rail__link" href="/reports" aria-current="page">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5M9 13h6M9 17h4"/>
+        </svg><span class="tip">Reports</span>
+      </a>
+      <a class="rail__link" href="/payments">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h3"/>
+        </svg><span class="tip">Payments</span>
+      </a>
+    </div>
+
+    <div class="rail__foot">
+      <button class="rail__link" type="button" aria-label="Mai Trần — account menu" aria-haspopup="menu">
+        <span class="av av--sm" aria-hidden="true">MT</span>
+        <span class="tip">Mai Trần · software@moneycareindia.com</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <main class="main">
+
+    <header class="topbar print-hide rise" style="--i:0">
+      <div>
+        <h1 class="greet">Monthly Reports</h1>
+        <small>Monthly report builder — edit on the left, it prints on the right.</small>
+      </div>
+      <div class="topbar__right">
+        <span class="crumb">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/>
+          </svg>
+          Reports · <b>Tháng 7 / 2026</b>
+        </span>
+        <a class="btn btn--ghost btn--sm" id="combinedBtn" href="/reports/family/fam_1" aria-label="Combined sheet">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 4h16v6H4zM6 14h12v6H6z"/><path d="M8 10V4M16 10V4"/>
+          </svg>
+          <span class="btn__t">Combined sheet</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- KEY RESPONSIVE MOVE — only visible <1024px -->
+    <div class="paneseg print-hide" role="tablist" aria-label="Report pane">
+      <button type="button" role="tab" id="tabEdit" aria-selected="true" aria-controls="paneEdit">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>
+        </svg>
+        Edit
+      </button>
+      <button type="button" role="tab" id="tabPrev" aria-selected="false" aria-controls="panePrev">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        Preview
+      </button>
+    </div>
+
+    <div class="split" id="split">
+
+      <!-- ════════ LEFT · EDITOR ════════ -->
+      <section class="pane editor" id="paneEdit" role="tabpanel" aria-labelledby="tabEdit" aria-label="Report editor">
+
+        <!-- context -->
+        <article class="card ecard rise" style="--i:1">
+          <div class="ctx">
+            <span class="av av--lg" aria-hidden="true">MA</span>
+            <div style="min-width:0">
+              <div class="ctx__name">Nguyễn Minh Anh</div>
+              <div class="ctx__meta">Month <b>7</b> · <b>2026</b> — 13 lessons scheduled</div>
+            </div>
+            <div class="lang" role="group" aria-label="Report language" style="margin-left:auto">
+              <button type="button" id="langVI" aria-pressed="true">VI</button>
+              <button type="button" id="langEN" aria-pressed="false">EN</button>
+            </div>
+          </div>
+
+          <div class="fields">
+            <div class="field">
+              <span class="label" id="lblStudent">Student</span>
+              <div class="sel">
+                <select aria-labelledby="lblStudent">
+                  <option selected>Nguyễn Minh Anh</option>
+                  <option>Trần Bảo Ngọc</option>
+                  <option>Lê Gia Hân</option>
+                  <option>Emma Thompson</option>
+                  <option>Phạm Quốc Bảo</option>
+                  <option>Olivia Nguyen</option>
+                  <option>Đỗ Khánh Linh</option>
+                  <option>Liam Carter</option>
+                  <option>Vũ Thanh Trúc</option>
+                  <option>Hoàng Nam Phong</option>
+                </select>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label" id="lblMonth">Month</span>
+              <div class="sel">
+                <select aria-labelledby="lblMonth">
+                  <option>5</option><option>6</option><option selected>7</option><option>8</option>
+                </select>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label" id="lblYear">Year</span>
+              <div class="sel">
+                <select aria-labelledby="lblYear">
+                  <option>2025</option><option selected>2026</option>
+                </select>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- AUTO-CALCULATED -->
+        <article class="card card--mint ecard auto rise" style="--i:2">
+          <div class="ecard__head">
+            <span class="label">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h.01M8 14h2M12 14h2M16 14h.01M8 18h6"/>
+              </svg>
+              Auto-calculated
+            </span>
+            <span class="spacer"></span>
+            <span class="lock">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+              </svg>
+              READ-ONLY
+            </span>
+          </div>
+
+          <div class="auto__rows">
+            <div class="arow">
+              <span class="arow__k"><b>Total lessons</b> <span class="muted">— COMPLETE only</span></span>
+              <span class="arow__v">9</span>
+            </div>
+            <div class="arow">
+              <span class="arow__k">
+                <span class="chip chip--type" style="padding:3px 8px">In-person</span>
+                <span class="arow__calc">6 × 250.000</span>
+              </span>
+              <span class="arow__v">1.500.000 ₫</span>
+            </div>
+            <div class="arow">
+              <span class="arow__k">
+                <span class="chip chip--online" style="padding:3px 8px">Online</span>
+                <span class="arow__calc">2 × 200.000</span>
+              </span>
+              <span class="arow__v">400.000 ₫</span>
+            </div>
+            <div class="arow">
+              <span class="arow__k">
+                <span class="exception-pill">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>
+                  </svg>
+                  Rate exception
+                </span>
+                <span class="arow__calc">1 × 300.000 · 25/07 · 90 min</span>
+              </span>
+              <span class="arow__v">300.000 ₫</span>
+            </div>
+            <div class="arow arow--total">
+              <span class="arow__k"><b id="tuiLabel">Tuition</b></span>
+              <span class="arow__v">2.200.000 ₫</span>
+            </div>
+          </div>
+
+          <p class="frozen-note">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11M12 6l3-3M12 6 9 3M12 18l3 3M12 18l-3 3"/>
+            </svg>
+            <span><b>Rates are frozen per lesson</b> — the price is stamped onto the lesson when it's created, so past months never re-price. Changing a student's rate today will not move this total.</span>
+          </p>
+        </article>
+
+        <!-- I. Tổng kết tháng -->
+        <article class="card ecard rise" style="--i:3">
+          <div class="ecard__head">
+            <span class="sec-no">I</span>
+            <label class="label" for="s1" style="letter-spacing:.06em; font-size:12px; text-transform:none; color:var(--ink)"
+                   data-vi="Tổng kết tháng" data-en="Monthly summary">Tổng kết tháng</label>
+          </div>
+          <div class="ta-wrap">
+            <textarea class="ta" id="s1" rows="5" maxlength="800" data-bind="p1" aria-describedby="c1"
+              data-vi="Trong tháng 7, Minh Anh đã hoàn thành 9 buổi học. Con tiếp tục luyện Für Elise (đoạn A–B) và bắt đầu làm quen với Gymnopédie No.1. Kỹ thuật legato tay phải tiến bộ rõ rệt; gam Đô trưởng và La thứ đã chạy đều tiếng ở tốc độ 92 bpm."
+              data-en="In July, Minh Anh completed 9 lessons. She continued working on Für Elise (sections A–B) and began Gymnopédie No.1. Her right-hand legato improved noticeably; C major and A minor scales are now even at 92 bpm.">Trong tháng 7, Minh Anh đã hoàn thành 9 buổi học. Con tiếp tục luyện Für Elise (đoạn A–B) và bắt đầu làm quen với Gymnopédie No.1. Kỹ thuật legato tay phải tiến bộ rõ rệt; gam Đô trưởng và La thứ đã chạy đều tiếng ở tốc độ 92 bpm.</textarea>
+          </div>
+          <div class="ta-foot">
+            <span data-vi="Xuất hiện ở mục I của bản in." data-en="Appears as section I on the printed sheet.">Xuất hiện ở mục I của bản in.</span>
+            <span class="count" id="c1">0 / 800</span>
+          </div>
+        </article>
+
+        <!-- II. Nhận xét -->
+        <article class="card ecard rise" style="--i:4">
+          <div class="ecard__head">
+            <span class="sec-no">II</span>
+            <label class="label" for="s2" style="letter-spacing:.06em; font-size:12px; text-transform:none; color:var(--ink)"
+                   data-vi="Nhận xét" data-en="Teacher's comments">Nhận xét</label>
+          </div>
+          <div class="ta-wrap">
+            <textarea class="ta" id="s2" rows="5" maxlength="800" data-bind="p2" aria-describedby="c2"
+              data-vi="Con chăm chỉ và có tai nghe tốt, tự phát hiện được nốt sai khi tập ở nhà. Điểm cần cải thiện: tay trái còn nặng ở đoạn chuyển hợp âm và con giữ pedal hơi lâu khiến âm bị đục. Cô đề nghị mỗi ngày dành 10 phút tập riêng tay trái với máy đập nhịp ở 60 bpm."
+              data-en="She is diligent and has a good ear — she catches her own wrong notes while practising at home. To improve: the left hand is still heavy through chord changes, and the pedal is held slightly too long, muddying the sound. I suggest 10 minutes of left-hand-only practice daily with a metronome at 60 bpm.">Con chăm chỉ và có tai nghe tốt, tự phát hiện được nốt sai khi tập ở nhà. Điểm cần cải thiện: tay trái còn nặng ở đoạn chuyển hợp âm và con giữ pedal hơi lâu khiến âm bị đục. Cô đề nghị mỗi ngày dành 10 phút tập riêng tay trái với máy đập nhịp ở 60 bpm.</textarea>
+          </div>
+          <div class="ta-foot">
+            <span data-vi="Cụ thể, tránh chung chung — phụ huynh đọc kỹ mục này." data-en="Be specific — parents read this section closely.">Cụ thể, tránh chung chung — phụ huynh đọc kỹ mục này.</span>
+            <span class="count" id="c2">0 / 800</span>
+          </div>
+        </article>
+
+        <!-- III. Hoạt động tháng tới -->
+        <article class="card ecard rise" style="--i:5">
+          <div class="ecard__head">
+            <span class="sec-no">III</span>
+            <label class="label" for="s3" style="letter-spacing:.06em; font-size:12px; text-transform:none; color:var(--ink)"
+                   data-vi="Hoạt động tháng tới" data-en="Next month's plan">Hoạt động tháng tới</label>
+          </div>
+          <div class="ta-wrap">
+            <textarea class="ta" id="s3" rows="5" maxlength="800" data-bind="p3" aria-describedby="c3"
+              data-vi="Tháng 8 con sẽ hoàn thiện Für Elise để quay video gửi gia đình, đồng thời bắt đầu Minuet in G. Cô bổ sung Hanon số 1–3 để tăng độ độc lập ngón. Dự kiến 1 buổi 90 phút chuẩn bị cho buổi biểu diễn nội bộ cuối tháng 8."
+              data-en="In August she will finish Für Elise for a family video recording and start Minuet in G. I will add Hanon 1–3 for finger independence. One 90-minute session is planned to prepare for the studio recital at the end of August.">Tháng 8 con sẽ hoàn thiện Für Elise để quay video gửi gia đình, đồng thời bắt đầu Minuet in G. Cô bổ sung Hanon số 1–3 để tăng độ độc lập ngón. Dự kiến 1 buổi 90 phút chuẩn bị cho buổi biểu diễn nội bộ cuối tháng 8.</textarea>
+          </div>
+          <div class="ta-foot">
+            <span data-vi="Gợi ý: nhắc tên bài để phụ huynh theo dõi." data-en="Tip: name the pieces so parents can follow along.">Gợi ý: nhắc tên bài để phụ huynh theo dõi.</span>
+            <span class="count" id="c3">0 / 800</span>
+          </div>
+        </article>
+
+        <!-- Ghi chú học phí -->
+        <article class="card card--pink ecard rise" style="--i:6">
+          <div class="ecard__head">
+            <span class="label" style="display:flex;align-items:center;gap:7px">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h3"/>
+              </svg>
+              <span data-vi="Ghi chú học phí" data-en="Tuition note">Ghi chú học phí</span>
+            </span>
+          </div>
+          <div class="ta-wrap">
+            <textarea class="ta ta--sm" id="s4" rows="3" maxlength="400" data-bind="p4" aria-describedby="c4"
+              data-vi="Buổi ngày 18/07 nghỉ có lý do đặc biệt nên không tính học phí. Gia đình vui lòng thanh toán trước ngày 05/08. Xin cảm ơn!"
+              data-en="The 18/07 lesson was missed for a special reason and is not charged. Please settle before 05/08. Thank you!">Buổi ngày 18/07 nghỉ có lý do đặc biệt nên không tính học phí. Gia đình vui lòng thanh toán trước ngày 05/08. Xin cảm ơn!</textarea>
+          </div>
+          <div class="ta-foot">
+            <span data-vi="In ngay dưới bảng học phí." data-en="Prints directly under the tuition box.">In ngay dưới bảng học phí.</span>
+            <span class="count" id="c4">0 / 400</span>
+          </div>
+        </article>
+
+        <!-- ATTENDANCE EDITOR -->
+        <article class="card ecard rise" style="--i:7">
+          <div class="ecard__head">
+            <span class="label" style="display:flex;align-items:center;gap:7px">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/>
+              </svg>
+              Attendance · Tháng 7 / 2026
+            </span>
+            <span class="spacer"></span>
+            <span style="font:var(--t-small); color:var(--ink-soft)">Tap a cell to add a reason</span>
+          </div>
+
+          <div class="att-wrap" id="attWrap">
+            <div class="att-scroll">
+              <div class="att-grid" role="group" aria-label="July 2026 attendance — select a lesson to edit its reason">
+                <span></span>
+                <span class="att-dow" aria-hidden="true">M</span>
+                <span class="att-dow" aria-hidden="true">T</span>
+                <span class="att-dow" aria-hidden="true">W</span>
+                <span class="att-dow" aria-hidden="true">T</span>
+                <span class="att-dow" aria-hidden="true">F</span>
+                <span class="att-dow" aria-hidden="true">S</span>
+                <span class="att-dow" aria-hidden="true">S</span>
+
+                <!-- Week 1 -->
+                <span class="att-wk">W1</span>
+                <button class="cell cell--out" type="button" tabindex="-1" aria-label="29 June — outside this month"><span class="cell__d">29</span></button>
+                <button class="cell cell--out" type="button" tabindex="-1" aria-label="30 June — outside this month"><span class="cell__d">30</span></button>
+                <button class="cell cell--empty" type="button" aria-label="1 July — no lesson"><span class="cell__d">1</span></button>
+                <button class="cell cell--ok" type="button" data-dow="Thu" data-time="17:30" data-duration="60" data-online="false" aria-label="2 July — Present, in-person"><span class="cell__d">2</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="3 July — no lesson"><span class="cell__d">3</span></button>
+                <button class="cell cell--ok cell--online" type="button" data-dow="Sat" data-time="16:00" data-duration="60" data-online="true" aria-label="4 July — Present, online"><span class="cell__d">4</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="5 July — no lesson"><span class="cell__d">5</span></button>
+
+                <!-- Week 2 -->
+                <span class="att-wk">W2</span>
+                <button class="cell cell--empty" type="button" aria-label="6 July — no lesson"><span class="cell__d">6</span></button>
+                <button class="cell cell--ok" type="button" data-dow="Tue" data-time="17:30" data-duration="60" data-online="false" aria-label="7 July — Present, in-person"><span class="cell__d">7</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="8 July — no lesson"><span class="cell__d">8</span></button>
+                <button class="cell cell--no" type="button" data-dow="Thu" data-time="17:30" data-duration="60" data-online="false" data-reason="Ốm sốt" aria-label="9 July — Cancelled, reason: ốm sốt"><span class="cell__d">9</span><span class="cell__m" aria-hidden="true"></span><span class="cell__note"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="10 July — no lesson"><span class="cell__d">10</span></button>
+                <button class="cell cell--ok" type="button" data-dow="Sat" data-time="16:00" data-duration="60" data-online="false" aria-label="11 July — Present, in-person"><span class="cell__d">11</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="12 July — no lesson"><span class="cell__d">12</span></button>
+
+                <!-- Week 3 -->
+                <span class="att-wk">W3</span>
+                <button class="cell cell--empty" type="button" aria-label="13 July — no lesson"><span class="cell__d">13</span></button>
+                <button class="cell cell--ok" type="button" data-dow="Tue" data-time="17:30" data-duration="60" data-online="false" aria-label="14 July — Present, in-person"><span class="cell__d">14</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="15 July — no lesson"><span class="cell__d">15</span></button>
+                <button class="cell cell--ok" type="button" data-dow="Thu" data-time="17:30" data-duration="60" data-online="false" aria-label="16 July — Present, in-person"><span class="cell__d">16</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="17 July — no lesson"><span class="cell__d">17</span></button>
+                <button class="cell cell--special" type="button" id="cell18" data-dow="Sat" data-time="16:00" data-duration="60" data-online="false" data-reason="Nghỉ lễ gia đình" aria-pressed="true" aria-haspopup="dialog" aria-expanded="true" aria-controls="cellPop" aria-label="18 July — Cancelled, special reason: nghỉ lễ gia đình"><span class="cell__d">18</span><span class="cell__m" aria-hidden="true"></span><span class="cell__note"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="19 July — no lesson"><span class="cell__d">19</span></button>
+
+                <!-- Week 4 -->
+                <span class="att-wk">W4</span>
+                <button class="cell cell--empty" type="button" aria-label="20 July — no lesson"><span class="cell__d">20</span></button>
+                <button class="cell cell--ok" type="button" data-dow="Tue" data-time="17:30" data-duration="60" data-online="false" aria-label="21 July — Present, in-person"><span class="cell__d">21</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="22 July — no lesson"><span class="cell__d">22</span></button>
+                <button class="cell cell--ok cell--online" type="button" data-dow="Thu" data-time="17:30" data-duration="60" data-online="true" aria-label="23 July — Present, online"><span class="cell__d">23</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="24 July — no lesson"><span class="cell__d">24</span></button>
+                <button class="cell cell--ok" type="button" data-dow="Sat" data-time="16:00" data-duration="90" data-online="false" aria-label="25 July — Present, 90 minutes, rate exception 300.000"><span class="cell__d">25</span><span class="cell__m" aria-hidden="true"></span><span class="cell__note"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="26 July — no lesson"><span class="cell__d">26</span></button>
+
+                <!-- Week 5 -->
+                <span class="att-wk">W5</span>
+                <button class="cell cell--empty" type="button" aria-label="27 July — no lesson"><span class="cell__d">27</span></button>
+                <button class="cell cell--wait" type="button" data-dow="Tue" data-time="17:30" data-duration="60" data-online="false" aria-label="28 July — Pending"><span class="cell__d">28</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="29 July — no lesson"><span class="cell__d">29</span></button>
+                <button class="cell cell--wait" type="button" data-dow="Thu" data-time="17:30" data-duration="60" data-online="false" aria-label="30 July — Pending"><span class="cell__d">30</span><span class="cell__m" aria-hidden="true"></span></button>
+                <button class="cell cell--empty" type="button" aria-label="31 July — no lesson"><span class="cell__d">31</span></button>
+                <button class="cell cell--out" type="button" tabindex="-1" aria-label="1 August — outside this month"><span class="cell__d">1</span></button>
+                <button class="cell cell--out" type="button" tabindex="-1" aria-label="2 August — outside this month"><span class="cell__d">2</span></button>
+              </div>
+            </div>
+
+            <!-- POPOVER EDITOR (lessonMetadata) — shown open on 18/07 -->
+            <div class="att-pop" id="cellPop" role="dialog" aria-modal="false" aria-labelledby="popTitle">
+              <div class="att-pop__head">
+                <span class="chip chip--cancelled" id="popChip">Cancelled</span>
+                <div class="att-pop__title" id="popTitle">
+                  18/07/2026
+                  <span id="popSub">Sat · 16:00 · 60 min · in-person</span>
+                </div>
+                <button class="att-pop__close" type="button" id="popClose" aria-label="Close reason editor">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              <label class="label" for="popReason" style="display:block; margin-bottom:6px">Reason</label>
+              <input class="inp" id="popReason" type="text" value="Nghỉ lễ gia đình" placeholder="Ví dụ: ốm sốt, nghỉ lễ…">
+
+              <label class="check" for="popSpecial">
+                <input type="checkbox" id="popSpecial" checked>
+                <span>✨ Mark as special reason <em style="font-style:normal; opacity:.75">(purple — not counted as a loss)</em></span>
+              </label>
+
+              <div class="att-pop__acts">
+                <button class="btn btn--quiet btn--sm" type="button" id="popClear">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>
+                  </svg>
+                  Clear
+                </button>
+                <span class="spacer"></span>
+                <button class="btn btn--ghost btn--sm" type="button" id="popCancel">Cancel</button>
+                <button class="btn btn--primary btn--sm" type="button" id="popSave">Save</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="att-legend">
+            <span class="lg"><i class="lg--ok" aria-hidden="true">✓</i> Present (COMPLETE) · 9</span>
+            <span class="lg"><i class="lg--no" aria-hidden="true">✕</i> Cancelled · 1</span>
+            <span class="lg"><i class="lg--wait" aria-hidden="true">·</i> Pending · 2</span>
+            <span class="lg"><i class="lg--special" aria-hidden="true">✨</i> Special reason · 1</span>
+            <span class="lg"><i class="lg--online" aria-hidden="true"></i> Online</span>
+          </div>
+        </article>
+
+        <!-- STICKY SAVE BAR -->
+        <div class="savebar print-hide">
+          <button class="btn btn--primary" type="button" id="saveBtn">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>
+            </svg>
+            Save changes
+          </button>
+          <button class="btn btn--ghost" type="button" onclick="window.print()">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>
+            </svg>
+            Print
+          </button>
+          <span class="savebar__hint" id="saveHint"><i></i> Last saved 2 min ago</span>
+        </div>
+      </section>
+
+      <!-- ════════ DIVIDER ════════ -->
+      <div class="divider-h print-hide" id="divider" role="separator" aria-orientation="vertical"
+           aria-label="Resize editor and preview panes" tabindex="0"
+           aria-valuenow="50" aria-valuemin="32" aria-valuemax="68">
+        <span class="grip" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M9 5v14M15 5v14"/>
+          </svg>
+        </span>
+      </div>
+
+      <!-- ════════ RIGHT · LIVE PREVIEW ════════ -->
+      <section class="pane preview" id="panePrev" role="tabpanel" aria-labelledby="tabPrev" aria-label="Live preview">
+
+        <div class="ptools print-hide">
+          <div class="ptools__grp" role="group" aria-label="Zoom">
+            <button type="button" id="zOut" aria-label="Zoom out">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/>
+              </svg>
+            </button>
+            <span class="zoomval" id="zVal" aria-live="polite">90%</span>
+            <button type="button" id="zIn" aria-label="Zoom in">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/>
+              </svg>
+            </button>
+          </div>
+
+          <span class="fitbadge" id="fitBadge" hidden>
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+            </svg>
+            FIT TO PANE
+          </span>
+
+          <span class="spacer"></span>
+
+          <div class="ptools__grp">
+            <button type="button" onclick="window.print()" aria-label="Print report">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <article class="paper" id="paper" aria-label="Report preview — A4">
+
+            <header class="ph">
+              <span class="ph__mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 4v9M11 4v9M15 4v9M19 4v9M3 13h18"/>
+                </svg>
+              </span>
+              <div class="ph__brand">
+                My Piano Diary
+                <span>Personal teaching space · Đà Nẵng</span>
+              </div>
+              <div class="ph__right">
+                <div class="k">Giáo viên</div>
+                <div class="v">Mai Trần</div>
+              </div>
+            </header>
+
+            <!-- literals copied from report-view.tsx (reportTitlePretty) —
+                 the paper must speak the app's Vietnamese, not invented copy -->
+            <h2 class="ptitle" data-vi="TỔNG KẾT THÁNG 7 · 2026" data-en="MONTHLY REPORT 7 · 2026">TỔNG KẾT THÁNG 7 · 2026</h2>
+            <p class="psub" data-vi="Học sinh: Nguyễn Minh Anh · Tháng 7 / 2026" data-en="Student: Nguyễn Minh Anh · Month 7 / 2026">Học sinh: Nguyễn Minh Anh · Tháng 7 / 2026</p>
+            <div class="prule" aria-hidden="true"></div>
+
+            <div class="pinfo">
+              <div><span class="k" data-vi="Học sinh:" data-en="Student:">Học sinh:</span> <b>Nguyễn Minh Anh</b></div>
+              <div><span class="k" data-vi="Bài đang học:" data-en="Current pieces:">Bài đang học:</span> <b>Für Elise · Gymnopédie No.1</b></div>
+              <div><span class="k" data-vi="Số buổi đã học:" data-en="Lessons completed:">Số buổi đã học:</span> <b>9 / 13</b></div>
+              <div><span class="k" data-vi="Thời lượng:" data-en="Lesson length:">Thời lượng:</span> <b>60 min (1 × 90 min)</b></div>
+            </div>
+
+            <section class="psec">
+              <h3><span data-vi="I. TỔNG KẾT THÁNG" data-en="I. MONTHLY SUMMARY">I. TỔNG KẾT THÁNG</span></h3>
+              <p id="p1"></p>
+            </section>
+
+            <section class="psec">
+              <h3><span data-vi="II. NHẬN XÉT" data-en="II. TEACHER'S COMMENTS">II. NHẬN XÉT</span></h3>
+              <p id="p2"></p>
+            </section>
+
+            <section class="psec">
+              <h3><span data-vi="III. HOẠT ĐỘNG THÁNG TỚI" data-en="III. NEXT MONTH'S PLAN">III. HOẠT ĐỘNG THÁNG TỚI</span></h3>
+              <p id="p3"></p>
+            </section>
+
+            <section class="psec patt">
+              <h3><span data-vi="BẢNG ĐIỂM DANH THÁNG 7" data-en="ATTENDANCE - MONTH 7">BẢNG ĐIỂM DANH THÁNG 7</span></h3>
+              <!-- The grid is a picture of the month, not a data table: its
+                   children are bare spans, so role="table" announced a table
+                   with no rows and no cells. One summarising label instead. -->
+              <div class="patt__grid" role="img"
+                   aria-label="July 2026 attendance: 9 lessons attended, 1 missed, 2 pending, 1 special reason">
+                <span></span>
+                <span class="patt__dow">T2</span><span class="patt__dow">T3</span><span class="patt__dow">T4</span>
+                <span class="patt__dow">T5</span><span class="patt__dow">T6</span><span class="patt__dow">T7</span><span class="patt__dow">CN</span>
+
+                <span class="patt__wk" data-vi="Tuần 1" data-en="Week 1">Tuần 1</span>
+                <span class="pcell pcell--out">29</span><span class="pcell pcell--out">30</span>
+                <span class="pcell">1</span><span class="pcell pcell--ok">2</span><span class="pcell">3</span>
+                <span class="pcell pcell--ok">4</span><span class="pcell">5</span>
+
+                <span class="patt__wk" data-vi="Tuần 2" data-en="Week 2">Tuần 2</span>
+                <span class="pcell">6</span><span class="pcell pcell--ok">7</span><span class="pcell">8</span>
+                <span class="pcell pcell--no">9</span><span class="pcell">10</span>
+                <span class="pcell pcell--ok">11</span><span class="pcell">12</span>
+
+                <span class="patt__wk" data-vi="Tuần 3" data-en="Week 3">Tuần 3</span>
+                <span class="pcell">13</span><span class="pcell pcell--ok">14</span><span class="pcell">15</span>
+                <span class="pcell pcell--ok">16</span><span class="pcell">17</span>
+                <span class="pcell pcell--special">18</span><span class="pcell">19</span>
+
+                <span class="patt__wk" data-vi="Tuần 4" data-en="Week 4">Tuần 4</span>
+                <span class="pcell">20</span><span class="pcell pcell--ok">21</span><span class="pcell">22</span>
+                <span class="pcell pcell--ok">23</span><span class="pcell">24</span>
+                <span class="pcell pcell--ok">25</span><span class="pcell">26</span>
+
+                <span class="patt__wk" data-vi="Tuần 5" data-en="Week 5">Tuần 5</span>
+                <span class="pcell">27</span><span class="pcell pcell--wait">28</span><span class="pcell">29</span>
+                <span class="pcell pcell--wait">30</span><span class="pcell">31</span>
+                <span class="pcell pcell--out">1</span><span class="pcell pcell--out">2</span>
+              </div>
+              <div class="patt__legend">
+                <span class="lg"><i class="lg--ok" aria-hidden="true">✓</i> <span data-vi="Buổi đầy đủ" data-en="Attended">Buổi đầy đủ</span></span>
+                <span class="lg"><i class="lg--no" aria-hidden="true">✕</i> <span data-vi="Buổi vắng" data-en="Missed">Buổi vắng</span></span>
+                <span class="lg"><i class="lg--wait" aria-hidden="true">·</i> <span data-vi="Chưa có" data-en="Pending">Chưa có</span></span>
+                <span class="lg"><i class="lg--special" aria-hidden="true">✨</i> <span data-vi="Lý do đặc biệt" data-en="Special reason">Lý do đặc biệt</span></span>
+              </div>
+            </section>
+
+            <div class="ptot">
+              <div class="ptot__h" data-vi="V. HỌC PHÍ THÁNG 7 / 2026" data-en="V. TUITION — JULY 2026">V. HỌC PHÍ THÁNG 7 / 2026</div>
+
+              <div class="ptot__r">
+                <span class="lab" data-vi="Tại lớp" data-en="In-person">Tại lớp</span>
+                <span class="q">6 × 250.000</span>
+                <span class="m">1.500.000 ₫</span>
+              </div>
+              <div class="ptot__r">
+                <span class="lab" data-vi="Trực tuyến" data-en="Online">Trực tuyến</span>
+                <span class="q">2 × 200.000</span>
+                <span class="m">400.000 ₫</span>
+              </div>
+              <div class="ptot__r">
+                <span class="lab" data-vi="Buổi tăng cường 90 phút (25/07)" data-en="90-minute session (25/07)">Buổi tăng cường 90 phút (25/07)</span>
+                <span class="q">1 × 300.000</span>
+                <span class="m">300.000 ₫</span>
+              </div>
+              <div class="ptot__r ptot__r--grand">
+                <span class="lab" data-vi="TỔNG" data-en="TOTAL">TỔNG</span>
+                <span class="q">9 <span data-vi="buổi" data-en="lessons">buổi</span></span>
+                <span class="m">2.200.000 ₫</span>
+              </div>
+              <p class="pnote" id="p4"></p>
+            </div>
+
+            <div class="psign">
+              <div class="psign__box">
+                <div class="psign__date" data-vi="Đà Nẵng, Ngày 14/07/2026" data-en="Đà Nẵng, 14/07/2026">Đà Nẵng, Ngày 14/07/2026</div>
+                <div class="psign__role" data-vi="Giáo viên" data-en="Teacher">Giáo viên</div>
+                <svg class="psign__ink" viewBox="0 0 150 40" width="140" height="38" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                  <path d="M8 30c10-16 16-22 20-20s-4 20 2 22 12-14 16-20 8 4 14 2 8-12 14-12 10 12 18 10 16-8 22-14"/>
+                  <path d="M28 34h84" stroke-width="1" opacity=".35"/>
+                </svg>
+                <div class="psign__name">Mai Trần</div>
+              </div>
+            </div>
+
+          </article>
+        </div>
+      </section>
+
+    </div><!-- /.split -->
+  </main>
+</div>
+
+<!-- ══════════════ BOTTOM TAB BAR (<1024px) ══════════════ -->
+<nav class="tabbar print-hide" aria-label="Main">
+  <a class="tb" href="/dashboard">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+    </svg>Dashboard
+  </a>
+  <a class="tb" href="/calendar">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/>
+    </svg>Calendar
+  </a>
+  <button class="tb tb--add" type="button" aria-label="Add lesson">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
+    </svg>
+  </button>
+  <a class="tb" href="/reports" aria-current="page">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5M9 13h6"/>
+    </svg>Reports
+  </a>
+  <button class="tb" type="button" id="moreBtn" aria-expanded="false" aria-controls="moreSheet">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>More
+  </button>
+</nav>
+
+<div class="sheet print-hide" id="moreSheet" hidden>
+  <div class="sheet__scrim" data-close-sheet></div>
+  <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="More navigation">
+    <div class="sheet__grab" aria-hidden="true"></div>
+    <div class="sheet__head">
+      <p class="label">Manage</p>
+      <button class="sheet__close" type="button" id="sheetClose" data-close-sheet aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <nav class="sheet__nav" aria-label="Manage">
+      <a href="/lessons"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h7M8 11h7"/></svg>Lessons</a>
+      <a href="/students"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Students</a>
+      <a href="/pieces"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Pieces</a>
+      <a href="/reports" aria-current="page"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5M9 13h6"/></svg>Reports</a>
+      <a href="/payments"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h3"/></svg>Payments</a>
+      <a href="/profile"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>Profile</a>
+    </nav>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ── 1. Autosave hint ─────────────────────────────────────────────── */
+  var hint = document.getElementById("saveHint"), t = null, booting = true;
+  function markDirty(){
+    if (booting) return;               /* don't fire while priming the preview */
+    hint.innerHTML = '<i style="background:var(--sand-300); box-shadow:0 0 0 3px var(--wait-bg)"></i> Unsaved changes';
+    clearTimeout(t);
+    t = setTimeout(function(){
+      hint.innerHTML = '<i></i> Last saved just now';
+    }, 1600);
+  }
+  document.getElementById("saveBtn").addEventListener("click", function(){
+    clearTimeout(t);
+    hint.innerHTML = '<i></i> Last saved just now';
+  });
+
+  /* ── 2. Live editor → preview binding ─────────────────────────────── */
+  function sync(ta){
+    var target = document.getElementById(ta.dataset.bind);
+    if (target) target.textContent = ta.value;
+    var counter = document.getElementById(ta.getAttribute("aria-describedby"));
+    if (counter){
+      var max = parseInt(ta.getAttribute("maxlength"), 10);
+      counter.textContent = ta.value.length + " / " + max;
+      counter.classList.toggle("is-over", ta.value.length > max * 0.92);
+    }
+    markDirty();
+  }
+  ["s1","s2","s3","s4"].forEach(function(id){
+    var ta = document.getElementById(id);
+    ta.addEventListener("input", function(){ sync(ta); });
+    sync(ta);
+  });
+
+  /* ── 3. VI / EN toggle ────────────────────────────────────────────── */
+  var vi = document.getElementById("langVI"), en = document.getElementById("langEN");
+  function setLang(lang){
+    vi.setAttribute("aria-pressed", String(lang === "vi"));
+    en.setAttribute("aria-pressed", String(lang === "en"));
+    document.querySelectorAll("[data-vi]").forEach(function(el){
+      var val = lang === "vi" ? el.dataset.vi : el.dataset.en;
+      if (val == null) return;
+      if (el.tagName === "TEXTAREA"){ el.value = val; sync(el); }
+      else { el.textContent = val; }
+    });
+    document.getElementById("tuiLabel").textContent = lang === "vi" ? "Học phí" : "Tuition";
+  }
+  vi.addEventListener("click", function(){ setLang("vi"); });
+  en.addEventListener("click", function(){ setLang("en"); });
+
+  /* ── 4. Preview zoom + auto fit-to-pane (never overflows) ─────────── */
+  var PAPER_W = 794;
+  var stage = document.getElementById("stage");
+  var preview = document.getElementById("panePrev");
+  var zVal = document.getElementById("zVal");
+  var fitBadge = document.getElementById("fitBadge");
+  var userZoom = 0.9;
+
+  function applyZoom(){
+    var avail = preview.clientWidth - 24;
+    var fit = Math.max(0.28, avail / PAPER_W);
+    var z = Math.min(userZoom, fit);
+    var clamped = z < userZoom - 0.001;
+    stage.style.setProperty("--z", z.toFixed(3));
+    /* report the APPLIED scale, not the target — with FIT TO PANE lit the two
+       differ, and the badge must never claim 90% while the paper renders 45% */
+    zVal.textContent = Math.round(z * 100) + "%";
+    zVal.title = clamped ? "Fitted to pane (target " + Math.round(userZoom * 100) + "%)" : "";
+    fitBadge.hidden = !clamped;
+  }
+  document.getElementById("zIn").addEventListener("click", function(){
+    userZoom = Math.min(1.5, userZoom + 0.1); applyZoom();
+  });
+  document.getElementById("zOut").addEventListener("click", function(){
+    userZoom = Math.max(0.4, userZoom - 0.1); applyZoom();
+  });
+  if (window.ResizeObserver) new ResizeObserver(applyZoom).observe(preview);
+  window.addEventListener("resize", applyZoom);
+
+  /* ── 5. Draggable divider (≥1024 only) ────────────────────────────── */
+  var split = document.getElementById("split");
+  var divider = document.getElementById("divider");
+  function setRatio(r){
+    r = Math.min(0.68, Math.max(0.32, r));
+    split.style.setProperty("--lfr", r.toFixed(3) + "fr");
+    split.style.setProperty("--rfr", (1 - r).toFixed(3) + "fr");
+    divider.setAttribute("aria-valuenow", Math.round(r * 100));
+    applyZoom();
+  }
+  divider.addEventListener("pointerdown", function(e){
+    if (window.innerWidth < 1024) return;
+    divider.setPointerCapture(e.pointerId);
+    split.classList.add("is-dragging");
+  });
+  divider.addEventListener("pointermove", function(e){
+    if (!split.classList.contains("is-dragging")) return;
+    var box = split.getBoundingClientRect();
+    setRatio((e.clientX - box.left) / box.width);
+  });
+  ["pointerup","pointercancel"].forEach(function(ev){
+    divider.addEventListener(ev, function(){ split.classList.remove("is-dragging"); });
+  });
+  divider.addEventListener("keydown", function(e){
+    var cur = parseInt(divider.getAttribute("aria-valuenow"), 10) / 100;
+    if (e.key === "ArrowLeft"){ setRatio(cur - 0.03); e.preventDefault(); }
+    if (e.key === "ArrowRight"){ setRatio(cur + 0.03); e.preventDefault(); }
+  });
+
+  /* ── 6. THE RESPONSIVE MOVE — Edit | Preview segmented tabs (<1024) ─ */
+  var tabEdit = document.getElementById("tabEdit");
+  var tabPrev = document.getElementById("tabPrev");
+  var paneEdit = document.getElementById("paneEdit");
+  var panePrev = document.getElementById("panePrev");
+  var mq = window.matchMedia("(max-width: 1023px)");
+  var active = "edit";
+
+  function renderPanes(){
+    if (mq.matches){
+      paneEdit.hidden = active !== "edit";
+      panePrev.hidden = active !== "prev";
+    } else {
+      paneEdit.hidden = false;
+      panePrev.hidden = false;
+    }
+    tabEdit.setAttribute("aria-selected", String(active === "edit"));
+    tabPrev.setAttribute("aria-selected", String(active === "prev"));
+    if (!panePrev.hidden) requestAnimationFrame(applyZoom);
+  }
+  tabEdit.addEventListener("click", function(){ active = "edit"; renderPanes(); });
+  tabPrev.addEventListener("click", function(){ active = "prev"; renderPanes(); });
+  mq.addEventListener("change", renderPanes);
+  renderPanes();
+
+  /* ── 7. Attendance cells + reason popover (lessonMetadata) ────────── */
+  var pop = document.getElementById("cellPop");
+  var attWrap = document.getElementById("attWrap");
+  var cells = document.querySelectorAll(".att-grid .cell");
+  var reason = document.getElementById("popReason");
+  var special = document.getElementById("popSpecial");
+  var popChip = document.getElementById("popChip");
+  var popSub = document.getElementById("popSub");
+
+  /* LessonStatus → chip token. The dialog must describe the cell it was opened
+     from; it used to keep whatever the 18/07 cell had left behind. */
+  var CHIP = {
+    "cell--ok":   ["chip--complete",  "Complete"],
+    "cell--no":   ["chip--cancelled", "Cancelled"],
+    "cell--wait": ["chip--pending",   "Pending"]
+  };
+
+  function clearSel(){
+    cells.forEach(function(c){
+      c.setAttribute("aria-pressed", "false");
+      c.removeAttribute("aria-expanded");
+    });
+  }
+  function closePop(){
+    pop.hidden = true;
+    clearSel();
+  }
+  function aimArrow(cell){
+    /* point the arrow at the middle of the selected cell, clamped inside the card */
+    var c = cell.getBoundingClientRect(), w = attWrap.getBoundingClientRect();
+    var x = Math.min(Math.max(c.left + c.width / 2 - w.left, 24), w.width - 24);
+    pop.style.setProperty("--arrow-x", x.toFixed(1) + "px");
+  }
+  function openPop(cell){
+    clearSel();
+    cell.setAttribute("aria-pressed", "true");
+    cell.setAttribute("aria-expanded", "true");
+    pop.hidden = false;
+
+    /* every field is derived from the cell — date, status, reason, subtitle */
+    var day = cell.querySelector(".cell__d").textContent;
+    document.getElementById("popTitle").firstChild.nodeValue = day + "/07/2026 ";
+
+    var chip = CHIP[cell.dataset.status] || CHIP["cell--wait"];
+    popChip.className = "chip " + chip[0];
+    popChip.textContent = chip[1];
+
+    reason.value = cell.dataset.reason || "";
+
+    popSub.textContent = [
+      cell.dataset.dow || "",
+      cell.dataset.time || "",
+      (cell.dataset.duration || "60") + " min",
+      cell.dataset.online === "true" ? "online" : "in-person"
+    ].filter(Boolean).join(" · ");
+
+    special.checked = cell.classList.contains("cell--special");
+    aimArrow(cell);
+    reason.focus();
+  }
+  var STATUS = ["cell--ok", "cell--no", "cell--wait"];
+  cells.forEach(function(cell){
+    /* no Lesson row → no lessonMetadata to edit; only real lessons open */
+    if (cell.classList.contains("cell--out") || cell.classList.contains("cell--empty")) {
+      cell.disabled = true;
+      return;
+    }
+    /* remember the real LessonStatus so un-checking "special" restores it,
+       rather than blanket-recolouring a COMPLETE lesson as CANCELLED */
+    if (cell.classList.contains("cell--special")) cell.dataset.status = "cell--no";
+    else cell.dataset.status = STATUS.filter(function(s){ return cell.classList.contains(s); })[0] || "";
+
+    cell.addEventListener("click", function(){
+      if (cell.getAttribute("aria-pressed") === "true" && !pop.hidden) closePop();
+      else openPop(cell);
+    });
+  });
+  document.getElementById("popClose").addEventListener("click", closePop);
+  document.getElementById("popCancel").addEventListener("click", closePop);
+  document.getElementById("popSave").addEventListener("click", function(){
+    var sel = document.querySelector('.cell[aria-pressed="true"]');
+    if (sel){
+      /* keep the cell as the single source of truth for the next open */
+      if (reason.value.trim()) sel.dataset.reason = reason.value.trim();
+      else delete sel.dataset.reason;
+    }
+    markDirty();
+    closePop();
+  });
+  document.getElementById("popClear").addEventListener("click", function(){
+    reason.value = "";
+    special.checked = false;
+    special.dispatchEvent(new Event("change"));
+  });
+  special.addEventListener("change", function(){
+    var sel = document.querySelector('.cell[aria-pressed="true"]');
+    if (!sel) return;
+    if (special.checked){
+      STATUS.forEach(function(s){ sel.classList.remove(s); });
+      sel.classList.add("cell--special");
+    } else {
+      sel.classList.remove("cell--special");
+      if (sel.dataset.status) sel.classList.add(sel.dataset.status);
+    }
+    markDirty();
+  });
+
+  /* ── 8. More sheet — a real modal: focus in, focus trapped, Esc out ── */
+  var moreBtn = document.getElementById("moreBtn");
+  var sheet = document.getElementById("moreSheet");
+  var sheetPanel = sheet.querySelector(".sheet__panel");
+  var sheetOpener = null;
+  var FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  function openSheet(){
+    sheetOpener = document.activeElement;
+    sheet.hidden = false;
+    moreBtn.setAttribute("aria-expanded", "true");
+    var first = sheetPanel.querySelector(".sheet__nav a");
+    if (first) first.focus();
+  }
+  function closeSheet(){
+    if (sheet.hidden) return;
+    sheet.hidden = true;
+    moreBtn.setAttribute("aria-expanded", "false");
+    (sheetOpener && document.contains(sheetOpener) ? sheetOpener : moreBtn).focus();
+  }
+  moreBtn.addEventListener("click", openSheet);
+  sheet.querySelectorAll("[data-close-sheet]").forEach(function(el){
+    el.addEventListener("click", closeSheet);
+  });
+  /* Tab must not walk out of an aria-modal dialog */
+  sheetPanel.addEventListener("keydown", function(e){
+    if (e.key !== "Tab") return;
+    var f = Array.prototype.filter.call(
+      sheetPanel.querySelectorAll(FOCUSABLE),
+      function(el){ return el.offsetParent !== null; }
+    );
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first){ last.focus(); e.preventDefault(); }
+    else if (!e.shiftKey && document.activeElement === last){ first.focus(); e.preventDefault(); }
+  });
+
+  /* one Escape handler for both layers — sheet first (it's the modal on top) */
+  document.addEventListener("keydown", function(e){
+    if (e.key !== "Escape") return;
+    if (!sheet.hidden){ closeSheet(); return; }
+    if (!pop.hidden) closePop();
+  });
+
+  applyZoom();
+  /* the 18/07 popover ships open — aim its arrow at that cell */
+  var seeded = document.getElementById("cell18");
+  aimArrow(seeded);
+  window.addEventListener("resize", function(){
+    var sel = document.querySelector('.cell[aria-pressed="true"]');
+    if (sel && !pop.hidden) aimArrow(sel);
+  });
+
+  booting = false;          /* from here on, edits really are "unsaved" */
+})();
+</script>
+</body>
+</html>

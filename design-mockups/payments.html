@@ -1,0 +1,2510 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Diary — Payments · Piggy Bank</title>
+<link rel="stylesheet" href="_theme.css">
+
+<style>
+  /* ======================================================================
+     PAYMENTS · "PIGGY BANK"  —  Sugar Bloom
+     Screen-specific CSS only. Every colour / radius / shadow / font comes
+     from _theme.css. New shades are derived with color-mix() from existing
+     tokens — no foreign hues.
+
+     THE ONE IDEA: there is no payment status column in the database.
+     Paid / Partial / Outstanding are DERIVED, every render, from
+        expectedAmount  = Σ frozen rate of COMPLETE lessons in the month
+        collected       = Σ PaymentTransaction.amount
+     So the maths is on screen everywhere: a piano-key collection bar, an
+     inline progress bar inside every COLLECTED cell, a live subtotal row,
+     and a badge shape that deliberately does NOT look like a LessonStatus
+     chip (which IS a real enum).
+     ====================================================================== */
+
+  /* ── Shell (identical conventions to dashboard-a.html) ───────────────── */
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* ── Decorative blob field ───────────────────────────────────────────── */
+  .blobs {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%;
+    filter: blur(2px);
+    animation: drift 26s var(--ease) infinite alternate;
+  }
+  .blob-1 { width: 420px; height: 380px; top: -90px; right: 6%;  background: color-mix(in srgb, var(--cotton) 46%, transparent); }
+  .blob-2 { width: 340px; height: 320px; bottom: 8%; left: -110px; background: color-mix(in srgb, var(--mint) 42%, transparent); animation-delay: -9s; }
+  .blob-3 { width: 260px; height: 240px; top: 46%; right: -80px;  background: color-mix(in srgb, var(--cotton) 34%, transparent); animation-delay: -16s; }
+  @keyframes drift {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(0, -26px, 0) rotate(9deg); }
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 14px 16px;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    scrollbar-width: none;
+    z-index: 50;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 2px; }
+  .brand-logo {
+    width: 42px; height: 42px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--grad-brand);
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .brand-text { min-width: 0; display: block; }
+  .brand-name { display: block; font: 700 15px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; }
+  .brand-tag  { display: block; font: 400 11.5px/1.4 var(--font-sans); color: var(--ink-soft); white-space: nowrap; }
+
+  .side-cta { width: 100%; }
+
+  .nav-group + .nav-group { margin-top: 18px; }
+  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  .nav-list { list-style: none; display: grid; gap: 3px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 12px;
+    min-height: var(--tap);
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    font: 600 13.5px/1 var(--font-sans);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-link svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link[aria-current="page"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .nav-link[aria-current="page"] svg { color: var(--pink-600); opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    font: 700 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    background: var(--wait-bg);
+    color: var(--wait-fg);
+    padding: 4px 7px;
+    border-radius: var(--r-pill);
+  }
+
+  .side-foot { margin-top: auto; padding-top: 14px; position: relative; }
+  .user-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    text-align: left;
+    transition: background var(--dur) var(--ease);
+  }
+  .user-btn:hover { background: var(--surface-2); }
+  .user-meta { min-width: 0; flex: 1; display: block; }
+  .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
+  .user-mail {
+    display: block;
+    font: 400 11px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .user-btn > svg { width: 16px; height: 16px; color: var(--ink-soft); flex: 0 0 auto; }
+
+  .user-menu {
+    list-style: none;
+    margin-top: 6px;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .user-menu a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .user-menu a:hover { background: var(--surface-2); color: var(--ink); }
+  .user-menu svg { width: 16px; height: 16px; }
+  .user-menu[hidden] { display: none !important; }
+
+  /* ── Main ────────────────────────────────────────────────────────────── */
+  .main {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    padding: clamp(40px, 3vw, 46px) clamp(14px, 2.4vw, 32px) 40px;
+    display: grid;
+    gap: clamp(16px, 2vw, 24px);
+    align-content: start;
+  }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .sec-label { display: block; margin-bottom: 10px; }
+
+  /* ── HEADER BAND — the one scalloped edge on this page ────────────────
+     The scallop is a mask that bites half-circles out of the band's bottom
+     edge, so the app background shows through. Purely decorative. */
+  .band {
+    position: relative;
+    border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+    padding: clamp(18px, 2vw, 26px) clamp(16px, 2vw, 28px) 34px;
+    background:
+      radial-gradient(120% 140% at 88% 0%, color-mix(in srgb, var(--cotton) 62%, transparent), transparent 60%),
+      linear-gradient(120deg, var(--pink-50) 0%, var(--surface) 42%, var(--teal-100) 100%);
+    -webkit-mask-image: radial-gradient(circle 11px at 11px 100%, transparent 11px, #000 11.6px);
+    -webkit-mask-size: 22px 100%;
+    -webkit-mask-repeat: repeat-x;
+    mask-image: radial-gradient(circle 11px at 11px 100%, transparent 11px, #000 11.6px);
+    mask-size: 22px 100%;
+    mask-repeat: repeat-x;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .band-l { min-width: 0; flex: 1 1 300px; }
+  .h1-wrap { position: relative; display: inline-block; }
+  h1 { font: var(--t-h1); letter-spacing: -0.015em; color: var(--ink); }
+  /* hand-drawn squiggle instead of a straight rule */
+  .squiggle {
+    display: block;
+    width: 100%;
+    height: 8px;
+    margin-top: 2px;
+    color: var(--bubblegum);
+  }
+  .band-sub { margin-top: 8px; font: var(--t-small); color: var(--ink-soft); max-width: 46ch; }
+  .band-r { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  /* Month / Year selects */
+  .sel {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .sel select {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: var(--tap);
+    padding: 0 34px 0 14px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line-pink);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    font: 600 13px/1 var(--font-sans);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .sel select:hover { background: var(--pink-50); }
+  .sel svg {
+    position: absolute; right: 12px;
+    width: 14px; height: 14px;
+    color: var(--pink-600);
+    pointer-events: none;
+  }
+  .hamburger, .top-add { display: none; }
+
+  /* ── PIGGY TILES ─────────────────────────────────────────────────────── */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(12px, 1.4vw, 18px);
+  }
+  .tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--r-xl);
+    padding: clamp(16px, 1.6vw, 22px);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .tile .metric { margin-top: 6px; }
+  .tile-cur { font-size: .5em; font-weight: 600; margin-left: 4px; }
+  .tile-sub {
+    margin-top: 6px;
+    font: var(--t-small);
+    font-size: 12px;
+    color: var(--ink-soft);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tile-sub b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  /* one petal ornament per tile */
+  .petal {
+    width: 22px; height: 22px;
+    flex: 0 0 auto;
+  }
+  .petal--pink { color: var(--bubblegum); }
+  .petal--mint { color: var(--wintergreen); }
+  .m-ink  { color: var(--ink); }
+  .m-teal { color: var(--teal-700); }
+  .m-pink { color: var(--pink-700); }
+
+  .spark {
+    width: 15px; height: 15px;
+    color: var(--wintergreen);
+    animation: twinkle 2.8s var(--ease) infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .5; transform: scale(.86); }
+    50%      { opacity: 1;  transform: scale(1.06); }
+  }
+
+  /* ── COLLECTION PROGRESS · piano-key strip ───────────────────────────── */
+  .progress-card { display: grid; gap: 12px; }
+  .prog-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap;
+  }
+  .prog-figure {
+    font: 700 15px/1.3 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .prog-figure .pct { color: var(--teal-700); }
+  .prog-note { font: var(--t-small); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .keys { width: 100%; height: auto; display: block; }
+  .prog-legend {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    font: var(--t-small); color: var(--ink-soft);
+  }
+  .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .lg i { width: 12px; height: 12px; border-radius: 3px; display: block; flex: 0 0 auto; }
+
+  /* ── FILTER ROW ──────────────────────────────────────────────────────── */
+  .filters {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .fchip {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: var(--tap);
+    padding: 0 15px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .fchip:hover { background: var(--surface-2); color: var(--ink); }
+  .fchip b { font-weight: 700; color: var(--ink); }
+  .fchip i {
+    width: 8px; height: 8px; border-radius: 2px; display: block; flex: 0 0 auto;
+  }
+  .fchip[aria-pressed="true"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    border-color: var(--line-pink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .filters-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+  /* ── THE TABLE ───────────────────────────────────────────────────────── */
+  .table-card { padding: clamp(14px, 1.5vw, 20px); }
+  .table-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .table-title { font: var(--t-h2); letter-spacing: -0.01em; }
+  .table-sub { font: var(--t-small); color: var(--ink-soft); }
+
+  table { width: 100%; border-collapse: collapse; min-width: 880px; }
+  thead th {
+    /* column headers are real content, so --ink-soft (5.1:1), not --ink-faint */
+    font: var(--t-label);
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align: left;
+    padding: 0 12px 10px;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 11px 12px;
+    border-top: 1px solid var(--line);
+    vertical-align: middle;
+    position: relative;
+  }
+  tbody tr:hover td { background: var(--surface-2); }
+  .col-money { text-align: right; }
+  .money {
+    font: 650 13.5px/1.3 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .money--zero { color: var(--ink-soft); font-weight: 600; }
+  .money--due  { color: var(--pink-700); font-weight: 700; }
+
+  .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .who-name {
+    min-width: 0;
+    font: 650 13.5px/1.3 var(--font-sans);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .who-sub {
+    display: block;
+    font: 400 11px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* the derivation, inline in the COLLECTED cell */
+  .coll { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 118px; }
+  .bar {
+    width: 100%;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--surface-3);
+    overflow: hidden;
+  }
+  .bar > i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--grad-mint); }
+  .bar--none > i { background: var(--bubblegum); }
+  .coll-pct {
+    font: 600 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .last { display: block; min-width: 0; }
+  .last b { display: block; font: 650 12.5px/1.3 var(--font-sans); font-variant-numeric: tabular-nums; }
+  .last span { display: block; font: 400 11px/1.3 var(--font-sans); color: var(--ink-soft); }
+  .last--none b { font-weight: 600; color: var(--ink-soft); }
+
+  /* DERIVED badge — deliberately NOT a .chip.
+     .chip is a pill and is reserved for the real LessonStatus enum. */
+  .derived {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    border-radius: 5px;                 /* squared-off */
+    border-left: 3px solid currentColor; /* the left rule */
+    font: 700 11.5px/1 var(--font-sans);
+    white-space: nowrap;
+  }
+  .derived--paid      { background: var(--ok-bg);   color: var(--ok-fg); }
+  .derived--partial   { background: var(--wait-bg); color: var(--wait-fg); }
+  .derived--outstanding { background: var(--no-bg); color: var(--no-fg); }
+  .derived .spark { color: currentColor; width: 12px; height: 12px; }
+
+  .acts { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  /* every tappable control on a row clears 44px */
+  .acts .btn { min-height: var(--tap); }
+  .acts .btn--sm { padding: 0 14px; font-size: 12.5px; }
+  .kebab {
+    width: var(--tap); min-height: var(--tap);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink-soft);
+    border: 1px solid transparent;
+  }
+  .kebab:hover, .kebab[aria-expanded="true"] { background: var(--surface); border-color: var(--line); color: var(--ink); }
+  .kebab svg { width: 18px; height: 18px; }
+
+  .rowmenu {
+    position: absolute;
+    top: calc(100% - 6px);
+    right: 12px;
+    z-index: 20;
+    width: 208px;
+    list-style: none;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid;
+    gap: 2px;
+    text-align: left;
+  }
+  .rowmenu[hidden] { display: none !important; }
+  .rowmenu--up { top: auto; bottom: calc(100% - 6px); }
+  .rowmenu button {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    text-align: left;
+  }
+  .rowmenu button:hover { background: var(--surface-2); color: var(--ink); }
+  .rowmenu button svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  .rowmenu .danger { color: var(--pink-700); }
+  .rowmenu .danger:hover { background: var(--no-bg); color: var(--pink-700); }
+
+  tfoot td {
+    border-top: 2px solid var(--line-strong);
+    padding: 14px 12px 4px;
+    background: transparent;
+  }
+  tfoot tr:hover td { background: transparent; }
+  .foot-label {
+    font: var(--t-label);
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .foot-money { font: 700 13.5px/1.3 var(--font-num); font-variant-numeric: tabular-nums; color: var(--ink); }
+
+  /* the caption that explains the derivation */
+  .derivation {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font: var(--t-small);
+    color: var(--ink-soft);
+    display: grid;
+    gap: 8px;
+  }
+  .derivation b { color: var(--ink); }
+  .formula {
+    display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font: 600 12px/1.5 var(--font-sans);
+    color: var(--ink);
+  }
+  .formula code {
+    font: 600 11.5px/1 var(--font-num);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-xs);
+    padding: 5px 8px;
+    color: var(--teal-700);
+    white-space: nowrap;
+  }
+  .deriv-legend { display: flex; gap: 10px 18px; flex-wrap: wrap; align-items: center; }
+  .deriv-legend span { display: inline-flex; align-items: center; gap: 7px; }
+
+  /* ── CARD LIST (below 1024) ──────────────────────────────────────────── */
+  .cards { display: none; }
+  .pcard {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-sm);
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+  .pcard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .pcard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .pcell {
+    padding: 10px;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+  .pcell .label { color: var(--ink-soft); font-size: 10px; }
+  .pcell b {
+    font: 700 13px/1.2 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .pcell--due { background: var(--no-bg); }
+  .pcell--due b { color: var(--pink-700); }
+  .pcell--due .label { color: var(--no-fg); }
+  .pcard-bar { display: grid; gap: 6px; }
+  .pcard-bar .prog-note { font-size: 11.5px; }
+  .pcard-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pcard-foot .last { flex: 1 1 auto; }
+  .pcard-foot .btn { flex: 0 0 auto; }
+
+  /* ── DIALOGS SECTION ─────────────────────────────────────────────────── */
+  .dlg-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(14px, 1.6vw, 20px);
+    align-items: start;
+  }
+  .stage {
+    position: relative;
+    border-radius: var(--r-xl);
+    padding: clamp(16px, 1.8vw, 26px);
+    background:
+      linear-gradient(160deg,
+        color-mix(in srgb, var(--ink) 34%, transparent),
+        color-mix(in srgb, var(--teal-700) 30%, transparent));
+    display: flex;
+    justify-content: center;
+  }
+  .stage-cap {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 8px;
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .stage-cap code {
+    font: 600 11px/1 var(--font-num);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-xs);
+    padding: 4px 7px;
+    color: var(--teal-700);
+  }
+  .dlg {
+    width: 100%;
+    max-width: 460px;
+    background: var(--surface);
+    border-radius: var(--r-xl);
+    box-shadow: var(--sh-xl);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    display: grid;
+  }
+  .dlg-handle { display: none; }
+  .dlg-head {
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    background: linear-gradient(150deg, var(--pink-50), var(--surface) 70%);
+  }
+  .dlg-title { font: 650 16px/1.3 var(--font-sans); letter-spacing: -0.01em; }
+  .dlg-sub { margin-top: 3px; font: var(--t-small); color: var(--ink-soft); }
+  .dlg-x {
+    width: var(--tap); min-height: var(--tap);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink-soft);
+    flex: 0 0 auto;
+  }
+  .dlg-x:hover { background: var(--surface-2); color: var(--ink); }
+  .dlg-x svg { width: 18px; height: 18px; }
+  .dlg-body { padding: 16px 18px; display: grid; gap: 14px; }
+  .dlg-foot {
+    padding: 14px 18px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    flex-wrap: wrap;
+    background: var(--surface-2);
+  }
+
+  /* readonly student chip */
+  .student-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 12px;
+    border-radius: var(--r-md);
+    background: var(--pink-50);
+    border: 1px solid var(--line-pink);
+  }
+  .student-chip .who-name { color: var(--ink); }
+  .student-chip .meta {
+    margin-left: auto;
+    text-align: right;
+    font: 600 11.5px/1.4 var(--font-sans);
+    color: var(--pink-700);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .student-chip .meta span { display: block; font-weight: 400; color: var(--ink-soft); }
+  .ro-tag {
+    font: 700 9.5px/1 var(--font-sans);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    border-radius: var(--r-pill);
+    padding: 4px 7px;
+  }
+
+  .field { display: grid; gap: 6px; }
+  .field > label { font: 600 12px/1 var(--font-sans); color: var(--ink); }
+  .field .opt { color: var(--ink-soft); font-weight: 400; }
+  .ctrl {
+    min-height: var(--tap);
+    width: 100%;
+    padding: 0 13px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font: 400 14px/1.4 var(--font-sans);
+  }
+  .ctrl:hover { border-color: var(--bubblegum); }
+  textarea.ctrl { min-height: 76px; padding: 11px 13px; resize: vertical; }
+  select.ctrl { appearance: none; -webkit-appearance: none; padding-right: 34px; cursor: pointer; }
+  .sel-wrap { position: relative; display: grid; }
+  .sel-wrap svg {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 14px; color: var(--pink-600); pointer-events: none;
+  }
+  .amount-wrap { position: relative; display: grid; }
+  .amount-wrap .prefix {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    font: 700 14px/1 var(--font-sans);
+    color: var(--pink-600);
+    pointer-events: none;
+  }
+  .amount-wrap .ctrl {
+    padding-left: 32px;
+    font: 700 16px/1.4 var(--font-num);
+    font-variant-numeric: tabular-nums;
+  }
+  .amount-wrap .suffix {
+    position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+    font: 600 13px/1 var(--font-sans);
+    color: var(--ink-soft);
+    pointer-events: none;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .hint {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 13px;
+    border-radius: var(--r-sm);
+    background: var(--wait-bg);
+    color: var(--wait-fg);
+    font: 600 12.5px/1.4 var(--font-sans);
+  }
+  .hint b { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .hint.is-settled { background: var(--ok-bg); color: var(--ok-fg); }
+  .hint svg { width: 16px; height: 16px; flex: 0 0 auto; }
+
+  /* history summary + timeline */
+  .hist-summary {
+    display: grid;
+    gap: 10px;
+    padding: 13px;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .hist-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .hist-row .label { color: var(--ink-soft); }
+  .hist-row b { font: 700 14px/1.2 var(--font-num); font-variant-numeric: tabular-nums; }
+  .hist-row .due { color: var(--pink-700); }
+  .hist-row .got { color: var(--teal-700); }
+
+  .rail { list-style: none; display: grid; gap: 2px; margin-left: 6px; }
+  .rail > li {
+    position: relative;
+    padding: 0 0 14px 26px;
+    border-left: 2px dashed var(--line-strong);
+  }
+  .rail > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .rail .node {
+    position: absolute;
+    left: -11px; top: 2px;
+    width: 20px; height: 20px;
+    color: var(--bubblegum);
+    background: var(--surface);
+    border-radius: 50%;
+  }
+  .tx {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--r-sm);
+    background: var(--pink-50);
+    border: 1px solid var(--line-pink);
+  }
+  .tx-l { min-width: 0; }
+  .tx-date { font: 650 12.5px/1.3 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--ink); }
+  .tx-meta { margin-top: 2px; font: 400 11.5px/1.4 var(--font-sans); color: var(--ink-soft); }
+  .tx-meta .method { font-weight: 600; color: var(--teal-700); }
+  .tx-r { text-align: right; flex: 0 0 auto; }
+  .tx-amt { font: 700 13.5px/1.3 var(--font-num); font-variant-numeric: tabular-nums; color: var(--ink); }
+  .tx-run { font: 400 10.5px/1.3 var(--font-sans); color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hist-total {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 13px;
+    border-radius: var(--r-md);
+    background: var(--ok-bg);
+    color: var(--ok-fg);
+    font: 700 13px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── EMPTY STATE ─────────────────────────────────────────────────────── */
+  .empty {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: clamp(22px, 3vw, 34px);
+    border-radius: var(--r-xl);
+    border: 2px dashed var(--bubblegum);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+  .mascot { width: 132px; height: auto; }
+  .empty h3 { font: 650 15px/1.3 var(--font-sans); color: var(--ink); }
+  .empty p { font: var(--t-small); color: var(--ink-soft); max-width: 40ch; }
+
+  /* ── Off-canvas chrome ───────────────────────────────────────────────── */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease);
+  }
+  body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+  .tabbar { display: none; }
+
+  .variant-badge {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    pointer-events: none;
+  }
+
+  /* ======================================================================
+     RESPONSIVE
+     ====================================================================== */
+
+  /* Tablet landscape 1024–1279 → icon rail */
+  @media (max-width: 1279px) {
+    .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+    .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
+    .brand { justify-content: center; padding: 4px 0; }
+    .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
+    .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
+
+    /* Labels are CLIPPED, never display:none — display:none would strip every
+       icon-only control of its accessible name (the icons are aria-hidden). */
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+    .nav-group + .nav-group { margin-top: 12px; position: relative; padding-top: 12px; }
+    .nav-group + .nav-group::before {
+      content: ""; position: absolute; top: 0; left: 14%; right: 14%;
+      height: 1px; background: var(--line);
+    }
+    .user-btn { width: var(--tap); padding: 0; justify-content: center; border-radius: 50%; }
+    .user-meta, .user-btn > svg { display: none; }
+    .user-menu {
+      position: absolute;
+      bottom: 0; left: calc(100% + 8px);
+      width: 200px;
+      margin-top: 0;
+      z-index: 70;
+    }
+    .dlg-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* Below 1024 → off-canvas drawer + bottom tab bar, table → cards */
+  @media (max-width: 1023px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 280px;
+      padding: 20px 14px 16px;
+      align-items: stretch;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform .28s var(--ease);
+      z-index: 60;
+    }
+    body.nav-open .sidebar { transform: none; }
+    .brand { justify-content: flex-start; padding: 6px 8px 2px; }
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: static;
+      width: auto; height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+    }
+    .nav-link { justify-content: flex-start; padding: 0 12px; width: auto; }
+    .nav-link .nav-badge { display: inline-block; margin-left: auto; }
+    .side-cta { width: 100%; padding: 0 18px; border-radius: var(--r-pill); }
+    .nav-group + .nav-group { position: static; padding-top: 0; margin-top: 18px; }
+    .nav-group + .nav-group::before { content: none; }
+    .user-btn { width: 100%; padding: 8px 10px; justify-content: flex-start; border-radius: var(--r-md); }
+    .user-meta { display: block; }
+    .user-btn > svg { display: block; }
+    .user-menu { display: grid; position: static; width: auto; margin-top: 6px; }
+
+    .main { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + 20px); }
+    .hamburger, .top-add { display: inline-flex; }
+
+    /* the wide table is replaced by cards carrying the same derivation */
+    .table-wrap { display: none; }
+    .derivation { margin-top: 0; }
+    .cards { display: grid; gap: 12px; margin-bottom: 14px; }
+
+    .tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+    }
+    .tab {
+      display: grid; place-items: center; gap: 3px;
+      min-height: var(--tap);
+      padding: 5px 2px;
+      border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1.2 var(--font-sans);
+    }
+    .tab svg { width: 21px; height: 21px; }
+    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+  }
+
+  /* Phone */
+  @media (max-width: 639px) {
+    .tiles { grid-template-columns: minmax(0, 1fr); }
+    .band { padding-bottom: 30px; }
+    .band-r { width: 100%; }
+    .band-r .sel { flex: 1 1 0; }
+    .band-r .sel select { width: 100%; }
+    .band-r .btn { flex: 1 1 100%; }
+    .filters-r { margin-left: 0; width: 100%; }
+    .filters-r .sel { flex: 1; }
+    .filters-r .sel select { width: 100%; }
+    .pcard-grid { grid-template-columns: minmax(0, 1fr); }
+    .grid-2 { grid-template-columns: minmax(0, 1fr); }
+
+    /* dialogs become bottom sheets */
+    .stage { padding: 34px 0 0; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+    .dlg {
+      max-width: none;
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      border-bottom: 0;
+    }
+    .dlg-handle {
+      display: block;
+      width: 42px; height: 4px;
+      border-radius: var(--r-pill);
+      background: var(--line-strong);
+      margin: 10px auto 0;
+    }
+    .dlg-foot { flex-direction: column-reverse; align-items: stretch; }
+    .dlg-foot .btn { width: 100%; }
+  }
+</style>
+
+<!-- ═══════ inline SVG sprite: blossom · sparkle · icons ═══════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="blossom" viewBox="0 0 24 24">
+    <g fill="currentColor">
+      <ellipse cx="12" cy="5.6" rx="3.1" ry="4.4"/>
+      <ellipse cx="12" cy="5.6" rx="3.1" ry="4.4" transform="rotate(72 12 12)"/>
+      <ellipse cx="12" cy="5.6" rx="3.1" ry="4.4" transform="rotate(144 12 12)"/>
+      <ellipse cx="12" cy="5.6" rx="3.1" ry="4.4" transform="rotate(216 12 12)"/>
+      <ellipse cx="12" cy="5.6" rx="3.1" ry="4.4" transform="rotate(288 12 12)"/>
+    </g>
+    <circle cx="12" cy="12" r="2.7" fill="#fff" opacity=".92"/>
+  </symbol>
+  <symbol id="sparkle" viewBox="0 0 24 24">
+    <path d="M12 1.6c1 6.2 2.2 7.4 8.4 8.4-6.2 1-7.4 2.2-8.4 8.4-1-6.2-2.2-7.4-8.4-8.4C9.8 9 11 7.8 12 1.6z" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<div class="variant-badge print-hide">Payments · Piggy Bank</div>
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<div class="blobs" aria-hidden="true">
+  <span class="blob blob-1"></span>
+  <span class="blob blob-2"></span>
+  <span class="blob blob-3"></span>
+</div>
+
+<div class="shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+    <a class="brand" href="/dashboard" title="My Piano Diary">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/dashboard" title="Dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/>
+                <rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+              </svg>
+              <span>Calendar</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/lessons" title="Lessons">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/>
+              </svg>
+              <span>Lessons</span>
+              <span class="nav-badge">5</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/students" title="Students">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+              </svg>
+              <span>Students</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/pieces" title="Pieces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+              </svg>
+              <span>Pieces</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/reports" title="Reports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+              <span>Reports</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/payments" aria-current="page" title="Payments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>
+              </svg>
+              <span>Payments</span>
+              <span class="nav-badge">5</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+        <span class="av" aria-hidden="true">LD</span>
+        <span class="user-meta">
+          <span class="user-name">Linh Đặng</span>
+          <span class="user-mail">linh@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+        </svg>
+      </button>
+      <ul class="user-menu" id="userMenu" hidden>
+        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main">
+
+    <!-- ───────── HEADER BAND (scalloped underside) ───────── -->
+    <header class="band rise" style="--i:0">
+      <div class="band-l">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <span class="h1-wrap">
+            <h1>Payments</h1>
+            <svg class="squiggle" viewBox="0 0 160 8" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <path d="M1 5.4c9-4.4 18.5 3.2 27.6-.6 9-3.8 18 3.6 27.2.4 9.2-3.2 18.4 3.4 27.6.2 9.2-3.2 18.4 3.6 27.6.4 9.2-3.2 18.4 3.2 27.6-.6"
+                    fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </div>
+        <p class="band-sub">Track expected dues, partial payments, and full monthly settlements. Everything below is derived live — the database stores no payment status.</p>
+      </div>
+
+      <div class="band-r">
+        <span class="sel">
+          <label class="sr-only" for="monthSel">Month</label>
+          <select id="monthSel">
+            <option>January</option><option>February</option><option>March</option>
+            <option>April</option><option>May</option><option>June</option>
+            <option selected>July</option><option>August</option><option>September</option>
+            <option>October</option><option>November</option><option>December</option>
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
+        <span class="sel">
+          <label class="sr-only" for="yearSel">Year</label>
+          <select id="yearSel">
+            <option>2024</option><option>2025</option><option selected>2026</option>
+            <option>2027</option><option>2028</option>
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
+        <button class="btn btn--primary" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/><path d="M16 15h2"/>
+          </svg>
+          Record payment
+        </button>
+      </div>
+    </header>
+
+    <!-- ───────── PIGGY TILES ───────── -->
+    <section class="tiles" aria-label="July 2026 collection summary">
+      <article class="card tile rise" style="--i:1">
+        <div class="tile-top">
+          <span class="label">Expected</span>
+          <svg class="petal petal--pink" aria-hidden="true" focusable="false"><use href="#blossom"/></svg>
+        </div>
+        <div class="metric num m-ink">18.400.000<span class="tile-cur">₫</span></div>
+        <p class="tile-sub">Σ frozen rate of <b>63</b> COMPLETE lessons</p>
+      </article>
+
+      <article class="card card--mint tile rise" style="--i:2">
+        <div class="tile-top">
+          <span class="label">Collected</span>
+          <svg class="petal petal--mint" aria-hidden="true" focusable="false"><use href="#blossom"/></svg>
+        </div>
+        <div class="metric num m-teal">14.900.000<span class="tile-cur">₫</span></div>
+        <p class="tile-sub">
+          <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+          Σ <b>27</b> PaymentTransaction rows
+        </p>
+      </article>
+
+      <article class="card card--pink tile rise" style="--i:3">
+        <div class="tile-top">
+          <span class="label">Outstanding</span>
+          <svg class="petal petal--pink" aria-hidden="true" focusable="false"><use href="#blossom"/></svg>
+        </div>
+        <div class="metric num m-pink">3.500.000<span class="tile-cur">₫</span></div>
+        <p class="tile-sub">Expected − Collected · <b>5</b> students to settle</p>
+      </article>
+    </section>
+
+    <!-- ───────── COLLECTION PROGRESS · piano-key strip ───────── -->
+    <section class="card progress-card rise" style="--i:4" aria-labelledby="progTitle">
+      <div class="prog-head">
+        <div>
+          <span class="label" id="progTitle">Collection progress · July 2026</span>
+          <p class="prog-figure"><span class="pct">81% collected</span> · 19 of 24 students settled</p>
+        </div>
+        <p class="prog-note">14.900.000 ₫ of 18.400.000 ₫</p>
+      </div>
+
+      <!-- Decorative rendering of the same number stated in text above. -->
+      <svg class="keys" viewBox="0 0 714 64" preserveAspectRatio="none" aria-hidden="true" focusable="false" style="max-height:76px">
+        <defs>
+          <clipPath id="collectedClip"><rect x="0" y="0" width="578" height="64"/></clipPath>
+          <linearGradient id="keyFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--mint)"/>
+            <stop offset="100%" stop-color="var(--wintergreen)"/>
+          </linearGradient>
+        </defs>
+
+        <!-- unfilled white keys -->
+        <g fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.5">
+          <rect x="0"   y="1" width="33" height="62" rx="3"/><rect x="34"  y="1" width="33" height="62" rx="3"/>
+          <rect x="68"  y="1" width="33" height="62" rx="3"/><rect x="102" y="1" width="33" height="62" rx="3"/>
+          <rect x="136" y="1" width="33" height="62" rx="3"/><rect x="170" y="1" width="33" height="62" rx="3"/>
+          <rect x="204" y="1" width="33" height="62" rx="3"/><rect x="238" y="1" width="33" height="62" rx="3"/>
+          <rect x="272" y="1" width="33" height="62" rx="3"/><rect x="306" y="1" width="33" height="62" rx="3"/>
+          <rect x="340" y="1" width="33" height="62" rx="3"/><rect x="374" y="1" width="33" height="62" rx="3"/>
+          <rect x="408" y="1" width="33" height="62" rx="3"/><rect x="442" y="1" width="33" height="62" rx="3"/>
+          <rect x="476" y="1" width="33" height="62" rx="3"/><rect x="510" y="1" width="33" height="62" rx="3"/>
+          <rect x="544" y="1" width="33" height="62" rx="3"/><rect x="578" y="1" width="33" height="62" rx="3"/>
+          <rect x="612" y="1" width="33" height="62" rx="3"/><rect x="646" y="1" width="33" height="62" rx="3"/>
+          <rect x="680" y="1" width="33" height="62" rx="3"/>
+        </g>
+
+        <!-- collected portion: the same keys, filled, clipped to 81% -->
+        <g clip-path="url(#collectedClip)" fill="url(#keyFill)" stroke="var(--teal-600)" stroke-width="1.5">
+          <rect x="0"   y="1" width="33" height="62" rx="3"/><rect x="34"  y="1" width="33" height="62" rx="3"/>
+          <rect x="68"  y="1" width="33" height="62" rx="3"/><rect x="102" y="1" width="33" height="62" rx="3"/>
+          <rect x="136" y="1" width="33" height="62" rx="3"/><rect x="170" y="1" width="33" height="62" rx="3"/>
+          <rect x="204" y="1" width="33" height="62" rx="3"/><rect x="238" y="1" width="33" height="62" rx="3"/>
+          <rect x="272" y="1" width="33" height="62" rx="3"/><rect x="306" y="1" width="33" height="62" rx="3"/>
+          <rect x="340" y="1" width="33" height="62" rx="3"/><rect x="374" y="1" width="33" height="62" rx="3"/>
+          <rect x="408" y="1" width="33" height="62" rx="3"/><rect x="442" y="1" width="33" height="62" rx="3"/>
+          <rect x="476" y="1" width="33" height="62" rx="3"/><rect x="510" y="1" width="33" height="62" rx="3"/>
+          <rect x="544" y="1" width="33" height="62" rx="3"/>
+        </g>
+
+        <!-- black keys -->
+        <g fill="var(--ink)">
+          <rect x="23"  y="1" width="22" height="40" rx="2.5"/><rect x="57"  y="1" width="22" height="40" rx="2.5"/>
+          <rect x="125" y="1" width="22" height="40" rx="2.5"/><rect x="159" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="193" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="261" y="1" width="22" height="40" rx="2.5"/><rect x="295" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="363" y="1" width="22" height="40" rx="2.5"/><rect x="397" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="431" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="499" y="1" width="22" height="40" rx="2.5"/><rect x="533" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="601" y="1" width="22" height="40" rx="2.5"/><rect x="635" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="669" y="1" width="22" height="40" rx="2.5"/>
+        </g>
+        <g clip-path="url(#collectedClip)" fill="var(--teal-700)">
+          <rect x="23"  y="1" width="22" height="40" rx="2.5"/><rect x="57"  y="1" width="22" height="40" rx="2.5"/>
+          <rect x="125" y="1" width="22" height="40" rx="2.5"/><rect x="159" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="193" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="261" y="1" width="22" height="40" rx="2.5"/><rect x="295" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="363" y="1" width="22" height="40" rx="2.5"/><rect x="397" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="431" y="1" width="22" height="40" rx="2.5"/>
+          <rect x="499" y="1" width="22" height="40" rx="2.5"/><rect x="533" y="1" width="22" height="40" rx="2.5"/>
+        </g>
+
+        <!-- 81% marker -->
+        <line x1="578" y1="-3" x2="578" y2="67" stroke="var(--pink-600)" stroke-width="2.5" stroke-dasharray="5 4"/>
+      </svg>
+
+      <div class="prog-legend">
+        <span class="lg"><i style="background:var(--wintergreen)"></i> Collected (Σ PaymentTransaction.amount)</span>
+        <span class="lg"><i style="background:var(--surface); box-shadow:inset 0 0 0 1px var(--line-strong)"></i> Still expected</span>
+        <span class="lg"><i style="background:var(--pink-600)"></i> 81% mark</span>
+      </div>
+    </section>
+
+    <!-- ───────── FILTERS ───────── -->
+    <section class="filters rise" style="--i:5" aria-label="Filter the tuition sheet">
+      <button class="fchip" type="button" data-filter="all" aria-pressed="true">
+        All students <b>24</b>
+      </button>
+      <button class="fchip" type="button" data-filter="outstanding" aria-pressed="false">
+        <i style="background:var(--no-dot)" aria-hidden="true"></i> Outstanding <b>1</b>
+      </button>
+      <button class="fchip" type="button" data-filter="partial" aria-pressed="false">
+        <i style="background:var(--wait-dot)" aria-hidden="true"></i> Partial <b>4</b>
+      </button>
+      <button class="fchip" type="button" data-filter="paid" aria-pressed="false">
+        <i style="background:var(--ok-dot)" aria-hidden="true"></i> Paid <b>19</b>
+      </button>
+
+      <span class="filters-r">
+        <span class="sel">
+          <label class="sr-only" for="studentSel">Student</label>
+          <select id="studentSel">
+            <option selected>All students</option>
+            <option>Đỗ Khánh Linh</option>
+            <option>Emma Thompson</option>
+            <option>Hoàng Nam Phong</option>
+            <option>Lê Gia Hân</option>
+            <option>Liam Carter</option>
+            <option>Nguyễn Minh Anh</option>
+            <option>Olivia Nguyen</option>
+            <option>Phạm Quốc Bảo</option>
+            <option>Trần Bảo Ngọc</option>
+            <option>Vũ Thanh Trúc</option>
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
+      </span>
+    </section>
+
+    <!-- ───────── TUITION SHEET ───────── -->
+    <section class="card table-card rise" style="--i:6" aria-labelledby="sheetTitle">
+      <div class="table-head">
+        <div>
+          <h2 class="table-title" id="sheetTitle">Tuition sheet · July 2026</h2>
+          <p class="table-sub" id="sheetSub">Showing 10 of 24 students · sorted by Outstanding, highest first</p>
+        </div>
+        <p class="table-sub">Money in VND · frozen lesson rates</p>
+      </div>
+
+      <div class="table-wrap scroll-x">
+        <table>
+          <caption class="sr-only">Tuition for July 2026. Expected, collected and outstanding per student, with the derived payment state.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Student</th>
+              <th scope="col" class="col-money">Expected</th>
+              <th scope="col" class="col-money">Collected</th>
+              <th scope="col" class="col-money">Outstanding</th>
+              <th scope="col">Last payment</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="col-money">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+
+            <tr data-status="outstanding" data-exp="1050000" data-col="0" data-out="1050000">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">HP</span>
+                  <span class="who-name">Hoàng Nam Phong<small class="who-sub">3 COMPLETE · 350.000 ₫</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">1.050.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money money--zero">0 ₫</span>
+                  <span class="bar bar--none"><i style="width:0%"></i></span>
+                  <span class="coll-pct">0% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--due">1.050.000 ₫</span></td>
+              <td><span class="last last--none"><b>No payments yet</b><span>—</span></span></td>
+              <td><span class="derived derived--outstanding">Outstanding</span></td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Hoàng Nam Phong" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-1">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu" id="menu-1" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="partial" data-exp="1200000" data-col="300000" data-out="900000">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">VT</span>
+                  <span class="who-name">Vũ Thanh Trúc<small class="who-sub">4 COMPLETE · 300.000 ₫</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">1.200.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">300.000 ₫</span>
+                  <span class="bar"><i style="width:25%"></i></span>
+                  <span class="coll-pct">25% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--due">900.000 ₫</span></td>
+              <td><span class="last"><b>8 Jul</b><span>Momo</span></span></td>
+              <td><span class="derived derived--partial">Partial</span></td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Vũ Thanh Trúc" aria-haspopup="menu" aria-expanded="true" aria-controls="menu-2">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <!-- one menu is rendered OPEN, as specified -->
+                <ul class="rowmenu" id="menu-2" role="menu">
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="partial" data-exp="900000" data-col="250000" data-out="650000">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">KL</span>
+                  <span class="who-name">Đỗ Khánh Linh<small class="who-sub">4 COMPLETE · 225.000 ₫ online</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">900.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">250.000 ₫</span>
+                  <span class="bar"><i style="width:28%"></i></span>
+                  <span class="coll-pct">28% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--due">650.000 ₫</span></td>
+              <td><span class="last"><b>11 Jul</b><span>Cash</span></span></td>
+              <td><span class="derived derived--partial">Partial</span></td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Đỗ Khánh Linh" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-3">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu" id="menu-3" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="partial" data-exp="800000" data-col="250000" data-out="550000">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">QB</span>
+                  <span class="who-name">Phạm Quốc Bảo<small class="who-sub">4 COMPLETE · 200.000 ₫ online</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">800.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">250.000 ₫</span>
+                  <span class="bar"><i style="width:31%"></i></span>
+                  <span class="coll-pct">31% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--due">550.000 ₫</span></td>
+              <td><span class="last"><b>5 Jul</b><span>Bank transfer</span></span></td>
+              <td><span class="derived derived--partial">Partial</span></td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Phạm Quốc Bảo" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-4">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu" id="menu-4" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="partial" data-exp="1000000" data-col="650000" data-out="350000">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">LC</span>
+                  <span class="who-name">Liam Carter<small class="who-sub">4 COMPLETE · 250.000 ₫</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">1.000.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">650.000 ₫</span>
+                  <span class="bar"><i style="width:65%"></i></span>
+                  <span class="coll-pct">65% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--due">350.000 ₫</span></td>
+              <td><span class="last"><b>12 Jul</b><span>Bank transfer</span></span></td>
+              <td><span class="derived derived--partial">Partial</span></td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Liam Carter" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-5">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu" id="menu-5" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="paid" data-exp="1400000" data-col="1400000" data-out="0">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">MA</span>
+                  <span class="who-name">Nguyễn Minh Anh<small class="who-sub">4 COMPLETE · 350.000 ₫</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">1.400.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">1.400.000 ₫</span>
+                  <span class="bar"><i style="width:100%"></i></span>
+                  <span class="coll-pct">100% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--zero">0 ₫</span></td>
+              <td><span class="last"><b>2 Jul</b><span>Bank transfer</span></span></td>
+              <td>
+                <span class="derived derived--paid">
+                  <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+                  Paid
+                </span>
+              </td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Nguyễn Minh Anh" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-6">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu" id="menu-6" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="paid" data-exp="1050000" data-col="1050000" data-out="0">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">ET</span>
+                  <span class="who-name">Emma Thompson<small class="who-sub">3 COMPLETE · 350.000 ₫</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">1.050.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">1.050.000 ₫</span>
+                  <span class="bar"><i style="width:100%"></i></span>
+                  <span class="coll-pct">100% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--zero">0 ₫</span></td>
+              <td><span class="last"><b>1 Jul</b><span>Bank transfer</span></span></td>
+              <td>
+                <span class="derived derived--paid">
+                  <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+                  Paid
+                </span>
+              </td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Emma Thompson" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-7">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu" id="menu-7" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="paid" data-exp="1000000" data-col="1000000" data-out="0">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">BN</span>
+                  <span class="who-name">Trần Bảo Ngọc<small class="who-sub">4 COMPLETE · 250.000 ₫</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">1.000.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">1.000.000 ₫</span>
+                  <span class="bar"><i style="width:100%"></i></span>
+                  <span class="coll-pct">100% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--zero">0 ₫</span></td>
+              <td><span class="last"><b>3 Jul</b><span>Cash</span></span></td>
+              <td>
+                <span class="derived derived--paid">
+                  <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+                  Paid
+                </span>
+              </td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Trần Bảo Ngọc" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-8">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu rowmenu--up" id="menu-8" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="paid" data-exp="900000" data-col="900000" data-out="0">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">GH</span>
+                  <span class="who-name">Lê Gia Hân<small class="who-sub">4 COMPLETE · 225.000 ₫ online</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">900.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">900.000 ₫</span>
+                  <span class="bar"><i style="width:100%"></i></span>
+                  <span class="coll-pct">100% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--zero">0 ₫</span></td>
+              <td><span class="last"><b>6 Jul</b><span>Momo</span></span></td>
+              <td>
+                <span class="derived derived--paid">
+                  <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+                  Paid
+                </span>
+              </td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Lê Gia Hân" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-9">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu rowmenu--up" id="menu-9" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr data-status="paid" data-exp="650000" data-col="650000" data-out="0">
+              <td>
+                <span class="who">
+                  <span class="av av--sm" aria-hidden="true">ON</span>
+                  <span class="who-name">Olivia Nguyen<small class="who-sub">2 COMPLETE · 325.000 ₫</small></span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money">650.000 ₫</span></td>
+              <td class="col-money">
+                <span class="coll">
+                  <span class="money">650.000 ₫</span>
+                  <span class="bar"><i style="width:100%"></i></span>
+                  <span class="coll-pct">100% of expected</span>
+                </span>
+              </td>
+              <td class="col-money"><span class="money money--zero">0 ₫</span></td>
+              <td><span class="last"><b>9 Jul</b><span>Bank transfer</span></span></td>
+              <td>
+                <span class="derived derived--paid">
+                  <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+                  Paid
+                </span>
+              </td>
+              <td class="col-money">
+                <span class="acts">
+                  <button class="btn btn--primary btn--sm" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Record
+                  </button>
+                  <button class="kebab" type="button" aria-label="More actions for Olivia Nguyen" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-10">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                </span>
+                <ul class="rowmenu rowmenu--up" id="menu-10" role="menu" hidden>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Payment history</button></li>
+                  <li><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Edit expected</button></li>
+                  <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                </ul>
+              </td>
+            </tr>
+
+          </tbody>
+
+          <tfoot>
+            <tr>
+              <td><span class="foot-label" id="footLabel">Subtotal · 10 shown</span></td>
+              <td class="col-money"><span class="foot-money" id="footExp">9.950.000 ₫</span></td>
+              <td class="col-money"><span class="foot-money" id="footCol">6.450.000 ₫</span></td>
+              <td class="col-money"><span class="foot-money" id="footOut" style="color:var(--pink-700)">3.500.000 ₫</span></td>
+              <td colspan="3"><span class="table-sub">Month totals are in the tiles above — the 14 hidden students are all fully settled.</span></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- ───────── CARDS (below 1024) — same derivation, stacked ───────── -->
+      <div class="cards" id="cards">
+        <article class="pcard" data-status="outstanding">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">HP</span>
+              <span class="who-name">Hoàng Nam Phong<small class="who-sub">3 COMPLETE · 350.000 ₫</small></span>
+            </span>
+            <span class="derived derived--outstanding">Outstanding</span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>1.050.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>0 ₫</b></span>
+            <span class="pcell pcell--due"><span class="label">Outstanding</span><b>1.050.000 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar bar--none"><i style="width:0%"></i></span>
+            <span class="prog-note">0 ₫ of 1.050.000 ₫ collected · 0%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last last--none"><b>No payments yet</b><span>—</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="partial">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">VT</span>
+              <span class="who-name">Vũ Thanh Trúc<small class="who-sub">4 COMPLETE · 300.000 ₫</small></span>
+            </span>
+            <span class="derived derived--partial">Partial</span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>1.200.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>300.000 ₫</b></span>
+            <span class="pcell pcell--due"><span class="label">Outstanding</span><b>900.000 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:25%"></i></span>
+            <span class="prog-note">300.000 ₫ of 1.200.000 ₫ collected · 25%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>8 Jul</b><span>Momo</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="partial">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">KL</span>
+              <span class="who-name">Đỗ Khánh Linh<small class="who-sub">4 COMPLETE · 225.000 ₫ online</small></span>
+            </span>
+            <span class="derived derived--partial">Partial</span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>900.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>250.000 ₫</b></span>
+            <span class="pcell pcell--due"><span class="label">Outstanding</span><b>650.000 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:28%"></i></span>
+            <span class="prog-note">250.000 ₫ of 900.000 ₫ collected · 28%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>11 Jul</b><span>Cash</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="partial">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">QB</span>
+              <span class="who-name">Phạm Quốc Bảo<small class="who-sub">4 COMPLETE · 200.000 ₫ online</small></span>
+            </span>
+            <span class="derived derived--partial">Partial</span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>800.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>250.000 ₫</b></span>
+            <span class="pcell pcell--due"><span class="label">Outstanding</span><b>550.000 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:31%"></i></span>
+            <span class="prog-note">250.000 ₫ of 800.000 ₫ collected · 31%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>5 Jul</b><span>Bank transfer</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="partial">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">LC</span>
+              <span class="who-name">Liam Carter<small class="who-sub">4 COMPLETE · 250.000 ₫</small></span>
+            </span>
+            <span class="derived derived--partial">Partial</span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>1.000.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>650.000 ₫</b></span>
+            <span class="pcell pcell--due"><span class="label">Outstanding</span><b>350.000 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:65%"></i></span>
+            <span class="prog-note">650.000 ₫ of 1.000.000 ₫ collected · 65%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>12 Jul</b><span>Bank transfer</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="paid">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">MA</span>
+              <span class="who-name">Nguyễn Minh Anh<small class="who-sub">4 COMPLETE · 350.000 ₫</small></span>
+            </span>
+            <span class="derived derived--paid">
+              <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+              Paid
+            </span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>1.400.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>1.400.000 ₫</b></span>
+            <span class="pcell"><span class="label">Outstanding</span><b>0 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:100%"></i></span>
+            <span class="prog-note">1.400.000 ₫ of 1.400.000 ₫ collected · 100%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>2 Jul</b><span>Bank transfer</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="paid">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">ET</span>
+              <span class="who-name">Emma Thompson<small class="who-sub">3 COMPLETE · 350.000 ₫</small></span>
+            </span>
+            <span class="derived derived--paid">
+              <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+              Paid
+            </span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>1.050.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>1.050.000 ₫</b></span>
+            <span class="pcell"><span class="label">Outstanding</span><b>0 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:100%"></i></span>
+            <span class="prog-note">1.050.000 ₫ of 1.050.000 ₫ collected · 100%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>1 Jul</b><span>Bank transfer</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="paid">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">BN</span>
+              <span class="who-name">Trần Bảo Ngọc<small class="who-sub">4 COMPLETE · 250.000 ₫</small></span>
+            </span>
+            <span class="derived derived--paid">
+              <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+              Paid
+            </span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>1.000.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>1.000.000 ₫</b></span>
+            <span class="pcell"><span class="label">Outstanding</span><b>0 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:100%"></i></span>
+            <span class="prog-note">1.000.000 ₫ of 1.000.000 ₫ collected · 100%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>3 Jul</b><span>Cash</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="paid">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">GH</span>
+              <span class="who-name">Lê Gia Hân<small class="who-sub">4 COMPLETE · 225.000 ₫ online</small></span>
+            </span>
+            <span class="derived derived--paid">
+              <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+              Paid
+            </span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>900.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>900.000 ₫</b></span>
+            <span class="pcell"><span class="label">Outstanding</span><b>0 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:100%"></i></span>
+            <span class="prog-note">900.000 ₫ of 900.000 ₫ collected · 100%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>6 Jul</b><span>Momo</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+
+        <article class="pcard" data-status="paid">
+          <div class="pcard-top">
+            <span class="who">
+              <span class="av av--sm" aria-hidden="true">ON</span>
+              <span class="who-name">Olivia Nguyen<small class="who-sub">2 COMPLETE · 325.000 ₫</small></span>
+            </span>
+            <span class="derived derived--paid">
+              <svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>
+              Paid
+            </span>
+          </div>
+          <div class="pcard-grid">
+            <span class="pcell"><span class="label">Expected</span><b>650.000 ₫</b></span>
+            <span class="pcell"><span class="label">Collected</span><b>650.000 ₫</b></span>
+            <span class="pcell"><span class="label">Outstanding</span><b>0 ₫</b></span>
+          </div>
+          <div class="pcard-bar">
+            <span class="bar"><i style="width:100%"></i></span>
+            <span class="prog-note">650.000 ₫ of 650.000 ₫ collected · 100%</span>
+          </div>
+          <div class="pcard-foot">
+            <span class="last"><b>9 Jul</b><span>Bank transfer</span></span>
+            <button class="btn btn--primary btn--sm" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Record
+            </button>
+            <button class="btn btn--ghost btn--sm" type="button">History</button>
+          </div>
+        </article>
+      </div>
+
+      <!-- ───────── THE CAPTION THAT EXPLAINS THE DERIVATION ───────── -->
+      <div class="derivation">
+        <p class="formula">
+          <code>expected = Σ Lesson.rate where status = COMPLETE</code>
+          <span aria-hidden="true">·</span>
+          <code>collected = Σ PaymentTransaction.amount</code>
+          <span aria-hidden="true">·</span>
+          <code>outstanding = max(expected − collected, 0)</code>
+        </p>
+        <p>
+          <b>Paid · Partial · Outstanding are DERIVED, not stored.</b> There is no payment status column
+          in the database — each label is recomputed from the two sums above every time the sheet loads
+          (<b>Paid</b> = collected ≥ expected · <b>Partial</b> = 0 &lt; collected &lt; expected ·
+          <b>Outstanding</b> = collected is 0; the API returns this third one as <code>UNPAID</code>).
+        </p>
+        <p class="deriv-legend">
+          <span><span class="derived derived--paid"><svg class="spark" aria-hidden="true" focusable="false"><use href="#sparkle"/></svg>Paid</span></span>
+          <span><span class="derived derived--partial">Partial</span></span>
+          <span><span class="derived derived--outstanding">Outstanding</span></span>
+          <span aria-hidden="true">→</span>
+          <span>squared badge with a left rule — deliberately <b>not</b> the pill shape used by</span>
+          <span class="chip chip--pending">Pending</span>
+          <span class="chip chip--complete">Complete</span>
+          <span class="chip chip--cancelled">Cancelled</span>
+          <span>which <b>is</b> a real enum (LessonStatus).</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ───────── DIALOGS ───────── -->
+    <section aria-labelledby="dlgTitle" class="rise" style="--i:7">
+      <span class="label sec-label" id="dlgTitle">Dialogs — shown open for review</span>
+
+      <div class="dlg-grid">
+
+        <!-- ── 1 · Record payment ─────────────────────────────────────── -->
+        <div>
+          <p class="stage-cap">
+            <code>role="dialog"</code> <code>aria-modal="true"</code>
+            <span>· bottom sheet below 640px</span>
+          </p>
+          <div class="stage">
+            <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="d1Title">
+              <span class="dlg-handle" aria-hidden="true"></span>
+              <div class="dlg-head">
+                <div>
+                  <h3 class="dlg-title" id="d1Title">Record payment</h3>
+                  <p class="dlg-sub">Creates a PaymentTransaction on July 2026</p>
+                </div>
+                <button class="dlg-x" type="button" aria-label="Close Record payment dialog">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+              </div>
+
+              <div class="dlg-body">
+                <div class="student-chip">
+                  <span class="av av--sm" aria-hidden="true">VT</span>
+                  <span class="who-name">Vũ Thanh Trúc<small class="who-sub">Billing month · July 2026</small></span>
+                  <span class="meta">1.200.000 ₫<span>expected</span></span>
+                </div>
+
+                <div class="field">
+                  <label for="amt">Amount <span class="opt">· VND</span></label>
+                  <span class="amount-wrap">
+                    <span class="prefix" aria-hidden="true">đ</span>
+                    <input class="ctrl" id="amt" type="text" inputmode="numeric" value="400.000" aria-describedby="afterHint">
+                    <span class="suffix" aria-hidden="true">₫</span>
+                  </span>
+                </div>
+
+                <p class="hint" id="afterHint" aria-live="polite">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h.01"/></svg>
+                  <span>Outstanding after this: <b id="afterVal">500.000 ₫</b><span id="afterTag"></span></span>
+                </p>
+
+                <div class="grid-2">
+                  <div class="field">
+                    <label for="pdate">Date</label>
+                    <input class="ctrl" id="pdate" type="date" value="2026-07-14">
+                  </div>
+                  <div class="field">
+                    <label for="pmethod">Method <span class="opt">· optional</span></label>
+                    <span class="sel-wrap">
+                      <select class="ctrl" id="pmethod">
+                        <option>Cash</option>
+                        <option selected>Bank transfer</option>
+                        <option>Momo</option>
+                      </select>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label for="pnote">Note <span class="opt">· optional</span></label>
+                  <textarea class="ctrl" id="pnote" placeholder="Mẹ Trúc sent half now, rest after the recital">Second instalment for July</textarea>
+                </div>
+              </div>
+
+              <div class="dlg-foot">
+                <button class="btn btn--ghost" type="button">Cancel</button>
+                <button class="btn btn--primary" type="button">Record payment 💗</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 2 · Payment history ────────────────────────────────────── -->
+        <div>
+          <p class="stage-cap">
+            <code>role="dialog"</code> <code>aria-modal="true"</code>
+            <span>· PaymentTransaction timeline for the month</span>
+          </p>
+          <div class="stage">
+            <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="d2Title">
+              <span class="dlg-handle" aria-hidden="true"></span>
+              <div class="dlg-head">
+                <div>
+                  <h3 class="dlg-title" id="d2Title">Payment history for Liam Carter</h3>
+                  <p class="dlg-sub">July 2026 · 3 transactions</p>
+                </div>
+                <button class="dlg-x" type="button" aria-label="Close Payment history dialog">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+              </div>
+
+              <div class="dlg-body">
+                <div class="hist-summary">
+                  <div class="hist-row">
+                    <span class="label">Expected</span>
+                    <b>1.000.000 ₫</b>
+                  </div>
+                  <div class="hist-row">
+                    <span class="label">Collected</span>
+                    <b class="got">650.000 ₫</b>
+                  </div>
+                  <span class="bar"><i style="width:65%"></i></span>
+                  <div class="hist-row">
+                    <span class="label">Outstanding</span>
+                    <b class="due">350.000 ₫</b>
+                  </div>
+                </div>
+
+                <ul class="rail">
+                  <li>
+                    <svg class="node" aria-hidden="true" focusable="false"><use href="#blossom"/></svg>
+                    <div class="tx">
+                      <span class="tx-l">
+                        <span class="tx-date">2 Jul 2026</span>
+                        <span class="tx-meta"><span class="method">Momo</span> — First fortnight</span>
+                      </span>
+                      <span class="tx-r">
+                        <span class="tx-amt">200.000 ₫</span>
+                        <span class="tx-run">running 200.000 ₫</span>
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <svg class="node" aria-hidden="true" focusable="false"><use href="#blossom"/></svg>
+                    <div class="tx">
+                      <span class="tx-l">
+                        <span class="tx-date">6 Jul 2026</span>
+                        <span class="tx-meta"><span class="method">Cash</span></span>
+                      </span>
+                      <span class="tx-r">
+                        <span class="tx-amt">200.000 ₫</span>
+                        <span class="tx-run">running 400.000 ₫</span>
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <svg class="node" aria-hidden="true" focusable="false"><use href="#blossom"/></svg>
+                    <div class="tx">
+                      <span class="tx-l">
+                        <span class="tx-date">12 Jul 2026</span>
+                        <span class="tx-meta"><span class="method">Bank transfer</span> — Make-up lesson settled</span>
+                      </span>
+                      <span class="tx-r">
+                        <span class="tx-amt">250.000 ₫</span>
+                        <span class="tx-run">running 650.000 ₫</span>
+                      </span>
+                    </div>
+                  </li>
+                </ul>
+
+                <p class="hist-total">
+                  <span>Total collected · July</span>
+                  <span>650.000 ₫</span>
+                </p>
+              </div>
+
+              <div class="dlg-foot">
+                <button class="btn btn--ghost" type="button">Close</button>
+                <button class="btn btn--mint" type="button">Record payment</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── EMPTY STATE ───────── -->
+    <section class="rise" style="--i:8" aria-labelledby="emptyTitle">
+      <span class="label sec-label" id="emptyTitle">Empty state — no PaymentMonth rows for the selected month</span>
+      <div class="empty">
+        <!-- Mochi the piggy bank -->
+        <svg class="mascot" viewBox="0 0 132 100" aria-hidden="true" focusable="false">
+          <ellipse cx="66" cy="92" rx="42" ry="5" fill="var(--mint)" opacity=".5"/>
+          <!-- music notes -->
+          <g fill="var(--wintergreen)">
+            <circle cx="22" cy="26" r="4.4"/>
+            <rect x="25.4" y="8" width="2.4" height="18" rx="1.2"/>
+            <path d="M27.8 8c4.6 1 6.4 3 6.6 6.6-1.8-2.6-3.6-3.4-6.6-3.6z"/>
+          </g>
+          <g fill="var(--bubblegum)">
+            <circle cx="106" cy="20" r="3.4"/>
+            <rect x="108.6" y="6" width="2" height="14" rx="1"/>
+            <path d="M110.6 6c3.6.8 5 2.4 5.2 5.2-1.4-2-2.8-2.6-5.2-2.8z"/>
+          </g>
+          <!-- ear -->
+          <path d="M42 40c-2-9 2-14 8-13-3 3-4.4 7-4.4 12z" fill="var(--bubblegum)"/>
+          <!-- body -->
+          <ellipse cx="64" cy="60" rx="38" ry="28" fill="var(--cotton)" stroke="var(--bubblegum)" stroke-width="2.5"/>
+          <!-- legs -->
+          <rect x="40" y="82" width="12" height="9" rx="3" fill="var(--bubblegum)"/>
+          <rect x="76" y="82" width="12" height="9" rx="3" fill="var(--bubblegum)"/>
+          <!-- snout -->
+          <ellipse cx="98" cy="62" rx="12" ry="10" fill="var(--bubblegum)"/>
+          <circle cx="95" cy="61" r="1.8" fill="var(--pink-700)"/>
+          <circle cx="102" cy="61" r="1.8" fill="var(--pink-700)"/>
+          <!-- eye + blush -->
+          <circle cx="78" cy="50" r="3" fill="var(--ink)"/>
+          <circle cx="70" cy="60" r="4.6" fill="var(--bubblegum)" opacity=".55"/>
+          <!-- coin slot + coin -->
+          <rect x="50" y="38" width="26" height="5" rx="2.5" fill="var(--ink)" opacity=".78"/>
+          <circle cx="63" cy="26" r="7.5" fill="var(--sand-100)" stroke="var(--sand-300)" stroke-width="2"/>
+          <text x="63" y="30" font-family="ui-sans-serif, system-ui, sans-serif" font-size="9" font-weight="700" text-anchor="middle" fill="var(--sand-700)">₫</text>
+          <!-- tail -->
+          <path d="M26 58c-6-2-8 2-6 5s6 2 6-1" fill="none" stroke="var(--bubblegum)" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+
+        <h3>No payments recorded for July yet 🎀</h3>
+        <p>Mochi is still empty. Once a lesson is marked <strong>COMPLETE</strong>, its frozen rate becomes expected — record what comes in and the maths fills itself.</p>
+        <button class="btn btn--primary" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Record the first payment
+        </button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════ MOBILE TAB BAR ═══════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/payments" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>
+    Payments
+  </a>
+  <button class="tab" type="button" id="tabMore" aria-label="More navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    More
+  </button>
+</nav>
+
+<script>
+  (function () {
+    /* ── VND formatting: dot grouping, trailing ₫, zero decimals ───────── */
+    function group(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+    function vnd(n) { return group(n) + ' ₫'; }
+    function digits(s) { return s.replace(/[^0-9]/g, ''); }
+
+    /* ── Off-canvas navigation (below 1024px) ──────────────────────────────
+       Below 1024 the sidebar is a MODAL drawer: closed → out of the a11y tree
+       (inert); open → dialog semantics, focus trap, focus returned to whichever
+       control opened it. At >=1024 it is a plain landmark again. */
+    var body = document.body;
+    var backdrop = document.getElementById('backdrop');
+    var sidebar = document.getElementById('sidebar');
+    var toggles = [document.getElementById('navToggle'), document.getElementById('tabMore')];
+    var drawerMQ = window.matchMedia('(max-width: 1023px)');
+    var opener = null;
+
+    function isOpen() { return body.classList.contains('nav-open'); }
+
+    function syncSidebar() {
+      if (drawerMQ.matches) {
+        sidebar.setAttribute('role', 'dialog');
+        sidebar.setAttribute('aria-modal', 'true');
+        sidebar.setAttribute('aria-label', 'Navigation');
+        if (isOpen()) sidebar.removeAttribute('inert');
+        else sidebar.setAttribute('inert', '');
+      } else {
+        sidebar.removeAttribute('role');
+        sidebar.removeAttribute('aria-modal');
+        sidebar.removeAttribute('inert');
+        sidebar.setAttribute('aria-label', 'Main navigation');
+      }
+    }
+
+    function focusables() {
+      var nodes = sidebar.querySelectorAll('a[href], button:not([disabled])');
+      return Array.prototype.filter.call(nodes, function (el) {
+        return el.offsetWidth > 0 || el.offsetHeight > 0;
+      });
+    }
+
+    function setNav(open, from) {
+      var was = isOpen();
+      body.classList.toggle('nav-open', open);
+      toggles.forEach(function (t) { if (t) t.setAttribute('aria-expanded', String(open)); });
+
+      if (open) {
+        opener = from || opener || toggles[0];
+        syncSidebar();                       /* drop inert BEFORE focusing */
+        var first = sidebar.querySelector('.nav-link');
+        if (first) first.focus();
+      } else {
+        userExpand(false);
+        syncSidebar();                       /* re-apply inert */
+        if (was && drawerMQ.matches && opener) opener.focus();
+        opener = null;
+      }
+    }
+
+    toggles.forEach(function (t) {
+      if (t) t.addEventListener('click', function () { setNav(!isOpen(), t); });
+    });
+    backdrop.addEventListener('click', function () { setNav(false); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (isOpen()) { setNav(false); return; }
+        userExpand(false);
+        closeMenus(null);
+        return;
+      }
+      if (e.key !== 'Tab' || !isOpen() || !drawerMQ.matches) return;
+      var list = focusables();
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    function onBreakpoint() {
+      if (!drawerMQ.matches && isOpen()) setNav(false);
+      else syncSidebar();
+    }
+    if (drawerMQ.addEventListener) drawerMQ.addEventListener('change', onBreakpoint);
+    else drawerMQ.addListener(onBreakpoint);
+
+    /* ── Footer user dropdown ──────────────────────────────────────────── */
+    var userBtn = document.getElementById('userBtn');
+    var userMenu = document.getElementById('userMenu');
+    function userExpand(open) {
+      userMenu.hidden = !open;
+      userBtn.setAttribute('aria-expanded', String(open));
+    }
+    userBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      userExpand(userMenu.hidden);
+    });
+
+    /* ── Row ⋯ menus (one is rendered open on load) ────────────────────── */
+    var kebabs = Array.prototype.slice.call(document.querySelectorAll('.kebab'));
+
+    function closeMenus(except) {
+      kebabs.forEach(function (k) {
+        if (k === except) return;
+        var m = document.getElementById(k.getAttribute('aria-controls'));
+        if (!m) return;
+        m.hidden = true;
+        k.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    /* The table lives in a .scroll-x box, which clips. Decide the popover's
+       direction from the room actually left below the row, so a menu on the
+       last visible row is never cut off. */
+    function placeMenu(k, m) {
+      var box = document.querySelector('.table-wrap');
+      if (!box) return;
+      var rowBottom = k.closest('tr').getBoundingClientRect().bottom;
+      var roomBelow = box.getBoundingClientRect().bottom - rowBottom;
+      m.classList.toggle('rowmenu--up', roomBelow < 170);
+    }
+
+    kebabs.forEach(function (k) {
+      k.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var m = document.getElementById(k.getAttribute('aria-controls'));
+        if (!m) return;
+        var willOpen = m.hidden;
+        closeMenus(k);
+        if (willOpen) placeMenu(k, m);
+        m.hidden = !willOpen;
+        k.setAttribute('aria-expanded', String(willOpen));
+        if (willOpen) {
+          var first = m.querySelector('button');
+          if (first) first.focus();
+        }
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!userMenu.hidden && !userMenu.contains(e.target) && !userBtn.contains(e.target)) userExpand(false);
+      var inMenu = e.target.closest && e.target.closest('.rowmenu, .kebab');
+      if (!inMenu) closeMenus(null);
+    });
+
+    /* ── Derived-status filter: recomputes the subtotal row live, which is
+          the whole point — the numbers are summed, never stored. ───────── */
+    var TOTALS = { all: 24, outstanding: 1, partial: 4, paid: 19 };
+    var chips = Array.prototype.slice.call(document.querySelectorAll('.fchip'));
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#tbody tr'));
+    var cards = Array.prototype.slice.call(document.querySelectorAll('#cards .pcard'));
+    var footLabel = document.getElementById('footLabel');
+    var footExp = document.getElementById('footExp');
+    var footCol = document.getElementById('footCol');
+    var footOut = document.getElementById('footOut');
+    var sheetSub = document.getElementById('sheetSub');
+
+    function applyFilter(key) {
+      var shown = 0, exp = 0, col = 0, out = 0;
+
+      rows.forEach(function (r) {
+        var match = key === 'all' || r.dataset.status === key;
+        r.hidden = !match;
+        if (!match) return;
+        shown++;
+        exp += Number(r.dataset.exp);
+        col += Number(r.dataset.col);
+        out += Number(r.dataset.out);
+      });
+      cards.forEach(function (c) {
+        c.hidden = !(key === 'all' || c.dataset.status === key);
+      });
+
+      closeMenus(null);
+
+      footLabel.textContent = 'Subtotal · ' + shown + ' shown';
+      footExp.textContent = vnd(exp);
+      footCol.textContent = vnd(col);
+      footOut.textContent = vnd(out);
+      sheetSub.textContent =
+        'Showing ' + shown + ' of ' + TOTALS[key] + ' students · sorted by Outstanding, highest first';
+
+      chips.forEach(function (c) {
+        c.setAttribute('aria-pressed', String(c.dataset.filter === key));
+      });
+    }
+
+    chips.forEach(function (c) {
+      c.addEventListener('click', function () { applyFilter(c.dataset.filter); });
+    });
+
+    /* ── "Record payment" dialog: the live remaining hint ───────────────
+          Vũ Thanh Trúc · July 2026 → expected 1.200.000, already collected
+          300.000, so outstanding before this transaction is 900.000. */
+    var EXPECTED = 1200000;
+    var COLLECTED = 300000;
+    var OUTSTANDING = EXPECTED - COLLECTED;   /* 900.000 */
+
+    var amt = document.getElementById('amt');
+    var hint = document.getElementById('afterHint');
+    var afterVal = document.getElementById('afterVal');
+    var afterTag = document.getElementById('afterTag');
+
+    function syncHint() {
+      var raw = digits(amt.value);
+      var n = raw === '' ? 0 : parseInt(raw, 10);
+      var after = Math.max(OUTSTANDING - n, 0);   /* mirrors calculateRemaining() */
+
+      afterVal.textContent = vnd(after);
+      afterTag.textContent = after === 0 ? ' — settled in full 💗' : '';
+      hint.classList.toggle('is-settled', after === 0);
+    }
+
+    amt.addEventListener('input', function () {
+      var caretAtEnd = amt.selectionStart === amt.value.length;
+      var raw = digits(amt.value);
+      amt.value = raw === '' ? '' : group(parseInt(raw, 10));
+      if (caretAtEnd) amt.setSelectionRange(amt.value.length, amt.value.length);
+      syncHint();
+    });
+
+    syncSidebar();   /* correct state at whatever width we loaded at */
+    syncHint();
+  })();
+</script>

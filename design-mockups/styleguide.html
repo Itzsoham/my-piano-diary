@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Candy Floss — My Piano Diary design system</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+/* ==========================================================================
+   STYLEGUIDE — screen-specific CSS only.
+   Every colour, radius, shadow and type token comes from _theme.css.
+   ========================================================================== */
+
+/* ── Shell ──────────────────────────────────────────────────────────────── */
+.page      { min-height: 100dvh; padding: 0 0 clamp(48px, 8vw, 96px); }
+.wrap      { width: 100%; max-width: 1180px; margin-inline: auto;
+             padding-inline: clamp(14px, 3vw, 32px); }
+
+/* Fixed variant badge — same convention as every other mockup */
+.variant-badge {
+  position: fixed; top: 10px; right: 10px; z-index: 99;
+  padding: 6px 12px; border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line-pink); box-shadow: var(--sh-sm);
+  font: 700 10.5px/1 var(--font-sans);
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--pink-700); pointer-events: none;
+}
+
+/* ── Sticky section nav ─────────────────────────────────────────────────── */
+.tocbar {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
+.toc { display: flex; gap: 6px; align-items: center; padding: 8px 0; }
+.toc-brand {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding-right: 14px; margin-right: 6px;
+  border-right: 1px solid var(--line); flex: 0 0 auto; height: 30px;
+}
+.toc-logo {
+  width: 30px; height: 30px; border-radius: 10px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  background: var(--grad-brand); color: var(--ink-invert);
+  box-shadow: var(--sh-sm);
+}
+.toc-name { font: 700 13px/1 var(--font-sans); letter-spacing: -.01em; white-space: nowrap; }
+.toc-links {
+  display: flex; gap: 4px; overflow-x: auto; flex: 1 1 auto;
+  scroll-snap-type: x proximity;
+}
+.toc-links a {
+  scroll-snap-align: start;
+  display: inline-flex; align-items: center; height: 34px; padding: 0 12px;
+  border-radius: var(--r-pill); white-space: nowrap;
+  font: 600 12.5px/1 var(--font-sans); color: var(--ink-soft);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.toc-links a:hover { background: var(--surface-2); color: var(--ink); }
+.toc-links a.on   { background: var(--pink-100); color: var(--pink-700); }
+.toc-links a b    { font-weight: 700; opacity: .5; margin-right: 6px; font-variant-numeric: tabular-nums; }
+
+/* ── Section scaffolding ────────────────────────────────────────────────── */
+.sec { padding-top: clamp(44px, 6vw, 74px); scroll-margin-top: 62px; }
+.sec-head { max-width: 74ch; margin-bottom: clamp(20px, 3vw, 28px); }
+.kicker {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  padding: 5px 12px 5px 6px; border-radius: var(--r-pill);
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--sh-xs);
+  font: var(--t-label); letter-spacing: var(--label-tracking);
+  text-transform: uppercase; color: var(--ink-soft);
+}
+.kicker i {
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--grad-mint); color: var(--mint-ink);
+  font: 700 10px/1 var(--font-num); font-style: normal;
+}
+.sec-title { font: var(--t-h1); letter-spacing: -.02em; }
+.sec-desc  { margin-top: 8px; color: var(--ink-soft); font-size: 14px; max-width: 68ch; }
+.sub {
+  font: var(--t-label); letter-spacing: var(--label-tracking); text-transform: uppercase;
+  color: var(--ink-faint); margin: 26px 0 12px;
+}
+
+/* Inline code */
+code, .cls {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: 11.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line);
+  padding: 2px 7px; border-radius: var(--r-xs); color: var(--teal-700);
+  white-space: nowrap; letter-spacing: -.01em;
+}
+code.pink { background: var(--pink-50); border-color: var(--line-pink); color: var(--pink-700); }
+
+/* ══════════════════════════ 1. HERO ═══════════════════════════════════════ */
+.hero {
+  position: relative; overflow: hidden;
+  border-radius: 0 0 var(--r-2xl) var(--r-2xl);
+  background: var(--grad-hero);
+  border-bottom: 1px solid var(--line);
+  padding: clamp(34px, 6vw, 62px) 0 clamp(28px, 4vw, 44px);
+}
+.hero::after {           /* the literal reference gradient strip */
+  content: ""; position: absolute; inset: auto 0 0 0; height: 5px;
+  background: linear-gradient(90deg, var(--bubblegum), var(--cotton), var(--floss), var(--mint), var(--wintergreen));
+}
+.hero-blob {
+  position: absolute; border-radius: 50%; filter: blur(60px); opacity: .5; pointer-events: none;
+}
+.hero-blob.a { width: 320px; height: 320px; background: var(--mint);      top: -120px; left: -60px; }
+.hero-blob.b { width: 280px; height: 280px; background: var(--cotton);    bottom: -140px; right: -40px; }
+.hero-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.hero-title {
+  font: var(--t-display); font-size: clamp(34px, 6.4vw, 62px); letter-spacing: -.035em;
+  background: linear-gradient(115deg, var(--pink-700), var(--pink-600) 35%, var(--teal-700));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero-sub  { margin-top: 6px; font: var(--t-h2); font-weight: 500; color: var(--ink-soft); }
+.hero-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.hero-pill {
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px;
+  border-radius: var(--r-pill); background: color-mix(in srgb, var(--surface) 72%, transparent);
+  border: 1px solid var(--line); box-shadow: var(--sh-xs);
+  font: 600 11.5px/1 var(--font-sans); color: var(--ink-soft);
+}
+.hero-pill b { color: var(--ink); font-weight: 700; }
+
+/* the 5 brand swatch cards */
+.brandgrid {
+  display: grid; gap: clamp(10px, 1.5vw, 16px); margin-top: clamp(26px, 4vw, 40px);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.bsw {
+  border-radius: var(--r-xl); overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--sh); display: flex; flex-direction: column;
+}
+.bsw-fill { height: clamp(96px, 13vw, 132px); position: relative; }
+.bsw-fill::after {
+  content: ""; position: absolute; inset: 0;
+  box-shadow: inset 0 -1px 0 rgba(36,57,59,.06);
+}
+.bsw-body { padding: 14px 15px 16px; }
+.bsw-name { font: 700 13.5px/1.2 var(--font-sans); letter-spacing: -.01em; }
+.bsw-hex  {
+  margin-top: 7px; font-family: var(--font-num); font-variant-numeric: tabular-nums;
+  font-weight: 700; font-size: 14px; letter-spacing: .01em; text-transform: uppercase;
+}
+.bsw-rgb  {
+  margin-top: 3px; font: 600 11px/1.4 var(--font-num); color: var(--ink-faint);
+  font-variant-numeric: tabular-nums; letter-spacing: .04em;
+}
+.bsw-tok {
+  margin-top: 10px; display: inline-block;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; font-weight: 600;
+  padding: 3px 8px; border-radius: var(--r-pill);
+  background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line);
+}
+
+/* ══════════════════════════ 2. RAMPS ══════════════════════════════════════ */
+.ramp { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
+.rsw {
+  border-radius: var(--r-sm); overflow: hidden;
+  border: 1px solid var(--line); background: var(--surface); box-shadow: var(--sh-xs);
+}
+.rsw-fill { height: 56px; display: grid; place-items: center; }
+.rsw-fill span {
+  font: 700 10px/1 var(--font-num); letter-spacing: .04em;
+  padding: 3px 6px; border-radius: var(--r-pill);
+}
+.rsw-meta { padding: 8px 9px 9px; }
+.rsw-tok {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10.5px; font-weight: 700; color: var(--ink); display: block;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.rsw-hex {
+  font: 600 10px/1.4 var(--font-num); color: var(--ink-faint);
+  text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; display: block;
+}
+
+.callout {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 16px 18px; border-radius: var(--r-md);
+  background: linear-gradient(160deg, var(--teal-100), var(--surface) 78%);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--sh-sm); margin-top: 22px;
+}
+.callout--pink { background: linear-gradient(160deg, var(--pink-100), var(--surface) 78%); border-color: var(--line-pink); }
+.callout-ico {
+  flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line-strong); color: var(--teal-700);
+}
+.callout--pink .callout-ico { border-color: var(--line-pink); color: var(--pink-700); }
+.callout h4 { font: var(--t-h2); margin-bottom: 5px; }
+.callout p  { font-size: 13px; color: var(--ink-soft); }
+.callout p + p { margin-top: 8px; }
+.callout strong { color: var(--ink); font-weight: 650; }
+
+/* contrast demo strip */
+.contrast {
+  display: grid; gap: 10px; margin-top: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.ct {
+  border-radius: var(--r-sm); padding: 13px 14px;
+  border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px;
+}
+.ct-txt  { font-size: 14px; font-weight: 650; }
+.ct-note {
+  font: 600 10.5px/1.3 var(--font-num); display: inline-flex; align-items: center; gap: 5px;
+  letter-spacing: .02em;
+}
+.ct-badge {
+  font: 700 9.5px/1 var(--font-sans); padding: 3px 6px; border-radius: 5px;
+  letter-spacing: .05em; text-transform: uppercase;
+}
+.ct-pass { background: var(--ok-bg); color: var(--ok-fg); }
+.ct-fail { background: var(--no-bg); color: var(--no-fg); }
+
+/* ══════════════════════════ 3. STATUS ═════════════════════════════════════ */
+.tbl-wrap {
+  border-radius: var(--r-lg); border: 1px solid var(--line);
+  background: var(--surface); box-shadow: var(--sh); overflow: hidden;
+}
+table.st { width: 100%; border-collapse: collapse; min-width: 860px; }
+table.st th {
+  text-align: left; padding: 12px 16px;
+  font: var(--t-label); letter-spacing: var(--label-tracking); text-transform: uppercase;
+  color: var(--ink-faint); background: var(--surface-2);
+  border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+table.st td { padding: 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.st tr:last-child td { border-bottom: 0; }
+.enum {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12.5px; font-weight: 700; letter-spacing: -.01em; display: block;
+}
+.enum-note { font-size: 11.5px; color: var(--ink-faint); margin-top: 4px; display: block; max-width: 22ch; }
+.tokline {
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px;
+  color: var(--ink-soft); display: block; line-height: 1.7; white-space: nowrap;
+}
+.tokline i { font-style: normal; display: inline-block; width: 8px; height: 8px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* calendar event block (as it appears in FullCalendar) */
+.evt {
+  width: 148px; border-radius: 10px; padding: 7px 9px 8px 11px; position: relative;
+  overflow: hidden; box-shadow: var(--sh-xs);
+}
+.evt::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.evt-t { font: 700 11px/1.2 var(--font-sans); }
+.evt-s { font: 500 10.5px/1.3 var(--font-sans); opacity: .78; margin-top: 2px; }
+.evt--c  { background: var(--ok-bg);   color: var(--ok-fg); }
+.evt--c::before  { background: var(--ok-dot); }
+.evt--x  { background: var(--no-bg);   color: var(--no-fg); }
+.evt--x::before  { background: var(--no-dot); }
+.evt--p  { background: var(--wait-bg); color: var(--wait-fg); }
+.evt--p::before  { background: var(--wait-dot); }
+
+/* report grid cell */
+.rcell {
+  width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+  font: 700 12px/1 var(--font-sans);
+}
+.rcell--c { background: var(--ok-bg);   color: var(--ok-fg); }
+.rcell--x { background: var(--no-bg);   color: var(--no-fg); }
+.rcell--p { background: var(--wait-bg); color: var(--wait-fg); }
+.rcell--s { background: var(--special-bg); color: var(--special-fg); }
+
+.bill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 700 11.5px/1 var(--font-sans); padding: 7px 11px; border-radius: var(--r-pill);
+}
+.bill--y { background: var(--ok-bg);  color: var(--ok-fg); }
+.bill--n { background: var(--surface-2); color: var(--ink-faint); }
+
+/* before/after legend fix */
+.fix { display: grid; gap: 14px; margin-top: 18px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .fix { grid-template-columns: 1fr auto 1fr; align-items: center; } }
+.fix-box { border-radius: var(--r-md); padding: 16px; border: 1px solid var(--line); background: var(--surface); }
+.fix-box.old { background: var(--surface-2); }
+.fix-h {
+  font: var(--t-label); letter-spacing: var(--label-tracking); text-transform: uppercase;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 7px;
+}
+.fix-h.old  { color: var(--ink-faint); }
+.fix-h.new  { color: var(--teal-700); }
+.fix-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 12px; color: var(--ink-soft); }
+.fix-row b { color: var(--ink); font-weight: 650; min-width: 96px; }
+.fix-arrow { display: grid; place-items: center; color: var(--pink-600); }
+.strike { text-decoration: line-through; text-decoration-color: var(--bubblegum); text-decoration-thickness: 2px; }
+
+/* ══════════════════════════ 4. COMPONENTS ═════════════════════════════════ */
+.specs { display: grid; gap: clamp(12px, 1.6vw, 18px); grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.spec {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm); overflow: hidden; display: flex; flex-direction: column;
+}
+.spec.wide { grid-column: 1 / -1; }
+@media (min-width: 900px) { .spec.half { grid-column: span 2; } }
+.spec-hd {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 11px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line);
+}
+.spec-hd h4 { font: 650 12.5px/1 var(--font-sans); }
+.spec-hd .cls { background: var(--surface); }
+.spec-body {
+  padding: 18px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  flex: 1 1 auto; min-height: 92px;
+}
+.spec-body.col { flex-direction: column; align-items: stretch; }
+.spec-body.pad { background: var(--surface-2); }
+.spec-note {
+  padding: 0 14px 12px; font-size: 11.5px; color: var(--ink-faint); line-height: 1.5;
+}
+.spec-note b { color: var(--ink-soft); font-weight: 650; }
+
+/* form controls */
+.field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.inp {
+  width: 100%; min-height: var(--tap); padding: 0 15px;
+  border-radius: var(--r-pill); border: 1px solid var(--line-strong);
+  background: var(--surface); box-shadow: var(--sh-xs);
+  font: 500 13.5px/1 var(--font-sans);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.inp::placeholder { color: var(--ink-faint); }
+.inp:focus { outline: 0; border-color: var(--bubblegum); box-shadow: 0 0 0 3px var(--pink-100); }
+textarea.inp { min-height: 84px; padding: 12px 15px; border-radius: var(--r-md); line-height: 1.55; resize: vertical; }
+.inp-money { position: relative; }
+.inp-money .inp { padding-left: 38px; font-variant-numeric: tabular-nums; font-weight: 650; }
+.inp-money span {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  font: 700 13.5px/1 var(--font-sans); color: var(--ink-faint); pointer-events: none;
+}
+.pill-select { position: relative; display: inline-flex; width: 100%; }
+.pill-select select {
+  appearance: none; width: 100%; min-height: var(--tap); padding: 0 40px 0 15px;
+  border-radius: var(--r-pill); border: 1px solid var(--line-strong);
+  background: var(--surface); box-shadow: var(--sh-xs);
+  font: 600 13px/1 var(--font-sans); cursor: pointer;
+}
+.pill-select svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); pointer-events: none; }
+.date-pill {
+  display: inline-flex; align-items: center; gap: 9px; min-height: var(--tap); padding: 0 16px;
+  border-radius: var(--r-pill); border: 1px solid var(--line-strong);
+  background: var(--surface); box-shadow: var(--sh-xs);
+  font: 600 13px/1 var(--font-sans); color: var(--ink);
+}
+.date-pill svg { color: var(--teal-600); }
+
+.switch { display: inline-flex; align-items: center; gap: 11px; cursor: pointer; min-height: var(--tap); }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .track {
+  width: 46px; height: 27px; border-radius: var(--r-pill); flex: 0 0 auto;
+  background: var(--line-strong); position: relative;
+  transition: background var(--dur) var(--ease);
+}
+.switch .track::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px;
+  border-radius: 50%; background: var(--surface); box-shadow: var(--sh-sm);
+  transition: transform var(--dur) var(--ease);
+}
+.switch input:checked + .track { background: var(--grad-mint); }
+.switch input:checked + .track::after { transform: translateX(19px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--pink-600); outline-offset: 2px; }
+.switch .lbl { font: 600 13px/1 var(--font-sans); }
+
+.cb { display: inline-flex; align-items: center; gap: 11px; cursor: pointer; min-height: var(--tap); }
+.cb input { position: absolute; opacity: 0; width: 0; height: 0; }
+.cb .box {
+  width: 22px; height: 22px; border-radius: 7px; flex: 0 0 auto;
+  border: 1.5px solid var(--line-strong); background: var(--surface);
+  display: grid; place-items: center; color: transparent;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.cb input:checked + .box { background: var(--grad-pink); border-color: transparent; color: var(--ink-invert); }
+.cb input:focus-visible + .box { outline: 2px solid var(--pink-600); outline-offset: 2px; }
+.cb .lbl { font: 500 13px/1 var(--font-sans); }
+
+/* segmented control */
+.seg {
+  display: inline-flex; padding: 4px; gap: 2px; border-radius: var(--r-pill);
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.seg button {
+  min-height: 36px; padding: 0 15px; border-radius: var(--r-pill);
+  font: 600 12.5px/1 var(--font-sans); color: var(--ink-soft);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.seg button[aria-selected="true"] {
+  background: var(--surface); color: var(--ink); box-shadow: var(--sh-xs);
+}
+
+/* table header row */
+.thead {
+  display: grid; grid-template-columns: 1.6fr 1fr .8fr .8fr 40px; gap: 10px; align-items: center;
+  padding: 11px 14px; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--r-md) var(--r-md) 0 0;
+  font: var(--t-label); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--ink-faint);
+  min-width: 520px;
+}
+.thead .sortable { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-soft); }
+.trow {
+  display: grid; grid-template-columns: 1.6fr 1fr .8fr .8fr 40px; gap: 10px; align-items: center;
+  padding: 11px 14px; border: 1px solid var(--line); border-top: 0;
+  font-size: 13px; min-width: 520px; background: var(--surface);
+}
+.trow:last-child { border-radius: 0 0 var(--r-md) var(--r-md); }
+.trow .who { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.money { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 650; }
+
+/* dropdown menu */
+.menu {
+  width: 214px; padding: 7px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-lg);
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: 40px; padding: 0 11px; border-radius: var(--r-sm);
+  font: 600 13px/1 var(--font-sans); color: var(--ink); text-align: left;
+}
+.menu-item:hover { background: var(--surface-2); }
+.menu-item svg { color: var(--ink-faint); flex: 0 0 auto; }
+.menu-item.danger { color: var(--pink-700); }
+.menu-item.danger:hover { background: var(--pink-50); }
+.menu-item.danger svg { color: var(--pink-600); }
+.menu-sep { height: 1px; background: var(--line); margin: 6px 4px; }
+.menu-head { padding: 8px 11px 10px; display: flex; align-items: center; gap: 10px; }
+.menu-head .nm { font: 650 12.5px/1.3 var(--font-sans); }
+.menu-head .em { font: 500 11px/1.3 var(--font-sans); color: var(--ink-faint); }
+
+/* dialog */
+.dialog {
+  width: 100%; max-width: 380px; border-radius: var(--r-xl);
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-xl);
+  overflow: hidden;
+}
+.dialog-hd { padding: 18px 20px 14px; display: flex; align-items: flex-start; gap: 12px; }
+.dialog-hd h5 { font: var(--t-h2); }
+.dialog-hd p  { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; }
+.dialog-bd { padding: 0 20px 16px; display: flex; flex-direction: column; gap: 9px; }
+.att {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  min-height: var(--tap); padding: 0 14px; border-radius: var(--r-pill);
+  border: 1.5px solid var(--line); background: var(--surface);
+  font: 650 13px/1 var(--font-sans); text-align: left;
+}
+.att .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.att[aria-pressed="true"] { border-color: transparent; }
+.att.c[aria-pressed="true"] { background: var(--ok-bg);   color: var(--ok-fg); }
+.att.p[aria-pressed="true"] { background: var(--wait-bg); color: var(--wait-fg); }
+.att.x[aria-pressed="true"] { background: var(--no-bg);   color: var(--no-fg); }
+.att .rate { margin-left: auto; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700; opacity: .85; }
+.dialog-ft { padding: 14px 20px 18px; display: flex; gap: 9px; justify-content: flex-end; border-top: 1px solid var(--line); background: var(--surface-2); }
+
+/* bottom sheet */
+.sheet {
+  width: 100%; max-width: 380px; border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: var(--surface); border: 1px solid var(--line); border-bottom: 0;
+  box-shadow: var(--sh-up); padding: 10px 18px 22px; margin-top: auto;
+}
+.sheet-grip { width: 42px; height: 4px; border-radius: 99px; background: var(--line-strong); margin: 0 auto 14px; }
+.sheet h5 { font: var(--t-h2); margin-bottom: 4px; }
+.sheet p  { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; }
+.sheet-actions { display: flex; flex-direction: column; gap: 8px; }
+.sheet-actions .btn { width: 100%; }
+
+/* empty state */
+.empty { text-align: center; padding: 26px 16px; width: 100%; }
+.empty-ico {
+  width: 62px; height: 62px; border-radius: 50%; margin: 0 auto 14px;
+  display: grid; place-items: center;
+  background: linear-gradient(160deg, var(--teal-100), var(--pink-50));
+  border: 1px solid var(--line); color: var(--teal-600);
+}
+.empty h5 { font: var(--t-h2); margin-bottom: 5px; }
+.empty p  { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 16px; max-width: 34ch; margin-inline: auto; }
+
+/* skeleton */
+.skel {
+  border-radius: var(--r-xs);
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.skel.circ { border-radius: 50%; }
+.skel-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 7px 0; }
+
+/* toast */
+.toast {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 13px 16px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-lg);
+}
+.toast-ico { width: 30px; height: 30px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; }
+.toast-ico.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.toast-ico.no { background: var(--no-bg); color: var(--no-fg); }
+.toast-t { font: 650 12.5px/1.3 var(--font-sans); }
+.toast-d { font: 500 11.5px/1.3 var(--font-sans); color: var(--ink-faint); margin-top: 2px; }
+.toast .x { margin-left: auto; color: var(--ink-faint); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; }
+.toast .x:hover { background: var(--surface-2); }
+
+/* mini demo cards */
+.mini { border-radius: var(--r-md); padding: 15px; flex: 1 1 150px; min-width: 140px; }
+.mini .metric { font-size: 24px; margin-top: 6px; }
+.mini--plain { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-xs); }
+.mini--mint  { background: linear-gradient(160deg, var(--teal-100), var(--surface) 70%); border: 1px solid var(--line-strong); }
+.mini--pink  { background: linear-gradient(160deg, var(--pink-100), var(--surface) 70%); border: 1px solid var(--line-pink); }
+.mini--ink   { background: linear-gradient(160deg, #2f4c4d, #24393b); color: var(--ink-invert); border: 0; }
+.mini--ink .label { color: rgba(255,255,255,.62); }
+
+/* ══════════════════════════ 5. TYPE ═══════════════════════════════════════ */
+.type-row {
+  display: grid; gap: 6px 24px; padding: 18px 0; border-bottom: 1px dashed var(--line);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 760px) { .type-row { grid-template-columns: 1fr 250px; align-items: baseline; } }
+.type-row:last-child { border-bottom: 0; }
+.type-spec { display: flex; flex-direction: column; gap: 3px; }
+.type-spec .tk {
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; font-weight: 700; color: var(--pink-700);
+}
+.type-spec .vv { font: 500 11.5px/1.5 var(--font-num); color: var(--ink-faint); }
+.type-spec .uu { font: 600 11px/1.5 var(--font-sans); color: var(--ink-soft); }
+.t-display { font: var(--t-display); letter-spacing: -.03em; }
+.t-h1 { font: var(--t-h1); letter-spacing: -.02em; }
+.t-h2 { font: var(--t-h2); }
+.t-body { font: var(--t-body); }
+.t-small { font: var(--t-small); color: var(--ink-soft); }
+.t-serif { font: 400 16px/1.6 var(--font-serif); }
+
+/* ══════════════════════════ 6. LAYOUT ═════════════════════════════════════ */
+.bps { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 232px), 1fr)); }
+.bp {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm); padding: 16px; display: flex; flex-direction: column;
+}
+.bp.pri { border-color: var(--wintergreen); box-shadow: var(--sh-mint); }
+.bp-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.bp-nm { font: 650 13px/1 var(--font-sans); }
+.bp-px { font: 700 11px/1 var(--font-num); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.bp-tag {
+  display: inline-block; margin-bottom: 12px;
+  font: 700 9.5px/1 var(--font-sans); letter-spacing: .06em; text-transform: uppercase;
+  padding: 4px 7px; border-radius: 5px; background: var(--ok-bg); color: var(--ok-fg);
+}
+.bp-tag.sec2 { background: var(--surface-2); color: var(--ink-faint); }
+/* the little device diagram */
+.dev {
+  border-radius: 10px; border: 1.5px solid var(--line-strong); background: var(--surface-2);
+  padding: 5px; display: flex; gap: 5px; height: 116px; margin-bottom: 12px;
+}
+.dev-side { border-radius: 6px; background: var(--grad-mint); flex: 0 0 auto; display: flex; flex-direction: column; gap: 3px; padding: 5px 4px; }
+.dev-side.rail { width: 20px; align-items: center; }
+.dev-side.full { width: 54px; }
+.dev-dot { width: 10px; height: 6px; border-radius: 3px; background: rgba(20,51,46,.32); }
+.dev-side.full .dev-dot { width: 100%; }
+.dev-main { flex: 1 1 auto; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; padding: 5px; }
+.dev-bar { height: 8px; border-radius: 3px; background: var(--line); }
+.dev-bar.w60 { width: 60%; }
+.dev-grid { flex: 1 1 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.dev-grid.one { grid-template-columns: 1fr; }
+.dev-cell { border-radius: 4px; background: var(--pink-50); border: 1px solid var(--line-pink); }
+.dev-tabs { height: 13px; border-radius: 4px; background: var(--cotton); display: flex; gap: 3px; padding: 3px; align-items: center; }
+.dev-tab { flex: 1 1 0; height: 5px; border-radius: 99px; background: rgba(158,58,98,.35); }
+.bp-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: auto; }
+.bp-desc b { color: var(--ink); font-weight: 650; }
+
+.rules { display: grid; gap: 12px; margin-top: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.rule {
+  display: flex; gap: 12px; padding: 14px 16px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-xs);
+}
+.rule-n {
+  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--pink-100); color: var(--pink-700); font: 700 11px/1 var(--font-num);
+}
+.rule h5 { font: 650 12.5px/1.3 var(--font-sans); margin-bottom: 3px; }
+.rule p  { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+/* 44px tap target visualiser */
+.tapdemo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.tapbox {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  border: 1.5px dashed var(--bubblegum); background: var(--pink-50); color: var(--pink-700);
+  position: relative;
+}
+.tapbox::after {
+  content: "44"; position: absolute; bottom: -8px; right: -6px;
+  font: 700 8.5px/1 var(--font-num); padding: 2px 4px; border-radius: 4px;
+  background: var(--pink-600); color: #fff;
+}
+
+/* ══════════════════════════ 7. HANDOFF ════════════════════════════════════ */
+.codewrap {
+  border-radius: var(--r-lg); overflow: hidden; border: 1px solid #33514f;
+  box-shadow: var(--sh-lg); background: #1d3032;
+}
+.code-hd {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 14px; background: #24393b; border-bottom: 1px solid #33514f;
+}
+.code-file {
+  display: flex; align-items: center; gap: 9px;
+  font: 600 12px/1 ui-monospace, Menlo, Consolas, monospace; color: #cfe4e0;
+}
+.code-file svg { color: var(--wintergreen); }
+.copy {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px;
+  border-radius: var(--r-pill); background: rgba(255,255,255,.08); color: #ddf0ed;
+  font: 600 11.5px/1 var(--font-sans); border: 1px solid rgba(255,255,255,.12);
+  transition: background var(--dur) var(--ease);
+}
+.copy:hover { background: rgba(255,255,255,.16); }
+.copy.done { background: var(--ok-bg); color: var(--ok-fg); border-color: transparent; }
+pre.code {
+  margin: 0; padding: 18px 16px; overflow-x: auto;
+  font: 500 12px/1.75 ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  color: #dff0ed; tab-size: 2;
+}
+pre.code .c { color: #7fa3a0; font-style: italic; }   /* comment */
+pre.code .p { color: #f7b6cd; }                        /* property */
+pre.code .v { color: #ffe7ee; }                        /* value */
+pre.code .k { color: #c6e6e3; font-weight: 700; }      /* at-rule / selector */
+pre.code .n { color: #f2cf94; }                        /* number-ish */
+
+/* shadcn mapping table */
+.maprow {
+  display: grid; grid-template-columns: 1.1fr 1fr 1.2fr; gap: 12px; align-items: center;
+  padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 12.5px; min-width: 640px;
+}
+.maprow:last-child { border-bottom: 0; }
+.maprow.hd {
+  background: var(--surface-2);
+  font: var(--t-label); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--ink-faint);
+}
+.maprow .swdot { width: 16px; height: 16px; border-radius: 5px; border: 1px solid rgba(36,57,59,.1); display: inline-block; vertical-align: -3px; margin-right: 7px; }
+.maprow .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; font-weight: 650; }
+
+/* footer */
+.foot {
+  margin-top: clamp(48px, 7vw, 82px); padding-top: 26px; border-top: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  font-size: 12px; color: var(--ink-faint);
+}
+.foot-strip { height: 6px; border-radius: 99px; width: 130px;
+  background: linear-gradient(90deg, var(--bubblegum), var(--cotton), var(--floss), var(--mint), var(--wintergreen)); }
+
+@media (max-width: 520px) {
+  .toc-brand { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Styleguide</div>
+
+<div class="page">
+
+  <!-- ═══════════════════════ STICKY SECTION NAV ═══════════════════════════ -->
+  <div class="tocbar print-hide">
+    <div class="wrap">
+      <nav class="toc" aria-label="Styleguide sections">
+        <span class="toc-brand">
+          <span class="toc-logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+            </svg>
+          </span>
+          <span class="toc-name">Candy&nbsp;Floss</span>
+        </span>
+        <div class="toc-links no-scrollbar">
+          <a href="#palette"    class="on"><b>01</b>Palette</a>
+          <a href="#ramps"><b>02</b>Ramps</a>
+          <a href="#status"><b>03</b>Status</a>
+          <a href="#components"><b>04</b>Components</a>
+          <a href="#type"><b>05</b>Type</a>
+          <a href="#layout"><b>06</b>Layout</a>
+          <a href="#handoff"><b>07</b>Tailwind handoff</a>
+        </div>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 1 · HERO / BRAND PALETTE ═════════════════════ -->
+  <header class="hero" id="palette">
+    <span class="hero-blob a" aria-hidden="true"></span>
+    <span class="hero-blob b" aria-hidden="true"></span>
+    <div class="wrap" style="position:relative">
+      <div class="hero-top">
+        <div class="rise">
+          <h1 class="hero-title">Candy&nbsp;Floss</h1>
+          <p class="hero-sub">My Piano Diary — design system</p>
+        </div>
+        <div class="hero-meta rise" style="--i:1">
+          <span class="hero-pill">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2"/></svg>
+            v1.0 · <b>Light only</b>
+          </span>
+          <span class="hero-pill">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>
+            Source: <b>_theme.css</b>
+          </span>
+          <span class="hero-pill">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10M12 16v4"/></svg>
+            Tablet-first · <b>768 / 1024</b>
+          </span>
+        </div>
+      </div>
+
+      <p class="sec-desc rise" style="--i:2;margin-top:18px">
+        Five pastels, one ink, and a strict rule about which of them may ever hold text.
+        This page is the visual contract for <code>design-mockups/_theme.css</code> — a developer should be able
+        to build the whole Next.js + Tailwind v4 + shadcn app from it without opening another file.
+      </p>
+
+      <!-- The 5 brand swatches -->
+      <div class="brandgrid">
+        <article class="bsw rise" style="--i:3">
+          <div class="bsw-fill" style="background:var(--bubblegum)"></div>
+          <div class="bsw-body">
+            <div class="bsw-name">Bubble Gum</div>
+            <div class="bsw-hex" style="color:var(--pink-700)">#F3A2BE</div>
+            <div class="bsw-rgb">243 · 162 · 190</div>
+            <span class="bsw-tok">--bubblegum</span>
+          </div>
+        </article>
+
+        <article class="bsw rise" style="--i:4">
+          <div class="bsw-fill" style="background:var(--cotton)"></div>
+          <div class="bsw-body">
+            <div class="bsw-name">Cotton Candy</div>
+            <div class="bsw-hex" style="color:var(--pink-700)">#FFD3DD</div>
+            <div class="bsw-rgb">255 · 211 · 221</div>
+            <span class="bsw-tok">--cotton</span>
+          </div>
+        </article>
+
+        <article class="bsw rise" style="--i:5">
+          <div class="bsw-fill" style="background:var(--floss)"></div>
+          <div class="bsw-body">
+            <div class="bsw-name">Candy Floss</div>
+            <div class="bsw-hex" style="color:var(--teal-700)">#F0F9F8</div>
+            <div class="bsw-rgb">240 · 249 · 248</div>
+            <span class="bsw-tok">--floss</span>
+          </div>
+        </article>
+
+        <article class="bsw rise" style="--i:6">
+          <div class="bsw-fill" style="background:var(--mint)"></div>
+          <div class="bsw-body">
+            <div class="bsw-name">Mint</div>
+            <div class="bsw-hex" style="color:var(--teal-700)">#C6E6E3</div>
+            <div class="bsw-rgb">198 · 230 · 227</div>
+            <span class="bsw-tok">--mint</span>
+          </div>
+        </article>
+
+        <article class="bsw rise" style="--i:7">
+          <div class="bsw-fill" style="background:var(--wintergreen)"></div>
+          <div class="bsw-body">
+            <div class="bsw-name">Wintergreen</div>
+            <div class="bsw-hex" style="color:var(--teal-700)">#81BFB7</div>
+            <div class="bsw-rgb">129 · 191 · 183</div>
+            <span class="bsw-tok">--wintergreen</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ═══════════════════════ 2 · RAMPS ═════════════════════════════════ -->
+    <section class="sec" id="ramps">
+      <div class="sec-head">
+        <span class="kicker"><i>02</i> The ramps</span>
+        <h2 class="sec-title">Derived tokens</h2>
+        <p class="sec-desc">
+          The five brand pastels are beautiful and almost entirely unreadable. Each hue therefore gets a
+          <em>deep</em> end — <code>--pink-600/700</code>, <code>--teal-600/700</code> — that exists purely so text,
+          buttons and borders can hit AA. Use the token, never the raw hex.
+        </p>
+      </div>
+
+      <h3 class="sub">Pink ramp · bubblegum family</h3>
+      <div class="ramp">
+        <div class="rsw"><div class="rsw-fill" style="background:var(--pink-50)"></div><div class="rsw-meta"><span class="rsw-tok">--pink-50</span><span class="rsw-hex">#fff5f8</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--pink-100)"></div><div class="rsw-meta"><span class="rsw-tok">--pink-100</span><span class="rsw-hex">#ffe7ee</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--pink-200)"></div><div class="rsw-meta"><span class="rsw-tok">--pink-200</span><span class="rsw-hex">#ffd3dd · cotton</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--pink-300)"></div><div class="rsw-meta"><span class="rsw-tok">--pink-300</span><span class="rsw-hex">#f3a2be · bubblegum</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--pink-500)"><span style="background:rgba(255,255,255,.9);color:var(--pink-700)">graphic</span></div><div class="rsw-meta"><span class="rsw-tok">--pink-500</span><span class="rsw-hex">#e0729a</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--pink-600)"><span style="background:rgba(255,255,255,.92);color:var(--pink-700)">buttons</span></div><div class="rsw-meta"><span class="rsw-tok">--pink-600</span><span class="rsw-hex">#c94f7c</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--pink-700)"><span style="background:rgba(255,255,255,.92);color:var(--pink-700)">text</span></div><div class="rsw-meta"><span class="rsw-tok">--pink-700</span><span class="rsw-hex">#9e3a62</span></div></div>
+      </div>
+
+      <h3 class="sub">Teal ramp · mint / wintergreen family</h3>
+      <div class="ramp">
+        <div class="rsw"><div class="rsw-fill" style="background:var(--teal-50)"></div><div class="rsw-meta"><span class="rsw-tok">--teal-50</span><span class="rsw-hex">#f0f9f8 · floss</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--teal-100)"></div><div class="rsw-meta"><span class="rsw-tok">--teal-100</span><span class="rsw-hex">#ddf0ed</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--teal-200)"></div><div class="rsw-meta"><span class="rsw-tok">--teal-200</span><span class="rsw-hex">#c6e6e3 · mint</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--teal-400)"></div><div class="rsw-meta"><span class="rsw-tok">--teal-400</span><span class="rsw-hex">#81bfb7 · wintergreen</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--teal-600)"><span style="background:rgba(255,255,255,.92);color:var(--teal-700)">borders</span></div><div class="rsw-meta"><span class="rsw-tok">--teal-600</span><span class="rsw-hex">#4f8f86</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--teal-700)"><span style="background:rgba(255,255,255,.92);color:var(--teal-700)">text</span></div><div class="rsw-meta"><span class="rsw-tok">--teal-700</span><span class="rsw-hex">#35695f</span></div></div>
+      </div>
+
+      <h3 class="sub">Sand ramp · the PENDING hue the 5-swatch palette lacks</h3>
+      <div class="ramp">
+        <div class="rsw"><div class="rsw-fill" style="background:var(--sand-100)"></div><div class="rsw-meta"><span class="rsw-tok">--sand-100</span><span class="rsw-hex">#fdf0da</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--sand-300)"></div><div class="rsw-meta"><span class="rsw-tok">--sand-300</span><span class="rsw-hex">#f2cf94</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--sand-700)"><span style="background:rgba(255,255,255,.92);color:var(--sand-700)">text</span></div><div class="rsw-meta"><span class="rsw-tok">--sand-700</span><span class="rsw-hex">#8a6524</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--special-bg)"></div><div class="rsw-meta"><span class="rsw-tok">--special-bg</span><span class="rsw-hex">#ece4f6</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--special-fg)"><span style="background:rgba(255,255,255,.92);color:var(--special-fg)">text</span></div><div class="rsw-meta"><span class="rsw-tok">--special-fg</span><span class="rsw-hex">#6b4b95</span></div></div>
+      </div>
+
+      <h3 class="sub">Ink · a deep teal-slate, never pure black</h3>
+      <div class="ramp">
+        <div class="rsw"><div class="rsw-fill" style="background:var(--ink)"><span style="background:rgba(255,255,255,.92);color:var(--ink)">12.4:1</span></div><div class="rsw-meta"><span class="rsw-tok">--ink</span><span class="rsw-hex">#24393b</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--ink-soft)"><span style="background:rgba(255,255,255,.92);color:var(--ink-soft)">5.1:1</span></div><div class="rsw-meta"><span class="rsw-tok">--ink-soft</span><span class="rsw-hex">#56706f</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--ink-faint)"><span style="background:rgba(255,255,255,.92);color:var(--ink-soft)">2.7:1</span></div><div class="rsw-meta"><span class="rsw-tok">--ink-faint</span><span class="rsw-hex">#8ba3a2</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--mint-ink)"><span style="background:rgba(255,255,255,.92);color:var(--mint-ink)">on mint</span></div><div class="rsw-meta"><span class="rsw-tok">--mint-ink</span><span class="rsw-hex">#14332e</span></div></div>
+      </div>
+
+      <h3 class="sub">Surfaces &amp; lines</h3>
+      <div class="ramp">
+        <div class="rsw"><div class="rsw-fill" style="background:var(--surface)"></div><div class="rsw-meta"><span class="rsw-tok">--surface</span><span class="rsw-hex">#ffffff</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--surface-2)"></div><div class="rsw-meta"><span class="rsw-tok">--surface-2</span><span class="rsw-hex">#f0f9f8</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--surface-3)"></div><div class="rsw-meta"><span class="rsw-tok">--surface-3</span><span class="rsw-hex">#e7f3f1</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--line)"></div><div class="rsw-meta"><span class="rsw-tok">--line</span><span class="rsw-hex">#e2efec</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--line-strong)"></div><div class="rsw-meta"><span class="rsw-tok">--line-strong</span><span class="rsw-hex">#cfe4e0</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--line-pink)"></div><div class="rsw-meta"><span class="rsw-tok">--line-pink</span><span class="rsw-hex">#fadfe7</span></div></div>
+      </div>
+
+      <h3 class="sub">Gradients</h3>
+      <div class="ramp" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div class="rsw"><div class="rsw-fill" style="background:var(--grad-brand);height:64px"></div><div class="rsw-meta"><span class="rsw-tok">--grad-brand</span><span class="rsw-hex">avatars, logo</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--grad-pink);height:64px"></div><div class="rsw-meta"><span class="rsw-tok">--grad-pink</span><span class="rsw-hex">primary button</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--grad-mint);height:64px"></div><div class="rsw-meta"><span class="rsw-tok">--grad-mint</span><span class="rsw-hex">mint button, toggles</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--grad-hero);height:64px"></div><div class="rsw-meta"><span class="rsw-tok">--grad-hero</span><span class="rsw-hex">page headers</span></div></div>
+        <div class="rsw"><div class="rsw-fill" style="background:var(--app-bg);height:64px"></div><div class="rsw-meta"><span class="rsw-tok">--app-bg</span><span class="rsw-hex">the app shell</span></div></div>
+      </div>
+
+      <!-- CONTRAST NOTE -->
+      <div class="callout">
+        <span class="callout-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><path d="M12 12a4.5 4.5 0 0 0 0-9z" fill="currentColor" stroke="none"/><path d="M12 3v18"/>
+          </svg>
+        </span>
+        <div>
+          <h4>The one contrast rule</h4>
+          <p>
+            <strong>The raw pastels are backgrounds, never text.</strong> For text and buttons use the deep tokens
+            (<code>--pink-600</code>/<code>--pink-700</code>, <code>--teal-600</code>/<code>--teal-700</code>).
+            <code>--ink</code> is <strong>12.4:1</strong> on white; <code>--ink-soft</code> is <strong>5.1:1</strong>.
+          </p>
+          <p>
+            <code>--ink-faint</code> (2.7:1) is decorative — uppercase <code>.label</code>s, axis ticks, placeholder text.
+            It must never carry information a user has to read to act. On a coloured fill, only
+            <code>--mint-ink</code> is safe over <code>--grad-mint</code>, and only white is safe over <code>--grad-pink</code>.
+          </p>
+          <div class="contrast">
+            <div class="ct" style="background:var(--surface)">
+              <span class="ct-txt" style="color:var(--bubblegum)">Nguyễn Minh Anh</span>
+              <span class="ct-note" style="color:var(--ink-faint)"><span class="ct-badge ct-fail">Fail 1.96:1</span> --bubblegum as text</span>
+            </div>
+            <div class="ct" style="background:var(--surface)">
+              <span class="ct-txt" style="color:var(--pink-700)">Nguyễn Minh Anh</span>
+              <span class="ct-note" style="color:var(--ink-faint)"><span class="ct-badge ct-pass">Pass 6.5:1</span> --pink-700 as text</span>
+            </div>
+            <div class="ct" style="background:var(--cotton);border-color:var(--line-pink)">
+              <span class="ct-txt" style="color:var(--pink-700)">1.500.000 ₫</span>
+              <span class="ct-note" style="color:var(--pink-700);opacity:.72"><span class="ct-badge ct-pass">Pass 4.8:1</span> --pink-700 on --cotton</span>
+            </div>
+            <div class="ct" style="background:var(--wintergreen);border-color:transparent">
+              <span class="ct-txt" style="color:var(--mint-ink)">18.900.000 ₫</span>
+              <span class="ct-note" style="color:var(--mint-ink);opacity:.75"><span class="ct-badge ct-pass">Pass 6.5:1</span> --mint-ink on --wintergreen</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ 3 · STATUS SYSTEM ═════════════════════════ -->
+    <section class="sec" id="status">
+      <div class="sec-head">
+        <span class="kicker"><i>03</i> Status system</span>
+        <h2 class="sec-title">LessonStatus — three values, one mapping</h2>
+        <p class="sec-desc">
+          The Prisma enum has exactly three members. There is no “paid”, no “no-show”, no “rescheduled”.
+          Every surface in the app — chip, calendar block, report cell, attendance dialog — renders these three
+          from the same tokens. Only <code>COMPLETE</code> is billable.
+        </p>
+      </div>
+
+      <div class="tbl-wrap scroll-x">
+        <table class="st">
+          <thead>
+            <tr>
+              <th scope="col">Enum</th>
+              <th scope="col">Tokens</th>
+              <th scope="col">Chip</th>
+              <th scope="col">Calendar block</th>
+              <th scope="col">Report cell</th>
+              <th scope="col">Billable</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <span class="enum" style="color:var(--wait-fg)">PENDING</span>
+                <span class="enum-note">Default on create. Lesson is scheduled but attendance not yet taken.</span>
+              </td>
+              <td>
+                <span class="tokline"><i style="background:var(--wait-bg)"></i>--wait-bg &nbsp;#fdf0da</span>
+                <span class="tokline"><i style="background:var(--wait-fg)"></i>--wait-fg &nbsp;#8a6524</span>
+                <span class="tokline"><i style="background:var(--wait-dot)"></i>--wait-dot #f2cf94</span>
+              </td>
+              <td><span class="chip chip--pending">Pending</span></td>
+              <td>
+                <div class="evt evt--p">
+                  <div class="evt-t">Trần Bảo Ngọc</div>
+                  <div class="evt-s">16:00 · 45m · Für Elise</div>
+                </div>
+              </td>
+              <td><div class="rcell rcell--p" title="Pending">–</div></td>
+              <td><span class="bill bill--n">Not billed</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="enum" style="color:var(--ok-fg)">COMPLETE</span>
+                <span class="enum-note">Shown as <b>“Present”</b> in the attendance dialog. The only status that earns money.</span>
+              </td>
+              <td>
+                <span class="tokline"><i style="background:var(--ok-bg)"></i>--ok-bg &nbsp;#ddf1ec</span>
+                <span class="tokline"><i style="background:var(--ok-fg)"></i>--ok-fg &nbsp;#35695f</span>
+                <span class="tokline"><i style="background:var(--ok-dot)"></i>--ok-dot #81bfb7</span>
+              </td>
+              <td><span class="chip chip--complete">Complete</span></td>
+              <td>
+                <div class="evt evt--c">
+                  <div class="evt-t">Lê Gia Hân</div>
+                  <div class="evt-s">09:30 · 60m · Clair de Lune</div>
+                </div>
+              </td>
+              <td>
+                <div class="rcell rcell--c" title="Complete">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </div>
+              </td>
+              <td><span class="bill bill--y">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Billed · 250.000 ₫</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="enum" style="color:var(--no-fg)">CANCELLED</span>
+                <span class="enum-note">Requires a <code>cancelReason</code>. Never charged; reported as “loss”.</span>
+              </td>
+              <td>
+                <span class="tokline"><i style="background:var(--no-bg)"></i>--no-bg &nbsp;#ffdfe7</span>
+                <span class="tokline"><i style="background:var(--no-fg)"></i>--no-fg &nbsp;#9e3a62</span>
+                <span class="tokline"><i style="background:var(--no-dot)"></i>--no-dot #f3a2be</span>
+              </td>
+              <td><span class="chip chip--cancelled">Cancelled</span></td>
+              <td>
+                <div class="evt evt--x">
+                  <div class="evt-t" style="text-decoration:line-through;text-decoration-thickness:1.5px">Phạm Quốc Bảo</div>
+                  <div class="evt-s">14:00 · 45m · Sick</div>
+                </div>
+              </td>
+              <td>
+                <div class="rcell rcell--x" title="Cancelled">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </div>
+              </td>
+              <td><span class="bill bill--n">Not billed · loss</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="enum" style="color:var(--special-fg)">— special —</span>
+                <span class="enum-note">Not an enum member. A presentation-only cell in the printable report grid.</span>
+              </td>
+              <td>
+                <span class="tokline"><i style="background:var(--special-bg)"></i>--special-bg #ece4f6</span>
+                <span class="tokline"><i style="background:var(--special-fg)"></i>--special-fg #6b4b95</span>
+                <span class="tokline" style="color:var(--ink-faint)">report grid only</span>
+              </td>
+              <td><span class="chip" style="background:var(--special-bg);color:var(--special-fg)">Special</span></td>
+              <td><span style="font-size:12px;color:var(--ink-faint)">n/a — never on the calendar</span></td>
+              <td><div class="rcell rcell--s" title="Special">★</div></td>
+              <td><span class="bill bill--n">n/a</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- The unification callout -->
+      <div class="callout callout--pink">
+        <span class="callout-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v4"/><path d="M12 17h.01"/>
+            <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+          </svg>
+        </span>
+        <div style="width:100%">
+          <h4>This redesign unifies the app’s currently-inconsistent legend</h4>
+          <p>
+            Today the same lesson is a different colour depending on which screen you are looking at.
+            The <strong>attendance dialog</strong> paints Cancelled rose and Pending amber, while the
+            <strong>report grid</strong> paints Cancelled amber and Pending rose — the two are literally inverted.
+            Teachers read the report grid to invoice; that ambiguity is a billing bug waiting to happen.
+          </p>
+          <div class="fix">
+            <div class="fix-box old">
+              <div class="fix-h old">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                Today · two conflicting maps
+              </div>
+              <div class="fix-row"><b>Attendance dialog</b> <span class="rcell rcell--x" style="width:26px;height:26px;border-radius:8px"></span> <span class="strike">Cancelled = rose</span></div>
+              <div class="fix-row"><b></b> <span class="rcell rcell--p" style="width:26px;height:26px;border-radius:8px"></span> <span class="strike">Pending = amber</span></div>
+              <hr class="divider" style="margin:8px 0">
+              <div class="fix-row"><b>Report grid</b> <span class="rcell rcell--p" style="width:26px;height:26px;border-radius:8px"></span> <span class="strike">Cancelled = amber</span></div>
+              <div class="fix-row"><b></b> <span class="rcell rcell--x" style="width:26px;height:26px;border-radius:8px"></span> <span class="strike">Pending = rose</span></div>
+            </div>
+            <div class="fix-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </div>
+            <div class="fix-box">
+              <div class="fix-h new">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Candy Floss · one map, everywhere
+              </div>
+              <div class="fix-row"><b>COMPLETE</b> <span class="rcell rcell--c" style="width:26px;height:26px;border-radius:8px"></span> wintergreen · <code>--ok-*</code></div>
+              <div class="fix-row"><b>CANCELLED</b> <span class="rcell rcell--x" style="width:26px;height:26px;border-radius:8px"></span> bubblegum · <code>--no-*</code></div>
+              <div class="fix-row"><b>PENDING</b> <span class="rcell rcell--p" style="width:26px;height:26px;border-radius:8px"></span> butterscotch · <code>--wait-*</code></div>
+              <p style="font-size:11.5px;color:var(--ink-faint);margin-top:10px;line-height:1.5">
+                Mnemonic: <b style="color:var(--ink-soft)">green earns, pink loses, sand waits.</b>
+                Colour is never the only signal — every state also carries a label and a dot.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ 4 · COMPONENTS ════════════════════════════ -->
+    <section class="sec" id="components">
+      <div class="sec-head">
+        <span class="kicker"><i>04</i> Components</span>
+        <h2 class="sec-title">The primitives</h2>
+        <p class="sec-desc">
+          Everything below is defined in <code>_theme.css</code> and is live on this page — inspect it.
+          Nothing here needs a component library; shadcn just needs to be re-skinned to match.
+          Every interactive element clears the 44&nbsp;px tap floor.
+        </p>
+      </div>
+
+      <div class="specs">
+
+        <!-- CARDS -->
+        <article class="spec wide">
+          <div class="spec-hd"><h4>Cards</h4><code class="cls">.card · .card--mint · .card--pink · .card--ink</code></div>
+          <div class="spec-body">
+            <div class="mini mini--plain">
+              <div class="label">Lessons this month</div>
+              <div class="metric">68</div>
+            </div>
+            <div class="mini mini--mint">
+              <div class="label">Completed</div>
+              <div class="metric" style="color:var(--teal-700)">54</div>
+            </div>
+            <div class="mini mini--pink">
+              <div class="label">Cancelled</div>
+              <div class="metric" style="color:var(--pink-700)">6</div>
+            </div>
+            <div class="mini mini--ink">
+              <div class="label">Revenue · July</div>
+              <div class="metric">18.900.000&nbsp;₫</div>
+            </div>
+          </div>
+          <p class="spec-note"><b>--card radius is --r-lg (26px)</b> and the shadow is always tinted (<code>--sh</code>), never neutral grey. <code>.card--ink</code> is reserved for the single hero metric on a screen.</p>
+        </article>
+
+        <!-- BUTTONS -->
+        <article class="spec half">
+          <div class="spec-hd"><h4>Buttons</h4><code class="cls">.btn</code></div>
+          <div class="spec-body">
+            <button class="btn btn--primary">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+              Add lesson
+            </button>
+            <button class="btn btn--mint">Mark present</button>
+            <button class="btn btn--ghost">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              Filter
+            </button>
+            <button class="btn btn--quiet">Cancel</button>
+            <button class="btn btn--primary btn--sm">Save</button>
+            <button class="btn btn--ghost btn--sm">Export</button>
+            <button class="btn btn--ghost btn--icon" aria-label="More">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <button class="btn btn--primary" disabled style="opacity:.45;box-shadow:none;cursor:not-allowed">Disabled</button>
+          </div>
+          <p class="spec-note"><b>Variants:</b> <code>--primary</code> (grad-pink, the one CTA per screen) · <code>--mint</code> · <code>--ghost</code> · <code>--quiet</code>. <b>Sizes:</b> default 44px, <code>--sm</code> 34px (only inside cards/rows, never as a page CTA), <code>--icon</code> 44×44 circle.</p>
+        </article>
+
+        <!-- CHIPS -->
+        <article class="spec half">
+          <div class="spec-hd"><h4>Chips</h4><code class="cls">.chip</code></div>
+          <div class="spec-body">
+            <span class="chip chip--complete">Complete</span>
+            <span class="chip chip--cancelled">Cancelled</span>
+            <span class="chip chip--pending">Pending</span>
+            <span class="chip chip--online">Online</span>
+            <span class="chip chip--complete">Present</span>
+            <span class="chip chip--online">Zoom · 45m</span>
+          </div>
+          <div class="spec-body" style="border-top:1px dashed var(--line);padding-top:14px">
+            <span class="av av--sm">MA</span><span class="av">BN</span><span class="av av--lg">GH</span>
+            <span class="av av--lg" style="background:var(--grad-mint);color:var(--mint-ink)">ET</span>
+            <span class="av" style="background:var(--grad-mint);color:var(--mint-ink)">QB</span>
+          </div>
+          <p class="spec-note"><b>.chip</b> always carries a dot (<code>::before</code>) so status never relies on hue alone. <b>.av</b> sizes: <code>--sm</code> 28 / default 36 / <code>--lg</code> 46. Initials only — no remote images anywhere.</p>
+        </article>
+
+        <!-- LABEL + METRIC -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Label &amp; metric</h4><code class="cls">.label · .metric</code></div>
+          <div class="spec-body col">
+            <div>
+              <div class="label">Outstanding · July 2026</div>
+              <div class="metric" style="color:var(--pink-700)">4.250.000&nbsp;₫</div>
+            </div>
+            <hr class="divider">
+            <div>
+              <div class="label">Students active</div>
+              <div class="metric">10</div>
+            </div>
+          </div>
+          <p class="spec-note"><b>.label</b> is 11px/600, uppercase, <code>0.14em</code> tracking, <code>--ink-faint</code> — the single section-label convention app-wide. <b>.metric</b> is tabular-nums so columns of ₫ line up.</p>
+        </article>
+
+        <!-- SEGMENTED -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Segmented control</h4><code class="cls">.seg</code></div>
+          <div class="spec-body col">
+            <div class="seg" role="tablist" aria-label="Calendar view">
+              <button role="tab" aria-selected="true">Month</button>
+              <button role="tab" aria-selected="false">Week</button>
+              <button role="tab" aria-selected="false">Day</button>
+            </div>
+            <div class="seg" role="tablist" aria-label="Lesson type">
+              <button role="tab" aria-selected="true">All</button>
+              <button role="tab" aria-selected="false">In-person</button>
+              <button role="tab" aria-selected="false">Online</button>
+            </div>
+          </div>
+          <p class="spec-note">Used for calendar views and list filters. Track is <code>--surface-2</code>; the selected thumb is white with <code>--sh-xs</code>. Buttons are 36px inside a 44px track.</p>
+        </article>
+
+        <!-- FORM: text + money -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Text input</h4><code class="cls">.inp</code></div>
+          <div class="spec-body col">
+            <div class="field">
+              <span class="label">Student</span>
+              <input class="inp" type="text" value="Đỗ Khánh Linh" aria-label="Student">
+            </div>
+            <div class="field">
+              <span class="label">In-person rate</span>
+              <div class="inp-money">
+                <span aria-hidden="true">đ</span>
+                <input class="inp" type="text" value="250.000" aria-label="In-person lesson rate">
+              </div>
+            </div>
+            <div class="field">
+              <span class="label">Online rate</span>
+              <div class="inp-money">
+                <span aria-hidden="true">đ</span>
+                <input class="inp" type="text" value="200.000" aria-label="Online lesson rate">
+              </div>
+            </div>
+          </div>
+          <p class="spec-note">Pill radius, <code>--line-strong</code> border, focus ring = <code>--pink-100</code> halo. Money inputs keep the hardcoded <b>đ</b> prefix; displayed amounts use the trailing <b>₫</b> with dot grouping.</p>
+        </article>
+
+        <!-- FORM: select + date -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Select &amp; date</h4><code class="cls">.pill-select · .date-pill</code></div>
+          <div class="spec-body col">
+            <div class="field">
+              <span class="label">Piece</span>
+              <div class="pill-select">
+                <select aria-label="Piece">
+                  <option>Nocturne Op.9 No.2</option>
+                  <option>Für Elise</option>
+                  <option>Gymnopédie No.1</option>
+                  <option>River Flows in You</option>
+                </select>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label">Date</span>
+              <button class="date-pill">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+                Tue 14 Jul 2026
+              </button>
+            </div>
+          </div>
+          <p class="spec-note">Native <code>&lt;select&gt;</code> is kept on tablet — the OS picker beats any custom listbox with a finger. Chevron is inline SVG, never a background-image.</p>
+        </article>
+
+        <!-- FORM: toggle + checkbox + textarea -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Toggle · checkbox · textarea</h4><code class="cls">.switch · .cb · textarea.inp</code></div>
+          <div class="spec-body col">
+            <label class="switch">
+              <input type="checkbox" checked>
+              <span class="track"></span>
+              <span class="lbl">Online lesson <span class="chip chip--online" style="margin-left:4px">isOnline</span></span>
+            </label>
+            <label class="cb">
+              <input type="checkbox" checked>
+              <span class="box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+              <span class="lbl">Repeat weekly for 4 weeks</span>
+            </label>
+            <label class="cb">
+              <input type="checkbox">
+              <span class="box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+              <span class="lbl">Notify parent</span>
+            </label>
+            <div class="field">
+              <span class="label">Note</span>
+              <textarea class="inp" aria-label="Lesson note">Left hand still rushing bars 12–16. Practise Hanon 1 slowly.</textarea>
+            </div>
+          </div>
+          <p class="spec-note">Toggle ON = <code>--grad-mint</code> (it means “yes, this is true”, never a status). Checkbox ON = <code>--grad-pink</code>. Both labels are full 44px hit areas.</p>
+        </article>
+
+        <!-- TABLE HEADER -->
+        <article class="spec wide">
+          <div class="spec-hd"><h4>Table header + row</h4><code class="cls">.thead · .trow</code></div>
+          <div class="spec-body col" style="gap:0">
+            <div class="scroll-x">
+              <div class="thead">
+                <span class="sortable">Student
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6-6 6 6"/></svg>
+                </span>
+                <span>Piece</span>
+                <span>Status</span>
+                <span>Rate</span>
+                <span class="sr-only">Actions</span>
+              </div>
+              <div class="trow">
+                <span class="who"><span class="av av--sm">MA</span> Nguyễn Minh Anh</span>
+                <span style="color:var(--ink-soft)">Für Elise</span>
+                <span><span class="chip chip--complete">Complete</span></span>
+                <span class="money">250.000 ₫</span>
+                <button class="btn btn--quiet btn--icon" style="min-height:34px;width:34px" aria-label="Row menu">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </button>
+              </div>
+              <div class="trow" style="background:var(--surface-2)">
+                <span class="who"><span class="av av--sm" style="background:var(--grad-mint);color:var(--mint-ink)">OL</span> Olivia Nguyen</span>
+                <span style="color:var(--ink-soft)">River Flows in You</span>
+                <span><span class="chip chip--pending">Pending</span></span>
+                <span class="money">200.000 ₫</span>
+                <button class="btn btn--quiet btn--icon" style="min-height:34px;width:34px" aria-label="Row menu">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </button>
+              </div>
+              <div class="trow">
+                <span class="who"><span class="av av--sm">HP</span> Hoàng Nam Phong</span>
+                <span style="color:var(--ink-soft)">Turkish March</span>
+                <span><span class="chip chip--cancelled">Cancelled</span></span>
+                <span class="money" style="color:var(--ink-faint);text-decoration:line-through">300.000 ₫</span>
+                <button class="btn btn--quiet btn--icon" style="min-height:34px;width:34px" aria-label="Row menu">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <p class="spec-note">Header is <code>--surface-2</code> with <code>.label</code> type. Zebra stripes reuse <code>--surface-2</code>. <b>The table lives inside <code>.scroll-x</code></b> — it scrolls itself; the page body never does. Below 640px this collapses to stacked cards.</p>
+        </article>
+
+        <!-- DROPDOWN -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Dropdown menu</h4><code class="cls">.menu · .menu-item</code></div>
+          <div class="spec-body pad" style="justify-content:center">
+            <div class="menu">
+              <div class="menu-head">
+                <span class="av">TS</span>
+                <span>
+                  <span class="nm">Thu Sương</span><br>
+                  <span class="em">teacher@pianodiary.vn</span>
+                </span>
+              </div>
+              <hr class="menu-sep">
+              <button class="menu-item">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                Profile
+              </button>
+              <button class="menu-item">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 19h14"/></svg>
+                Updates
+              </button>
+              <hr class="menu-sep">
+              <button class="menu-item danger">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
+                Log out
+              </button>
+            </div>
+          </div>
+          <p class="spec-note">The real sidebar-footer menu. Items are 40px inside a 7px-padded panel — the touch slab is comfortably over 44px. Destructive item uses <code>--pink-700</code>, not red: <b>this palette has no red.</b></p>
+        </article>
+
+        <!-- DIALOG -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Dialog</h4><code class="cls">.dialog</code></div>
+          <div class="spec-body pad" style="justify-content:center">
+            <div class="dialog" role="dialog" aria-label="Attendance">
+              <div class="dialog-hd">
+                <span class="av av--lg">VT</span>
+                <div>
+                  <h5>Vũ Thanh Trúc</h5>
+                  <p>Tue 14 Jul · 16:00 · 45 min · Arabesque No.1</p>
+                </div>
+              </div>
+              <div class="dialog-bd" id="attGroup">
+                <button class="att c" aria-pressed="true">
+                  <span class="dot" style="background:var(--ok-dot)"></span> Present <span class="rate">+250.000 ₫</span>
+                </button>
+                <button class="att p" aria-pressed="false">
+                  <span class="dot" style="background:var(--wait-dot)"></span> Pending <span class="rate">not billed</span>
+                </button>
+                <button class="att x" aria-pressed="false">
+                  <span class="dot" style="background:var(--no-dot)"></span> Cancelled <span class="rate">needs reason</span>
+                </button>
+              </div>
+              <div class="dialog-ft">
+                <button class="btn btn--quiet btn--sm">Cancel</button>
+                <button class="btn btn--primary btn--sm">Save attendance</button>
+              </div>
+            </div>
+          </div>
+          <p class="spec-note">The attendance dialog — the only place <code>COMPLETE</code> is labelled <b>“Present”</b>. Try the three options: they are a radio group, and the rate hint updates the teacher’s mental math before they commit.</p>
+        </article>
+
+        <!-- BOTTOM SHEET -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Bottom sheet</h4><code class="cls">.sheet</code></div>
+          <div class="spec-body pad sheetstage" style="justify-content:center;align-items:flex-end;padding-bottom:0">
+            <div class="sheet">
+              <div class="sheet-grip" aria-hidden="true"></div>
+              <h5>Liam Carter</h5>
+              <p>Thu 16 Jul · 17:30 · 60 min · Minuet in G</p>
+              <div class="sheet-actions">
+                <button class="btn btn--mint">Mark present</button>
+                <button class="btn btn--ghost">Edit lesson</button>
+                <button class="btn btn--quiet">Cancel lesson</button>
+              </div>
+            </div>
+          </div>
+          <p class="spec-note">Below 1024px every dialog becomes a sheet: thumb-reachable, full-width buttons, <code>--sh-up</code> shadow, top corners <code>--r-xl</code>. Same content, different container — never a second code path.</p>
+        </article>
+
+        <!-- EMPTY -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Empty state</h4><code class="cls">.empty</code></div>
+          <div class="spec-body">
+            <div class="empty">
+              <div class="empty-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+                </svg>
+              </div>
+              <h5>No lessons on this day</h5>
+              <p>Nothing scheduled for Sun 19 Jul. Add one and it starts as <b>Pending</b>.</p>
+              <button class="btn btn--primary btn--sm">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+                Add lesson
+              </button>
+            </div>
+          </div>
+          <p class="spec-note">Always three parts: soft icon medallion, one honest sentence, one action. Never an illustration file — the icon is inline SVG on a <code>--teal-100 → --pink-50</code> wash.</p>
+        </article>
+
+        <!-- SKELETON -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Loading skeleton</h4><code class="cls">.skel</code></div>
+          <div class="spec-body col">
+            <div class="skel-row">
+              <div class="skel circ" style="width:36px;height:36px"></div>
+              <div style="flex:1">
+                <div class="skel" style="height:11px;width:56%"></div>
+                <div class="skel" style="height:9px;width:34%;margin-top:7px"></div>
+              </div>
+              <div class="skel" style="height:24px;width:70px;border-radius:999px"></div>
+            </div>
+            <div class="skel-row">
+              <div class="skel circ" style="width:36px;height:36px"></div>
+              <div style="flex:1">
+                <div class="skel" style="height:11px;width:70%"></div>
+                <div class="skel" style="height:9px;width:42%;margin-top:7px"></div>
+              </div>
+              <div class="skel" style="height:24px;width:70px;border-radius:999px"></div>
+            </div>
+            <div class="skel-row">
+              <div class="skel circ" style="width:36px;height:36px"></div>
+              <div style="flex:1">
+                <div class="skel" style="height:11px;width:48%"></div>
+                <div class="skel" style="height:9px;width:30%;margin-top:7px"></div>
+              </div>
+              <div class="skel" style="height:24px;width:70px;border-radius:999px"></div>
+            </div>
+          </div>
+          <p class="spec-note">Shimmer runs <code>--surface-2 → --surface-3</code>. It mirrors the real row’s geometry so nothing jumps on hydrate. Honours <code>prefers-reduced-motion</code> via the reset.</p>
+        </article>
+
+        <!-- TOAST -->
+        <article class="spec">
+          <div class="spec-hd"><h4>Toast</h4><code class="cls">.toast</code></div>
+          <div class="spec-body col">
+            <div class="toast" role="status">
+              <span class="toast-ico ok" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+              <span>
+                <span class="toast-t">Attendance saved</span>
+                <span class="toast-d">Vũ Thanh Trúc · Present · 250.000 ₫ billed</span>
+              </span>
+              <button class="x" aria-label="Dismiss">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div class="toast" role="status">
+              <span class="toast-ico no" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
+              </span>
+              <span>
+                <span class="toast-t">Cancellation needs a reason</span>
+                <span class="toast-d">CANCELLED requires cancelReason</span>
+              </span>
+              <button class="x" aria-label="Dismiss">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="spec-note">Bottom-centre on tablet, bottom-right on desktop, above the tab bar on phone. Success reuses <code>--ok-*</code>, error reuses <code>--no-*</code> — the same two tokens as the status system, so the app only ever teaches two colours.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ 5 · TYPE SCALE ════════════════════════════ -->
+    <section class="sec" id="type">
+      <div class="sec-head">
+        <span class="kicker"><i>05</i> Type</span>
+        <h2 class="sec-title">Six sizes, and that is all</h2>
+        <p class="sec-desc">
+          Every heading clamps, so a page header that reads well at 1440 is still proportionate at 768.
+          The system font stack is deliberate — zero web fonts, zero layout shift, and Vietnamese diacritics
+          render natively.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="type-row">
+          <div class="t-display">Good morning, Thu Sương ✨</div>
+          <div class="type-spec">
+            <span class="tk">--t-display</span>
+            <span class="vv">700 · clamp(26px, 3.4vw, 38px) / 1.1</span>
+            <span class="uu">Dashboard greeting only</span>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="t-h1">Monthly report — July 2026</div>
+          <div class="type-spec">
+            <span class="tk">--t-h1</span>
+            <span class="vv">700 · clamp(21px, 2.3vw, 27px) / 1.2</span>
+            <span class="uu">Page title, one per screen</span>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="t-h2">Upcoming lessons</div>
+          <div class="type-spec">
+            <span class="tk">--t-h2</span>
+            <span class="vv">650 · 17px / 1.3</span>
+            <span class="uu">Card &amp; dialog headings</span>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="t-body">Nguyễn Minh Anh is working through Nocturne Op.9 No.2 — the rubato in bars 5–8 is finally settling. Next lesson Thursday 17:30, in person.</div>
+          <div class="type-spec">
+            <span class="tk">--t-body</span>
+            <span class="vv">400 · 14px / 1.55</span>
+            <span class="uu">Default. Never below 14px for body.</span>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="t-small">45 min · in person · rate frozen at 250.000 ₫</div>
+          <div class="type-spec">
+            <span class="tk">--t-small</span>
+            <span class="vv">400 · 12.5px / 1.5</span>
+            <span class="uu">Row meta, helper text</span>
+          </div>
+        </div>
+        <div class="type-row">
+          <div class="label">Revenue this month</div>
+          <div class="type-spec">
+            <span class="tk">--t-label</span>
+            <span class="vv">600 · 11px / 1.4 · 0.14em tracking · uppercase</span>
+            <span class="uu">Every section label in the app</span>
+          </div>
+        </div>
+        <div class="type-row">
+          <div>
+            <div class="t-serif">My Piano Diary</div>
+            <div class="t-serif" style="font-size:13px;color:var(--ink-soft)">Tuition statement · Nguyễn family · July 2026 · 3.400.000 ₫</div>
+          </div>
+          <div class="type-spec">
+            <span class="tk">--font-serif</span>
+            <span class="vv">Iowan Old Style / Palatino / Georgia</span>
+            <span class="uu" style="color:var(--pink-700)">ONLY on the printable report paper (<code>.paper</code>). Never in app chrome.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg>
+        </span>
+        <div>
+          <h4>Numbers get their own treatment</h4>
+          <p>
+            Anything that is money, a count, or a duration uses <code>--font-num</code> with
+            <code>font-variant-numeric: tabular-nums</code> — see <code>.metric</code> and <code>.money</code>.
+            VND renders as <strong>1.500.000 ₫</strong> (dot grouping, trailing symbol, zero decimals);
+            rate <em>inputs</em> keep their hardcoded <strong>đ 250.000</strong> prefix. Supported currencies are
+            VND (default), IDR and USD — nothing else.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ 6 · LAYOUT & BREAKPOINTS ══════════════════ -->
+    <section class="sec" id="layout">
+      <div class="sec-head">
+        <span class="kicker"><i>06</i> Layout</span>
+        <h2 class="sec-title">Four breakpoints — tablet is the point</h2>
+        <p class="sec-desc">
+          This teacher works from an iPad on the piano lid between lessons. Tablet portrait and tablet landscape
+          are the <em>primary</em> targets; desktop is the bonus. The sidebar is the only thing that changes shape.
+        </p>
+      </div>
+
+      <div class="bps">
+        <!-- phone -->
+        <article class="bp">
+          <div class="bp-hd"><span class="bp-nm">Phone</span><span class="bp-px">&le; 639px</span></div>
+          <span class="bp-tag sec2">Secondary</span>
+          <div class="dev" aria-hidden="true">
+            <div class="dev-main">
+              <div class="dev-bar w60"></div>
+              <div class="dev-grid one">
+                <div class="dev-cell"></div>
+                <div class="dev-cell"></div>
+              </div>
+              <div class="dev-tabs">
+                <span class="dev-tab"></span><span class="dev-tab"></span><span class="dev-tab"></span><span class="dev-tab"></span>
+              </div>
+            </div>
+          </div>
+          <p class="bp-desc"><b>Off-canvas + bottom tab bar.</b> Sidebar slides in over a scrim from a hamburger. 5 tabs docked at the bottom with <code>--sh-up</code>. One column. Dialogs become sheets.</p>
+        </article>
+
+        <!-- tablet portrait -->
+        <article class="bp pri">
+          <div class="bp-hd"><span class="bp-nm">Tablet portrait</span><span class="bp-px">640 – 1023</span></div>
+          <span class="bp-tag">Primary · 768×1024</span>
+          <div class="dev" aria-hidden="true">
+            <div class="dev-main">
+              <div class="dev-bar w60"></div>
+              <div class="dev-grid">
+                <div class="dev-cell"></div><div class="dev-cell"></div>
+                <div class="dev-cell"></div><div class="dev-cell"></div>
+              </div>
+              <div class="dev-tabs">
+                <span class="dev-tab"></span><span class="dev-tab"></span><span class="dev-tab"></span><span class="dev-tab"></span>
+              </div>
+            </div>
+          </div>
+          <p class="bp-desc"><b>Off-canvas + tab bar</b>, but the content grid opens to <b>2 columns</b>. All 44px targets, generous 16–22px gaps. Tables still scroll inside <code>.scroll-x</code>.</p>
+        </article>
+
+        <!-- tablet landscape -->
+        <article class="bp pri">
+          <div class="bp-hd"><span class="bp-nm">Tablet landscape</span><span class="bp-px">1024 – 1279</span></div>
+          <span class="bp-tag">Primary · 1024×768</span>
+          <div class="dev" aria-hidden="true">
+            <div class="dev-side rail">
+              <span class="dev-dot"></span><span class="dev-dot"></span><span class="dev-dot"></span><span class="dev-dot"></span><span class="dev-dot"></span>
+            </div>
+            <div class="dev-main">
+              <div class="dev-bar w60"></div>
+              <div class="dev-grid">
+                <div class="dev-cell"></div><div class="dev-cell"></div>
+                <div class="dev-cell"></div><div class="dev-cell"></div>
+              </div>
+            </div>
+          </div>
+          <p class="bp-desc"><b>76px icon rail</b> (<code>--rail</code>). Icons only, labels on hover/long-press tooltip. No tab bar — the rail is always reachable with a left thumb. Content gets 2–3 columns.</p>
+        </article>
+
+        <!-- desktop -->
+        <article class="bp">
+          <div class="bp-hd"><span class="bp-nm">Desktop</span><span class="bp-px">&ge; 1280px</span></div>
+          <span class="bp-tag sec2">Bonus</span>
+          <div class="dev" aria-hidden="true">
+            <div class="dev-side full">
+              <span class="dev-dot"></span><span class="dev-dot"></span><span class="dev-dot"></span><span class="dev-dot"></span><span class="dev-dot"></span>
+            </div>
+            <div class="dev-main">
+              <div class="dev-bar w60"></div>
+              <div class="dev-grid">
+                <div class="dev-cell"></div><div class="dev-cell"></div>
+                <div class="dev-cell"></div><div class="dev-cell"></div>
+              </div>
+            </div>
+          </div>
+          <p class="bp-desc"><b>248px full sidebar</b> (<code>--sidebar</code>): brand, “Add lesson” CTA, MAIN + MANAGE groups, user footer. Content maxes at ~1180px and centres.</p>
+        </article>
+      </div>
+
+      <div class="rules">
+        <div class="rule">
+          <span class="rule-n">1</span>
+          <div>
+            <h5>44px is the floor</h5>
+            <p><code>--tap: 44px</code>. Every button, nav item, chip-as-button, row action and form control clears it — including the 34px <code>.btn--sm</code>, which only ever lives inside a padded row that itself exceeds 44px.</p>
+            <div class="tapdemo" style="margin-top:10px">
+              <span class="tapbox">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+              </span>
+              <span class="tapbox">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+              </span>
+              <span class="tapbox">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-n">2</span>
+          <div>
+            <h5>Wide content scrolls in its own container</h5>
+            <p>Month grids, report tables and stat strips go inside <code>.scroll-x</code> (plus <code>.no-scrollbar</code> where a scrollbar would be ugly). <b>The page body must never scroll horizontally at any width.</b> If something overflows, it is a bug in that component, not in the shell.</p>
+            <div class="scroll-x no-scrollbar" style="margin-top:10px;border:1px dashed var(--line-strong);border-radius:var(--r-sm);padding:8px">
+              <div style="display:flex;gap:8px;min-width:520px">
+                <span class="chip chip--complete">Mon · 4</span>
+                <span class="chip chip--complete">Tue · 5</span>
+                <span class="chip chip--pending">Wed · 3</span>
+                <span class="chip chip--complete">Thu · 6</span>
+                <span class="chip chip--cancelled">Fri · 1</span>
+                <span class="chip chip--complete">Sat · 5</span>
+                <span class="chip chip--pending">Sun · 2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-n">3</span>
+          <div>
+            <h5>Grid + clamp, never fixed widths</h5>
+            <p>The shell uses <code>grid-template-columns</code> keyed off the sidebar token and <code>minmax()</code> content tracks. Padding is <code>clamp(14px, 3vw, 32px)</code>. No <code>width: 1200px</code> anywhere, no horizontal media-query hacks on the page shell.</p>
+          </div>
+        </div>
+        <div class="rule">
+          <span class="rule-n">4</span>
+          <div>
+            <h5>Light theme only</h5>
+            <p>This palette is inherently light; a dark variant would destroy the pastels. Delete the <code>.dark</code> block and the <code>@custom-variant dark</code> line from <code>globals.css</code> rather than maintaining a second theme nobody asked for.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ 7 · TAILWIND HANDOFF ══════════════════════ -->
+    <section class="sec" id="handoff">
+      <div class="sec-head">
+        <span class="kicker"><i>07</i> Handoff</span>
+        <h2 class="sec-title">Tailwind v4 · <code style="font-size:14px">src/styles/globals.css</code></h2>
+        <p class="sec-desc">
+          Paste this over the existing <code>:root</code> block. It maps Candy Floss onto the shadcn variable
+          names the app already uses, in <code>oklch()</code> to match the current file, with the hex in a comment.
+          Every shadcn component re-skins itself from these — no component edits required for colour.
+        </p>
+      </div>
+
+      <div class="codewrap">
+        <div class="code-hd">
+          <span class="code-file">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"/><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/></svg>
+            src/styles/globals.css
+          </span>
+          <button class="copy" id="copyBtn" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            <span>Copy</span>
+          </button>
+        </div>
+        <pre class="code" id="codeBlock"><code><span class="c">/* ── Candy Floss · brand tokens → Tailwind utilities ──────────────────────
+   Generates bg-bubblegum, text-wintergreen, border-mint, bg-ok-bg, …
+   NOTE: --color-pink-* / --color-teal-* deliberately OVERRIDE Tailwind's
+   stock pink/teal scales. This app has exactly one pink and one teal. */</span>
+<span class="k">@theme</span> {
+  <span class="p">--color-bubblegum</span>:   <span class="v">oklch(0.799 0.102 357.3)</span>; <span class="c">/* #f3a2be */</span>
+  <span class="p">--color-cotton</span>:      <span class="v">oklch(0.907 0.051 2.9)</span>;   <span class="c">/* #ffd3dd */</span>
+  <span class="p">--color-floss</span>:       <span class="v">oklch(0.975 0.010 189.1)</span>; <span class="c">/* #f0f9f8 */</span>
+  <span class="p">--color-mint</span>:        <span class="v">oklch(0.901 0.034 189.7)</span>; <span class="c">/* #c6e6e3 */</span>
+  <span class="p">--color-wintergreen</span>: <span class="v">oklch(0.760 0.065 185.8)</span>; <span class="c">/* #81bfb7 */</span>
+
+  <span class="p">--color-pink-50</span>:  <span class="v">oklch(0.979 0.011 357.0)</span>; <span class="c">/* #fff5f8 */</span>
+  <span class="p">--color-pink-100</span>: <span class="v">oklch(0.949 0.028 358.0)</span>; <span class="c">/* #ffe7ee */</span>
+  <span class="p">--color-pink-200</span>: <span class="v">oklch(0.907 0.051 2.9)</span>;   <span class="c">/* #ffd3dd — cotton   */</span>
+  <span class="p">--color-pink-300</span>: <span class="v">oklch(0.799 0.102 357.3)</span>; <span class="c">/* #f3a2be — bubblegum */</span>
+  <span class="p">--color-pink-500</span>: <span class="v">oklch(0.690 0.143 358.5)</span>; <span class="c">/* #e0729a — graphics only */</span>
+  <span class="p">--color-pink-600</span>: <span class="v">oklch(0.600 0.161 0.2)</span>;   <span class="c">/* #c94f7c — button fill  */</span>
+  <span class="p">--color-pink-700</span>: <span class="v">oklch(0.500 0.138 358.5)</span>; <span class="c">/* #9e3a62 — pink text   */</span>
+
+  <span class="p">--color-teal-50</span>:  <span class="v">oklch(0.975 0.010 189.1)</span>; <span class="c">/* #f0f9f8 — floss   */</span>
+  <span class="p">--color-teal-100</span>: <span class="v">oklch(0.940 0.020 185.5)</span>; <span class="c">/* #ddf0ed */</span>
+  <span class="p">--color-teal-200</span>: <span class="v">oklch(0.901 0.034 189.7)</span>; <span class="c">/* #c6e6e3 — mint    */</span>
+  <span class="p">--color-teal-400</span>: <span class="v">oklch(0.760 0.065 185.8)</span>; <span class="c">/* #81bfb7 — wintergreen */</span>
+  <span class="p">--color-teal-600</span>: <span class="v">oklch(0.605 0.068 184.0)</span>; <span class="c">/* #4f8f86 */</span>
+  <span class="p">--color-teal-700</span>: <span class="v">oklch(0.482 0.059 179.7)</span>; <span class="c">/* #35695f — teal text */</span>
+
+  <span class="p">--color-sand-100</span>: <span class="v">oklch(0.960 0.032 81.0)</span>;  <span class="c">/* #fdf0da */</span>
+  <span class="p">--color-sand-300</span>: <span class="v">oklch(0.871 0.085 80.3)</span>;  <span class="c">/* #f2cf94 */</span>
+  <span class="p">--color-sand-700</span>: <span class="v">oklch(0.532 0.094 78.1)</span>;  <span class="c">/* #8a6524 */</span>
+
+  <span class="c">/* LessonStatus — ONE mapping, every surface. Only COMPLETE is billable. */</span>
+  <span class="p">--color-ok-bg</span>:      <span class="v">oklch(0.942 0.022 179.2)</span>; <span class="c">/* #ddf1ec  COMPLETE  bg */</span>
+  <span class="p">--color-ok-fg</span>:      <span class="v">oklch(0.482 0.059 179.7)</span>; <span class="c">/* #35695f  COMPLETE  fg */</span>
+  <span class="p">--color-ok-dot</span>:     <span class="v">oklch(0.760 0.065 185.8)</span>; <span class="c">/* #81bfb7             */</span>
+  <span class="p">--color-no-bg</span>:      <span class="v">oklch(0.932 0.037 1.0)</span>;   <span class="c">/* #ffdfe7  CANCELLED bg */</span>
+  <span class="p">--color-no-fg</span>:      <span class="v">oklch(0.500 0.138 358.5)</span>; <span class="c">/* #9e3a62  CANCELLED fg */</span>
+  <span class="p">--color-no-dot</span>:     <span class="v">oklch(0.799 0.102 357.3)</span>; <span class="c">/* #f3a2be             */</span>
+  <span class="p">--color-wait-bg</span>:    <span class="v">oklch(0.960 0.032 81.0)</span>;  <span class="c">/* #fdf0da  PENDING   bg */</span>
+  <span class="p">--color-wait-fg</span>:    <span class="v">oklch(0.532 0.094 78.1)</span>;  <span class="c">/* #8a6524  PENDING   fg */</span>
+  <span class="p">--color-wait-dot</span>:   <span class="v">oklch(0.871 0.085 80.3)</span>;  <span class="c">/* #f2cf94             */</span>
+  <span class="p">--color-special-bg</span>: <span class="v">oklch(0.930 0.026 305.8)</span>; <span class="c">/* #ece4f6  report grid  */</span>
+  <span class="p">--color-special-fg</span>: <span class="v">oklch(0.481 0.119 302.1)</span>; <span class="c">/* #6b4b95             */</span>
+
+  <span class="c">/* Ink — a deep teal-slate, never pure black */</span>
+  <span class="p">--color-ink</span>:       <span class="v">oklch(0.328 0.027 203.5)</span>; <span class="c">/* #24393b  12.4:1 on white */</span>
+  <span class="p">--color-ink-soft</span>:  <span class="v">oklch(0.524 0.030 193.3)</span>; <span class="c">/* #56706f   5.1:1 on white */</span>
+  <span class="p">--color-ink-faint</span>: <span class="v">oklch(0.697 0.027 193.5)</span>; <span class="c">/* #8ba3a2  decorative only */</span>
+  <span class="p">--color-mint-ink</span>:  <span class="v">oklch(0.296 0.038 181.7)</span>; <span class="c">/* #14332e  only ink on mint fills */</span>
+
+  <span class="c">/* Radii — soft. --radius-lg (26px) is the card default. */</span>
+  <span class="p">--radius-xs</span>:  <span class="v">8px</span>;
+  <span class="p">--radius-sm</span>:  <span class="v">12px</span>;
+  <span class="p">--radius-md</span>:  <span class="v">20px</span>;
+  <span class="p">--radius-lg</span>:  <span class="v">26px</span>;
+  <span class="p">--radius-xl</span>:  <span class="v">32px</span>;
+  <span class="p">--radius-2xl</span>: <span class="v">40px</span>;
+
+  <span class="c">/* Shadows — tinted teal, never neutral grey */</span>
+  <span class="p">--shadow-sm</span>:   <span class="v">0 2px 8px -2px rgb(36 57 59 / 0.08)</span>;
+  <span class="p">--shadow-md</span>:   <span class="v">0 10px 24px -14px rgb(60 90 92 / 0.35)</span>;
+  <span class="p">--shadow-lg</span>:   <span class="v">0 22px 48px -26px rgb(60 90 92 / 0.42)</span>;
+  <span class="p">--shadow-pink</span>: <span class="v">0 14px 30px -14px rgb(201 79 124 / 0.45)</span>;
+  <span class="p">--shadow-mint</span>: <span class="v">0 14px 30px -14px rgb(79 143 134 / 0.40)</span>;
+
+  <span class="p">--spacing-tap</span>: <span class="v">44px</span>; <span class="c">/* min-h-tap / min-w-tap — the touch floor */</span>
+}
+
+<span class="c">/* ── shadcn contract ──────────────────────────────────────────────────────
+   Same variable names the app already ships; only the values change.
+   Keep the existing @theme inline { --color-*: var(--*) } block as-is. */</span>
+<span class="k">:root</span> {
+  <span class="p">--radius</span>: <span class="v">1rem</span>; <span class="c">/* was 0.75rem — Candy Floss is rounder */</span>
+
+  <span class="p">--background</span>:          <span class="v">oklch(0.975 0.010 189.1)</span>; <span class="c">/* #f0f9f8  Candy Floss */</span>
+  <span class="p">--foreground</span>:          <span class="v">oklch(0.328 0.027 203.5)</span>; <span class="c">/* #24393b  --ink       */</span>
+  <span class="p">--card</span>:                <span class="v">oklch(1 0 0)</span>;             <span class="c">/* #ffffff              */</span>
+  <span class="p">--card-foreground</span>:     <span class="v">oklch(0.328 0.027 203.5)</span>; <span class="c">/* #24393b              */</span>
+  <span class="p">--popover</span>:             <span class="v">oklch(1 0 0)</span>;             <span class="c">/* #ffffff              */</span>
+  <span class="p">--popover-foreground</span>:  <span class="v">oklch(0.328 0.027 203.5)</span>; <span class="c">/* #24393b              */</span>
+
+  <span class="c">/* Primary = Bubble Gum, deepened to --pink-600 so white text passes AA.
+     NEVER set --primary to #f3a2be: white on it is 1.96:1. */</span>
+  <span class="p">--primary</span>:             <span class="v">oklch(0.600 0.161 0.2)</span>;   <span class="c">/* #c94f7c  --pink-600  */</span>
+  <span class="p">--primary-foreground</span>:  <span class="v">oklch(1 0 0)</span>;             <span class="c">/* #ffffff              */</span>
+
+  <span class="c">/* Secondary = Cotton Candy wash (chips, soft fills) */</span>
+  <span class="p">--secondary</span>:            <span class="v">oklch(0.949 0.028 358.0)</span>; <span class="c">/* #ffe7ee  --pink-100  */</span>
+  <span class="p">--secondary-foreground</span>: <span class="v">oklch(0.500 0.138 358.5)</span>; <span class="c">/* #9e3a62  --pink-700  */</span>
+
+  <span class="c">/* Muted = the Candy Floss inset (table stripes, disabled) */</span>
+  <span class="p">--muted</span>:                <span class="v">oklch(0.975 0.010 189.1)</span>; <span class="c">/* #f0f9f8  --surface-2 */</span>
+  <span class="p">--muted-foreground</span>:     <span class="v">oklch(0.524 0.030 193.3)</span>; <span class="c">/* #56706f  --ink-soft  */</span>
+
+  <span class="c">/* Accent = Mint (hover, active nav, secondary emphasis) */</span>
+  <span class="p">--accent</span>:               <span class="v">oklch(0.940 0.020 185.5)</span>; <span class="c">/* #ddf0ed  --teal-100  */</span>
+  <span class="p">--accent-foreground</span>:    <span class="v">oklch(0.482 0.059 179.7)</span>; <span class="c">/* #35695f  --teal-700  */</span>
+
+  <span class="c">/* Destructive = CANCELLED. This palette has no red — a cancelled lesson
+     is a bubblegum event, not an alarm. Same tokens as --no-fg. */</span>
+  <span class="p">--destructive</span>:          <span class="v">oklch(0.500 0.138 358.5)</span>; <span class="c">/* #9e3a62  --pink-700  */</span>
+  <span class="p">--destructive-foreground</span>: <span class="v">oklch(1 0 0)</span>;           <span class="c">/* #ffffff              */</span>
+
+  <span class="p">--border</span>:               <span class="v">oklch(0.942 0.014 180.7)</span>; <span class="c">/* #e2efec  --line        */</span>
+  <span class="p">--input</span>:                <span class="v">oklch(0.902 0.023 183.1)</span>; <span class="c">/* #cfe4e0  --line-strong */</span>
+  <span class="p">--ring</span>:                 <span class="v">oklch(0.600 0.161 0.2)</span>;   <span class="c">/* #c94f7c  --pink-600    */</span>
+
+  <span class="c">/* Charts. 1 = money, 2 = COMPLETE, 3 = PENDING, 4 = CANCELLED,
+     5 = comparison / prior month. Status series MUST keep 2/3/4. */</span>
+  <span class="p">--chart-1</span>: <span class="v">oklch(0.600 0.161 0.2)</span>;   <span class="c">/* #c94f7c  revenue     */</span>
+  <span class="p">--chart-2</span>: <span class="v">oklch(0.760 0.065 185.8)</span>; <span class="c">/* #81bfb7  complete    */</span>
+  <span class="p">--chart-3</span>: <span class="v">oklch(0.871 0.085 80.3)</span>;  <span class="c">/* #f2cf94  pending     */</span>
+  <span class="p">--chart-4</span>: <span class="v">oklch(0.799 0.102 357.3)</span>; <span class="c">/* #f3a2be  cancelled   */</span>
+  <span class="p">--chart-5</span>: <span class="v">oklch(0.605 0.068 184.0)</span>; <span class="c">/* #4f8f86  prior month */</span>
+
+  <span class="c">/* Sidebar. White panel, mint hover, cotton-candy active pill. */</span>
+  <span class="p">--sidebar</span>:                     <span class="v">oklch(1 0 0)</span>;             <span class="c">/* #ffffff */</span>
+  <span class="p">--sidebar-foreground</span>:          <span class="v">oklch(0.328 0.027 203.5)</span>; <span class="c">/* #24393b */</span>
+  <span class="p">--sidebar-primary</span>:             <span class="v">oklch(0.600 0.161 0.2)</span>;   <span class="c">/* #c94f7c  "Add lesson" */</span>
+  <span class="p">--sidebar-primary-foreground</span>:  <span class="v">oklch(1 0 0)</span>;             <span class="c">/* #ffffff */</span>
+  <span class="p">--sidebar-accent</span>:              <span class="v">oklch(0.949 0.028 358.0)</span>; <span class="c">/* #ffe7ee  active nav item */</span>
+  <span class="p">--sidebar-accent-foreground</span>:   <span class="v">oklch(0.500 0.138 358.5)</span>; <span class="c">/* #9e3a62 */</span>
+  <span class="p">--sidebar-border</span>:              <span class="v">oklch(0.942 0.014 180.7)</span>; <span class="c">/* #e2efec */</span>
+  <span class="p">--sidebar-ring</span>:                <span class="v">oklch(0.600 0.161 0.2)</span>;   <span class="c">/* #c94f7c */</span>
+}
+
+<span class="c">/* The signature app shell background. Put this on the content area, not
+   on &lt;body&gt;, so the sidebar keeps its white panel. */</span>
+<span class="k">.app-shell</span> {
+  <span class="p">background</span>: <span class="v">linear-gradient(140deg, #d8f0eb 0%, #f0f9f8 38%, #fdfbfb 55%,
+                            #fff5f8 78%, #ffe3ea 100%)</span>;
+  <span class="p">background-attachment</span>: <span class="v">fixed</span>;
+}
+
+<span class="c">/* DELETE the .dark {…} block and the `@custom-variant dark` line.
+   Candy Floss is light-only by design. */</span></code></pre>
+      </div>
+
+      <h3 class="sub">Mockup class → shadcn component</h3>
+      <div class="tbl-wrap scroll-x">
+        <div class="maprow hd">
+          <span>Mockup primitive</span>
+          <span>shadcn component</span>
+          <span>What changes</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--surface)"></span>.card</span>
+          <span class="mono">&lt;Card&gt;</span>
+          <span style="color:var(--ink-soft)">rounded-lg (26px), border-border, shadow-md, bg-card</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--pink-600)"></span>.btn--primary</span>
+          <span class="mono">&lt;Button&gt;</span>
+          <span style="color:var(--ink-soft)">default variant + <code>rounded-full min-h-tap shadow-pink</code>, gradient via a <code>bg-linear-135</code> utility class</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--mint)"></span>.btn--mint</span>
+          <span class="mono">&lt;Button variant="secondary"&gt;</span>
+          <span style="color:var(--ink-soft)">grad-mint fill, text-mint-ink</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--surface-2)"></span>.btn--ghost / --quiet</span>
+          <span class="mono">variant="outline" / "ghost"</span>
+          <span style="color:var(--ink-soft)">bg-card + border-border / transparent + hover:bg-muted</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--ok-bg)"></span>.chip--*</span>
+          <span class="mono">&lt;Badge&gt;</span>
+          <span style="color:var(--ink-soft)">3 variants bound to LessonStatus + the <code>::before</code> dot</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--grad-brand)"></span>.av</span>
+          <span class="mono">&lt;Avatar&gt;&lt;AvatarFallback&gt;</span>
+          <span style="color:var(--ink-soft)">initials on grad-brand — no remote images</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--line-strong)"></span>.inp / .pill-select</span>
+          <span class="mono">&lt;Input&gt; &lt;Select&gt;</span>
+          <span style="color:var(--ink-soft)">rounded-full, border-input, focus ring-pink-100</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--wintergreen)"></span>.switch</span>
+          <span class="mono">&lt;Switch&gt;</span>
+          <span style="color:var(--ink-soft)">checked track = grad-mint (means “true”, never a status)</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--surface)"></span>.dialog / .sheet</span>
+          <span class="mono">&lt;Dialog&gt; / &lt;Drawer&gt;</span>
+          <span style="color:var(--ink-soft)">same content — Drawer below 1024px, Dialog above</span>
+        </div>
+        <div class="maprow">
+          <span class="mono"><span class="swdot" style="background:var(--cotton)"></span>.toast</span>
+          <span class="mono">&lt;Sonner&gt;</span>
+          <span style="color:var(--ink-soft)">success = ok-*, error = no-* — reuses the status tokens</span>
+        </div>
+      </div>
+
+      <div class="callout callout--pink">
+        <span class="callout-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg>
+        </span>
+        <div>
+          <h4>Three things not to get wrong</h4>
+          <p>
+            <strong>1.</strong> <code>--primary</code> is <code>#c94f7c</code>, not <code>#f3a2be</code>. Bubble Gum is a
+            background; white text on it is 1.96:1 and illegible. The pastel still shows up everywhere — as fills,
+            chips, gradients and the app shell — just never under text.
+          </p>
+          <p>
+            <strong>2.</strong> <code>--destructive</code> is pink, not red. A cancelled lesson is a normal fact of a
+            teaching week, not an error state. Keep it in the bubblegum family so the report grid, the chip and the
+            error toast all agree.
+          </p>
+          <p>
+            <strong>3.</strong> Charts 2/3/4 are reserved for COMPLETE / PENDING / CANCELLED. If a chart series
+            means a status, it <em>must</em> use the status colour, or the report grid and the bar chart will disagree
+            on the same screen — which is exactly the bug this redesign exists to kill.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div>
+        <div style="font-weight:650;color:var(--ink)">Candy Floss · My Piano Diary</div>
+        <div style="margin-top:3px">Contract: <code>design-mockups/_theme.css</code> · Light theme only · Tablet-first</div>
+      </div>
+      <span class="foot-strip" aria-hidden="true"></span>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  /* ── Section nav highlight ─────────────────────────────────────────────── */
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc-links a'));
+  var secs  = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var i = secs.indexOf(e.target);
+        if (i < 0) return;
+        links.forEach(function (l) { l.classList.remove('on'); });
+        links[i].classList.add('on');
+        var box = links[i].closest('.toc-links');
+        if (box) {
+          var l = links[i].offsetLeft - box.clientWidth / 2 + links[i].clientWidth / 2;
+          box.scrollTo({ left: l, behavior: 'smooth' });
+        }
+      });
+    }, { rootMargin: '-56px 0px -70% 0px', threshold: 0 });
+    secs.forEach(function (s) { if (s) io.observe(s); });
+  }
+
+  /* ── Segmented controls ────────────────────────────────────────────────── */
+  document.querySelectorAll('.seg').forEach(function (seg) {
+    seg.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-selected', 'false'); });
+      b.setAttribute('aria-selected', 'true');
+    });
+  });
+
+  /* ── Attendance dialog (radio behaviour) ───────────────────────────────── */
+  var att = document.getElementById('attGroup');
+  if (att) {
+    att.addEventListener('click', function (e) {
+      var b = e.target.closest('.att');
+      if (!b) return;
+      att.querySelectorAll('.att').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+    });
+  }
+
+  /* ── Copy the handoff CSS ──────────────────────────────────────────────── */
+  var btn = document.getElementById('copyBtn');
+  var pre = document.getElementById('codeBlock');
+  if (btn && pre) {
+    btn.addEventListener('click', function () {
+      var txt = pre.innerText;
+      var done = function () {
+        btn.classList.add('done');
+        btn.querySelector('span').textContent = 'Copied';
+        setTimeout(function () {
+          btn.classList.remove('done');
+          btn.querySelector('span').textContent = 'Copy';
+        }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done, function () {});
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = txt; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done(); } catch (err) {}
+        document.body.removeChild(ta);
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

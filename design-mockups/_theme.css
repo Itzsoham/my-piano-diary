@@ -1,0 +1,421 @@
+/* ==========================================================================
+   MY PIANO DIARY — "Candy Floss" design system
+   Shared token contract for every mockup in this folder.
+   Palette source: Good Mood Graphics — Bubble Gum / Cotton Candy /
+   Candy Floss / Mint / Wintergreen.
+   ========================================================================== */
+
+:root {
+  /* ── 1. Brand palette (verbatim from the reference swatches) ───────────── */
+  --bubblegum: #f3a2be; /* 243 162 190 */
+  --cotton: #ffd3dd; /* 255 211 221 */
+  --floss: #f0f9f8; /* 240 249 248 */
+  --mint: #c6e6e3; /* 198 230 227 */
+  --wintergreen: #81bfb7; /* 129 191 183 */
+
+  /* ── 2. Derived ramps ──────────────────────────────────────────────────
+     Tints go lighter for washes; "deep" variants exist so text and buttons
+     can hit ≥4.5:1 contrast — the raw pastels never can. */
+  --pink-50: #fff5f8;
+  --pink-100: #ffe7ee;
+  --pink-200: var(--cotton);
+  --pink-300: var(--bubblegum);
+  --pink-500: #e0729a; /* graphic / large-text pink */
+  --pink-600: #c94f7c; /* button fill, AA on white at 16px+ */
+  --pink-700: #9e3a62; /* accessible pink text on white & on --cotton */
+
+  --teal-50: var(--floss);
+  --teal-100: #ddf0ed;
+  --teal-200: var(--mint);
+  --teal-400: var(--wintergreen);
+  --teal-600: #4f8f86; /* accessible teal text/border */
+  --teal-700: #35695f; /* headings on mint */
+
+  /* Pending needs a hue the 5-swatch palette doesn't have. Butterscotch is
+     the warmest neighbour that still reads pastel next to cotton candy. */
+  --sand-100: #fdf0da;
+  --sand-300: #f2cf94;
+  --sand-700: #8a6524;
+
+  /* ── 3. Ink (text) — a deep teal-slate, never pure black ───────────────── */
+  --ink: #24393b; /* headings, primary text — 12.4:1 on white */
+  --ink-soft: #56706f; /* secondary text — 5.1:1 on white */
+  --ink-faint: #8ba3a2; /* labels, axis ticks — decorative only */
+  --ink-invert: #ffffff;
+  --mint-ink: #14332e; /* the only ink that sits on --grad-mint fills */
+
+  /* ── 4. Surfaces ───────────────────────────────────────────────────────── */
+  --surface: #ffffff;
+  --surface-2: var(--floss); /* inset panels, table stripes */
+  --surface-3: #e7f3f1; /* pressed / hovered inset */
+  --line: #e2efec; /* default hairline */
+  --line-strong: #cfe4e0;
+  --line-pink: #fadfe7; /* hairline on pink surfaces */
+
+  /* The signature background: mint → floss → cotton, exactly the gradient
+     strip in the reference image. Every page shell uses this. */
+  --app-bg: linear-gradient(
+    140deg,
+    #d8f0eb 0%,
+    var(--floss) 38%,
+    #fdfbfb 55%,
+    var(--pink-50) 78%,
+    #ffe3ea 100%
+  );
+
+  /* ── 5. Semantic — mapped to the REAL LessonStatus enum ────────────────── */
+  /* COMPLETE — the only billable status */
+  --ok-bg: #ddf1ec;
+  --ok-fg: var(--teal-700); /* #35695f — 5.36:1 on --ok-bg, passes AA at 11.5px */
+  --ok-dot: var(--wintergreen);
+  /* CANCELLED — never charged; tracked as "Missed" loss */
+  --no-bg: #ffdfe7;
+  --no-fg: var(--pink-700); /* #9e3a62 — 5.24:1 on --no-bg, passes AA at 11.5px */
+  --no-dot: var(--bubblegum);
+  /* PENDING — default on create, not yet billed */
+  --wait-bg: var(--sand-100);
+  --wait-fg: var(--sand-700);
+  --wait-dot: var(--sand-300);
+  /* Special reason (purple cells in the report grid) */
+  --special-bg: #ece4f6;
+  --special-fg: #6b4b95;
+  --special-dot: #b9a3d9;
+
+  /* ── 6. Gradients ──────────────────────────────────────────────────────── */
+  --grad-brand: linear-gradient(135deg, var(--bubblegum), var(--wintergreen));
+  --grad-pink: linear-gradient(135deg, #f7b6cd, var(--pink-500));
+  --grad-mint: linear-gradient(135deg, var(--mint), var(--wintergreen));
+  --grad-hero: linear-gradient(135deg, #fbe0e8 0%, #f2f9f8 50%, #d5eeea 100%);
+
+  /* ── 7. Radii — generously round; this app should feel soft ────────────── */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r: 16px;
+  --r-md: 20px;
+  --r-lg: 26px;
+  --r-xl: 32px;
+  --r-2xl: 40px;
+  --r-pill: 999px;
+
+  /* ── 8. Shadows — tinted, never neutral grey ───────────────────────────── */
+  --sh-xs: 0 1px 2px rgba(36, 57, 59, 0.05);
+  --sh-sm: 0 2px 8px -2px rgba(36, 57, 59, 0.08);
+  --sh: 0 10px 24px -14px rgba(60, 90, 92, 0.35);
+  --sh-lg: 0 22px 48px -26px rgba(60, 90, 92, 0.42);
+  --sh-xl: 0 40px 80px -40px rgba(60, 90, 92, 0.5);
+  --sh-pink: 0 14px 30px -14px rgba(201, 79, 124, 0.45);
+  --sh-mint: 0 14px 30px -14px rgba(79, 143, 134, 0.4);
+  /* upward-throwing shadow — bottom-docked bars, sheets */
+  --sh-up: 0 -12px 30px -20px rgba(60, 90, 92, 0.45);
+
+  /* ── 9. Type ───────────────────────────────────────────────────────────── */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    sans-serif;
+  /* The report "paper" is the only serif surface — it prints. */
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+    "Times New Roman", serif;
+  --font-num: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+
+  --t-display: 700 clamp(26px, 3.4vw, 38px) / 1.1 var(--font-sans);
+  --t-h1: 700 clamp(21px, 2.3vw, 27px) / 1.2 var(--font-sans);
+  --t-h2: 650 17px/1.3 var(--font-sans);
+  --t-body: 400 14px/1.55 var(--font-sans);
+  --t-small: 400 12.5px/1.5 var(--font-sans);
+  /* Section-label convention used across the whole app */
+  --t-label: 600 11px/1.4 var(--font-sans);
+  --label-tracking: 0.14em;
+
+  /* ── 10. Spacing / layout ──────────────────────────────────────────────── */
+  --gap: 16px;
+  --gap-lg: 22px;
+  --pad-card: 20px;
+  --pad-page: 20px;
+  --rail: 76px; /* collapsed icon rail  */
+  --sidebar: 248px; /* expanded sidebar     */
+  --tap: 44px; /* minimum touch target */
+
+  /* ── 11. Motion ────────────────────────────────────────────────────────── */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 0.22s;
+}
+
+/* ==========================================================================
+   BREAKPOINTS — tablet is a first-class citizen, not an afterthought.
+     ≤ 639px    phone
+     640–1023   TABLET PORTRAIT   ← primary target
+     1024–1279  TABLET LANDSCAPE  ← primary target
+     ≥ 1280px   desktop
+   Every mockup must be usable with a finger at 768×1024 and 1024×768.
+   ========================================================================== */
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font: var(--t-body);
+  color: var(--ink);
+  background: var(--app-bg);
+  background-attachment: fixed;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+[hidden] {
+  display: none !important;
+}
+:focus-visible {
+  outline: 2px solid var(--pink-600);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Primitives every mockup shares ────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--pad-card);
+  box-shadow: var(--sh);
+}
+.card--mint {
+  background: linear-gradient(160deg, var(--teal-100), var(--surface) 70%);
+  border-color: var(--line-strong);
+}
+.card--pink {
+  background: linear-gradient(160deg, var(--pink-100), var(--surface) 70%);
+  border-color: var(--line-pink);
+}
+.card--ink {
+  background: linear-gradient(160deg, #2f4c4d, #24393b);
+  color: var(--ink-invert);
+  border: 0;
+}
+
+.label {
+  font: var(--t-label);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.metric {
+  font-family: var(--font-num);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Status chip — bound to the real LessonStatus enum. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  font: 600 11.5px/1 var(--font-sans);
+  white-space: nowrap;
+}
+.chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+.chip--complete {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+.chip--cancelled {
+  background: var(--no-bg);
+  color: var(--no-fg);
+}
+.chip--pending {
+  background: var(--wait-bg);
+  color: var(--wait-fg);
+}
+.chip--online {
+  background: var(--teal-100);
+  color: var(--teal-700);
+}
+
+/* Buttons — min 44px tall so a fingertip always lands. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  font: 600 13.5px/1 var(--font-sans);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn--primary {
+  background: var(--grad-pink);
+  color: var(--ink-invert);
+  box-shadow: var(--sh-pink);
+}
+.btn--primary:hover {
+  box-shadow: 0 18px 36px -14px rgba(201, 79, 124, 0.6);
+}
+.btn--mint {
+  background: var(--grad-mint);
+  color: var(--mint-ink);
+  box-shadow: var(--sh-mint);
+}
+.btn--ghost {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-xs);
+}
+.btn--ghost:hover {
+  background: var(--surface-2);
+}
+.btn--quiet {
+  background: transparent;
+  color: var(--ink-soft);
+}
+.btn--quiet:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.btn--sm {
+  min-height: 34px;
+  padding: 0 13px;
+  font-size: 12.5px;
+}
+.btn--icon {
+  width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* Avatar — initials fallback, matching the app's pink-fallback convention. */
+.av {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  font: 700 12px/1 var(--font-sans);
+  color: var(--ink-invert);
+  background: var(--grad-brand);
+}
+.av--lg {
+  width: 46px;
+  height: 46px;
+  font-size: 14px;
+}
+.av--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10.5px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+}
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Visible to screen readers, invisible on screen. Use instead of display:none
+   whenever the hidden text is the element's only accessible name. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Entrance — subtle, staggered by inline --i */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.5s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* Print — only the report sheet survives; chrome disappears. */
+@media print {
+  body {
+    background: #fff;
+  }
+  .print-hide {
+    display: none !important;
+  }
+  .paper {
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+}

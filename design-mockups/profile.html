@@ -1,0 +1,1654 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Diary — Profile · My Studio</title>
+<link rel="stylesheet" href="_theme.css">
+
+<style>
+  /* ======================================================================
+     PROFILE / SETTINGS — "MY STUDIO"   (Sugar Bloom)
+     Screen-specific CSS only. Every colour/radius/shadow comes from _theme.css.
+     Ornament budget for this page: (1) the scalloped hero band, (2) the
+     piano-key password-strength meter. Nothing decorative inside a form field.
+     ====================================================================== */
+
+  /* ── Shell (identical conventions to dashboard-a.html) ─────────────── */
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* ── Sidebar ───────────────────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 14px 16px;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    scrollbar-width: none;
+    z-index: 50;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 2px; }
+  .brand-logo {
+    width: 42px; height: 42px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--grad-brand);
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .brand-text { min-width: 0; display: block; }
+  .brand-name { display: block; font: 700 15px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; }
+  .brand-tag { display: block; font: var(--t-small); font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+
+  .side-cta { width: 100%; }
+
+  .nav-group + .nav-group { margin-top: 18px; }
+  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  .nav-list { list-style: none; display: grid; gap: 3px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 12px;
+    min-height: var(--tap);
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    font: 600 13.5px/1 var(--font-sans);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-link svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-badge {
+    margin-left: auto;
+    font: 700 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    background: var(--wait-bg);
+    color: var(--wait-fg);
+    padding: 4px 7px;
+    border-radius: var(--r-pill);
+  }
+
+  .side-foot { margin-top: auto; padding-top: 14px; position: relative; }
+  .user-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    text-align: left;
+    transition: background var(--dur) var(--ease);
+  }
+  .user-btn:hover { background: var(--surface-2); }
+  /* Profile lives in the footer menu, not the nav list — so the footer control
+     is what carries the "you are here" state on this screen. */
+  .user-btn.is-active {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .user-meta { min-width: 0; flex: 1; display: block; }
+  .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
+  .user-mail {
+    display: block;
+    font: 400 11px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .user-btn > svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+
+  .user-menu {
+    list-style: none;
+    margin-top: 6px;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .user-menu a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .user-menu a:hover { background: var(--surface-2); color: var(--ink); }
+  .user-menu a[aria-current="page"] {
+    background: var(--pink-50);
+    color: var(--pink-700);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .user-menu svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  .user-menu[hidden] { display: none !important; }
+
+  /* ── Main ──────────────────────────────────────────────────────────── */
+  .main {
+    min-width: 0;
+    /* top padding clears the fixed variant badge at every width */
+    padding: clamp(40px, 3vw, 46px) clamp(14px, 2.4vw, 32px) 40px;
+    display: grid;
+    gap: clamp(16px, 2vw, 24px);
+    align-content: start;
+  }
+
+  .topbar { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .topbar-l { min-width: 0; flex: 1 1 260px; }
+  .page-h1 {
+    font: var(--t-h1);
+    letter-spacing: -0.015em;
+    display: inline-block;
+    position: relative;
+  }
+  /* Hand-drawn squiggle instead of a straight rule. Decorative only. */
+  .squiggle {
+    display: block;
+    width: 100%;
+    height: 9px;
+    margin-top: 1px;
+    overflow: visible;
+    color: var(--bubblegum);
+    pointer-events: none;
+  }
+  .page-sub { margin-top: 7px; font: var(--t-small); color: var(--ink-soft); }
+  .topbar-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .hamburger, .top-add { display: none; }
+
+  .tz-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: var(--tap);
+    padding: 0 14px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--sh-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .tz-pill svg { width: 16px; height: 16px; color: var(--teal-600); flex: 0 0 auto; }
+  .tz-pill b { color: var(--ink); font-weight: 700; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     HERO — grad-hero band, drifting blobs, scalloped underside.
+     ORNAMENT #1 of 2.
+     ══════════════════════════════════════════════════════════════════════ */
+  .hero {
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--r-2xl);
+    box-shadow: var(--sh-lg);
+  }
+  .hero-band {
+    position: relative;
+    height: 132px;
+    background: var(--grad-hero);
+    overflow: hidden;
+  }
+  /* The scallop: white half-circles biting up into the band from the card body. */
+  .hero-band::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 13px;
+    background-image: radial-gradient(circle at 11px 13px, var(--surface) 10.5px, transparent 11px);
+    background-size: 22px 13px;
+    background-repeat: repeat-x;
+    pointer-events: none;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%;
+    pointer-events: none;
+    will-change: transform;
+  }
+  .blob-1 {
+    width: 220px; height: 200px;
+    top: -64px; left: 6%;
+    background: color-mix(in srgb, var(--cotton) 62%, transparent);
+    animation: drift-a 19s var(--ease) infinite alternate;
+  }
+  .blob-2 {
+    width: 260px; height: 230px;
+    top: -50px; right: 4%;
+    background: color-mix(in srgb, var(--mint) 58%, transparent);
+    animation: drift-b 23s var(--ease) infinite alternate;
+  }
+  .blob-3 {
+    width: 150px; height: 140px;
+    bottom: -58px; left: 46%;
+    background: color-mix(in srgb, var(--bubblegum) 26%, transparent);
+    animation: drift-a 27s var(--ease) infinite alternate-reverse;
+  }
+  @keyframes drift-a {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(24px, 12px, 0) rotate(14deg); }
+  }
+  @keyframes drift-b {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(-28px, 10px, 0) rotate(-12deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .blob { animation: none !important; }
+  }
+
+  .hero-body {
+    position: relative;
+    padding: 0 clamp(18px, 2.2vw, 28px) clamp(18px, 2vw, 24px);
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(14px, 2vw, 22px);
+    flex-wrap: wrap;
+  }
+
+  .av-wrap { position: relative; flex: 0 0 auto; margin-top: -46px; }
+  /* Extends .av / .av--lg from the theme — same fill, bigger canvas. */
+  .av-hero {
+    width: 96px; height: 96px;
+    font-size: 30px;
+    letter-spacing: .02em;
+    border: 4px solid var(--surface);
+    box-shadow: var(--sh);
+  }
+  .av-cam {
+    position: absolute;
+    right: -4px; bottom: -2px;
+    width: var(--tap); min-height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    color: var(--pink-700);
+    transition: box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .av-cam:hover { background: var(--pink-50); box-shadow: var(--sh-pink); }
+  .av-cam svg { width: 19px; height: 19px; }
+
+  .hero-id { min-width: 0; flex: 1 1 240px; padding-bottom: 2px; }
+  .hero-name {
+    font: 700 clamp(20px, 2.2vw, 25px)/1.2 var(--font-sans);
+    letter-spacing: -0.015em;
+    color: var(--ink);
+  }
+  .hero-mail {
+    margin-top: 3px;
+    font: var(--t-small);
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+  .hero-stats {
+    margin-top: 12px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    list-style: none;
+  }
+  .stat-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 13px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .stat-pill b {
+    color: var(--ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-pill svg { width: 15px; height: 15px; color: var(--teal-600); flex: 0 0 auto; }
+  .hero-act { flex: 0 0 auto; display: flex; gap: 8px; padding-bottom: 2px; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     SETTINGS GRID
+     1 col ≤1023 · 2 cols ≥1024 · 3 cols ≥1280
+     ══════════════════════════════════════════════════════════════════════ */
+  .grid {
+    display: grid;
+    gap: clamp(14px, 1.5vw, 22px);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--r-xl);
+    padding: clamp(18px, 1.6vw, 22px);
+    min-width: 0;
+  }
+  .panel-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .panel-ico {
+    width: 34px; height: 34px; flex: 0 0 auto;
+    border-radius: 11px;
+    display: grid; place-items: center;
+  }
+  .panel-ico svg { width: 17px; height: 17px; }
+  .ico-pink { background: var(--pink-100); color: var(--pink-700); }
+  .ico-mint { background: var(--ok-bg); color: var(--ok-fg); }
+  .ico-sand { background: var(--wait-bg); color: var(--wait-fg); }
+  .panel-title { font: var(--t-h2); letter-spacing: -0.01em; margin-top: 2px; }
+  .panel-sub { margin-top: 3px; font: var(--t-small); color: var(--ink-soft); }
+
+  /* ── Form primitives — deliberately plain. Sober data, sweet frame. ── */
+  .form { margin-top: 16px; display: grid; gap: 14px; }
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field > label {
+    font: 650 12.5px/1.3 var(--font-sans);
+    color: var(--ink);
+  }
+  .input, .select {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font: 400 14px/1.4 var(--font-sans);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .input::placeholder { color: var(--ink-faint); }
+  .input:hover, .select:hover { border-color: var(--wintergreen); }
+  .input:focus-visible, .select:focus-visible {
+    border-color: var(--pink-600);
+    box-shadow: 0 0 0 3px var(--pink-100);
+  }
+  .select {
+    appearance: none;
+    padding-right: 42px;
+    /* caret drawn as a data-free inline SVG background — no remote request */
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356706f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
+    background-size: 18px 18px;
+    cursor: pointer;
+  }
+  .hint { font: var(--t-small); font-size: 12px; color: var(--ink-soft); }
+  .hint--strong { color: var(--ink); font-weight: 600; }
+
+  /* Field with a trailing show/hide toggle */
+  .pw-field { position: relative; }
+  .pw-field .input { padding-right: calc(var(--tap) + 6px); }
+  .eye {
+    position: absolute;
+    right: 3px;
+    /* label(≈17px) + gap(6px) = 23px offset to the top of the 46px input */
+    top: 23px;
+    width: var(--tap); min-height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: 50%;
+    color: var(--ink-soft);
+  }
+  .eye:hover { background: var(--surface-2); color: var(--ink); }
+  .eye svg { width: 18px; height: 18px; }
+  .eye .eye-off { display: none; }
+  .eye[aria-pressed="true"] .eye-on { display: none; }
+  .eye[aria-pressed="true"] .eye-off { display: block; }
+
+  .form-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; flex-wrap: wrap;
+  }
+  .save-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px;
+    border-radius: var(--r-pill);
+    background: var(--ok-bg);
+    color: var(--ok-fg);
+    font: 700 12px/1 var(--font-sans);
+    white-space: nowrap;
+  }
+  .save-chip svg { width: 14px; height: 14px; }
+  .save-chip[hidden] { display: none !important; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     ORNAMENT #2 of 2 — password strength drawn as an octave of piano keys.
+     Deliberately NOT wired to the status tokens: strength is not a
+     LessonStatus, and borrowing --ok/--no would corrupt the app's legend.
+     ══════════════════════════════════════════════════════════════════════ */
+  .pk { margin-top: 4px; }
+  .pk-strip {
+    --fill: var(--line-strong);
+    position: relative;
+    display: flex;
+    gap: 1.5px;
+    height: 42px;
+    padding: 1.5px;
+    border-radius: 4px 4px 9px 9px;
+    background: var(--ink);
+    overflow: hidden;
+  }
+  .pk-w {
+    flex: 1;
+    background: var(--surface);
+    border-radius: 1px 1px 5px 5px;
+    transition: background var(--dur) var(--ease);
+  }
+  .pk-w.is-lit { background: var(--fill); }
+  .pk-b {
+    position: absolute;
+    top: 1.5px;
+    width: 8.4%;
+    height: 60%;
+    background: var(--ink);
+    border-radius: 0 0 4px 4px;
+    box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .12);
+    transition: background var(--dur) var(--ease);
+  }
+  .pk-b.is-lit { background: color-mix(in srgb, var(--fill) 62%, var(--ink)); }
+  /* 7 white keys → black keys sit on the C#/D#, F#/G#/A# boundaries */
+  .pk-b1 { left: 10.0%; }
+  .pk-b2 { left: 24.3%; }
+  .pk-b3 { left: 53.0%; }
+  .pk-b4 { left: 67.3%; }
+  .pk-b5 { left: 81.6%; }
+
+  .pk-meta {
+    margin-top: 7px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap;
+    font: var(--t-small);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .pk-level { font-weight: 700; color: var(--ink); }
+  .pk-level[data-tone="weak"] { color: var(--pink-700); }
+  .pk-level[data-tone="strong"] { color: var(--teal-700); }
+  .pk-rule {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .pk-rule svg { width: 13px; height: 13px; flex: 0 0 auto; }
+  .pk-rule[data-met="true"] { color: var(--teal-700); font-weight: 600; }
+
+  .match-note { font: var(--t-small); font-size: 12px; }
+  .match-note[data-state="ok"] { color: var(--teal-700); font-weight: 600; }
+  .match-note[data-state="bad"] { color: var(--no-fg); font-weight: 600; }
+
+  /* ── Studio settings — currency + timezone previews ─────────────────── */
+  .two-up { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+
+  .stat-cards { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 16px; }
+  .stat-card {
+    display: flex; align-items: center; gap: 11px;
+    padding: 12px 13px;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    min-width: 0;
+  }
+  .stat-card .panel-ico { width: 38px; height: 38px; border-radius: 12px; }
+  .stat-card .panel-ico svg { width: 19px; height: 19px; }
+  .stat-card-txt { min-width: 0; display: block; }
+  .stat-card-txt span {
+    display: block;
+    font: 600 11.5px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .stat-card-txt b {
+    display: block;
+    font: 700 21px/1.15 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .preview {
+    margin-top: 2px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    display: grid;
+    gap: 8px;
+  }
+  .prev-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px;
+    font: var(--t-small);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .prev-row b {
+    font: 700 14px/1.2 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .prev-row + .prev-row { padding-top: 8px; border-top: 1px dashed var(--line-strong); }
+
+  .caption {
+    display: flex; align-items: flex-start; gap: 7px;
+    font: var(--t-small);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .caption svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 2px; color: var(--teal-600); }
+  .caption code {
+    font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+    font-size: 11.5px;
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: var(--pink-50);
+    color: var(--pink-700);
+    border: 1px solid var(--line-pink);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DANGER ZONE
+     ══════════════════════════════════════════════════════════════════════ */
+  .danger {
+    border: 2px dashed var(--no-dot);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--no-bg) 42%, var(--surface)), var(--surface) 62%);
+    box-shadow: var(--sh-sm);
+    display: grid;
+    gap: clamp(16px, 2vw, 24px);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .danger .panel-title { color: var(--no-fg); }
+  .danger-acts {
+    margin-top: 16px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn--danger {
+    background: var(--no-bg);
+    color: var(--no-fg);
+    border: 1px solid color-mix(in srgb, var(--no-dot) 70%, transparent);
+    box-shadow: var(--sh-xs);
+  }
+  .btn--danger:hover { background: color-mix(in srgb, var(--no-bg) 78%, var(--bubblegum)); }
+  .danger-list {
+    margin-top: 14px;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .danger-list li { display: flex; align-items: flex-start; gap: 7px; }
+  .danger-list svg { width: 13px; height: 13px; flex: 0 0 auto; margin-top: 3px; color: var(--no-fg); }
+  .danger-list b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* The confirm dialog, rendered OPEN so the state is reviewable in-place. */
+  .dlg-stage {
+    position: relative;
+    border-radius: var(--r-lg);
+    padding: clamp(14px, 1.6vw, 20px);
+    background:
+      repeating-linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--ink) 4%, transparent) 0 2px,
+        transparent 2px 9px
+      ),
+      var(--surface-2);
+    border: 1px solid var(--line);
+    display: grid;
+    gap: 10px;
+  }
+  .dlg-stage > .label { color: var(--ink-soft); }
+  .dlg {
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-lg);
+    padding: clamp(16px, 1.6vw, 22px);
+    display: grid;
+    gap: 10px;
+  }
+  .dlg[hidden] { display: none !important; }
+  .dlg-ico {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: var(--no-bg);
+    color: var(--no-fg);
+  }
+  .dlg-ico svg { width: 22px; height: 22px; }
+  .dlg h3 { font: 700 17px/1.3 var(--font-sans); color: var(--ink); }
+  .dlg p { font: var(--t-body); color: var(--ink-soft); }
+  .dlg-sum {
+    margin-top: 2px;
+    padding: 11px 13px;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font: var(--t-small);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .dlg-sum b { color: var(--ink); }
+  .dlg-acts {
+    margin-top: 4px;
+    display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
+  }
+  .dlg-acts .btn { flex: 1 1 auto; }
+  .dlg-closed {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px;
+    border-radius: var(--r-lg);
+    border: 2px dashed var(--line-strong);
+    background: var(--surface);
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .dlg-closed[hidden] { display: none !important; }
+  .dlg-closed svg { width: 16px; height: 16px; color: var(--teal-600); flex: 0 0 auto; }
+
+  /* ── Off-canvas chrome ─────────────────────────────────────────────── */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease);
+  }
+  body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+
+  .tabbar { display: none; }
+
+  /* ── Variant badge ─────────────────────────────────────────────────── */
+  .variant-badge {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    pointer-events: none;
+  }
+
+  /* ======================================================================
+     RESPONSIVE
+     ====================================================================== */
+
+  /* ≥1024 — two columns; the wide cards span the row. */
+  @media (min-width: 1024px) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .p-studio { grid-column: 1 / -1; }
+    .danger   { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); }
+    .two-up   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ≥1280 — desktop: the three settings cards sit side by side. */
+  @media (min-width: 1280px) {
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .p-studio { grid-column: auto; }
+    .danger   { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(320px, 460px); }
+    .two-up   { grid-template-columns: minmax(0, 1fr); }
+    .stat-cards { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Tablet landscape 1024–1279: icon rail */
+  @media (max-width: 1279px) {
+    .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+    /* overflow stays visible so the user popover can escape the rail */
+    .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
+    .brand { justify-content: center; padding: 4px 0; }
+    .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
+    .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
+
+    /* Labels are CLIPPED, never display:none — display:none would strip every
+       icon-only control of its accessible name (the icons are aria-hidden). */
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .nav-group + .nav-group { margin-top: 12px; position: relative; padding-top: 12px; }
+    .nav-group + .nav-group::before {
+      content: ""; position: absolute; top: 0; left: 14%; right: 14%;
+      height: 1px; background: var(--line);
+    }
+    .user-btn { width: var(--tap); padding: 0; justify-content: center; border-radius: 50%; }
+    .user-meta, .user-btn > svg { display: none; }
+    .user-menu {
+      position: absolute;
+      bottom: 0; left: calc(100% + 8px);
+      width: 210px;
+      margin-top: 0;
+      z-index: 70;
+    }
+  }
+
+  /* Below 1024: off-canvas drawer + bottom tab bar */
+  @media (max-width: 1023px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 280px;
+      padding: 20px 14px 16px;
+      align-items: stretch;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform .28s var(--ease);
+      z-index: 60;
+    }
+    body.nav-open .sidebar { transform: none; }
+    /* restore the full labelled nav inside the drawer */
+    .brand { justify-content: flex-start; padding: 6px 8px 2px; }
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: static;
+      width: auto; height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+    }
+    .nav-link { justify-content: flex-start; padding: 0 12px; width: auto; }
+    .nav-link span { display: inline; }
+    .nav-link .nav-badge { display: inline-block; margin-left: auto; }
+    .side-cta { width: 100%; padding: 0 18px; border-radius: var(--r-pill); }
+    .nav-group + .nav-group { position: static; padding-top: 0; margin-top: 18px; }
+    .nav-group + .nav-group::before { content: none; }
+    .user-btn { width: 100%; padding: 8px 10px; justify-content: flex-start; border-radius: var(--r-md); }
+    .user-meta { display: block; }
+    .user-btn > svg { display: block; }
+    .user-menu { display: grid; position: static; width: auto; margin-top: 6px; }
+
+    .main { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + 20px); }
+    .hamburger { display: inline-flex; }
+
+    .tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+    }
+    .tab {
+      position: relative;
+      display: grid; place-items: center; gap: 3px;
+      min-height: var(--tap);
+      padding: 5px 2px;
+      border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1.2 var(--font-sans);
+    }
+    .tab svg { width: 21px; height: 21px; }
+    /* Profile is reached through More → account menu, so More carries the
+       "you are here" marker on this screen. */
+    .tab.is-here { color: var(--pink-600); background: var(--pink-50); }
+  }
+
+  /* Phone */
+  @media (max-width: 639px) {
+    .page-h1 { font-size: 21px; }
+    .hero-band { height: 112px; }
+    .av-wrap { margin-top: -40px; }
+    .av-hero { width: 82px; height: 82px; font-size: 26px; }
+    .hero-act { width: 100%; }
+    .hero-act .btn { flex: 1; }
+    .stat-cards { grid-template-columns: minmax(0, 1fr); }
+    .form-foot { justify-content: stretch; }
+    .form-foot .btn { flex: 1 1 auto; }
+    .danger-acts .btn { flex: 1 1 auto; }
+  }
+</style>
+
+<div class="variant-badge print-hide">Profile · My Studio</div>
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+    <a class="brand" href="/dashboard" title="My Piano Diary">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/dashboard" title="Dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/>
+                <rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+              </svg>
+              <span>Calendar</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/lessons" title="Lessons">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/>
+              </svg>
+              <span>Lessons</span>
+              <span class="nav-badge">5</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/students" title="Students">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+              </svg>
+              <span>Students</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/pieces" title="Pieces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+              </svg>
+              <span>Pieces</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/reports" title="Reports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+              <span>Reports</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/payments" title="Payments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>
+              </svg>
+              <span>Payments</span>
+              <span class="nav-badge">4</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn is-active" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+        <span class="av" aria-hidden="true">LĐ</span>
+        <span class="user-meta">
+          <span class="user-name">Linh Đặng</span>
+          <span class="user-mail">linh@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+        </svg>
+      </button>
+      <ul class="user-menu" id="userMenu" hidden>
+        <li>
+          <a href="/profile" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+            Profile
+          </a>
+        </li>
+        <li>
+          <a href="/updates">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>
+            Updates
+          </a>
+        </li>
+        <li>
+          <a href="/logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+            Log out
+          </a>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main">
+
+    <header class="topbar rise" style="--i:0">
+      <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <div class="topbar-l">
+        <h1 class="page-h1">
+          Profile
+          <svg class="squiggle" viewBox="0 0 120 9" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M1 6.2 C 12 1.4, 20 8.2, 31 4.6 S 51 1.2, 62 5.4 S 84 8.4, 95 3.6 S 112 2.4, 119 5.8"
+                  fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+        </h1>
+        <p class="page-sub">Your studio, your way 🎀</p>
+      </div>
+
+      <div class="topbar-r">
+        <span class="tz-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          Now <b>16:42</b> · Asia/Ho_Chi_Minh
+        </span>
+      </div>
+    </header>
+
+    <!-- ═══════════ HERO ═══════════ -->
+    <section class="card hero rise" style="--i:1" aria-labelledby="heroName">
+      <div class="hero-band" aria-hidden="true">
+        <span class="blob blob-1"></span>
+        <span class="blob blob-2"></span>
+        <span class="blob blob-3"></span>
+      </div>
+
+      <div class="hero-body">
+        <div class="av-wrap">
+          <span class="av av--lg av-hero" aria-hidden="true">LĐ</span>
+          <button class="av-cam" type="button" id="camBtn" aria-label="Change photo — edit your profile picture URL">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 8h3l1.6-2.2A1 1 0 0 1 9.4 5h5.2a1 1 0 0 1 .8.4L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>
+              <circle cx="12" cy="13.2" r="3.4"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="hero-id">
+          <p class="hero-name" id="heroName">Linh Đặng</p>
+          <p class="hero-mail">linh@pianodiary.vn</p>
+          <ul class="hero-stats">
+            <li class="stat-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+              <b>24</b> students
+            </li>
+            <li class="stat-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/></svg>
+              <b>31</b> lessons this month
+            </li>
+            <li class="stat-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+              Teaching since <b>2023</b>
+            </li>
+          </ul>
+        </div>
+
+        <div class="hero-act">
+          <a class="btn btn--ghost" href="/updates">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>
+            Updates
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ SETTINGS GRID ═══════════ -->
+    <div class="grid">
+
+      <!-- ───── 1 · PROFILE ───── -->
+      <section class="card panel p-profile rise" style="--i:2" aria-labelledby="profTitle">
+        <div class="panel-head">
+          <div>
+            <span class="label">Account</span>
+            <h2 class="panel-title" id="profTitle">Profile</h2>
+            <p class="panel-sub">How you appear across the studio.</p>
+          </div>
+          <span class="panel-ico ico-pink" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+          </span>
+        </div>
+
+        <form class="form" id="profileForm" novalidate>
+          <div class="field">
+            <label for="name">Name</label>
+            <input class="input" id="name" name="name" type="text" value="Linh Đặng" placeholder="Enter your name" autocomplete="name">
+            <p class="hint">Shown to your students and in lessons</p>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input class="input" id="email" name="email" type="email" value="linh@pianodiary.vn" placeholder="Enter your email" autocomplete="email">
+            <p class="hint">Your email address for login and notifications</p>
+          </div>
+
+          <div class="field">
+            <label for="image">Profile picture</label>
+            <input class="input" id="image" name="image" type="url" value="" placeholder="https://example.com/avatar.jpg" autocomplete="url">
+            <p class="hint">Enter a URL to an image for your profile picture. Empty = your initials, in the studio pink.</p>
+          </div>
+
+          <div class="form-foot">
+            <span class="save-chip" id="profSaved" role="status" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+              Saved ✓
+            </span>
+            <button class="btn btn--primary" type="submit">Save Changes</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ───── 2 · PASSWORD ───── -->
+      <section class="card panel p-password rise" style="--i:3" aria-labelledby="pwTitle">
+        <div class="panel-head">
+          <div>
+            <span class="label">Security</span>
+            <h2 class="panel-title" id="pwTitle">Password</h2>
+            <p class="panel-sub">Keep your studio locked.</p>
+          </div>
+          <span class="panel-ico ico-mint" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+          </span>
+        </div>
+
+        <form class="form" id="passwordForm" novalidate>
+          <div class="field pw-field">
+            <label for="pwCurrent">Current Password</label>
+            <input class="input" id="pwCurrent" name="currentPassword" type="password" value="chopin2023" placeholder="Enter current password" autocomplete="current-password">
+            <button class="eye" type="button" aria-label="Show current password" aria-pressed="false" data-eye="pwCurrent">
+              <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+            </button>
+            <p class="hint">Enter your current password to verify your identity</p>
+          </div>
+
+          <div class="field pw-field">
+            <label for="pwNew">New Password</label>
+            <input class="input" id="pwNew" name="newPassword" type="password" value="Mint-Nocturne9" placeholder="Enter new password" autocomplete="new-password">
+            <button class="eye" type="button" aria-label="Show new password" aria-pressed="false" data-eye="pwNew">
+              <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+            </button>
+            <p class="hint">Must be at least 6 characters long</p>
+
+            <!-- ORNAMENT #2 — strength drawn as one octave of piano keys. -->
+            <div class="pk">
+              <div class="pk-strip" id="pkStrip" aria-hidden="true">
+                <span class="pk-w"></span><span class="pk-w"></span><span class="pk-w"></span>
+                <span class="pk-w"></span><span class="pk-w"></span><span class="pk-w"></span>
+                <span class="pk-w"></span>
+                <span class="pk-b pk-b1"></span><span class="pk-b pk-b2"></span>
+                <span class="pk-b pk-b3"></span><span class="pk-b pk-b4"></span><span class="pk-b pk-b5"></span>
+              </div>
+              <p class="pk-meta">
+                <span>Strength <span class="pk-level" id="pkLevel" data-tone="ok" role="status">Good</span></span>
+                <span class="pk-rule" id="pkRule" data-met="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+                  <span id="pkRuleText">14 / 6 characters</span>
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="field pw-field">
+            <label for="pwConfirm">Confirm New Password</label>
+            <input class="input" id="pwConfirm" name="confirmPassword" type="password" value="Mint-Nocturne9" placeholder="Confirm new password" autocomplete="new-password">
+            <button class="eye" type="button" aria-label="Show confirmed password" aria-pressed="false" data-eye="pwConfirm">
+              <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+            </button>
+            <p class="match-note" id="pwMatch" data-state="ok" role="status">Passwords match ✓</p>
+          </div>
+
+          <div class="form-foot">
+            <span class="save-chip" id="pwSaved" role="status" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+              Password updated ✓
+            </span>
+            <button class="btn btn--primary" type="submit" id="pwSubmit">Update Password</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ───── 3 · STUDIO SETTINGS ───── -->
+      <section class="card panel p-studio rise" style="--i:4" aria-labelledby="studioTitle">
+        <div class="panel-head">
+          <div>
+            <span class="label">Preferences</span>
+            <h2 class="panel-title" id="studioTitle">Studio settings</h2>
+            <p class="panel-sub">How money and time are written, everywhere in the app.</p>
+          </div>
+          <span class="panel-ico ico-sand" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14.1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.9 3H10a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/></svg>
+          </span>
+        </div>
+
+        <!-- The two counts the real teacher-settings-form already renders. -->
+        <div class="stat-cards">
+          <div class="stat-card">
+            <span class="panel-ico ico-pink" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+            </span>
+            <span class="stat-card-txt">
+              <span>Total Students</span>
+              <b>24</b>
+            </span>
+          </div>
+          <div class="stat-card">
+            <span class="panel-ico ico-mint" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/></svg>
+            </span>
+            <span class="stat-card-txt">
+              <span>Total Lessons</span>
+              <b>1.284</b>
+            </span>
+          </div>
+        </div>
+
+        <form class="form" id="studioForm" novalidate>
+          <div class="two-up">
+            <!-- CURRENCY -->
+            <div class="field">
+              <label for="currency">Currency</label>
+              <select class="select" id="currency" name="currency">
+                <option value="VND" selected>VND — Vietnamese đồng</option>
+                <option value="IDR">IDR — Indonesian rupiah</option>
+                <option value="USD">USD — US dollar</option>
+              </select>
+              <p class="hint">Used to format currency across the system</p>
+
+              <div class="preview" aria-live="polite">
+                <span class="prev-row">
+                  Amounts will look like
+                  <b id="prevAmount">1.500.000 ₫</b>
+                </span>
+                <span class="prev-row">
+                  Rate input prefix
+                  <b id="prevRate">đ 250.000</b>
+                </span>
+              </div>
+
+              <p class="caption">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
+                <span>Stored in your browser (localStorage), not on the server — key <code>mpd.currency</code>. Sign in elsewhere and it goes back to VND.</span>
+              </p>
+              <p class="caption">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5M12 16h.01"/></svg>
+                <span>Switching only changes how amounts are <em>written</em>. It does not convert them — a 250.000 rate stays the number 250.000.</span>
+              </p>
+            </div>
+
+            <!-- TIMEZONE -->
+            <div class="field">
+              <label for="timezone">Timezone</label>
+              <select class="select" id="timezone" name="timezone">
+                <option value="Asia/Kolkata">India Standard Time — Asia/Kolkata</option>
+                <option value="Asia/Ho_Chi_Minh" selected>Vietnam Time — Asia/Ho_Chi_Minh</option>
+                <option value="Asia/Singapore">Singapore Time — Asia/Singapore</option>
+                <option value="Asia/Shanghai">China Standard Time — Asia/Shanghai</option>
+                <option value="Asia/Tokyo">Japan Standard Time — Asia/Tokyo</option>
+                <option value="America/New_York">Eastern Time (US) — America/New_York</option>
+                <option value="America/Los_Angeles">Pacific Time (US) — America/Los_Angeles</option>
+                <option value="Europe/Paris">Central European Time — Europe/Paris</option>
+                <option value="Europe/London">British Time — Europe/London</option>
+                <option value="UTC">UTC</option>
+              </select>
+              <p class="hint">Your single timezone setting for all scheduling</p>
+
+              <div class="preview" aria-live="polite">
+                <span class="prev-row">
+                  Next lesson reads as
+                  <b id="prevTime">Tue 14 Jul · 16:00</b>
+                </span>
+                <span class="prev-row">
+                  Zone offset
+                  <b id="prevOffset">UTC+07:00</b>
+                </span>
+              </div>
+
+              <p class="caption">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span>Every lesson time — calendar, lessons list, reports — is shown in this zone. Times are stored in UTC and converted for you.</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="form-foot">
+            <span class="save-chip" id="studioSaved" role="status" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+              Saved ✓
+            </span>
+            <button class="btn btn--primary" type="submit">Save Changes</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ───── 4 · DANGER ZONE ───── -->
+      <section class="panel danger rise" style="--i:5" aria-labelledby="dangerTitle">
+        <div>
+          <div class="panel-head">
+            <div>
+              <span class="label">Careful</span>
+              <h2 class="panel-title" id="dangerTitle">Danger zone</h2>
+              <p class="panel-sub">Leaving is easy. Deleting is forever.</p>
+            </div>
+            <span class="panel-ico" aria-hidden="true" style="background:var(--no-bg); color:var(--no-fg)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            </span>
+          </div>
+
+          <ul class="danger-list">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+              <span><b>Log out</b> just ends this session. Your studio stays exactly as it is.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+              <span><b>Delete account</b> permanently removes <b>24</b> students, <b>1.284</b> lessons, every payment sheet and every report. There is no export first, and no undo.</span>
+            </li>
+          </ul>
+
+          <div class="danger-acts">
+            <a class="btn btn--ghost" href="/logout">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+              Log out
+            </a>
+            <button class="btn btn--danger" type="button" id="delBtn" aria-haspopup="dialog" aria-controls="delDialog">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>
+              Delete account
+            </button>
+          </div>
+        </div>
+
+        <!-- The confirm dialog, rendered OPEN so the state is reviewable. -->
+        <div class="dlg-stage">
+          <span class="label">Confirm dialog · shown open</span>
+
+          <div class="dlg" id="delDialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle" aria-describedby="dlgDesc">
+            <span class="dlg-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/></svg>
+            </span>
+            <h3 id="dlgTitle">Delete account?</h3>
+            <p id="dlgDesc">This cannot be undone.</p>
+
+            <p class="dlg-sum">
+              You will lose <b>24 students</b>, <b>1.284 lessons</b>, <b>7 families</b> and every payment sheet
+              back to <b>March 2023</b>.
+            </p>
+
+            <div class="dlg-acts">
+              <button class="btn btn--ghost" type="button" id="dlgCancel">Cancel</button>
+              <button class="btn btn--danger" type="button" id="dlgDelete">Delete</button>
+            </div>
+          </div>
+
+          <div class="dlg-closed" id="dlgClosed" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+            <span>Dialog dismissed — nothing was deleted. Press <b>Delete account</b> to see it again.</span>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /.grid -->
+  </main>
+</div>
+
+<!-- ═══════════════ MOBILE TAB BAR ═══════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+    Students
+  </a>
+  <!-- Pieces · Reports · Payments · Profile · Updates · Log out all live behind More. -->
+  <button class="tab is-here" type="button" id="tabMore" aria-label="More navigation — Profile is in here" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    More
+  </button>
+</nav>
+
+<script>
+  (function () {
+    /* ══════════════════════════════════════════════════════════════════════
+       1. Off-canvas navigation (below 1024px) — same contract as dashboard-a.
+       Below 1024 the sidebar is a MODAL drawer: inert when closed, dialog
+       semantics + focus trap when open, focus returned to whoever opened it.
+       ══════════════════════════════════════════════════════════════════════ */
+    var body = document.body;
+    var backdrop = document.getElementById('backdrop');
+    var sidebar = document.getElementById('sidebar');
+    var toggles = [document.getElementById('navToggle'), document.getElementById('tabMore')];
+    var drawerMQ = window.matchMedia('(max-width: 1023px)');
+    var opener = null;
+
+    function isOpen() { return body.classList.contains('nav-open'); }
+
+    function syncSidebar() {
+      if (drawerMQ.matches) {
+        sidebar.setAttribute('role', 'dialog');
+        sidebar.setAttribute('aria-modal', 'true');
+        sidebar.setAttribute('aria-label', 'Navigation');
+        if (isOpen()) sidebar.removeAttribute('inert');
+        else sidebar.setAttribute('inert', '');
+      } else {
+        sidebar.removeAttribute('role');
+        sidebar.removeAttribute('aria-modal');
+        sidebar.removeAttribute('inert');
+        sidebar.setAttribute('aria-label', 'Main navigation');
+      }
+    }
+
+    function focusables() {
+      var nodes = sidebar.querySelectorAll('a[href], button:not([disabled])');
+      return Array.prototype.filter.call(nodes, function (el) {
+        return el.offsetWidth > 0 || el.offsetHeight > 0;
+      });
+    }
+
+    function setNav(open, from) {
+      var was = isOpen();
+      body.classList.toggle('nav-open', open);
+      toggles.forEach(function (t) { if (t) t.setAttribute('aria-expanded', String(open)); });
+
+      if (open) {
+        opener = from || opener || toggles[0];
+        syncSidebar();                       /* drop inert BEFORE focusing */
+        /* Profile lives in the account menu — open it so the destination the
+           user came here for is one tab away, not hidden behind a disclosure. */
+        userExpand(true);
+        var first = sidebar.querySelector('.nav-link');
+        if (first) first.focus();
+      } else {
+        userExpand(false);
+        syncSidebar();                       /* re-apply inert */
+        if (was && drawerMQ.matches && opener) opener.focus();
+        opener = null;
+      }
+    }
+
+    toggles.forEach(function (t) {
+      if (t) t.addEventListener('click', function () { setNav(!isOpen(), t); });
+    });
+    backdrop.addEventListener('click', function () { setNav(false); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (isOpen()) setNav(false);
+        else userExpand(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !isOpen() || !drawerMQ.matches) return;
+      var list = focusables();
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    function onBreakpoint() {
+      if (!drawerMQ.matches && isOpen()) setNav(false);
+      else syncSidebar();
+    }
+    if (drawerMQ.addEventListener) drawerMQ.addEventListener('change', onBreakpoint);
+    else drawerMQ.addListener(onBreakpoint);
+
+    /* Footer account menu (a live popover in the icon rail too) */
+    var userBtn = document.getElementById('userBtn');
+    var userMenu = document.getElementById('userMenu');
+    function userExpand(open) {
+      userMenu.hidden = !open;
+      userBtn.setAttribute('aria-expanded', String(open));
+    }
+    userBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      userExpand(userMenu.hidden);
+    });
+    document.addEventListener('click', function (e) {
+      if (userMenu.hidden) return;
+      if (drawerMQ.matches && isOpen()) return;   /* inside the drawer it stays put */
+      if (!userMenu.contains(e.target) && !userBtn.contains(e.target)) userExpand(false);
+    });
+
+    syncSidebar();
+
+    /* ══════════════════════════════════════════════════════════════════════
+       2. Success chips — stand in for the app's real sonner toasts.
+       ══════════════════════════════════════════════════════════════════════ */
+    function flash(chip) {
+      chip.hidden = false;
+      clearTimeout(chip._t);
+      chip._t = setTimeout(function () { chip.hidden = true; }, 3000);
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      flash(document.getElementById('profSaved'));
+    });
+    document.getElementById('studioForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      flash(document.getElementById('studioSaved'));
+    });
+    document.getElementById('passwordForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      flash(document.getElementById('pwSaved'));
+    });
+
+    /* Camera affordance → the profile picture URL field (the only real way to
+       set an avatar: User.image is a URL string, there is no upload endpoint). */
+    document.getElementById('camBtn').addEventListener('click', function () {
+      var img = document.getElementById('image');
+      img.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      img.focus();
+    });
+
+    /* ══════════════════════════════════════════════════════════════════════
+       3. Show / hide password toggles
+       ══════════════════════════════════════════════════════════════════════ */
+    var LABELS = {
+      pwCurrent: 'current password',
+      pwNew: 'new password',
+      pwConfirm: 'confirmed password'
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('.eye'), function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.dataset.eye);
+        var shown = btn.getAttribute('aria-pressed') === 'true';
+        var next = !shown;
+        btn.setAttribute('aria-pressed', String(next));
+        input.type = next ? 'text' : 'password';
+        btn.setAttribute('aria-label', (next ? 'Hide ' : 'Show ') + LABELS[btn.dataset.eye]);
+      });
+    });
+
+    /* ══════════════════════════════════════════════════════════════════════
+       4. Password strength — an octave of piano keys.
+       NOT bound to the LessonStatus tokens: strength is not a lesson status,
+       and reusing --ok/--no here would corrupt the app's colour legend.
+       ══════════════════════════════════════════════════════════════════════ */
+    var pwNew = document.getElementById('pwNew');
+    var pwConfirm = document.getElementById('pwConfirm');
+    var strip = document.getElementById('pkStrip');
+    var whites = strip.querySelectorAll('.pk-w');
+    var blacks = strip.querySelectorAll('.pk-b');
+    var levelEl = document.getElementById('pkLevel');
+    var ruleEl = document.getElementById('pkRule');
+    var ruleText = document.getElementById('pkRuleText');
+    var matchEl = document.getElementById('pwMatch');
+
+    var SCALE = [
+      { label: 'Too short', tone: 'weak',   fill: 'var(--line-strong)', keys: 0 },
+      { label: 'Weak',      tone: 'weak',   fill: 'var(--cotton)',      keys: 2 },
+      { label: 'Fair',      tone: 'ok',     fill: 'var(--bubblegum)',   keys: 4 },
+      { label: 'Good',      tone: 'ok',     fill: 'var(--mint)',        keys: 6 },
+      { label: 'Strong',    tone: 'strong', fill: 'var(--wintergreen)', keys: 7 }
+    ];
+
+    function score(v) {
+      if (v.length < 6) return 0;                       /* the real zod minimum */
+      var s = 1;
+      if (v.length >= 10) s++;
+      if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
+      if (/\d/.test(v) && /[^A-Za-z0-9]/.test(v)) s++;
+      return Math.min(s, 4);
+    }
+
+    function paint() {
+      var v = pwNew.value;
+      var step = SCALE[score(v)];
+
+      strip.style.setProperty('--fill', step.fill);
+      Array.prototype.forEach.call(whites, function (k, i) {
+        k.classList.toggle('is-lit', i < step.keys);
+      });
+      /* black keys sit between white keys 1-2, 2-3, 4-5, 5-6, 6-7 */
+      var afterWhite = [1, 2, 4, 5, 6];
+      Array.prototype.forEach.call(blacks, function (k, i) {
+        k.classList.toggle('is-lit', step.keys > afterWhite[i]);
+      });
+
+      levelEl.textContent = step.label;
+      levelEl.dataset.tone = step.tone;
+
+      var met = v.length >= 6;
+      ruleEl.dataset.met = String(met);
+      ruleText.textContent = v.length + ' / 6 characters';
+
+      if (!pwConfirm.value) {
+        matchEl.dataset.state = 'idle';
+        matchEl.textContent = 'Re-enter your new password to confirm';
+      } else if (pwConfirm.value === v) {
+        matchEl.dataset.state = 'ok';
+        matchEl.textContent = 'Passwords match ✓';
+      } else {
+        matchEl.dataset.state = 'bad';
+        matchEl.textContent = "Passwords don't match";
+      }
+
+      document.getElementById('pwSubmit').disabled =
+        !met || pwConfirm.value !== v || !document.getElementById('pwCurrent').value;
+    }
+
+    pwNew.addEventListener('input', paint);
+    pwConfirm.addEventListener('input', paint);
+    document.getElementById('pwCurrent').addEventListener('input', paint);
+    paint();
+
+    /* ══════════════════════════════════════════════════════════════════════
+       5. Currency + timezone live previews.
+       The same stored Int, re-written. No conversion happens anywhere in the
+       app — that is exactly what the second caption warns about.
+       ══════════════════════════════════════════════════════════════════════ */
+    var MONEY = {
+      VND: { amount: '1.500.000 ₫',   rate: 'đ 250.000' },
+      IDR: { amount: 'Rp 1.500.000',  rate: 'Rp 250.000' },
+      USD: { amount: '$1,500,000.00', rate: '$ 250,000.00' }
+    };
+    var cur = document.getElementById('currency');
+    var prevAmount = document.getElementById('prevAmount');
+    var prevRate = document.getElementById('prevRate');
+    cur.addEventListener('change', function () {
+      var m = MONEY[cur.value];
+      prevAmount.textContent = m.amount;
+      prevRate.textContent = m.rate;
+    });
+
+    var OFFSET = {
+      'Asia/Kolkata': ['UTC+05:30', '14:30'],
+      'Asia/Ho_Chi_Minh': ['UTC+07:00', '16:00'],
+      'Asia/Singapore': ['UTC+08:00', '17:00'],
+      'Asia/Shanghai': ['UTC+08:00', '17:00'],
+      'Asia/Tokyo': ['UTC+09:00', '18:00'],
+      'America/New_York': ['UTC−04:00', '05:00'],
+      'America/Los_Angeles': ['UTC−07:00', '02:00'],
+      'Europe/Paris': ['UTC+02:00', '11:00'],
+      'Europe/London': ['UTC+01:00', '10:00'],
+      'UTC': ['UTC+00:00', '09:00']
+    };
+    var tz = document.getElementById('timezone');
+    var prevTime = document.getElementById('prevTime');
+    var prevOffset = document.getElementById('prevOffset');
+    tz.addEventListener('change', function () {
+      var o = OFFSET[tz.value] || ['UTC+00:00', '09:00'];
+      prevOffset.textContent = o[0];
+      prevTime.textContent = 'Tue 14 Jul · ' + o[1];
+    });
+
+    /* ══════════════════════════════════════════════════════════════════════
+       6. Delete-account confirm dialog (rendered open on load).
+       ══════════════════════════════════════════════════════════════════════ */
+    var dlg = document.getElementById('delDialog');
+    var dlgClosed = document.getElementById('dlgClosed');
+    var delBtn = document.getElementById('delBtn');
+
+    function setDialog(open, focusIt) {
+      dlg.hidden = !open;
+      dlgClosed.hidden = open;
+      delBtn.setAttribute('aria-expanded', String(open));
+      if (open && focusIt) document.getElementById('dlgCancel').focus();
+    }
+    delBtn.setAttribute('aria-expanded', 'true');
+    delBtn.addEventListener('click', function () { setDialog(true, true); });
+    document.getElementById('dlgCancel').addEventListener('click', function () {
+      setDialog(false);
+      delBtn.focus();
+    });
+    document.getElementById('dlgDelete').addEventListener('click', function () {
+      setDialog(false);
+      delBtn.focus();
+    });
+  })();
+</script>

@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Lessons · Grouped Timeline</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+/* ==========================================================================
+   LESSONS — VARIANT C · "Grouped Timeline"
+   Screen-specific CSS only. Every colour / radius / shadow / font comes
+   from _theme.css. No hex literals that aren't derived from a token.
+   ========================================================================== */
+
+/* ── Variant badge ─────────────────────────────────────────────────────── */
+.variant-badge{
+  position:fixed; top:10px; right:10px; z-index:99;
+  padding:6px 12px; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter:blur(10px);
+  border:1px solid var(--line-pink); box-shadow:var(--sh-sm);
+  font:600 11px/1 var(--font-sans); letter-spacing:.04em; color:var(--pink-700);
+  pointer-events:none;
+}
+
+/* The page body must never scroll sideways. */
+body{ overflow-x:clip; }
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+.shell{ display:grid; grid-template-columns:1fr; min-height:100dvh; }
+@media (min-width:1024px){
+  .shell{ grid-template-columns:var(--rail) 1fr; height:100dvh; overflow:hidden; }
+}
+@media (min-width:1280px){
+  .shell{ grid-template-columns:var(--sidebar) 1fr; }
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+.sidebar{
+  position:fixed; inset:0 auto 0 0; z-index:60;
+  width:min(84vw, var(--sidebar));
+  display:flex; flex-direction:column; gap:14px;
+  padding:18px 14px;
+  background:linear-gradient(180deg, var(--surface), var(--floss));
+  border-right:1px solid var(--line);
+  box-shadow:var(--sh-xl);
+  transform:translateX(-102%);
+  /* Closed means GONE: off-screen AND out of the tab order / a11y tree.
+     The JS sets `inert`; visibility is the belt-and-braces fallback. It flips
+     only after the slide-out has finished, so the animation still plays. */
+  visibility:hidden;
+  transition:transform var(--dur) var(--ease), visibility 0s linear var(--dur);
+  overflow-y:auto;
+}
+.sidebar.is-open{ transform:none; visibility:visible; transition-delay:0s; }
+@media (min-width:1024px){
+  .sidebar{
+    position:relative; inset:auto; width:auto; transform:none; box-shadow:none;
+    visibility:visible; transition:none;
+    align-items:center; padding:18px 10px;
+  }
+}
+@media (min-width:1280px){ .sidebar{ align-items:stretch; padding:18px 14px; } }
+
+.scrim{
+  position:fixed; inset:0; z-index:55;
+  background:color-mix(in srgb, var(--ink) 36%, transparent); backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; transition:opacity var(--dur) var(--ease);
+}
+.scrim.is-open{ opacity:1; pointer-events:auto; }
+@media (min-width:1024px){ .scrim{ display:none; } }
+
+.brand{ display:flex; align-items:center; gap:11px; padding:6px 6px 2px; }
+.brand-mark{
+  width:40px; height:40px; flex:0 0 auto; border-radius:13px;
+  background:var(--grad-brand); color:var(--ink-invert);
+  display:grid; place-items:center; box-shadow:var(--sh-pink);
+}
+.brand-txt{ min-width:0; display:block; }
+.brand-name{ display:block; font:700 15px/1.2 var(--font-sans); letter-spacing:-.01em; }
+.brand-sub{ display:block; font:var(--t-small); color:var(--ink-soft); white-space:nowrap; }
+@media (min-width:1024px) and (max-width:1279px){ .brand{ justify-content:center; padding:6px 0; } .brand-txt{ display:none; } }
+
+.side-cta{ width:100%; }
+@media (min-width:1024px) and (max-width:1279px){
+  .side-cta{ width:var(--tap); padding:0; border-radius:50%; }
+  .side-cta span{ display:none; }
+}
+
+.nav-group{ display:flex; flex-direction:column; gap:3px; }
+.nav-group + .nav-group{ margin-top:10px; }
+.nav-label{ padding:8px 12px 4px; }
+@media (min-width:1024px) and (max-width:1279px){ .nav-label{ text-align:center; padding:8px 0 4px; font-size:9px; letter-spacing:.08em; } }
+
+.nav-item{
+  display:flex; align-items:center; gap:12px;
+  min-height:var(--tap); padding:0 12px;
+  border-radius:var(--r-sm); color:var(--ink-soft);
+  font:600 13.5px/1 var(--font-sans);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav-item svg{ width:20px; height:20px; flex:0 0 auto; }
+.nav-item:hover{ background:var(--surface-3); color:var(--ink); }
+.nav-item[aria-current="page"]{
+  background:var(--grad-mint); color:var(--teal-700); box-shadow:var(--sh-mint);
+}
+@media (min-width:1024px) and (max-width:1279px){
+  .nav-item{ justify-content:center; padding:0; width:var(--tap); margin-inline:auto; }
+  .nav-item span{ display:none; }
+}
+
+.side-foot{ margin-top:auto; padding-top:12px; border-top:1px solid var(--line); }
+.user{
+  display:flex; align-items:center; gap:10px; width:100%;
+  min-height:var(--tap); padding:6px; border-radius:var(--r-sm); text-align:left;
+}
+.user:hover{ background:var(--surface-3); }
+.user-txt{ min-width:0; display:block; }
+.user-name{ display:block; font:600 13px/1.25 var(--font-sans); }
+.user-mail{ display:block; font:400 11.5px/1.25 var(--font-sans); color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; }
+@media (min-width:1024px) and (max-width:1279px){ .user{ justify-content:center; } .user-txt, .user > svg{ display:none; } }
+
+/* ── Main column ───────────────────────────────────────────────────────── */
+.main{ display:flex; flex-direction:column; min-width:0; }
+@media (min-width:1024px){ .main{ height:100dvh; overflow:hidden; } }
+
+.topbar{
+  display:flex; align-items:center; gap:12px;
+  padding:14px var(--pad-page);
+  border-bottom:1px solid var(--line);
+  background:color-mix(in srgb, var(--surface) 72%, transparent); backdrop-filter:blur(12px);
+  position:sticky; top:0; z-index:30;
+}
+@media (min-width:1024px){ .topbar{ position:relative; } }
+.greet{ min-width:0; flex:1; }
+.greet p{ font:var(--t-small); color:var(--ink-soft); }
+/* Not a heading — the page has exactly one <h1> (#pageTitle) — but it keeps
+   the h2 styling it had. Beats `.greet p` on specificity. */
+.greet .greet-title{
+  font:var(--t-h2); color:var(--ink); letter-spacing:-.01em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.menu-btn{ display:grid; }
+@media (min-width:1024px){ .menu-btn{ display:none; } }
+.topbar .btn--ghost svg{ width:19px; height:19px; }
+
+/* ── Scrolling page ────────────────────────────────────────────────────── */
+.page{
+  padding:var(--pad-page);
+  padding-bottom:calc(104px + var(--pad-page));
+  display:flex; flex-direction:column; gap:var(--gap);
+  min-width:0;
+}
+@media (min-width:1024px){
+  .page{ flex:1; min-height:0; overflow-y:auto; padding-bottom:var(--pad-page); }
+}
+
+/* ── Page header ───────────────────────────────────────────────────────── */
+.phead{
+  display:flex; align-items:flex-end; flex-wrap:wrap; gap:14px;
+  padding:2px 2px 0;
+}
+.phead h1{ font:var(--t-h1); letter-spacing:-.02em; }
+.phead p{ font:var(--t-small); color:var(--ink-soft); margin-top:3px; }
+.phead-txt{ flex:1 1 240px; min-width:0; }
+.phead-act{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+/* ── Filter bar + drawer ───────────────────────────────────────────────── */
+.filterbar{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:10px 12px;
+  background:color-mix(in srgb, var(--surface) 78%, transparent); backdrop-filter:blur(8px);
+  border:1px solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--sh-sm);
+}
+.fbtn{
+  display:inline-flex; align-items:center; gap:8px; flex:0 0 auto;
+  min-height:var(--tap); padding:0 15px; border-radius:var(--r-pill);
+  border:1px solid var(--line-strong); background:var(--surface-2);
+  font:600 13px/1 var(--font-sans); color:var(--ink);
+  transition:background var(--dur) var(--ease);
+}
+.fbtn:hover{ background:var(--surface-3); }
+.fbtn svg{ width:17px; height:17px; color:var(--teal-600); }
+.fbtn .caret{ transition:transform var(--dur) var(--ease); color:var(--ink-faint); width:14px; height:14px; }
+.fbtn[aria-expanded="true"] .caret{ transform:rotate(180deg); }
+
+.fchips{ display:flex; align-items:center; gap:8px; flex:1 1 200px; min-width:0; padding:1px 0; }
+.fchip{
+  display:inline-flex; align-items:center; gap:2px; flex:0 0 auto;
+  min-height:36px; padding:0 4px 0 13px;
+  border-radius:var(--r-pill);
+  background:var(--pink-50); border:1px solid var(--line-pink);
+  font:600 12px/1 var(--font-sans); color:var(--pink-700);
+  white-space:nowrap;
+}
+.fchip b{ font-weight:700; }
+.fchip-x{
+  display:grid; place-items:center;
+  width:32px; height:32px; border-radius:50%;
+  color:var(--pink-600); opacity:.75;
+}
+.fchip-x:hover{ background:var(--pink-100); opacity:1; }
+.fchip-x svg{ width:13px; height:13px; }
+
+.fcount{
+  flex:0 0 auto; margin-left:auto; padding-right:4px;
+  font:var(--t-small); color:var(--ink-soft); white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.fcount b{ color:var(--ink); font-weight:700; }
+.fcount .money{ color:var(--teal-700); font-weight:700; }
+
+/* Touch: everything tappable clears 44px.
+   `any-pointer:coarse` — not `hover:none` — so a touch-capable laptop / 2-in-1
+   that ALSO reports a mouse still gets finger-sized targets. */
+@media (any-pointer:coarse), (max-width:1023px){
+  .fchip{ min-height:var(--tap); padding-right:0; }
+  .fchip-x{ width:var(--tap); height:var(--tap); }
+}
+@media (max-width:767px){
+  .fcount{ margin-left:0; width:100%; padding-top:2px; border-top:1px dashed var(--line); padding-left:2px; }
+}
+
+/* The drawer */
+.drawer{
+  border:1px solid var(--line); border-radius:var(--r-lg);
+  background:linear-gradient(160deg, var(--teal-100), var(--surface) 72%);
+  box-shadow:var(--sh-sm);
+  padding:16px;
+  animation:rise .35s var(--ease) both;
+}
+.drawer[hidden]{ display:none !important; }
+.drawer-grid{
+  display:grid; gap:12px;
+  grid-template-columns:repeat(auto-fit, minmax(178px, 1fr));
+  align-items:end;
+}
+.field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.field .label{ color:var(--teal-700); }
+.control{
+  min-height:var(--tap); width:100%;
+  padding:0 12px; border-radius:var(--r-sm);
+  border:1px solid var(--line-strong); background:var(--surface);
+  font:500 13.5px/1 var(--font-sans); color:var(--ink);
+  box-shadow:var(--sh-xs);
+  appearance:none;
+}
+select.control{
+  background-image:linear-gradient(45deg,transparent 50%, var(--ink-faint) 50%), linear-gradient(135deg, var(--ink-faint) 50%, transparent 50%);
+  background-position:calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+  background-size:5px 5px, 5px 5px;
+  background-repeat:no-repeat;
+  padding-right:34px;
+}
+.control:hover{ border-color:var(--wintergreen); }
+.drawer-reset{ width:100%; }
+.drawer-foot{
+  margin-top:14px; padding-top:12px; border-top:1px solid var(--line);
+  display:flex; align-items:center; gap:8px;
+  font:var(--t-small); color:var(--ink-soft);
+}
+.drawer-foot svg{ width:15px; height:15px; color:var(--teal-600); flex:0 0 auto; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE TIMELINE
+   ═════════════════════════════════════════════════════════════════════════ */
+.timeline{
+  --time-w:88px;
+  --rail-w:34px;
+  padding:0 var(--pad-card) 10px;
+  overflow:visible;
+}
+@media (max-width:1023px){
+  .timeline{ --time-w:0px; --rail-w:26px; padding:0 14px 10px; }
+}
+
+/* ── Sticky day header ─────────────────────────────────────────────────── */
+.day-head{
+  position:sticky; top:0; z-index:5;
+  margin-inline:calc(-1 * var(--pad-card));
+  padding:12px var(--pad-card);
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  background:color-mix(in srgb, var(--floss) 94%, var(--surface));
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  /* Square by default: a full-bleed header in the MIDDLE of the card must meet
+     the card's straight side edges, or the rounded corners cut white notches. */
+  border-radius:0;
+}
+/* …only the first header sits on the card's own rounded top corners. */
+.timeline > .day-head:first-of-type{ border-radius:var(--r-lg) var(--r-lg) 0 0; }
+@media (max-width:1023px){
+  /* clears the sticky topbar (14px pad + 44px control + 14px pad) */
+  .day-head{ top:72px; margin-inline:-14px; padding:11px 14px; }
+}
+.dh-left{ min-width:0; }
+.dh-big{
+  display:flex; align-items:baseline; gap:8px;
+  font:400 1rem/1.2 var(--font-num); letter-spacing:-.02em;
+}
+.dh-dow{
+  font:var(--t-label); letter-spacing:var(--label-tracking);
+  text-transform:uppercase; color:var(--ink-faint);
+}
+.dh-num{ font-size:clamp(22px,2.4vw,27px); font-weight:700; font-variant-numeric:tabular-nums; color:var(--ink); }
+.dh-mon{ font:var(--t-small); color:var(--ink-soft); margin-top:1px; }
+.dh-today{
+  display:inline-flex; align-items:center; margin-left:7px;
+  padding:2px 8px; border-radius:var(--r-pill);
+  background:var(--cotton); color:var(--pink-700);
+  font:700 10px/1.5 var(--font-sans); letter-spacing:.05em; text-transform:uppercase;
+  vertical-align:middle;
+}
+.dh-sum{
+  margin-left:auto; display:flex; align-items:center; flex-wrap:wrap; gap:6px 9px;
+  font:var(--t-small); color:var(--ink-soft);
+}
+.dh-sum i{ font-style:normal; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.dh-sum i::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--d, var(--ink-faint)); }
+.dh-sum .n-all::before{ display:none; }
+.dh-sum .n-all{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+.dh-sum .n-ok{ --d:var(--ok-dot); }
+.dh-sum .n-pend{ --d:var(--wait-dot); }
+.dh-sum .n-no{ --d:var(--no-dot); }
+.dh-money{
+  flex:0 0 auto; padding:5px 11px; border-radius:var(--r-pill);
+  background:var(--ok-bg); color:var(--ok-fg);
+  font:700 12px/1 var(--font-num); font-variant-numeric:tabular-nums;
+}
+@media (max-width:639px){
+  .dh-sum{ margin-left:0; width:100%; order:3; }
+  .dh-money{ margin-left:auto; }
+}
+
+/* ── The rail + rows ───────────────────────────────────────────────────── */
+.tl-list{ list-style:none; position:relative; padding:6px 0 2px; }
+.tl-list::before{
+  content:""; position:absolute; z-index:0;
+  top:14px; bottom:14px;
+  left:calc(var(--time-w) + (var(--rail-w) / 2) - 1px);
+  width:2px; border-radius:2px;
+  background:var(--line);
+}
+
+.tl-item{
+  position:relative; z-index:1;
+  display:grid; align-items:start;
+  grid-template-columns:var(--time-w) var(--rail-w) minmax(0,1fr);
+  grid-template-areas:"when node body";
+  --dot:var(--wait-dot);
+}
+.tl-item.is-complete{ --dot:var(--ok-dot); }
+.tl-item.is-cancelled{ --dot:var(--no-dot); }
+.tl-item.is-pending{ --dot:var(--wait-dot); }
+.tl-item + .tl-item .tl-body::before{
+  content:""; position:absolute; left:12px; right:12px; top:0;
+  border-top:1px solid var(--line);
+}
+
+/* time / duration column */
+.tl-when{
+  grid-area:when; display:flex; flex-direction:column; align-items:flex-end;
+  gap:3px; padding:16px 14px 0 0;
+}
+.tl-time{ font:700 13.5px/1.15 var(--font-num); font-variant-numeric:tabular-nums; color:var(--ink); white-space:nowrap; }
+.tl-dur{ font:500 11.5px/1 var(--font-sans); color:var(--ink-soft); white-space:nowrap; }
+
+/* the node on the rail */
+.tl-node{
+  grid-area:node; justify-self:center; align-self:start;
+  margin-top:19px;
+  width:11px; height:11px; border-radius:50%;
+  background:var(--dot);
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 7px color-mix(in srgb, var(--dot) 26%, transparent);
+}
+
+/* the content row */
+.tl-body{
+  grid-area:body; position:relative;
+  display:grid; align-items:center; gap:10px 14px;
+  grid-template-columns:minmax(0,1fr) auto auto auto;
+  grid-template-areas:"who stat rate act";
+  padding:12px;
+  border-radius:var(--r-md);
+  transition:background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.tl-item:hover .tl-body{ background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--line); }
+.tl-item:hover .tl-body::before{ border-color:transparent; }
+
+.tl-who{ grid-area:who; display:flex; align-items:center; gap:12px; min-width:0; }
+.tl-meta{ min-width:0; }
+.tl-namerow{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.tl-name{
+  font:650 14.5px/1.3 var(--font-sans); color:var(--ink);
+  letter-spacing:-.01em;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.tl-piece{
+  display:flex; align-items:center; gap:6px; margin-top:3px;
+  font:var(--t-small); color:var(--ink-soft); min-width:0;
+}
+.tl-piece span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tl-piece svg{ width:13px; height:13px; flex:0 0 auto; color:var(--ink-faint); }
+.tl-note{
+  margin-top:4px; font:var(--t-small); color:var(--ink-soft); font-style:italic;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.tl-reason{
+  margin-top:5px; display:inline-flex; align-items:center; gap:6px;
+  padding:3px 9px; border-radius:var(--r-pill);
+  background:var(--no-bg); color:var(--no-fg);
+  font:600 11px/1.45 var(--font-sans);
+  max-width:100%;
+}
+.tl-reason span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.chip--stat{ grid-area:stat; justify-self:start; }
+
+.tl-rate{
+  grid-area:rate; justify-self:end; text-align:right; min-width:96px;
+}
+.tl-money{
+  display:block;
+  font:700 13.5px/1.2 var(--font-num); font-variant-numeric:tabular-nums;
+  color:var(--ink); letter-spacing:-.01em; white-space:nowrap;
+}
+.tl-billing{ display:block; font:500 10.5px/1.4 var(--font-sans); color:var(--ink-soft); white-space:nowrap; }
+
+/* Reserved in the grid, so revealing them never shifts the row.
+   Opacity (not visibility) keeps them keyboard-reachable — tabbing in
+   fires :focus-within and fades them up. */
+.tl-actions{
+  grid-area:act; display:flex; align-items:center; gap:6px; justify-content:flex-end;
+  opacity:0;
+  transition:opacity var(--dur) var(--ease);
+}
+.tl-item:hover .tl-actions,
+.tl-item:focus-within .tl-actions{ opacity:1; }
+.tl-more{
+  display:grid; place-items:center; flex:0 0 auto; /* never shrinks — stays a 44px circle */
+  width:var(--tap); min-height:var(--tap); border-radius:50%;
+  color:var(--ink-soft);
+}
+.tl-more:hover{ background:var(--surface-3); color:var(--ink); }
+.tl-more svg{ width:19px; height:19px; }
+
+/* CANCELLED — desaturated, struck, reason shown */
+.is-cancelled .tl-who{ opacity:.72; }
+.is-cancelled .av{ filter:saturate(.35); }
+.is-cancelled .tl-name{ text-decoration:line-through; text-decoration-thickness:1.5px; color:var(--ink-soft); font-weight:600; }
+.is-cancelled .tl-money{ color:var(--ink-soft); text-decoration:line-through; font-weight:600; }
+.is-cancelled .tl-body{ background:color-mix(in srgb, var(--no-bg) 22%, transparent); }
+.is-cancelled:hover .tl-body{ background:color-mix(in srgb, var(--no-bg) 40%, transparent); }
+
+/* PENDING — the row that wants an action */
+.is-pending .tl-money{ color:var(--ink-soft); }
+
+/* Avatar tints, derived from the theme gradients.
+   The raw pastels can never carry white 12px/700 text (--bubblegum is ~1.96:1
+   against --ink-invert, --grad-pink's light stop ~1.7:1). So the initials go
+   DARK on every variant — the pastel stays, the text becomes legible.
+     .av        grad-brand (bubblegum → wintergreen) + --ink  → 5.8:1 worst stop
+     .av--pink  cotton → bubblegum            + --ink         → 6.2:1 worst stop
+     .av--mint  grad-mint + --mint-ink (the token _theme.css reserves for it)
+                                                              → 6.5:1 worst stop */
+.av{ color:var(--ink); }
+.av--pink{ background:linear-gradient(135deg, var(--cotton), var(--bubblegum)); color:var(--ink); }
+.av--mint{ background:var(--grad-mint); color:var(--mint-ink); }
+
+/* ── Touch: actions are always visible & full-width ────────────────────── */
+@media (hover:none), (any-pointer:coarse){
+  .tl-actions{ opacity:1; visibility:visible; }
+  /* .btn--sm is 34px tall — below --tap. The row's primary action must never
+     rely on it once a finger is in play, at ANY width (1024×768 included). */
+  .tl-actions .btn{ min-height:var(--tap); font-size:13.5px; padding:0 16px; }
+}
+
+/* ── TABLET PORTRAIT & PHONE: time column collapses above the content ──── */
+@media (max-width:1023px){
+  .tl-item{
+    grid-template-columns:var(--rail-w) minmax(0,1fr);
+    grid-template-areas:
+      "node when"
+      ".    body";
+    padding-top:2px;
+  }
+  .tl-when{
+    flex-direction:row; align-items:baseline; gap:9px;
+    padding:0 0 2px 2px;
+  }
+  .tl-time{ font-size:13px; }
+  .tl-dur::before{ content:"·"; margin-right:9px; color:var(--line-strong); }
+  .tl-node{ margin-top:4px; }
+  .tl-item + .tl-item{ margin-top:6px; }
+  .tl-item + .tl-item .tl-body::before{ display:none; }
+
+  .tl-body{
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:
+      "who  who"
+      "stat rate"
+      "act  act";
+    gap:10px 12px;
+    padding:12px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:var(--r-md);
+    box-shadow:var(--sh-xs);
+  }
+  .tl-item:hover .tl-body{ box-shadow:var(--sh-sm); }
+  .tl-rate{ min-width:0; }
+  /* always visible, and the primary action takes the full width as a fat tap */
+  .tl-actions{
+    opacity:1;
+    justify-content:flex-start;
+    padding-top:10px; border-top:1px dashed var(--line);
+  }
+  /* full-WIDTH and full-HEIGHT: 34px was never a finger target */
+  .tl-actions .btn{ flex:1 1 auto; width:100%; min-height:var(--tap); font-size:13.5px; }
+  .is-cancelled .tl-body{ background:color-mix(in srgb, var(--no-bg) 30%, var(--surface)); border-color:var(--line-pink); }
+}
+@media (max-width:1023px){
+  .tl-list::before{ top:8px; bottom:26px; }
+}
+
+/* ── The "no lessons" gap divider ──────────────────────────────────────── */
+.tl-gap{
+  position:relative;
+  display:grid; align-items:center;
+  grid-template-columns:var(--time-w) var(--rail-w) minmax(0,1fr);
+  min-height:64px;
+}
+.tl-gap::before{
+  content:""; position:absolute; top:0; bottom:0;
+  left:calc(var(--time-w) + (var(--rail-w) / 2) - 1px);
+  width:2px;
+  background:repeating-linear-gradient(to bottom, var(--line-strong) 0 4px, transparent 4px 9px);
+}
+.tl-gap-node{
+  grid-column:2; justify-self:center; z-index:1;
+  width:10px; height:10px; border-radius:50%;
+  background:var(--surface); border:2px solid var(--line-strong);
+  box-shadow:0 0 0 3px var(--surface);
+}
+.tl-gap p{
+  grid-column:3; justify-self:start;
+  display:inline-flex; align-items:center; gap:7px;
+  margin-left:12px;
+  padding:8px 15px; border-radius:var(--r-pill);
+  background:var(--pink-50); border:1px dashed var(--line-pink);
+  font:var(--t-small); color:var(--ink-soft);
+}
+.tl-gap p b{ color:var(--pink-700); font-weight:700; }
+@media (max-width:1023px){
+  .tl-gap{ grid-template-columns:var(--rail-w) minmax(0,1fr); min-height:58px; }
+  .tl-gap-node{ grid-column:1; }
+  .tl-gap p{ grid-column:2; margin-left:6px; }
+}
+
+/* ── Timeline footer ───────────────────────────────────────────────────── */
+.tl-foot{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:16px 0 4px;
+  font:var(--t-small); color:var(--ink-soft);
+}
+.tl-foot::before, .tl-foot::after{ content:""; height:1px; flex:1; background:var(--line); }
+
+/* ── Legend ────────────────────────────────────────────────────────────── */
+.legend{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:0 4px; }
+.legend span{ display:inline-flex; align-items:center; gap:7px; font:var(--t-small); color:var(--ink-soft); }
+.legend i{ width:9px; height:9px; border-radius:50%; background:var(--d); box-shadow:0 0 0 3px color-mix(in srgb, var(--d) 22%, transparent); }
+
+/* ── Empty state (second section) ──────────────────────────────────────── */
+.state-note{ display:flex; align-items:center; gap:9px; padding:4px 4px 0; }
+.state-note::after{ content:""; height:1px; flex:1; background:var(--line); }
+.empty{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  gap:6px; padding:clamp(30px, 5vw, 52px) var(--pad-card);
+  background:linear-gradient(160deg, var(--pink-100), var(--surface) 62%);
+  border-color:var(--line-pink);
+}
+.empty-key{
+  width:76px; height:76px; border-radius:var(--r-xl); margin-bottom:8px;
+  display:grid; place-items:center; font-size:34px; line-height:1;
+  background:var(--surface); border:1px solid var(--line-pink);
+  box-shadow:var(--sh);
+}
+.empty h2{ font:var(--t-h1); letter-spacing:-.02em; }
+.empty p{ font:var(--t-body); color:var(--ink-soft); max-width:34ch; }
+.empty .btn{ margin-top:14px; }
+
+/* ── FAB + bottom tab bar (below 1024) ─────────────────────────────────── */
+.fab{
+  position:fixed; z-index:45;
+  right:16px; bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+  width:58px; height:58px; border-radius:50%;
+  display:grid; place-items:center; color:var(--ink-invert);
+  background:var(--grad-pink); box-shadow:var(--sh-pink);
+  transition:transform var(--dur) var(--ease);
+}
+.fab:hover{ transform:translateY(-2px) scale(1.03); }
+.fab:active{ transform:scale(.95); }
+.fab svg{ width:26px; height:26px; }
+@media (min-width:1024px){ .fab{ display:none; } }
+
+.tabbar{
+  position:fixed; z-index:40;
+  left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px));
+  display:grid; grid-template-columns:repeat(5,1fr);
+  padding:6px; border-radius:var(--r-xl);
+  background:color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter:blur(16px);
+  border:1px solid var(--line); box-shadow:var(--sh-lg);
+}
+@media (min-width:1024px){ .tabbar{ display:none; } }
+.tab{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  min-height:56px; border-radius:var(--r-md); color:var(--ink-soft);
+  font:600 10.5px/1 var(--font-sans);
+}
+.tab svg{ width:21px; height:21px; }
+.tab[aria-current="page"]{ color:var(--pink-700); background:var(--pink-50); }
+
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Lessons · Grouped Timeline</div>
+
+<div class="shell">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </span>
+      <span class="brand-txt">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-sub">Personal teaching space</span>
+      </span>
+    </div>
+
+    <button class="btn btn--primary side-cta" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav class="nav-group" aria-label="Main">
+      <p class="label nav-label">Main</p>
+      <!-- aria-label on every link: at 1024–1279 the <span> is display:none, so
+           the label is the ONLY accessible name left (the <svg> is aria-hidden). -->
+      <a class="nav-item" href="/dashboard" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" href="/calendar" aria-label="Calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        <span>Calendar</span>
+      </a>
+    </nav>
+
+    <nav class="nav-group" aria-label="Manage">
+      <p class="label nav-label">Manage</p>
+      <a class="nav-item" href="/lessons" aria-current="page" aria-label="Lessons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+        <span>Lessons</span>
+      </a>
+      <a class="nav-item" href="/students" aria-label="Students">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Students</span>
+      </a>
+      <a class="nav-item" href="/pieces" aria-label="Pieces">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span>Pieces</span>
+      </a>
+      <a class="nav-item" href="/reports" aria-label="Reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="4" height="7" rx="1"/><rect x="12" y="6" width="4" height="12" rx="1"/><rect x="19" y="14" width="2" height="4" rx="1"/></svg>
+        <span>Reports</span>
+      </a>
+      <a class="nav-item" href="/payments" aria-label="Payments">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg>
+        <span>Payments</span>
+      </a>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user" aria-haspopup="menu" aria-expanded="false" aria-label="Account menu, Mai Nguyễn">
+        <span class="av" aria-hidden="true">MN</span>
+        <span class="user-txt">
+          <span class="user-name">Mai Nguyễn</span>
+          <span class="user-mail">mai@pianodiary.studio</span>
+        </span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;color:var(--ink-faint)" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <div class="scrim" id="scrim" hidden></div>
+
+  <!-- ══ MAIN ═════════════════════════════════════════════════════════════ -->
+  <div class="main">
+
+    <header class="topbar">
+      <button class="btn btn--ghost btn--icon menu-btn" id="menuBtn" aria-label="Open navigation menu" aria-controls="sidebar" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="greet">
+        <p class="greet-title">Good afternoon, Mai ✨</p>
+        <p>Tuesday, 14 July 2026 · 5 lessons today</p>
+      </div>
+      <button class="btn btn--ghost btn--icon" aria-label="Search lessons and students">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+    </header>
+
+    <main class="page">
+
+      <!-- ══ PAGE HEADER ════════════════════════════════════════════════ -->
+      <section class="phead rise" style="--i:0" aria-labelledby="pageTitle">
+        <div class="phead-txt">
+          <h1 id="pageTitle">Lessons &amp; Attendance</h1>
+          <p>Track every beautiful session</p>
+        </div>
+
+        <div class="phead-act">
+          <!-- The Timeline / Table / Cards switcher lived here. It was dead —
+               it only flipped aria-pressed — and /lessons has no table or card
+               view in the real app, so wiring it would have invented UI. Gone. -->
+          <button class="btn btn--primary" aria-label="Add lesson">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+            <span>Add lesson</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ══ FILTER BAR ═════════════════════════════════════════════════ -->
+      <section class="filterbar rise" style="--i:1" aria-label="Lesson filters">
+        <button class="fbtn" id="filterBtn" aria-expanded="true" aria-controls="filterDrawer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6h.09A1.7 1.7 0 0 0 10.1 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.55 1.01H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          <span>Filters</span>
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+
+        <!-- Chips show APPLIED filters only. "Status: All" is the absence of a
+             filter, so it gets no chip and no clear button. -->
+        <div class="fchips scroll-x no-scrollbar">
+          <span class="fchip"><b>Jul&nbsp;1 – Jul&nbsp;31</b>
+            <button class="fchip-x" aria-label="Clear date range filter">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </span>
+        </div>
+
+        <!-- The billable caveat used to hide in a title= tooltip — unreachable by
+             keyboard and by finger. It is now text. -->
+        <p class="fcount"><b>14</b> lessons · <span class="money">3.150.000 ₫</span><span class="sr-only"> billable total, complete lessons only</span></p>
+      </section>
+
+      <!-- ══ FILTER DRAWER (open by default) ════════════════════════════ -->
+      <section class="drawer rise" style="--i:2" id="filterDrawer" aria-label="Filter controls">
+        <div class="drawer-grid">
+          <div class="field">
+            <label class="label" for="fStudent">Student</label>
+            <select class="control" id="fStudent">
+              <option selected>All students</option>
+              <option>Nguyễn Minh Anh</option>
+              <option>Trần Bảo Ngọc</option>
+              <option>Lê Gia Hân</option>
+              <option>Emma Thompson</option>
+              <option>Phạm Quốc Bảo</option>
+              <option>Olivia Nguyen</option>
+              <option>Đỗ Khánh Linh</option>
+              <option>Liam Carter</option>
+              <option>Vũ Thanh Trúc</option>
+              <option>Hoàng Nam Phong</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="label" for="fStatus">Status</label>
+            <select class="control" id="fStatus">
+              <option selected>All statuses</option>
+              <option>Pending</option>
+              <option>Complete</option>
+              <option>Cancelled</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="label" for="fFrom">From</label>
+            <input class="control" id="fFrom" type="date" value="2026-07-01">
+          </div>
+
+          <div class="field">
+            <label class="label" for="fTo">To</label>
+            <input class="control" id="fTo" type="date" value="2026-07-31">
+          </div>
+
+          <div class="field">
+            <span class="label" aria-hidden="true">&nbsp;</span>
+            <button class="btn btn--ghost drawer-reset" id="resetBtn">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              <span>Reset</span>
+            </button>
+          </div>
+        </div>
+
+        <p class="drawer-foot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+          Only <strong>Complete</strong> lessons are billed. Cancelled sessions still need a reason and are tracked as a loss.
+        </p>
+      </section>
+
+      <!-- ══ LEGEND ═════════════════════════════════════════════════════ -->
+      <!-- NOT aria-hidden: this is the only place that maps status → billing.
+           Only the colour swatches are decorative. -->
+      <div class="legend rise" style="--i:3">
+        <span><i style="--d:var(--ok-dot)" aria-hidden="true"></i> Complete · billed</span>
+        <span><i style="--d:var(--wait-dot)" aria-hidden="true"></i> Pending · not yet billed</span>
+        <span><i style="--d:var(--no-dot)" aria-hidden="true"></i> Cancelled · not billed</span>
+      </div>
+
+      <!-- ══ THE TIMELINE ═══════════════════════════════════════════════ -->
+      <section class="card timeline rise" style="--i:4" aria-label="Lesson timeline, newest first">
+
+        <!-- ───────── TUE 14 JULY ───────── -->
+        <header class="day-head">
+          <div class="dh-left">
+            <h2 class="dh-big"><span class="dh-dow">Tue</span><span class="dh-num">14</span></h2>
+            <p class="dh-mon">July 2026 <span class="dh-today">Today</span></p>
+          </div>
+          <p class="dh-sum">
+            <i class="n-all">5 lessons</i>
+            <i class="n-ok">3 complete</i>
+            <i class="n-pend">1 pending</i>
+            <i class="n-no">1 cancelled</i>
+          </p>
+          <span class="dh-money">950.000 ₫</span>
+        </header>
+
+        <ol class="tl-list">
+          <!-- 1 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">8:30 AM</span><span class="tl-dur">45 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av" aria-hidden="true">MA</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Nguyễn Minh Anh</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Für Elise</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">300.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Nguyễn Minh Anh, 8:30 AM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Nguyễn Minh Anh, 8:30 AM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 2 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">10:00 AM</span><span class="tl-dur">60 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--pink" aria-hidden="true">ET</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow">
+                    <h3 class="tl-name">Emma Thompson</h3>
+                    <span class="chip chip--online"><span aria-hidden="true">💻</span> Online</span>
+                  </div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Clair de Lune</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">320.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Emma Thompson, 10:00 AM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Emma Thompson, 10:00 AM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 3 — CANCELLED -->
+          <li class="tl-item is-cancelled">
+            <div class="tl-when"><span class="tl-time">2:00 PM</span><span class="tl-dur">45 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--mint" aria-hidden="true">GH</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Lê Gia Hân</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Minuet in G</span>
+                  </p>
+                  <p class="tl-reason"><span>Reason: Family emergency</span></p>
+                </div>
+              </div>
+              <span class="chip chip--cancelled chip--stat">Cancelled</span>
+              <p class="tl-rate"><span class="tl-money">240.000 ₫</span><span class="tl-billing">not billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Lê Gia Hân, 2:00 PM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Lê Gia Hân, 2:00 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 4 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">4:30 PM</span><span class="tl-dur">45 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av" aria-hidden="true">BN</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Trần Bảo Ngọc</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Nocturne Op.9 No.2</span>
+                  </p>
+                  <p class="tl-note">Note: pedalling much cleaner this week 🎀</p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">330.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Trần Bảo Ngọc, 4:30 PM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Trần Bảo Ngọc, 4:30 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 5 — PENDING -->
+          <li class="tl-item is-pending">
+            <div class="tl-when"><span class="tl-time">6:30 PM</span><span class="tl-dur">60 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--pink" aria-hidden="true">QB</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Phạm Quốc Bảo</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Turkish March</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--pending chip--stat">Pending</span>
+              <p class="tl-rate"><span class="tl-money">320.000 ₫</span><span class="tl-billing">not yet billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--mint btn--sm" aria-label="Mark attendance — Phạm Quốc Bảo, 6:30 PM">Mark attendance</button>
+                <button class="tl-more" aria-label="More actions for Phạm Quốc Bảo, 6:30 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        <!-- ───────── MON 13 JULY ───────── -->
+        <header class="day-head">
+          <div class="dh-left">
+            <h2 class="dh-big"><span class="dh-dow">Mon</span><span class="dh-num">13</span></h2>
+            <p class="dh-mon">July 2026</p>
+          </div>
+          <p class="dh-sum">
+            <i class="n-all">6 lessons</i>
+            <i class="n-ok">5 complete</i>
+            <i class="n-no">1 cancelled</i>
+          </p>
+          <span class="dh-money">1.500.000 ₫</span>
+        </header>
+
+        <ol class="tl-list">
+          <!-- 6 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">9:00 AM</span><span class="tl-dur">60 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--mint" aria-hidden="true">ON</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow">
+                    <h3 class="tl-name">Olivia Nguyen</h3>
+                    <span class="chip chip--online"><span aria-hidden="true">💻</span> Online</span>
+                  </div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Gymnopédie No.1</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">320.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Olivia Nguyen, 9:00 AM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Olivia Nguyen, 9:00 AM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 7 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">11:00 AM</span><span class="tl-dur">30 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av" aria-hidden="true">TT</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Vũ Thanh Trúc</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>River Flows in You</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">250.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Vũ Thanh Trúc, 11:00 AM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Vũ Thanh Trúc, 11:00 AM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 8 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">1:30 PM</span><span class="tl-dur">45 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--pink" aria-hidden="true">KL</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Đỗ Khánh Linh</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Arabesque No.1</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">300.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Đỗ Khánh Linh, 1:30 PM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Đỗ Khánh Linh, 1:30 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 9 — CANCELLED -->
+          <li class="tl-item is-cancelled">
+            <div class="tl-when"><span class="tl-time">3:00 PM</span><span class="tl-dur">60 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av" aria-hidden="true">LC</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Liam Carter</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Turkish March</span>
+                  </p>
+                  <p class="tl-reason"><span>Reason: Travelling with family</span></p>
+                </div>
+              </div>
+              <span class="chip chip--cancelled chip--stat">Cancelled</span>
+              <p class="tl-rate"><span class="tl-money">300.000 ₫</span><span class="tl-billing">not billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Liam Carter, 3:00 PM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Liam Carter, 3:00 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 10 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">5:00 PM</span><span class="tl-dur">45 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--mint" aria-hidden="true">NP</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Hoàng Nam Phong</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Für Elise</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">280.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Hoàng Nam Phong, 5:00 PM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Hoàng Nam Phong, 5:00 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 11 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">7:00 PM</span><span class="tl-dur">60 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av" aria-hidden="true">MA</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow">
+                    <h3 class="tl-name">Nguyễn Minh Anh</h3>
+                    <span class="chip chip--online"><span aria-hidden="true">💻</span> Online</span>
+                  </div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Clair de Lune</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">350.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Nguyễn Minh Anh, 7:00 PM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Nguyễn Minh Anh, 7:00 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        <!-- ───────── THE GAP ───────── -->
+        <!-- Plain <div>: role="separator" is a leaf role, so it dropped the visible
+             text and announced a different string from its aria-label. -->
+        <div class="tl-gap">
+          <span class="tl-gap-node" aria-hidden="true"></span>
+          <p>No lessons on <b>Jul 12</b> <span aria-hidden="true">🎀</span></p>
+        </div>
+
+        <!-- ───────── SAT 11 JULY ───────── -->
+        <header class="day-head">
+          <div class="dh-left">
+            <h2 class="dh-big"><span class="dh-dow">Sat</span><span class="dh-num">11</span></h2>
+            <p class="dh-mon">July 2026</p>
+          </div>
+          <p class="dh-sum">
+            <i class="n-all">3 lessons</i>
+            <i class="n-ok">2 complete</i>
+            <i class="n-pend">1 pending</i>
+          </p>
+          <span class="dh-money">700.000 ₫</span>
+        </header>
+
+        <ol class="tl-list">
+          <!-- 12 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">9:30 AM</span><span class="tl-dur">60 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--pink" aria-hidden="true">ET</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Emma Thompson</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Nocturne Op.9 No.2</span>
+                  </p>
+                  <p class="tl-note">Note: exam programme run-through</p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">350.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Emma Thompson, 9:30 AM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Emma Thompson, 9:30 AM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 13 — PENDING (past, never marked) -->
+          <li class="tl-item is-pending">
+            <div class="tl-when"><span class="tl-time">11:00 AM</span><span class="tl-dur">45 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av" aria-hidden="true">BN</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow"><h3 class="tl-name">Trần Bảo Ngọc</h3></div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>Gymnopédie No.1</span>
+                  </p>
+                  <p class="tl-note">Attendance still not marked</p>
+                </div>
+              </div>
+              <span class="chip chip--pending chip--stat">Pending</span>
+              <p class="tl-rate"><span class="tl-money">260.000 ₫</span><span class="tl-billing">not yet billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--mint btn--sm" aria-label="Mark attendance — Trần Bảo Ngọc, 11:00 AM">Mark attendance</button>
+                <button class="tl-more" aria-label="More actions for Trần Bảo Ngọc, 11:00 AM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+
+          <!-- 14 -->
+          <li class="tl-item is-complete">
+            <div class="tl-when"><span class="tl-time">4:00 PM</span><span class="tl-dur">60 min</span></div>
+            <span class="tl-node" aria-hidden="true"></span>
+            <div class="tl-body">
+              <div class="tl-who">
+                <span class="av av--pink" aria-hidden="true">QB</span>
+                <div class="tl-meta">
+                  <div class="tl-namerow">
+                    <h3 class="tl-name">Phạm Quốc Bảo</h3>
+                    <span class="chip chip--online"><span aria-hidden="true">💻</span> Online</span>
+                  </div>
+                  <p class="tl-piece">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>River Flows in You</span>
+                  </p>
+                </div>
+              </div>
+              <span class="chip chip--complete chip--stat">Complete</span>
+              <p class="tl-rate"><span class="tl-money">350.000 ₫</span><span class="tl-billing">billed</span></p>
+              <div class="tl-actions">
+                <button class="btn btn--ghost btn--sm" aria-label="Edit lesson — Phạm Quốc Bảo, 4:00 PM">Edit</button>
+                <button class="tl-more" aria-label="More actions for Phạm Quốc Bảo, 4:00 PM">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        <p class="tl-foot">End of July 1 – July 31 · 14 lessons</p>
+      </section>
+
+      <!-- ══ EMPTY STATE (reference) ════════════════════════════════════ -->
+      <p class="state-note label">Empty state</p>
+      <section class="card empty rise" style="--i:5" aria-label="Empty state reference">
+        <span class="empty-key" aria-hidden="true">🎹</span>
+        <h2>No lessons scheduled yet</h2>
+        <p>Your piano week is waiting for music.</p>
+        <button class="btn btn--primary" aria-label="Add lesson">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+          <span>Add lesson</span>
+        </button>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ══ FAB (below 1024) ═════════════════════════════════════════════════ -->
+<button class="fab print-hide" aria-label="Add lesson">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- ══ BOTTOM TAB BAR (tablet portrait & phone) ═════════════════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+    Students
+  </a>
+  <button class="tab" id="moreBtn" aria-label="More sections" aria-controls="sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+    More
+  </button>
+</nav>
+
+<script>
+(function () {
+  /* ── Off-canvas sidebar ─────────────────────────────────────────────── */
+  var sidebar = document.getElementById('sidebar');
+  var scrim   = document.getElementById('scrim');
+  var openers = [document.getElementById('menuBtn'), document.getElementById('moreBtn')];
+  var offCanvas = window.matchMedia('(max-width:1023px)');
+
+  /* Below 1024 the sidebar is a closed drawer sitting off-screen. Translating it
+     out of view does NOT take it out of the tab order — without this, tabbing
+     from the topbar walked into 7 invisible nav links, "Add lesson" and the
+     account button. `inert` removes them from focus AND from the a11y tree.
+     At >=1024 the sidebar is permanent chrome, so inert must come back off. */
+  function syncInert() {
+    sidebar.inert = offCanvas.matches && !sidebar.classList.contains('is-open');
+  }
+
+  function setNav(open) {
+    sidebar.classList.toggle('is-open', open);
+    scrim.classList.toggle('is-open', open);
+    scrim.hidden = !open;
+    openers.forEach(function (b) { if (b) b.setAttribute('aria-expanded', String(open)); });
+    syncInert();
+  }
+  openers.forEach(function (b) {
+    if (b) b.addEventListener('click', function () { setNav(!sidebar.classList.contains('is-open')); });
+  });
+  scrim.addEventListener('click', function () { setNav(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setNav(false); });
+
+  /* Crossing the 1024 line must re-evaluate: a drawer left "closed" at 768 has to
+     stop being inert the moment it becomes the permanent rail. */
+  if (offCanvas.addEventListener) offCanvas.addEventListener('change', syncInert);
+  else offCanvas.addListener(syncInert); /* Safari < 14 */
+  syncInert();
+
+  /* ── Filter drawer ──────────────────────────────────────────────────── */
+  var fBtn = document.getElementById('filterBtn');
+  var drawer = document.getElementById('filterDrawer');
+  fBtn.addEventListener('click', function () {
+    var open = fBtn.getAttribute('aria-expanded') === 'true';
+    fBtn.setAttribute('aria-expanded', String(!open));
+    drawer.hidden = open;
+  });
+
+  /* ── Removable filter chips ─────────────────────────────────────────── */
+  document.querySelectorAll('.fchip-x').forEach(function (x) {
+    x.addEventListener('click', function () { x.closest('.fchip').remove(); });
+  });
+
+  /* ── Reset ──────────────────────────────────────────────────────────── */
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    document.getElementById('fStudent').selectedIndex = 0;
+    document.getElementById('fStatus').selectedIndex = 0;
+    document.getElementById('fFrom').value = '2026-07-01';
+    document.getElementById('fTo').value = '2026-07-31';
+  });
+})();
+</script>
+
+</body>
+</html>

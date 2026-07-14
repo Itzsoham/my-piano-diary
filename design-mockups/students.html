@@ -1,0 +1,2167 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Diary — Students · Student Garden</title>
+<link rel="stylesheet" href="_theme.css">
+
+<style>
+  /* ======================================================================
+     STUDENTS — "STUDENT GARDEN"  ·  Sugar Bloom
+     Screen-specific CSS only. Every colour / radius / shadow comes from
+     _theme.css. New shades are derived with color-mix() from its tokens.
+
+     ORNAMENT BUDGET (max 2 types): 1) BLOSSOM — watermark on the card strip,
+     the section mark, Mochi's bow.  2) SCALLOP — the underside of each card's
+     header strip.  Nothing else decorates. The ♡ is a real control, not an
+     ornament. The blob canvas is the page background, not a flourish.
+     Data regions (rates, counts, money) get ZERO decoration — tabular-nums,
+     aligned, boring. Sweet frame, sober data.
+     ====================================================================== */
+
+  /* ── Drifting blob canvas (decorative, behind everything) ──────────────── */
+  .blobs {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%;
+    filter: blur(6px);
+    opacity: .42;
+    animation: drift 26s var(--ease) infinite alternate;
+  }
+  .blob-1 { width: 460px; height: 420px; top: -120px; left: -110px; background: var(--cotton); }
+  .blob-2 { width: 520px; height: 460px; top: 34%; right: -180px; background: var(--mint); animation-delay: -9s; }
+  .blob-3 { width: 380px; height: 360px; bottom: -140px; left: 26%; background: var(--cotton); opacity: .3; animation-delay: -17s; }
+  @keyframes drift {
+    from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+    to   { transform: translate3d(18px, -26px, 0) rotate(9deg) scale(1.06); }
+  }
+
+  /* ── Shell ─────────────────────────────────────────────────────────────── */
+  .shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* ── Sidebar (identical conventions to dashboard-a) ────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 14px 16px;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    scrollbar-width: none;
+    z-index: 50;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 2px; }
+  .brand-logo {
+    width: 42px; height: 42px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--grad-brand);
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .brand-text { min-width: 0; display: block; }
+  .brand-name { display: block; font: 700 15px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; }
+  .brand-tag { display: block; font: var(--t-small); font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+
+  .side-cta { width: 100%; }
+
+  .nav-group + .nav-group { margin-top: 18px; }
+  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  .nav-list { list-style: none; display: grid; gap: 3px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 12px;
+    min-height: var(--tap);
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    font: 600 13.5px/1 var(--font-sans);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-link svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link[aria-current="page"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .nav-link[aria-current="page"] svg { color: var(--pink-600); opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    font: 700 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    background: var(--wait-bg);
+    color: var(--wait-fg);
+    padding: 4px 7px;
+    border-radius: var(--r-pill);
+  }
+
+  .side-foot { margin-top: auto; padding-top: 14px; position: relative; }
+  .user-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    text-align: left;
+    transition: background var(--dur) var(--ease);
+  }
+  .user-btn:hover { background: var(--surface-2); }
+  .user-meta { min-width: 0; flex: 1; display: block; }
+  .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
+  .user-mail {
+    display: block;
+    font: 400 11px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .user-btn svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+
+  .user-menu {
+    list-style: none;
+    margin-top: 6px;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .user-menu a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .user-menu a:hover { background: var(--surface-2); color: var(--ink); }
+  .user-menu svg { width: 16px; height: 16px; }
+  .user-menu[hidden] { display: none !important; }
+
+  /* ── Main ──────────────────────────────────────────────────────────────── */
+  .main {
+    min-width: 0;
+    /* top padding clears the fixed variant badge at every width */
+    padding: clamp(40px, 3vw, 46px) clamp(14px, 2.4vw, 32px) 40px;
+    display: grid;
+    gap: clamp(16px, 2vw, 22px);
+    align-content: start;
+  }
+
+  .topbar { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .topbar-l { min-width: 0; flex: 1 1 260px; }
+  .page-h1 { font: var(--t-h1); letter-spacing: -0.015em; }
+  /* Hand-drawn underline instead of a straight rule. */
+  .squiggle { width: 124px; height: 7px; margin: 3px 0 0 1px; overflow: visible; }
+  .page-sub { margin-top: 6px; font: var(--t-small); color: var(--ink-soft); }
+  .topbar-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .hamburger { display: none; }
+
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  /* ── Summary strip ─────────────────────────────────────────────────────── */
+  .summary {
+    display: flex;
+    align-items: stretch;
+    gap: clamp(12px, 2vw, 26px);
+    flex-wrap: wrap;
+    padding: 16px clamp(16px, 2vw, 24px);
+    border-radius: var(--r-xl);
+  }
+  .sum-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .sum-item b {
+    font: 700 clamp(19px, 2.2vw, 24px)/1.1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .sum-item .cur { font-size: .6em; font-weight: 600; color: var(--ink-soft); margin-left: 3px; letter-spacing: 0; }
+  .sum-sep { width: 1px; background: var(--line); flex: 0 0 auto; }
+  .sum-note {
+    margin-left: auto;
+    align-self: center;
+    font: var(--t-small);
+    color: var(--ink-soft);
+    max-width: 34ch;
+  }
+
+  /* ── Segmented control (real tabs) ─────────────────────────────────────── */
+  .tabs-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .seg {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--sh-xs);
+  }
+  .seg-tab {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: var(--tap);
+    padding: 0 18px;
+    border-radius: var(--r-pill);
+    font: 650 13.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    white-space: nowrap;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .seg-tab:hover { background: var(--surface-2); color: var(--ink); }
+  .seg-tab[aria-selected="true"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .seg-tab .cnt {
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-weight: 700;
+  }
+  .seg-tab[aria-selected="true"] .cnt { color: var(--pink-700); }
+
+  /* ── Tools row: search · sort · family chips ───────────────────────────── */
+  .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .search { position: relative; flex: 1 1 260px; min-width: 220px; max-width: 380px; }
+  .search svg {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    width: 17px; height: 17px; color: var(--ink-soft); pointer-events: none;
+  }
+  .search input {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 16px 0 40px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    font: 400 13.5px/1 var(--font-sans);
+    color: var(--ink);
+  }
+  .search input::placeholder { color: var(--ink-soft); }
+  .search input:focus-visible { outline: 2px solid var(--pink-600); outline-offset: 1px; }
+
+  .sort-wrap { position: relative; flex: 0 0 auto; }
+  .sort-menu {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    z-index: 40;
+    width: 200px;
+    list-style: none;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .sort-menu[hidden] { display: none !important; }
+  .sort-menu button {
+    width: 100%;
+    display: flex; align-items: center; gap: 9px;
+    min-height: var(--tap);
+    padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    text-align: left;
+  }
+  .sort-menu button:hover { background: var(--surface-2); color: var(--ink); }
+  .sort-menu button[aria-checked="true"] { color: var(--pink-700); background: var(--pink-50); }
+  .sort-menu svg { width: 15px; height: 15px; flex: 0 0 auto; opacity: 0; }
+  .sort-menu button[aria-checked="true"] svg { opacity: 1; }
+
+  .fam-chips {
+    display: flex; align-items: center; gap: 7px;
+    flex: 1 1 100%;
+    padding-bottom: 2px;
+  }
+  .fchip {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: var(--tap);
+    padding: 0 14px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-soft);
+    font: 600 12.5px/1 var(--font-sans);
+    white-space: nowrap;
+    flex: 0 0 auto;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .fchip:hover { background: var(--surface-2); color: var(--ink); }
+  .fchip[aria-pressed="true"] {
+    background: var(--pink-100);
+    border-color: var(--line-pink);
+    color: var(--pink-700);
+  }
+  .fchip .n { font-variant-numeric: tabular-nums; opacity: .8; }
+
+  .result-line {
+    font: var(--t-small);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── The garden grid ───────────────────────────────────────────────────── */
+  .garden {
+    display: grid;
+    gap: clamp(14px, 1.6vw, 20px);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .st-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    border-radius: var(--r-xl);
+    overflow: visible;              /* the ⋯ menu must escape the card */
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .st-card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
+  .st-card.is-menu-open { z-index: 30; }
+
+  /* Header strip: --grad-hero, blossom watermark, scalloped underside. */
+  .st-strip {
+    position: relative;
+    height: 66px;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    background: var(--grad-hero);
+    overflow: hidden;
+  }
+  .st-strip::after {                 /* THE SCALLOP */
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 9px;
+    background: radial-gradient(circle 6px at 6px 0, transparent 6px, var(--surface) 6.5px) repeat-x;
+    background-size: 12px 9px;
+  }
+  .st-bloom {
+    position: absolute;
+    top: -8px; right: 12px;
+    width: 62px; height: 62px;
+    color: color-mix(in srgb, var(--bubblegum) 34%, transparent);
+  }
+
+  .fav {
+    position: absolute;
+    top: 8px; right: 8px;
+    z-index: 3;
+    width: var(--tap); height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    backdrop-filter: blur(4px);
+    color: var(--ink-soft);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .fav svg { width: 19px; height: 19px; }
+  .fav:hover { background: var(--surface); color: var(--pink-600); transform: scale(1.06); }
+  .fav[aria-pressed="true"] { color: var(--pink-600); }
+  .fav[aria-pressed="true"] svg { fill: currentColor; }
+
+  .st-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 var(--pad-card) var(--pad-card);
+    margin-top: -26px;
+  }
+  .st-av {
+    width: 58px; height: 58px;
+    font-size: 17px;
+    border: 3px solid var(--surface);
+    box-shadow: var(--sh-sm);
+  }
+  .st-av--mint { background: var(--grad-mint); color: var(--mint-ink); }
+  .st-av--pink { background: var(--grad-pink); color: var(--ink-invert); }
+
+  .st-head { display: block; }
+  .st-name {
+    font: 600 16px/1.3 var(--font-sans);
+    color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .st-fam {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 5px;
+    padding: 3px 9px;
+    border-radius: var(--r-pill);
+    background: var(--teal-100);
+    color: var(--teal-700);
+    font: 600 11px/1.4 var(--font-sans);
+    max-width: 100%;
+  }
+  .st-fam span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st-fam--none { background: var(--surface-2); color: var(--ink-soft); }
+
+  /* THE TWO REAL RATES — the thing that matters most on this screen. */
+  .st-rates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rate {
+    padding: 9px 11px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    min-width: 0;
+  }
+  .rate--in { background: var(--pink-50); border-color: var(--line-pink); }
+  .rate--on { background: var(--surface-2); }
+  .rate-l {
+    display: block;
+    font: 600 10.5px/1.3 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .rate-v {
+    display: block;
+    margin-top: 3px;
+    font: 700 14px/1.2 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .rate-v .d { color: var(--ink-soft); font-weight: 600; margin-right: 2px; }
+
+  .st-note {
+    font: var(--t-small);
+    color: var(--ink-soft);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.9em;
+  }
+
+  .st-stats {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    font: 400 11.5px/1.5 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .st-stats b { color: var(--ink); font-weight: 700; }
+  .st-stats .sep { color: var(--ink-faint); }
+  .st-stats i {
+    width: 7px; height: 7px; border-radius: 50%;
+    display: inline-block; flex: 0 0 auto;
+    margin-right: 1px;
+  }
+  .d-ok   { background: var(--ok-dot);   box-shadow: inset 0 0 0 1px var(--ok-fg); }
+  .d-no   { background: var(--no-dot);   box-shadow: inset 0 0 0 1px var(--no-fg); }
+  .d-wait { background: var(--wait-dot); box-shadow: inset 0 0 0 1px var(--wait-fg); }
+
+  .st-spark { margin-top: auto; padding-top: 4px; }
+  /* Keep the intrinsic aspect ratio — stretching it would squash the status
+     dots into ellipses. It stays tiny; it is a glance, not a chart. */
+  .st-spark svg { width: 100%; max-width: 190px; height: auto; overflow: visible; }
+  .st-spark-cap {
+    margin-top: 2px;
+    font: 400 11px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+  }
+
+  .st-actions {
+    position: relative;
+    display: flex; align-items: center; gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .st-actions .btn { min-height: var(--tap); }
+  .st-actions .st-view { flex: 1; }
+
+  .st-menu {
+    position: absolute;
+    right: 0; bottom: calc(100% + 8px);
+    z-index: 40;
+    width: 194px;
+    list-style: none;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .st-menu[hidden] { display: none !important; }
+  .st-menu a, .st-menu button {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    text-align: left;
+  }
+  .st-menu a:hover, .st-menu button:hover { background: var(--surface-2); color: var(--ink); }
+  .st-menu svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .st-menu hr { margin: 4px 2px; }
+  .st-menu .danger { color: var(--pink-700); }
+  .st-menu .danger:hover { background: var(--no-bg); color: var(--no-fg); }
+
+  /* Dashed "add" tiles — the Sugar Bloom affordance for "make something new". */
+  .add-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 240px;
+    padding: 24px;
+    border-radius: var(--r-xl);
+    border: 2px dashed var(--bubblegum);
+    background: color-mix(in srgb, var(--surface) 62%, transparent);
+    color: var(--pink-700);
+    text-align: center;
+    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .add-tile:hover { background: var(--pink-50); transform: translateY(-3px); }
+  .add-ico {
+    width: 52px; height: 52px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--pink-100);
+    color: var(--pink-700);
+  }
+  .add-ico svg { width: 26px; height: 26px; }
+  .add-tile b { font: 700 14.5px/1.3 var(--font-sans); }
+  .add-tile span { font: var(--t-small); color: var(--ink-soft); max-width: 22ch; }
+
+  .no-match {
+    grid-column: 1 / -1;
+    padding: 28px;
+    border-radius: var(--r-xl);
+    border: 2px dashed var(--line-strong);
+    text-align: center;
+    color: var(--ink-soft);
+    font: var(--t-body);
+  }
+  .no-match[hidden] { display: none !important; }
+
+  /* ── Families ──────────────────────────────────────────────────────────── */
+  .fam-grid {
+    display: grid;
+    gap: clamp(14px, 1.6vw, 20px);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fam-card { display: flex; flex-direction: column; gap: 12px; border-radius: var(--r-xl); }
+  .fam-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fam-title { font: var(--t-h2); letter-spacing: -0.01em; min-width: 0; }
+  .fam-count {
+    padding: 4px 9px;
+    border-radius: var(--r-pill);
+    background: var(--pink-100);
+    color: var(--pink-700);
+    font: 700 11px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .fam-stack { display: flex; margin-left: auto; }
+  .fam-stack .av { border: 2px solid var(--surface); }
+  .fam-stack .av + .av { margin-left: -10px; }
+
+  .fam-hint { font: 400 11.5px/1.4 var(--font-sans); color: var(--ink-soft); }
+
+  .fam-list { list-style: none; display: grid; gap: 6px; }
+  .fam-row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 8px 5px 4px;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    min-width: 0;
+  }
+  .fam-row:hover { border-color: var(--line-strong); }
+  .grip {
+    width: 34px; min-height: var(--tap);
+    display: grid; place-items: center;
+    border-radius: var(--r-xs);
+    color: var(--ink-soft);
+    cursor: grab;
+    flex: 0 0 auto;
+  }
+  .grip:hover { color: var(--ink-soft); background: var(--surface-3); }
+  .grip svg { width: 16px; height: 16px; }
+  .stt {
+    width: 22px;
+    flex: 0 0 auto;
+    text-align: center;
+    font: 700 12px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+  .fam-name {
+    flex: 1; min-width: 0;
+    font: 600 13px/1.3 var(--font-sans);
+    color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fam-rate {
+    flex: 0 0 auto;
+    font: 600 12px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .fam-total {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    padding: 11px 13px;
+    border-radius: var(--r-md);
+    background: var(--ok-bg);
+    color: var(--ok-fg);
+    font: 600 12px/1.3 var(--font-sans);
+  }
+  .fam-total b {
+    font: 700 15px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .fam-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+  .fam-actions .btn { min-height: var(--tap); }
+  .fam-actions .btn--mint { flex: 1 1 auto; }
+
+  .fam-caption {
+    margin-top: 2px;
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+
+  /* ── Section heads (blossom mark) ──────────────────────────────────────── */
+  .sec-head { display: flex; align-items: center; gap: 9px; }
+  .sec-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--bubblegum); }
+  .sec-title { font: var(--t-h2); letter-spacing: -0.01em; }
+  .sec-sub { margin-top: 3px; font: var(--t-small); color: var(--ink-soft); }
+
+  /* ── Empty state + Mochi ───────────────────────────────────────────────── */
+  .empty-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: clamp(26px, 4vw, 40px) 20px;
+    border-radius: var(--r-xl);
+    border: 2px dashed var(--bubblegum);
+    background: color-mix(in srgb, var(--surface) 66%, transparent);
+    text-align: center;
+  }
+  .mochi { width: 132px; height: 108px; }
+  .empty-demo b { font: 700 16px/1.35 var(--font-sans); color: var(--ink); }
+  .empty-demo p { font: var(--t-body); color: var(--ink-soft); max-width: 40ch; }
+  .empty-demo .btn { margin-top: 6px; }
+
+  /* ── Off-canvas chrome ─────────────────────────────────────────────────── */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease);
+  }
+  body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+  .tabbar { display: none; }
+
+  /* ── Variant badge ─────────────────────────────────────────────────────── */
+  .variant-badge {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    pointer-events: none;
+  }
+
+  /* ======================================================================
+     RESPONSIVE — 1 col → 2 → 3 → 4
+     ====================================================================== */
+
+  @media (min-width: 640px) {
+    .garden { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fam-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fam-chips { flex: 0 1 auto; }
+  }
+
+  /* Tablet landscape (rail) — main is ~948px at 1024 */
+  @media (min-width: 1024px) {
+    .garden { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 1440px) {
+    .garden { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .fam-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  /* Tablet landscape 1024–1279: icon rail */
+  @media (max-width: 1279px) {
+    .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+    /* overflow stays visible so the user popover can escape the rail */
+    .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
+    .brand { justify-content: center; padding: 4px 0; }
+    .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
+    .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
+
+    /* Labels are CLIPPED, never display:none — display:none would strip every
+       icon-only control of its accessible name (the icons are aria-hidden). */
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .nav-group + .nav-group { margin-top: 12px; position: relative; padding-top: 12px; }
+    .nav-group + .nav-group::before {
+      content: ""; position: absolute; top: 0; left: 14%; right: 14%;
+      height: 1px; background: var(--line);
+    }
+    .user-btn { width: var(--tap); padding: 0; justify-content: center; border-radius: 50%; }
+    .user-meta, .user-btn > svg { display: none; }
+    .user-menu {
+      position: absolute;
+      bottom: 0; left: calc(100% + 8px);
+      width: 200px;
+      margin-top: 0;
+      z-index: 70;
+    }
+  }
+
+  /* Below 1024: off-canvas drawer + bottom tab bar */
+  @media (max-width: 1023px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 280px;
+      padding: 20px 14px 16px;
+      align-items: stretch;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform .28s var(--ease);
+      z-index: 60;
+    }
+    body.nav-open .sidebar { transform: none; }
+    /* restore the full labelled nav inside the drawer */
+    .brand { justify-content: flex-start; padding: 6px 8px 2px; }
+    .brand-text, .brand-tag, .nav-group > .label { display: block; }
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: static;
+      width: auto; height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+    }
+    .nav-link { justify-content: flex-start; padding: 0 12px; width: auto; }
+    .nav-link span { display: inline; }
+    .nav-link .nav-badge { display: inline-block; margin-left: auto; }
+    .side-cta { width: 100%; padding: 0 18px; border-radius: var(--r-pill); }
+    .side-cta span { display: inline; }
+    .nav-group + .nav-group { position: static; padding-top: 0; margin-top: 18px; }
+    .nav-group + .nav-group::before { content: none; }
+    .user-btn { width: 100%; padding: 8px 10px; justify-content: flex-start; border-radius: var(--r-md); }
+    .user-meta { display: block; }
+    .user-btn > svg { display: block; }
+    .user-menu { display: grid; position: static; width: auto; margin-top: 6px; }
+
+    .main { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + 20px); }
+    .hamburger { display: inline-flex; }
+
+    .tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+    }
+    .tab {
+      display: grid; place-items: center; gap: 3px;
+      min-height: var(--tap);
+      padding: 5px 2px;
+      border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1.2 var(--font-sans);
+    }
+    .tab svg { width: 21px; height: 21px; }
+    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+  }
+
+  /* Phone */
+  @media (max-width: 639px) {
+    .seg { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+    .seg-tab { justify-content: center; padding: 0 10px; }
+    .search { max-width: none; flex: 1 1 100%; }
+    .sort-wrap { flex: 1 1 auto; }
+    .sort-wrap > .btn { width: 100%; }
+    /* chips scroll in their OWN box — the body never scrolls sideways */
+    .fam-chips {
+      flex: 1 1 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .fam-chips::-webkit-scrollbar { display: none; }
+    .summary { gap: 14px 18px; }
+    .sum-sep { display: none; }
+    .sum-item { flex: 1 1 40%; }
+    .fam-actions .btn { flex: 1 1 100%; }
+  }
+</style>
+
+<div class="variant-badge print-hide">Students · Student Garden</div>
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<!-- Decorative blob canvas — aria-hidden, never interactive. -->
+<div class="blobs" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<div class="shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+    <a class="brand" href="/dashboard" title="My Piano Diary">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/dashboard" title="Dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/>
+                <rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+              </svg>
+              <span>Calendar</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/lessons" title="Lessons">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/>
+              </svg>
+              <span>Lessons</span>
+              <span class="nav-badge">5</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/students" aria-current="page" title="Students">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+              </svg>
+              <span>Students</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/pieces" title="Pieces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+              </svg>
+              <span>Pieces</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/reports" title="Reports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+              <span>Reports</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/payments" title="Payments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>
+              </svg>
+              <span>Payments</span>
+              <span class="nav-badge">4</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+        <span class="av" aria-hidden="true">LD</span>
+        <span class="user-meta">
+          <span class="user-name">Linh Đặng</span>
+          <span class="user-mail">linh@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+        </svg>
+      </button>
+      <ul class="user-menu" id="userMenu" hidden>
+        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main">
+
+    <!-- ───────── Header ───────── -->
+    <header class="topbar rise" style="--i:0">
+      <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <div class="topbar-l">
+        <h1 class="page-h1">Students</h1>
+        <svg class="squiggle" viewBox="0 0 160 8" aria-hidden="true" focusable="false">
+          <path d="M2 5.5c13-5.4 25 2.6 38 .4s25-5 38-1.2 25 4.8 38 1 26-3 42-1.4"
+                fill="none" stroke="var(--bubblegum)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <p class="page-sub">Your garden of 24 — rates, notes and this month's attendance, all in one place.</p>
+      </div>
+
+      <div class="topbar-r">
+        <button class="btn btn--primary" type="button">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+          </svg>
+          Add student
+        </button>
+      </div>
+    </header>
+
+    <!-- ───────── Summary strip ───────── -->
+    <section class="card summary rise" style="--i:1" aria-label="Studio summary">
+      <div class="sum-item">
+        <span class="label">Students</span>
+        <b class="num">24</b>
+      </div>
+      <div class="sum-sep" aria-hidden="true"></div>
+      <div class="sum-item">
+        <span class="label">Families</span>
+        <b class="num">3</b>
+      </div>
+      <div class="sum-sep" aria-hidden="true"></div>
+      <div class="sum-item">
+        <span class="label">Expected this month</span>
+        <b class="num">18.400.000<span class="cur">₫</span></b>
+      </div>
+      <p class="sum-note">July 2026 · the sum of every student's expected tuition. Only COMPLETE lessons are billed.</p>
+    </section>
+
+    <!-- ───────── Segmented control ───────── -->
+    <div class="tabs-row rise" style="--i:2">
+      <div class="seg" role="tablist" aria-label="Students view">
+        <button class="seg-tab" type="button" role="tab" id="tabStudents"
+                aria-selected="true" aria-controls="panelStudents">
+          <span aria-hidden="true">🌸</span> Students <span class="cnt">24</span>
+        </button>
+        <button class="seg-tab" type="button" role="tab" id="tabFamilies"
+                aria-selected="false" aria-controls="panelFamilies" tabindex="-1">
+          <span aria-hidden="true">👨‍👩‍👧</span> Families <span class="cnt">3</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ TAB 1 · STUDENTS ═══════════ -->
+    <section id="panelStudents" role="tabpanel" aria-labelledby="tabStudents" tabindex="0"
+             style="display:grid; gap:16px;">
+
+      <!-- Filter / search row -->
+      <div class="tools rise" style="--i:3">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+          </svg>
+          <label class="sr-only" for="stSearch">Filter students</label>
+          <input id="stSearch" type="search" placeholder="Filter students…" autocomplete="off">
+        </div>
+
+        <div class="sort-wrap">
+          <button class="btn btn--ghost" type="button" id="sortBtn" aria-haspopup="true" aria-expanded="false" aria-controls="sortMenu">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7h16M6 12h12M9 17h6"/>
+            </svg>
+            Sort <span id="sortLabel">Name A–Z</span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <ul class="sort-menu" id="sortMenu" role="menu" aria-labelledby="sortBtn" hidden>
+            <li><button type="button" role="menuitemradio" aria-checked="true" data-sort="Name A–Z"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Name A–Z</button></li>
+            <li><button type="button" role="menuitemradio" aria-checked="false" data-sort="Most lessons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Most lessons</button></li>
+            <li><button type="button" role="menuitemradio" aria-checked="false" data-sort="Highest rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Highest rate</button></li>
+            <li><button type="button" role="menuitemradio" aria-checked="false" data-sort="Recently joined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Recently joined</button></li>
+          </ul>
+        </div>
+
+        <div class="fam-chips no-scrollbar" role="group" aria-label="Filter by family">
+          <button class="fchip" type="button" aria-pressed="true" data-fam="all">All <span class="n">24</span></button>
+          <button class="fchip" type="button" aria-pressed="false" data-fam="nguyen">Gia đình Nguyễn <span class="n">3</span></button>
+          <button class="fchip" type="button" aria-pressed="false" data-fam="tranvu">Gia đình Trần – Vũ <span class="n">2</span></button>
+          <button class="fchip" type="button" aria-pressed="false" data-fam="carter">Gia đình Carter <span class="n">2</span></button>
+          <button class="fchip" type="button" aria-pressed="false" data-fam="none">No family <span class="n">17</span></button>
+        </div>
+
+        <p class="result-line" id="resultLine" aria-live="polite">Showing 8 of 24 students</p>
+      </div>
+
+      <!-- ───────── The garden ───────── -->
+      <div class="garden" id="garden">
+
+        <!-- ░░ 1 · Nguyễn Minh Anh ░░ -->
+        <article class="card st-card rise" style="--i:4" data-name="nguyễn minh anh" data-fam="nguyen">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="true" aria-label="Favourite — Nguyễn Minh Anh">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av" aria-hidden="true">MA</span>
+            <div class="st-head">
+              <h3 class="st-name">Nguyễn Minh Anh</h3>
+              <span class="st-fam"><span>Gia đình Nguyễn</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>300.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>250.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Prefers morning slots. Working toward Grade 5.</p>
+
+            <p class="st-stats">
+              <b>12</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>9</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>1</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>2</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 3, 2, 3, 1, 3, 2 lessons. Week 4 had a cancellation; week 6 is still pending.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,10 31,16 54,10 77,22 100,10 123,16" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)"  stroke-width="1"/>
+                <circle cx="31"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)"  stroke-width="1"/>
+                <circle cx="54"  cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)"  stroke-width="1"/>
+                <circle cx="77"  cy="22" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)"  stroke-width="1"/>
+                <circle cx="100" cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)"  stroke-width="1"/>
+                <circle cx="123" cy="16" r="3.8" fill="var(--wait-dot)" stroke="var(--sand-700)"  stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/1">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Nguyễn Minh Anh">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu" hidden>
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ 2 · Trần Bảo Ngọc — MENU SHOWN OPEN ░░ -->
+        <article class="card st-card rise is-menu-open" style="--i:5" data-name="trần bảo ngọc" data-fam="tranvu">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Trần Bảo Ngọc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av st-av--mint" aria-hidden="true">BN</span>
+            <div class="st-head">
+              <h3 class="st-name">Trần Bảo Ngọc</h3>
+              <span class="st-fam"><span>Gia đình Trần – Vũ</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>280.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>230.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Loves Chopin. Nocturne Op.9 No.2 is nearly performance-ready.</p>
+
+            <p class="st-stats">
+              <b>10</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>8</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>0</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>2</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 2, 3, 2, 3, 2, 3 lessons. Week 5 is still pending; no cancellations.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,16 31,10 54,16 77,10 100,16 123,10" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="31"  cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="54"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="77"  cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="100" cy="16" r="3.8" fill="var(--wait-dot)" stroke="var(--sand-700)" stroke-width="1"/>
+                <circle cx="123" cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/2">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="true" aria-label="Open menu for Trần Bảo Ngọc">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu">
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ 3 · Lê Gia Hân ░░ -->
+        <article class="card st-card rise" style="--i:6" data-name="lê gia hân" data-fam="none">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Lê Gia Hân">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av st-av--pink" aria-hidden="true">GH</span>
+            <div class="st-head">
+              <h3 class="st-name">Lê Gia Hân</h3>
+              <span class="st-fam st-fam--none"><span>No family</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>250.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>200.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Shy but steady. Needs a reminder about scales before every lesson.</p>
+
+            <p class="st-stats">
+              <b>8</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>6</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>1</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>1</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 1, 2, 2, 1, 2, 0 lessons. Week 3 had a cancellation; week 6 is still pending.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,22 31,16 54,16 77,22 100,16 123,28" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="22" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="31"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="54"  cy="16" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)" stroke-width="1"/>
+                <circle cx="77"  cy="22" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="100" cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="123" cy="28" r="3.8" fill="var(--wait-dot)" stroke="var(--sand-700)" stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/3">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Lê Gia Hân">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu" hidden>
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ 4 · Emma Thompson ░░ -->
+        <article class="card st-card rise" style="--i:7" data-name="emma thompson" data-fam="carter">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="true" aria-label="Favourite — Emma Thompson">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av st-av--mint" aria-hidden="true">ET</span>
+            <div class="st-head">
+              <h3 class="st-name">Emma Thompson</h3>
+              <span class="st-fam"><span>Gia đình Carter</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>350.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>300.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Online only while the family is in Hội An until August. River Flows in You.</p>
+
+            <p class="st-stats">
+              <b>9</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>9</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>0</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>0</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 2, 2, 3, 2, 3, 2 lessons, all complete.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,16 31,16 54,10 77,16 100,10 123,16" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="16" r="3.8" fill="var(--ok-dot)" stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="31"  cy="16" r="3.8" fill="var(--ok-dot)" stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="54"  cy="10" r="3.8" fill="var(--ok-dot)" stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="77"  cy="16" r="3.8" fill="var(--ok-dot)" stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="100" cy="10" r="3.8" fill="var(--ok-dot)" stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="123" cy="16" r="3.8" fill="var(--ok-dot)" stroke="var(--teal-600)" stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/4">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Emma Thompson">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu" hidden>
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ 5 · Phạm Quốc Bảo ░░ -->
+        <article class="card st-card rise" style="--i:8" data-name="phạm quốc bảo" data-fam="none">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Phạm Quốc Bảo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av" aria-hidden="true">QB</span>
+            <div class="st-head">
+              <h3 class="st-name">Phạm Quốc Bảo</h3>
+              <span class="st-fam st-fam--none"><span>No family</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>260.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>210.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Turkish March for the December recital. Fast hands, rushed rhythm.</p>
+
+            <p class="st-stats">
+              <b>11</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>7</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>2</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>2</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 2, 1, 3, 2, 1, 2 lessons. Weeks 2 and 5 had cancellations; week 6 is still pending.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,16 31,22 54,10 77,16 100,22 123,16" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="31"  cy="22" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)" stroke-width="1"/>
+                <circle cx="54"  cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="77"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="100" cy="22" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)" stroke-width="1"/>
+                <circle cx="123" cy="16" r="3.8" fill="var(--wait-dot)" stroke="var(--sand-700)" stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/5">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Phạm Quốc Bảo">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu" hidden>
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ 6 · Olivia Nguyen ░░ -->
+        <article class="card st-card rise" style="--i:9" data-name="olivia nguyen" data-fam="nguyen">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Olivia Nguyen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av st-av--pink" aria-hidden="true">ON</span>
+            <div class="st-head">
+              <h3 class="st-name">Olivia Nguyen</h3>
+              <span class="st-fam"><span>Gia đình Nguyễn</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>320.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>270.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Sight-reading is strong. Asking to start Clair de Lune after Arabesque No.1.</p>
+
+            <p class="st-stats">
+              <b>10</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>8</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>1</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>1</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 3, 2, 2, 3, 2, 2 lessons. Week 3 is still pending; week 6 had a cancellation.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,10 31,16 54,16 77,10 100,16 123,16" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="31"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="54"  cy="16" r="3.8" fill="var(--wait-dot)" stroke="var(--sand-700)" stroke-width="1"/>
+                <circle cx="77"  cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="100" cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="123" cy="16" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)" stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/6">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Olivia Nguyen">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu" hidden>
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ 7 · Đỗ Khánh Linh ░░ -->
+        <article class="card st-card rise" style="--i:10" data-name="đỗ khánh linh" data-fam="none">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Đỗ Khánh Linh">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av st-av--mint" aria-hidden="true">KL</span>
+            <div class="st-head">
+              <h3 class="st-name">Đỗ Khánh Linh</h3>
+              <span class="st-fam st-fam--none"><span>No family</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>240.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>200.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Grade 3 exam in October. Practises daily — and it shows.</p>
+
+            <p class="st-stats">
+              <b>12</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>11</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>0</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>1</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 3, 3, 2, 3, 3, 2 lessons. Week 6 is still pending; no cancellations.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,10 31,10 54,16 77,10 100,10 123,16" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="31"  cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="54"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="77"  cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="100" cy="10" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="123" cy="16" r="3.8" fill="var(--wait-dot)" stroke="var(--sand-700)" stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/7">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Đỗ Khánh Linh">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu" hidden>
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ 8 · Liam Carter ░░ -->
+        <article class="card st-card rise" style="--i:11" data-name="liam carter" data-fam="carter">
+          <div class="st-strip" aria-hidden="true">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+              <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+              <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
+            </svg>
+          </div>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Liam Carter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
+            </svg>
+          </button>
+
+          <div class="st-body">
+            <span class="av av--lg st-av" aria-hidden="true">LC</span>
+            <div class="st-head">
+              <h3 class="st-name">Liam Carter</h3>
+              <span class="st-fam"><span>Gia đình Carter</span></span>
+            </div>
+
+            <div class="st-rates">
+              <div class="rate rate--in">
+                <span class="rate-l">In-person</span>
+                <b class="rate-v"><span class="d">đ</span>300.000</b>
+              </div>
+              <div class="rate rate--on">
+                <span class="rate-l">Online</span>
+                <b class="rate-v"><span class="d">đ</span>260.000</b>
+              </div>
+            </div>
+
+            <p class="st-note">Reschedules often; keeps a make-up slot on Saturday mornings.</p>
+
+            <p class="st-stats">
+              <b>9</b> lessons this month <span class="sep">·</span>
+              <i class="d-ok" aria-hidden="true"></i><b>5</b> complete <span class="sep">·</span>
+              <i class="d-no" aria-hidden="true"></i><b>3</b> cancelled <span class="sep">·</span>
+              <i class="d-wait" aria-hidden="true"></i><b>1</b> pending
+            </p>
+
+            <div class="st-spark">
+              <svg viewBox="0 0 132 34" role="img" aria-label="Attendance, last 6 weeks: 1, 2, 1, 2, 1, 2 lessons. Weeks 1, 3 and 5 had cancellations; week 6 is still pending.">
+                <line x1="4" y1="30" x2="128" y2="30" stroke="var(--line)" stroke-width="1"/>
+                <polyline points="8,22 31,16 54,22 77,16 100,22 123,16" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                <circle cx="8"   cy="22" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)" stroke-width="1"/>
+                <circle cx="31"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="54"  cy="22" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)" stroke-width="1"/>
+                <circle cx="77"  cy="16" r="3.8" fill="var(--ok-dot)"   stroke="var(--teal-600)" stroke-width="1"/>
+                <circle cx="100" cy="22" r="3.8" fill="var(--no-dot)"   stroke="var(--pink-600)" stroke-width="1"/>
+                <circle cx="123" cy="16" r="3.8" fill="var(--wait-dot)" stroke="var(--sand-700)" stroke-width="1"/>
+              </svg>
+              <p class="st-spark-cap">Last 6 weeks</p>
+            </div>
+
+            <div class="st-actions">
+              <a class="btn btn--ghost st-view" href="/students/8">View</a>
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Liam Carter">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
+              </button>
+              <ul class="st-menu" role="menu" hidden>
+                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li><a role="menuitem" href="/reports/8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li><a role="menuitem" href="/payments?studentId=8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li><hr class="divider"></li>
+                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- ░░ Add student tile ░░ -->
+        <button class="add-tile rise" type="button" style="--i:12">
+          <span class="add-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
+          <b>Add student</b>
+          <span>A new face for the garden 🎀</span>
+        </button>
+
+        <p class="no-match" id="noMatch" hidden>No students match that filter 🎀 — try another name or family.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════ TAB 2 · FAMILIES ═══════════ -->
+    <section id="panelFamilies" role="tabpanel" aria-labelledby="tabFamilies" tabindex="0"
+             style="display:grid; gap:16px;" hidden>
+
+      <div class="sec-head">
+        <svg class="sec-mark" viewBox="0 0 40 40" fill="currentColor" aria-hidden="true" focusable="false">
+          <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+          <circle cx="20" cy="20" r="3.6" fill="var(--surface)"/>
+        </svg>
+        <div>
+          <h2 class="sec-title">Families</h2>
+          <p class="sec-sub">Group siblings or a parent + child to print one combined monthly report for them.</p>
+        </div>
+      </div>
+
+      <div class="fam-grid">
+
+        <!-- ░░ Gia đình Nguyễn ░░ -->
+        <article class="card fam-card">
+          <div class="fam-head">
+            <h3 class="fam-title">Gia đình Nguyễn</h3>
+            <span class="fam-count">3</span>
+            <span class="fam-stack" aria-hidden="true">
+              <span class="av av--sm">MA</span>
+              <span class="av av--sm st-av--mint">GH</span>
+              <span class="av av--sm st-av--pink">ON</span>
+            </span>
+          </div>
+          <p class="fam-hint">Order = row order on the sheet</p>
+
+          <ol class="fam-list">
+            <li class="fam-row">
+              <button class="grip" type="button" aria-label="Reorder Nguyễn Minh Anh" title="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
+              <span class="stt">1</span>
+              <span class="av av--sm" aria-hidden="true">MA</span>
+              <span class="fam-name">Nguyễn Minh Anh</span>
+              <span class="fam-rate">đ 300.000</span>
+            </li>
+            <li class="fam-row">
+              <button class="grip" type="button" aria-label="Reorder Nguyễn Gia Hân" title="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
+              <span class="stt">2</span>
+              <span class="av av--sm st-av--mint" aria-hidden="true">GH</span>
+              <span class="fam-name">Nguyễn Gia Hân</span>
+              <span class="fam-rate">đ 250.000</span>
+            </li>
+            <li class="fam-row">
+              <button class="grip" type="button" aria-label="Reorder Olivia Nguyen" title="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
+              <span class="stt">3</span>
+              <span class="av av--sm st-av--pink" aria-hidden="true">ON</span>
+              <span class="fam-name">Olivia Nguyen</span>
+              <span class="fam-rate">đ 320.000</span>
+            </li>
+          </ol>
+
+          <p class="fam-total">
+            <span>Combined expected · July</span>
+            <b>7.150.000 ₫</b>
+          </p>
+
+          <div class="fam-actions">
+            <a class="btn btn--mint" href="/reports/family/1?month=7&year=2026">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+              Open combined report
+            </a>
+            <button class="btn btn--ghost" type="button">Edit family</button>
+          </div>
+        </article>
+
+        <!-- ░░ Gia đình Trần – Vũ ░░ -->
+        <article class="card fam-card">
+          <div class="fam-head">
+            <h3 class="fam-title">Gia đình Trần – Vũ</h3>
+            <span class="fam-count">2</span>
+            <span class="fam-stack" aria-hidden="true">
+              <span class="av av--sm st-av--mint">BN</span>
+              <span class="av av--sm">TT</span>
+            </span>
+          </div>
+          <p class="fam-hint">Order = row order on the sheet</p>
+
+          <ol class="fam-list">
+            <li class="fam-row">
+              <button class="grip" type="button" aria-label="Reorder Trần Bảo Ngọc" title="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
+              <span class="stt">1</span>
+              <span class="av av--sm st-av--mint" aria-hidden="true">BN</span>
+              <span class="fam-name">Trần Bảo Ngọc</span>
+              <span class="fam-rate">đ 280.000</span>
+            </li>
+            <li class="fam-row">
+              <button class="grip" type="button" aria-label="Reorder Vũ Thanh Trúc" title="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
+              <span class="stt">2</span>
+              <span class="av av--sm" aria-hidden="true">TT</span>
+              <span class="fam-name">Vũ Thanh Trúc</span>
+              <span class="fam-rate">đ 260.000</span>
+            </li>
+          </ol>
+
+          <p class="fam-total">
+            <span>Combined expected · July</span>
+            <b>4.320.000 ₫</b>
+          </p>
+
+          <div class="fam-actions">
+            <a class="btn btn--mint" href="/reports/family/2?month=7&year=2026">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+              Open combined report
+            </a>
+            <button class="btn btn--ghost" type="button">Edit family</button>
+          </div>
+        </article>
+
+        <!-- ░░ Gia đình Carter ░░ -->
+        <article class="card fam-card">
+          <div class="fam-head">
+            <h3 class="fam-title">Gia đình Carter</h3>
+            <span class="fam-count">2</span>
+            <span class="fam-stack" aria-hidden="true">
+              <span class="av av--sm">LC</span>
+              <span class="av av--sm st-av--mint">ET</span>
+            </span>
+          </div>
+          <p class="fam-hint">Order = row order on the sheet</p>
+
+          <ol class="fam-list">
+            <li class="fam-row">
+              <button class="grip" type="button" aria-label="Reorder Liam Carter" title="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
+              <span class="stt">1</span>
+              <span class="av av--sm" aria-hidden="true">LC</span>
+              <span class="fam-name">Liam Carter</span>
+              <span class="fam-rate">đ 300.000</span>
+            </li>
+            <li class="fam-row">
+              <button class="grip" type="button" aria-label="Reorder Emma Thompson" title="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
+              <span class="stt">2</span>
+              <span class="av av--sm st-av--mint" aria-hidden="true">ET</span>
+              <span class="fam-name">Emma Thompson</span>
+              <span class="fam-rate">đ 350.000</span>
+            </li>
+          </ol>
+
+          <p class="fam-total">
+            <span>Combined expected · July</span>
+            <b>5.100.000 ₫</b>
+          </p>
+
+          <div class="fam-actions">
+            <a class="btn btn--mint" href="/reports/family/3?month=7&year=2026">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+              Open combined report
+            </a>
+            <button class="btn btn--ghost" type="button">Edit family</button>
+          </div>
+        </article>
+
+        <!-- ░░ New family tile ░░ -->
+        <button class="add-tile" type="button">
+          <span class="add-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
+          <b>New family</b>
+          <span>Bundle 2+ students onto one combined sheet.</span>
+        </button>
+      </div>
+
+      <p class="fam-caption">No families yet — create one on the Students page.</p>
+    </section>
+
+    <!-- ═══════════ EMPTY STATE (reference) ═══════════ -->
+    <section aria-labelledby="emptyTitle" style="display:grid; gap:12px;">
+      <div class="sec-head">
+        <svg class="sec-mark" viewBox="0 0 40 40" fill="currentColor" aria-hidden="true" focusable="false">
+          <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
+          <circle cx="20" cy="20" r="3.6" fill="var(--surface)"/>
+        </svg>
+        <div>
+          <h2 class="sec-title" id="emptyTitle">Empty state</h2>
+          <p class="sec-sub">What a brand-new studio sees before the first student exists.</p>
+        </div>
+      </div>
+
+      <div class="empty-demo">
+        <!-- Mochi — the studio cat. Empty states and the login screen only. -->
+        <svg class="mochi" viewBox="0 0 132 108" aria-hidden="true" focusable="false">
+          <!-- piano -->
+          <rect x="16" y="72" width="100" height="26" rx="5" fill="var(--ink)"/>
+          <rect x="20" y="76" width="92" height="18" rx="3" fill="var(--surface)"/>
+          <g fill="var(--ink)">
+            <rect x="29" y="76" width="5" height="11" rx="1.4"/>
+            <rect x="42" y="76" width="5" height="11" rx="1.4"/>
+            <rect x="61" y="76" width="5" height="11" rx="1.4"/>
+            <rect x="74" y="76" width="5" height="11" rx="1.4"/>
+            <rect x="87" y="76" width="5" height="11" rx="1.4"/>
+          </g>
+          <g stroke="var(--line-strong)" stroke-width="1">
+            <line x1="36" y1="76" x2="36" y2="94"/><line x1="52" y1="76" x2="52" y2="94"/>
+            <line x1="68" y1="76" x2="68" y2="94"/><line x1="84" y1="76" x2="84" y2="94"/>
+            <line x1="100" y1="76" x2="100" y2="94"/>
+          </g>
+          <!-- cat -->
+          <path d="M46 34 L42 16 L58 26 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M86 34 L90 16 L74 26 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+          <ellipse cx="66" cy="46" rx="27" ry="24" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+          <circle cx="55" cy="44" r="3" fill="var(--ink)"/>
+          <circle cx="77" cy="44" r="3" fill="var(--ink)"/>
+          <path d="M62 53q4 4 8 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="47" cy="52" r="4" fill="var(--cotton)" opacity=".85"/>
+          <circle cx="85" cy="52" r="4" fill="var(--cotton)" opacity=".85"/>
+          <g stroke="var(--ink-faint)" stroke-width="1.5" stroke-linecap="round">
+            <line x1="38" y1="46" x2="30" y2="43"/><line x1="38" y1="51" x2="29" y2="52"/>
+            <line x1="94" y1="46" x2="102" y2="43"/><line x1="94" y1="51" x2="103" y2="52"/>
+          </g>
+          <!-- paws on the keys -->
+          <ellipse cx="52" cy="72" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+          <ellipse cx="80" cy="72" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+          <!-- bow -->
+          <path d="M88 26 l8 -6 v12 z" fill="var(--bubblegum)"/>
+          <path d="M104 26 l-8 -6 v12 z" fill="var(--bubblegum)"/>
+          <circle cx="96" cy="26" r="2.6" fill="var(--pink-600)"/>
+        </svg>
+
+        <b>No students yet 🎀 — add your first one and the garden starts growing.</b>
+        <p>Mochi is waiting by the piano. Add a student, set their in-person and online rates, and every lesson you mark COMPLETE will start filling this month's sheet.</p>
+        <button class="btn btn--primary" type="button">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          Add student
+        </button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════ MOBILE TAB BAR ═══════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/students" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+    Students
+  </a>
+  <button class="tab" type="button" id="tabMore" aria-label="More navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    More
+  </button>
+</nav>
+
+<script>
+  (function () {
+    /* ── Off-canvas navigation (below 1024px) ──────────────────────────────
+       Below 1024 the sidebar is a MODAL drawer: closed = inert + out of the
+       tab order; open = dialog semantics, focus trap, focus returned to the
+       control that opened it. At >=1024 it is a plain landmark again. */
+    var body = document.body;
+    var backdrop = document.getElementById('backdrop');
+    var sidebar = document.getElementById('sidebar');
+    var toggles = [document.getElementById('navToggle'), document.getElementById('tabMore')];
+    var drawerMQ = window.matchMedia('(max-width: 1023px)');
+    var opener = null;
+
+    function isOpen() { return body.classList.contains('nav-open'); }
+
+    function syncSidebar() {
+      if (drawerMQ.matches) {
+        sidebar.setAttribute('role', 'dialog');
+        sidebar.setAttribute('aria-modal', 'true');
+        sidebar.setAttribute('aria-label', 'Navigation');
+        if (isOpen()) sidebar.removeAttribute('inert');
+        else sidebar.setAttribute('inert', '');
+      } else {
+        sidebar.removeAttribute('role');
+        sidebar.removeAttribute('aria-modal');
+        sidebar.removeAttribute('inert');
+        sidebar.setAttribute('aria-label', 'Main navigation');
+      }
+    }
+
+    function focusables() {
+      var nodes = sidebar.querySelectorAll('a[href], button:not([disabled])');
+      return Array.prototype.filter.call(nodes, function (el) {
+        return el.offsetWidth > 0 || el.offsetHeight > 0;
+      });
+    }
+
+    function setNav(open, from) {
+      var was = isOpen();
+      body.classList.toggle('nav-open', open);
+      toggles.forEach(function (t) { if (t) t.setAttribute('aria-expanded', String(open)); });
+
+      if (open) {
+        opener = from || opener || toggles[0];
+        syncSidebar();                        /* drop inert BEFORE focusing */
+        var first = sidebar.querySelector('.nav-link');
+        if (first) first.focus();
+      } else {
+        userExpand(false);
+        syncSidebar();                        /* re-apply inert */
+        if (was && drawerMQ.matches && opener) opener.focus();
+        opener = null;
+      }
+    }
+
+    toggles.forEach(function (t) {
+      if (t) t.addEventListener('click', function () { setNav(!isOpen(), t); });
+    });
+    backdrop.addEventListener('click', function () { setNav(false); });
+
+    function onBreakpoint() {
+      if (!drawerMQ.matches && isOpen()) setNav(false);
+      else syncSidebar();
+    }
+    if (drawerMQ.addEventListener) drawerMQ.addEventListener('change', onBreakpoint);
+    else drawerMQ.addListener(onBreakpoint);
+
+    /* ── Footer user dropdown (a live popover in the icon rail too) ── */
+    var userBtn = document.getElementById('userBtn');
+    var userMenu = document.getElementById('userMenu');
+    function userExpand(open) {
+      userMenu.hidden = !open;
+      userBtn.setAttribute('aria-expanded', String(open));
+    }
+    userBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      userExpand(userMenu.hidden);
+    });
+
+    /* ── Segmented control: Students / Families ─────────────────────────── */
+    var tabs = [document.getElementById('tabStudents'), document.getElementById('tabFamilies')];
+    var panels = [document.getElementById('panelStudents'), document.getElementById('panelFamilies')];
+
+    function selectTab(i, focus) {
+      tabs.forEach(function (t, n) {
+        var on = n === i;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        panels[n].hidden = !on;
+      });
+      if (focus) tabs[i].focus();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { selectTab(i); });
+      t.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          selectTab(i === 0 ? 1 : 0, true);
+        }
+      });
+    });
+
+    /* ── Sort menu ──────────────────────────────────────────────────────── */
+    var sortBtn = document.getElementById('sortBtn');
+    var sortMenu = document.getElementById('sortMenu');
+    var sortLabel = document.getElementById('sortLabel');
+
+    function sortExpand(open) {
+      sortMenu.hidden = !open;
+      sortBtn.setAttribute('aria-expanded', String(open));
+    }
+    sortBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeAllCardMenus();
+      sortExpand(sortMenu.hidden);
+    });
+    sortMenu.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-sort]');
+      if (!b) return;
+      sortMenu.querySelectorAll('button[data-sort]').forEach(function (o) {
+        o.setAttribute('aria-checked', String(o === b));
+      });
+      sortLabel.textContent = b.dataset.sort;
+      sortExpand(false);
+      sortBtn.focus();
+    });
+
+    /* ── Per-card ⋯ menus (one starts open, as designed) ────────────────── */
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.st-card'));
+
+    function closeAllCardMenus(except) {
+      cards.forEach(function (c) {
+        if (c === except) return;
+        var m = c.querySelector('.st-menu');
+        var b = c.querySelector('.st-more');
+        if (!m || m.hidden) return;
+        m.hidden = true;
+        b.setAttribute('aria-expanded', 'false');
+        c.classList.remove('is-menu-open');
+      });
+    }
+
+    cards.forEach(function (card) {
+      var more = card.querySelector('.st-more');
+      var menu = card.querySelector('.st-menu');
+      if (!more || !menu) return;
+      more.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var willOpen = menu.hidden;
+        closeAllCardMenus(card);
+        sortExpand(false);
+        menu.hidden = !willOpen;
+        more.setAttribute('aria-expanded', String(willOpen));
+        card.classList.toggle('is-menu-open', willOpen);
+      });
+    });
+
+    /* ── ♡ favourite — affection, never a status ────────────────────────── */
+    document.querySelectorAll('.fav').forEach(function (f) {
+      f.addEventListener('click', function () {
+        f.setAttribute('aria-pressed', f.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      });
+    });
+
+    /* ── Search + family-chip filtering ─────────────────────────────────── */
+    var search = document.getElementById('stSearch');
+    var chips = Array.prototype.slice.call(document.querySelectorAll('.fchip'));
+    var resultLine = document.getElementById('resultLine');
+    var noMatch = document.getElementById('noMatch');
+    var famFilter = 'all';
+
+    /* Search must be diacritic-insensitive: typing "nguyen" has to find
+       "Nguyễn". Strip the combining marks, don't compare raw Vietnamese. */
+    function norm(s) {
+      return s.toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')   /* combining marks: ễ -> e */
+        .replace(/[đĐ]/g, 'd');  /* đ / Đ have no NFD form */
+    }
+
+    function applyFilters() {
+      var q = norm(search.value.trim());
+      var shown = 0;
+      cards.forEach(function (c) {
+        var okName = !q || norm(c.dataset.name).indexOf(q) !== -1;
+        var okFam = famFilter === 'all' || c.dataset.fam === famFilter;
+        var visible = okName && okFam;
+        c.hidden = !visible;
+        if (visible) shown++;
+      });
+      noMatch.hidden = shown !== 0;
+      resultLine.textContent = 'Showing ' + shown + ' of 24 students';
+    }
+
+    search.addEventListener('input', applyFilters);
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        chips.forEach(function (o) { o.setAttribute('aria-pressed', String(o === chip)); });
+        famFilter = chip.dataset.fam;
+        applyFilters();
+      });
+    });
+
+    /* ── Global dismiss ─────────────────────────────────────────────────── */
+    document.addEventListener('click', function (e) {
+      if (!userMenu.hidden && !userMenu.contains(e.target) && !userBtn.contains(e.target)) userExpand(false);
+      if (!sortMenu.hidden && !sortMenu.contains(e.target) && !sortBtn.contains(e.target)) sortExpand(false);
+      if (!e.target.closest('.st-actions')) closeAllCardMenus();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (isOpen()) { setNav(false); return; }
+        userExpand(false);
+        sortExpand(false);
+        closeAllCardMenus();
+        return;
+      }
+      /* Focus trap — only while the drawer is a modal. */
+      if (e.key !== 'Tab' || !isOpen() || !drawerMQ.matches) return;
+      var list = focusables();
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    syncSidebar();  /* correct state at whatever width we loaded at */
+  })();
+</script>

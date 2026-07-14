@@ -1,0 +1,1406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Diary — Lessons · Card Grid</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+  /* ======================================================================
+     LESSONS · VARIANT B — "CARD GRID"
+     Touch-first attendance. Every lesson is a soft card you can tap with a
+     thumb on an iPad. Screen-specific CSS only — all colour from _theme.css.
+     ====================================================================== */
+
+  /* ── Shell: icon rail ≥1024, full sidebar ≥1280, bottom tab bar below ─── */
+  .shell{ display:grid; grid-template-columns:var(--rail) minmax(0,1fr); min-height:100dvh; }
+  @media (min-width:1280px){ .shell{ grid-template-columns:var(--sidebar) minmax(0,1fr); } }
+  @media (max-width:1023px){ .shell{ grid-template-columns:minmax(0,1fr); } }
+
+  .rail{
+    position:sticky; top:0; align-self:start; height:100dvh; z-index:20;
+    display:flex; flex-direction:column; gap:10px; padding:14px 8px;
+    background:color-mix(in srgb, var(--surface) 82%, transparent);
+    backdrop-filter:blur(14px); border-right:1px solid var(--line);
+  }
+  @media (max-width:1023px){ .rail{ display:none; } }
+  @media (min-width:1280px){ .rail{ padding:16px 12px; } }
+
+  .rail__brand{ display:flex; align-items:center; gap:11px; min-height:var(--tap);
+    padding:4px 6px; border-radius:var(--r-sm); justify-content:center; }
+  .brandmark{ width:38px; height:38px; flex:0 0 auto; border-radius:var(--r-sm); display:grid;
+    place-items:center; color:var(--ink-invert); background:var(--grad-brand); box-shadow:var(--sh-pink); }
+  .brandmark svg{ width:20px; height:20px; }
+  .brandtext{ min-width:0; display:none; }
+  .brandtext strong{ display:block; font:650 14px/1.2 var(--font-sans); letter-spacing:-.01em; white-space:nowrap; }
+  .brandtext span{ display:block; font:400 11px/1.3 var(--font-sans); color:var(--ink-faint); white-space:nowrap; }
+
+  .rail__add{ width:56px; align-self:center; padding:0; border-radius:var(--r-md); position:relative; }
+  .rail__add .lbl{ display:none; }
+
+  /* No overflow here: ≤7 items never scroll, and a scroll container would clip
+     the rail tooltips (overflow-y:auto alone still computes overflow-x:auto). */
+  .rail__nav{ flex:1 1 auto; display:flex;
+    flex-direction:column; align-items:center; gap:3px; padding-top:4px; width:100%; }
+  .rail__group{ display:none; font:var(--t-label); letter-spacing:var(--label-tracking);
+    text-transform:uppercase; color:var(--ink-faint); padding:14px 12px 6px; width:100%; }
+  .rail__sep{ height:1px; width:36px; background:var(--line); margin:10px auto; }
+
+  /* 1024–1279 (tablet landscape, touch): icon + label stacked. The label is the
+     real, always-visible name — hover tooltips do not exist on an iPad. */
+  .nav{ position:relative; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:4px;
+    width:60px; min-height:56px; padding:0 2px; border-radius:var(--r);
+    color:var(--ink-soft); font:600 13.5px/1 var(--font-sans);
+    transition:background var(--dur) var(--ease), color var(--dur) var(--ease); }
+  .nav svg{ width:20px; height:20px; flex:0 0 auto; }
+  .nav span{ display:inline; font-size:10px; line-height:1; letter-spacing:-.01em; white-space:nowrap; }
+  .nav:hover{ background:var(--surface-2); color:var(--ink); }
+  .nav[aria-current="page"]{ background:var(--grad-pink); color:var(--ink-invert); box-shadow:var(--sh-pink); }
+
+  /* Tooltip: a pointer-device nicety only — never the label mechanism. */
+  @media (max-width:1279px) and (hover:hover) and (pointer:fine){
+    .rail__add[data-tip]:hover::after{
+      content:attr(data-tip); position:absolute; left:calc(100% + 12px); top:50%;
+      transform:translateY(-50%); z-index:40; background:var(--ink); color:var(--ink-invert);
+      font:600 12px/1 var(--font-sans); padding:8px 11px; border-radius:var(--r-xs);
+      white-space:nowrap; box-shadow:var(--sh-lg); pointer-events:none;
+    }
+  }
+  /* ≥1280 the rail becomes the real sidebar */
+  @media (min-width:1280px){
+    .rail__brand{ justify-content:flex-start; }
+    .brandtext{ display:block; }
+    .rail__add{ width:100%; padding:0 14px; border-radius:var(--r-pill); }
+    .rail__add .lbl{ display:inline; }
+    .rail__nav{ align-items:stretch; }
+    .rail__group{ display:block; }
+    .rail__sep{ width:auto; margin:12px 8px 6px; }
+    .nav{ width:100%; flex-direction:row; justify-content:flex-start; gap:12px;
+      min-height:var(--tap); padding:0 12px; border-radius:var(--r); }
+    .nav span{ font-size:13.5px; }
+  }
+
+  .rail__foot{ display:flex; align-items:center; gap:10px; min-height:var(--tap); width:100%;
+    padding:4px; border-radius:var(--r); border:1px solid var(--line); background:var(--surface);
+    justify-content:center; }
+  .rail__foot:hover{ background:var(--surface-2); }
+  .rail__footmeta{ display:none; min-width:0; text-align:left; }
+  .rail__footmeta b{ display:block; font:650 12.5px/1.3 var(--font-sans); }
+  .rail__footmeta span{ display:block; font:400 11px/1.3 var(--font-sans); color:var(--ink-faint);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px; }
+  @media (min-width:1280px){
+    .rail__foot{ justify-content:flex-start; padding:6px; }
+    .rail__footmeta{ display:block; }
+  }
+
+  /* ── Top bar ─────────────────────────────────────────────────────────── */
+  .topbar{ position:sticky; top:0; z-index:15; display:flex; align-items:center; gap:12px;
+    padding:10px clamp(14px, 2vw, 24px);
+    background:color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
+  .greet{ font:var(--t-h2); letter-spacing:-.01em; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .topbar__spacer{ flex:1 1 auto; }
+  .topbar__brand{ display:none; }
+  @media (max-width:1023px){
+    .topbar__brand{ display:flex; align-items:center; gap:9px; }
+    .greet{ font:650 15px/1.2 var(--font-sans); }
+  }
+  .iconbtn{ display:inline-grid; place-items:center; width:var(--tap); height:var(--tap);
+    border-radius:50%; color:var(--ink-soft); background:transparent;
+    transition:background var(--dur) var(--ease), color var(--dur) var(--ease); }
+  .iconbtn:hover{ background:var(--surface-2); color:var(--ink); }
+  .iconbtn svg{ width:20px; height:20px; }
+  .iconbtn--dot{ position:relative; }
+  .iconbtn--dot::after{ content:""; position:absolute; top:9px; right:10px; width:8px; height:8px;
+    border-radius:50%; background:var(--pink-500); border:2px solid var(--surface); }
+
+  /* ── Page ────────────────────────────────────────────────────────────── */
+  .page{ padding:clamp(16px, 2.2vw, 28px) clamp(14px, 2.2vw, 28px) 40px; max-width:1480px;
+    margin-inline:auto; }
+  @media (max-width:1023px){ .page{ padding-bottom:104px; } }
+
+  .phead{ display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .phead h1{ font:var(--t-h1); letter-spacing:-.02em; }
+  .phead p{ font:var(--t-small); color:var(--ink-soft); margin-top:4px; }
+  .phead__spacer{ flex:1 1 auto; }
+  .phead .btn{ flex:0 0 auto; }
+  @media (max-width:639px){ .phead .btn{ width:100%; } }
+
+  /* ── Filters: touch chip-scroller ────────────────────────────────────── */
+  .filters{ margin-bottom:16px; }
+  .fscroll{ display:flex; gap:9px; padding:2px 2px 6px; margin-inline:calc(-1 * clamp(14px, 2.2vw, 28px));
+    padding-inline:clamp(14px, 2.2vw, 28px);
+    scroll-snap-type:x proximity; scroll-padding-left:clamp(14px, 2.2vw, 28px); }
+  .fchip{ display:inline-flex; align-items:center; gap:8px; flex:0 0 auto; scroll-snap-align:start;
+    min-height:var(--tap); padding:0 17px; border-radius:var(--r-pill);
+    background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    font:600 13.5px/1 var(--font-sans); box-shadow:var(--sh-xs);
+    transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+      background var(--dur) var(--ease), color var(--dur) var(--ease); }
+  .fchip:hover{ background:var(--surface-2); }
+  .fchip:active{ transform:scale(.97); }
+  .fchip .fdot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+  .fchip .fdot--ok{ background:var(--ok-dot); }
+  .fchip .fdot--no{ background:var(--no-dot); }
+  .fchip .fdot--wait{ background:var(--wait-dot); }
+  .fchip .fdot--online{ background:var(--teal-400); }
+  /* the counts are data, not decoration — --ink-soft clears 4.5:1 */
+  .fchip .fcount{ font-variant-numeric:tabular-nums; font-weight:700; font-size:11.5px;
+    color:var(--ink-soft); background:var(--surface-2); border-radius:var(--r-pill); padding:3px 7px; }
+  .fchip[aria-pressed="true"]{ background:var(--grad-pink); color:var(--ink-invert); border-color:transparent;
+    box-shadow:var(--sh-pink); }
+  .fchip[aria-pressed="true"] .fcount{ background:color-mix(in srgb, var(--ink-invert) 24%, transparent);
+    color:var(--ink-invert); }
+  .fchip[aria-pressed="true"] .fdot{ background:var(--ink-invert); }
+
+  .frow{ display:flex; flex-wrap:wrap; gap:9px; margin-top:8px; }
+  .pill{ display:inline-flex; align-items:center; gap:9px; min-height:var(--tap);
+    padding:0 14px; border-radius:var(--r-pill); background:var(--surface);
+    border:1px solid var(--line); box-shadow:var(--sh-xs); color:var(--ink-soft);
+    font:600 13px/1 var(--font-sans); cursor:pointer; }
+  .pill:hover{ background:var(--surface-2); }
+  .pill:focus-within{ outline:2px solid var(--pink-600); outline-offset:2px; }
+  .pill svg{ width:17px; height:17px; flex:0 0 auto; color:var(--ink-faint); }
+  .pill select, .pill input{ border:0; background:transparent; outline:none; color:var(--ink);
+    font:600 13px/1 var(--font-sans); appearance:none; -webkit-appearance:none;
+    min-height:calc(var(--tap) - 4px); cursor:pointer; }
+  .pill select{ padding-right:2px; max-width:150px; }
+  .pill input[type="date"]{ font-variant-numeric:tabular-nums; width:118px; }
+  .pill input[type="date"]::-webkit-calendar-picker-indicator{ opacity:.45; cursor:pointer; }
+  .pill .caret{ width:15px; height:15px; }
+
+  .resultline{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin:14px 2px 16px; font:var(--t-small); color:var(--ink-soft); }
+  .resultline b{ color:var(--ink); font-weight:700; }
+  .resultline .money{ font-variant-numeric:tabular-nums; color:var(--teal-700); font-weight:700; }
+  .resultline .sep{ width:4px; height:4px; border-radius:50%; background:var(--line-strong); }
+
+  /* ── The card grid ───────────────────────────────────────────────────── */
+  .grid{ display:grid; gap:18px; grid-template-columns:repeat(auto-fill, minmax(268px, 1fr)); }
+
+  .lcard{ position:relative; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--r-lg); box-shadow:var(--sh); padding:18px 18px 16px;
+    display:flex; flex-direction:column; gap:14px;
+    transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+      border-color var(--dur) var(--ease); }
+  .lcard::before{ content:""; position:absolute; inset:0 0 auto 0; height:5px;
+    border-radius:var(--r-lg) var(--r-lg) 0 0; background:var(--wait-dot); }
+  .lcard[data-status="complete"]::before{ background:var(--ok-dot); }
+  .lcard[data-status="cancelled"]::before{ background:var(--no-dot); }
+  .lcard[data-status="pending"]::before{ background:var(--wait-dot); }
+  /* hover-guarded: on iOS the lifted state would stick after the first tap */
+  @media (hover:hover) and (pointer:fine){
+    .lcard:hover{ transform:translateY(-3px); box-shadow:var(--sh-lg); border-color:var(--line-strong); }
+  }
+  .lcard:active{ transform:translateY(-1px); }
+  .lcard.is-open{ z-index:6; }
+  .lcard[data-today="true"]{ border-color:var(--mint); box-shadow:var(--sh), 0 0 0 3px var(--teal-100); }
+
+  .lcard__top{ display:flex; align-items:center; gap:10px; }
+  .lcard__when{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .datepill{ display:inline-flex; align-items:center; height:24px; padding:0 9px;
+    border-radius:var(--r-xs); background:var(--surface-2); border:1px solid var(--line);
+    font:700 11px/1 var(--font-sans); letter-spacing:.06em; color:var(--ink);
+    font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .lcard[data-today="true"] .datepill{ background:var(--teal-100); border-color:var(--mint); color:var(--teal-700); }
+  /* "today" must not be colour-only: the pill says the word. */
+  .lcard[data-today="true"] .datepill--today{ background:var(--teal-700); border-color:var(--teal-700);
+    color:var(--ink-invert); }
+  .lcard__time{ font:600 12.5px/1 var(--font-sans); color:var(--ink-soft);
+    font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .lcard__top .chip{ margin-left:auto; }
+
+  .lcard__body{ display:flex; align-items:flex-start; gap:12px; min-width:0; }
+  .lcard__id{ min-width:0; flex:1 1 auto; }
+  .lcard__name{ font:600 16px/1.3 var(--font-sans); color:var(--ink); letter-spacing:-.01em;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lcard[data-status="cancelled"] .lcard__name{ text-decoration:line-through;
+    text-decoration-color:color-mix(in srgb, var(--no-fg) 55%, transparent);
+    text-decoration-thickness:1.5px; color:var(--ink-soft); }
+  .lcard__piece{ font:var(--t-small); color:var(--ink-soft); margin-top:2px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lcard__meta{ display:flex; align-items:center; gap:7px; margin-top:7px;
+    font:600 12px/1 var(--font-sans); color:var(--ink-soft); flex-wrap:wrap; }
+  .lcard__meta .money{ font-variant-numeric:tabular-nums; color:var(--ink); }
+  .lcard__meta .sep{ width:3px; height:3px; border-radius:50%; background:var(--line-strong); }
+
+  .lcard__tags{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:-4px; }
+  .chip--online svg{ width:13px; height:13px; }
+  .chip--online::before{ display:none; }
+  .reason{ display:inline-flex; align-items:center; gap:6px; font:600 11.5px/1.3 var(--font-sans);
+    color:var(--no-fg); background:var(--no-bg); padding:5px 10px; border-radius:var(--r-pill); }
+  .reason svg{ width:13px; height:13px; }
+  /* cancelReason only exists on CANCELLED — hide it if the status is changed */
+  .lcard:not([data-status="cancelled"]) .reason,
+  .lcard:not([data-status="cancelled"]) .billnote{ display:none; }
+  /* real lesson content — must clear 4.5:1; only the icon stays decorative */
+  .note{ display:flex; gap:7px; font:var(--t-small); font-size:11.5px; color:var(--ink-soft);
+    background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-xs);
+    padding:7px 9px; }
+  .note svg{ width:13px; height:13px; flex:0 0 auto; margin-top:2px; color:var(--ink-faint); }
+
+  .lcard__foot{ display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:2px; }
+  .lcard__cta{ flex:1 1 auto; }
+
+  /* ── ⋯ menu ──────────────────────────────────────────────────────────── */
+  .menu{ position:relative; flex:0 0 auto; }
+  .menu__btn{ border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); }
+  .menu__btn:hover{ background:var(--surface-2); color:var(--ink); }
+  .menu__pop{ position:absolute; right:0; bottom:calc(100% + 8px); z-index:30; width:196px;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:6px;
+    box-shadow:var(--sh-lg); display:none; }
+  .menu.is-open .menu__pop{ display:block; animation:rise .18s var(--ease) both; }
+  .menu__item{ display:flex; align-items:center; gap:10px; width:100%; min-height:var(--tap);
+    padding:0 11px; border-radius:var(--r-xs); font:600 13px/1 var(--font-sans);
+    color:var(--ink); text-align:left; }
+  .menu__item:hover{ background:var(--surface-2); }
+  .menu__item svg{ width:17px; height:17px; color:var(--ink-faint); }
+  .menu__item--danger{ color:var(--no-fg); }
+  .menu__item--danger svg{ color:var(--no-fg); }
+  .menu__sep{ height:1px; background:var(--line); margin:5px 6px; }
+
+  /* ── Empty state (reference section) ─────────────────────────────────── */
+  .sectionlabel{ display:flex; align-items:center; gap:12px; margin:38px 0 16px; }
+  .sectionlabel .line{ flex:1 1 auto; height:1px; background:var(--line); }
+  .empty{ display:grid; place-items:center; text-align:center; gap:6px;
+    padding:clamp(34px, 6vw, 56px) 20px;
+    background:linear-gradient(160deg, var(--teal-100), var(--surface) 62%);
+    border:1px dashed var(--line-strong); border-radius:var(--r-xl); box-shadow:var(--sh-sm); }
+  .empty__ico{ width:78px; height:78px; border-radius:50%; display:grid; place-items:center;
+    font-size:34px; background:var(--surface); box-shadow:var(--sh); margin-bottom:8px; }
+  .empty h2{ font:var(--t-h2); font-size:19px; }
+  .empty p{ font:var(--t-body); color:var(--ink-soft); max-width:36ch; }
+  .empty .btn{ margin-top:14px; }
+
+  /* ── Attendance bottom sheet / dialog ────────────────────────────────── */
+  .sheet{ position:fixed; inset:0; z-index:60; display:none; }
+  .sheet[open]{ display:block; }
+  .sheet__scrim{ position:absolute; inset:0;
+    background:color-mix(in srgb, var(--ink) 34%, transparent); backdrop-filter:blur(2px); }
+  .sheet__panel{ position:absolute; left:0; right:0; bottom:0; background:var(--surface);
+    border-radius:var(--r-xl) var(--r-xl) 0 0; padding:10px 18px calc(22px + env(safe-area-inset-bottom));
+    box-shadow:var(--sh-xl); animation:rise .3s var(--ease) both; max-height:92dvh; overflow-y:auto; }
+  @media (min-width:768px){
+    .sheet__panel{ left:50%; right:auto; bottom:auto; top:50%; transform:translate(-50%,-50%);
+      width:min(460px, calc(100vw - 40px)); border-radius:var(--r-xl); padding:18px 22px 22px; }
+  }
+  .sheet__grab{ width:44px; height:5px; border-radius:var(--r-pill); background:var(--line-strong); margin:6px auto 14px; }
+  @media (min-width:768px){ .sheet__grab{ display:none; } }
+  .sheet__head{ display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+  .sheet__head h2{ font:var(--t-h2); }
+  .sheet__head p{ font:var(--t-small); color:var(--ink-soft); }
+  .sheet__close{ margin-left:auto; }
+  .opt{ display:flex; align-items:center; gap:12px; width:100%; min-height:60px; margin-top:9px;
+    padding:0 15px; border-radius:var(--r); border:1.5px solid var(--line); background:var(--surface);
+    text-align:left; transition:border-color var(--dur) var(--ease), background var(--dur) var(--ease),
+      transform var(--dur) var(--ease); }
+  .opt:hover{ transform:translateY(-1px); }
+  .opt b{ display:block; font:650 14px/1.3 var(--font-sans); }
+  .opt small{ display:block; font:400 11.5px/1.3 var(--font-sans); color:var(--ink-soft); }
+  .opt__dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; }
+  .opt--complete:hover{ border-color:var(--ok-dot); background:var(--ok-bg); }
+  .opt--cancelled:hover{ border-color:var(--no-dot); background:var(--no-bg); }
+  .opt--pending:hover{ border-color:var(--wait-dot); background:var(--wait-bg); }
+  .opt[aria-expanded="true"]{ border-color:var(--no-dot); background:var(--no-bg); }
+
+  /* Cancelled needs a reason — so the sheet actually collects one. */
+  .why{ margin-top:10px; padding:13px 14px 14px; border-radius:var(--r);
+    background:var(--no-bg); border:1px solid var(--no-dot); }
+  .why__lbl{ font:var(--t-label); letter-spacing:var(--label-tracking); text-transform:uppercase;
+    color:var(--no-fg); margin-bottom:9px; }
+  .why__chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .rchip{ min-height:38px; padding:0 13px; border-radius:var(--r-pill); background:var(--surface);
+    border:1px solid var(--line-pink); color:var(--ink); font:600 12.5px/1 var(--font-sans); }
+  .rchip[aria-pressed="true"]{ background:var(--no-fg); border-color:var(--no-fg); color:var(--ink-invert); }
+  .why__save{ width:100%; margin-top:12px; }
+  .why__save[disabled]{ opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+  /* ── Bottom tab bar (<1024) ──────────────────────────────────────────── */
+  .tabbar{ display:none; }
+  @media (max-width:1023px){
+    .tabbar{ position:fixed; left:12px; right:12px; bottom:calc(10px + env(safe-area-inset-bottom));
+      z-index:40; display:grid; grid-template-columns:repeat(5,1fr); gap:2px; padding:6px;
+      background:color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter:blur(16px);
+      border:1px solid var(--line); border-radius:var(--r-xl);
+      box-shadow:var(--sh-lg); }
+  }
+  /* below 1024 this bar is the ONLY nav — the labels must be legible */
+  .tab{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    min-height:52px; border-radius:var(--r); color:var(--ink-soft); font:600 11px/1 var(--font-sans); }
+  .tab svg{ width:21px; height:21px; }
+  .tab[aria-current="page"]{ background:var(--grad-pink); color:var(--ink-invert); }
+  .tab--add{ color:var(--pink-700); }
+
+  /* ── Variant badge ───────────────────────────────────────────────────── */
+  .variant-badge{ position:fixed; top:10px; right:10px; z-index:99;
+    padding:6px 12px; border-radius:var(--r-pill);
+    background:color-mix(in srgb, var(--ink) 88%, transparent); color:var(--ink-invert);
+    font:600 11px/1 var(--font-sans); letter-spacing:.02em; box-shadow:var(--sh-lg);
+    pointer-events:none; }
+</style>
+</head>
+<body>
+
+<div class="variant-badge print-hide">Lessons · Card Grid</div>
+
+<div class="shell">
+
+  <!-- ══════════ ICON RAIL / SIDEBAR ══════════ -->
+  <aside class="rail print-hide">
+    <a class="rail__brand" href="/dashboard" aria-label="My Piano Diary — home">
+      <span class="brandmark">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 4v9M12 4v9M16 4v9M3 13h18"/>
+        </svg>
+      </span>
+      <span class="brandtext"><strong>My Piano Diary</strong><span>Personal teaching space</span></span>
+    </a>
+
+    <button class="btn btn--primary rail__add" data-tip="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="20" height="20">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span class="lbl">Add lesson</span>
+    </button>
+
+    <nav class="rail__nav" aria-label="Main">
+      <p class="rail__group">Main</p>
+      <a class="nav" href="/dashboard" data-tip="Dashboard" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+          <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+        </svg><span>Dashboard</span>
+      </a>
+      <a class="nav" href="/calendar" data-tip="Calendar" aria-label="Calendar">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>
+        </svg><span>Calendar</span>
+      </a>
+
+      <div class="rail__sep" role="presentation"></div>
+      <p class="rail__group">Manage</p>
+
+      <a class="nav" href="/lessons" aria-current="page" data-tip="Lessons" aria-label="Lessons">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg><span>Lessons</span>
+      </a>
+      <a class="nav" href="/students" data-tip="Students" aria-label="Students">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+        </svg><span>Students</span>
+      </a>
+      <a class="nav" href="/pieces" data-tip="Pieces" aria-label="Pieces">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M9 18V5l12-2v13"/>
+        </svg><span>Pieces</span>
+      </a>
+      <a class="nav" href="/reports" data-tip="Reports" aria-label="Reports">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+        </svg><span>Reports</span>
+      </a>
+      <a class="nav" href="/payments" data-tip="Payments" aria-label="Payments">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/>
+        </svg><span>Payments</span>
+      </a>
+    </nav>
+
+    <button class="rail__foot" aria-label="Account menu: Mai Anh Trần" aria-haspopup="menu">
+      <span class="av av--sm" aria-hidden="true">MT</span>
+      <span class="rail__footmeta"><b>Mai Anh Trần</b><span>teacher@pianodiary.vn</span></span>
+    </button>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <div>
+    <header class="topbar print-hide">
+      <span class="topbar__brand">
+        <span class="brandmark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 4v9M12 4v9M16 4v9M3 13h18"/>
+          </svg>
+        </span>
+      </span>
+      <p class="greet">Good afternoon, Mai Anh ✨</p>
+      <span class="topbar__spacer"></span>
+      <button class="iconbtn" aria-label="Search lessons">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="iconbtn iconbtn--dot" aria-label="Updates (2 new)">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+        </svg>
+      </button>
+      <button class="iconbtn" aria-label="Account menu: Mai Anh Trần" aria-haspopup="menu">
+        <span class="av av--sm" aria-hidden="true">MT</span>
+      </button>
+    </header>
+
+    <main class="page">
+      <!-- ── Page head ─────────────────────────────────────────────── -->
+      <div class="phead">
+        <div>
+          <h1>Lessons &amp; Attendance</h1>
+          <p>Track every beautiful session</p>
+        </div>
+        <span class="phead__spacer"></span>
+        <button class="btn btn--primary">
+          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+          </svg>
+          Add lesson
+        </button>
+      </div>
+
+      <!-- ── Filters ───────────────────────────────────────────────── -->
+      <section class="filters" aria-label="Filter lessons">
+        <div class="scroll-x no-scrollbar fscroll" role="group" aria-label="Quick filters">
+          <button class="fchip" data-filter="all" aria-pressed="false">All lessons <span class="fcount">62</span></button>
+          <button class="fchip" data-filter="today" aria-pressed="false">Today <span class="fcount">4</span></button>
+          <button class="fchip" data-filter="week" aria-pressed="true">This week <span class="fcount">14</span></button>
+          <button class="fchip" data-filter="complete" aria-pressed="false"><span class="fdot fdot--ok" aria-hidden="true"></span>Complete <span class="fcount">5</span></button>
+          <button class="fchip" data-filter="cancelled" aria-pressed="false"><span class="fdot fdot--no" aria-hidden="true"></span>Cancelled <span class="fcount">3</span></button>
+          <button class="fchip" data-filter="pending" aria-pressed="false"><span class="fdot fdot--wait" aria-hidden="true"></span>Pending <span class="fcount">6</span></button>
+          <button class="fchip" data-filter="online" aria-pressed="false"><span class="fdot fdot--online" aria-hidden="true"></span>Online <span class="fcount">3</span></button>
+        </div>
+
+        <div class="frow">
+          <label class="pill">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            </svg>
+            <select aria-label="Filter by student">
+              <option>All students</option>
+              <option>Nguyễn Minh Anh</option>
+              <option>Trần Bảo Ngọc</option>
+              <option>Lê Gia Hân</option>
+              <option>Emma Thompson</option>
+              <option>Phạm Quốc Bảo</option>
+              <option>Olivia Nguyen</option>
+              <option>Đỗ Khánh Linh</option>
+              <option>Liam Carter</option>
+              <option>Vũ Thanh Trúc</option>
+              <option>Hoàng Nam Phong</option>
+            </select>
+            <svg class="caret" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </label>
+
+          <label class="pill">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>
+            </svg>
+            <input type="date" value="2026-07-13" aria-label="From date">
+          </label>
+
+          <label class="pill">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>
+            </svg>
+            <input type="date" value="2026-07-19" aria-label="To date">
+          </label>
+
+          <button class="btn btn--quiet" id="resetBtn">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>
+            </svg>
+            Reset
+          </button>
+        </div>
+
+        <p class="resultline" id="resultLine" aria-live="polite">
+          <b>14 lessons</b><span class="sep" aria-hidden="true"></span>
+          <span class="money">3.150.000 ₫</span> expected
+          <span class="sep" aria-hidden="true"></span>
+          Mon 13 – Sun 19 Jul 2026
+        </p>
+      </section>
+
+      <!-- ── The grid ──────────────────────────────────────────────── -->
+      <section aria-label="Lessons this week">
+        <div class="grid">
+
+          <!-- 1 — COMPLETE -->
+          <article class="lcard rise" style="--i:1" data-status="complete">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 13</span>
+                <span class="lcard__time">3:00 PM</span>
+              </div>
+              <span class="chip chip--complete">Complete</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true">MA</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Nguyễn Minh Anh</h2>
+                <p class="lcard__piece">Für Elise</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 280.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--ghost lcard__cta" data-act="attend">Update</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Nguyễn Minh Anh, 13 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 2 — COMPLETE -->
+          <article class="lcard rise" style="--i:2" data-status="complete">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 13</span>
+                <span class="lcard__time">4:00 PM</span>
+              </div>
+              <span class="chip chip--complete">Complete</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:var(--grad-mint); color:var(--mint-ink)">BN</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Trần Bảo Ngọc</h2>
+                <p class="lcard__piece">Minuet in G</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 280.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--ghost lcard__cta" data-act="attend">Update</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Trần Bảo Ngọc, 13 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 3 — COMPLETE · online -->
+          <article class="lcard rise" style="--i:3" data-status="complete">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 13</span>
+                <span class="lcard__time">5:30 PM</span>
+              </div>
+              <span class="chip chip--complete">Complete</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:linear-gradient(135deg,var(--pink-500),var(--pink-700))">ET</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Emma Thompson</h2>
+                <p class="lcard__piece">Clair de Lune</p>
+                <p class="lcard__meta"><span>60 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 350.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__tags">
+              <span class="chip chip--online">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                Online
+              </span>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--ghost lcard__cta" data-act="attend">Update</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Emma Thompson, 13 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 4 — CANCELLED -->
+          <article class="lcard rise" style="--i:4" data-status="cancelled">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 13</span>
+                <span class="lcard__time">6:45 PM</span>
+              </div>
+              <span class="chip chip--cancelled">Cancelled</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:linear-gradient(135deg,var(--wintergreen),var(--teal-700))">QB</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Phạm Quốc Bảo</h2>
+                <p class="lcard__piece">Turkish March</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 280.000</span><span class="sep billnote" aria-hidden="true"></span><span class="billnote">not billed</span></p>
+              </div>
+            </div>
+            <div class="lcard__tags">
+              <span class="reason">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                Sick
+              </span>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Phạm Quốc Bảo, 13 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 5 — COMPLETE · today -->
+          <article class="lcard rise" style="--i:5" data-status="complete" data-today="true">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill datepill--today">TODAY</span>
+                <span class="lcard__time">2:00 PM</span>
+              </div>
+              <span class="chip chip--complete">Complete</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:var(--grad-mint); color:var(--mint-ink)">GH</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Lê Gia Hân</h2>
+                <p class="lcard__piece">Gymnopédie No.1</p>
+                <p class="lcard__meta"><span>30 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 200.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--ghost lcard__cta" data-act="attend">Update</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Lê Gia Hân, 14 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 6 — COMPLETE · online · today -->
+          <article class="lcard rise" style="--i:6" data-status="complete" data-today="true">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill datepill--today">TODAY</span>
+                <span class="lcard__time">3:15 PM</span>
+              </div>
+              <span class="chip chip--complete">Complete</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:linear-gradient(135deg,var(--pink-500),var(--pink-700))">ON</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Olivia Nguyen</h2>
+                <p class="lcard__piece">Arabesque No.1</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 260.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__tags">
+              <span class="chip chip--online">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                Online
+              </span>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--ghost lcard__cta" data-act="attend">Update</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Olivia Nguyen, 14 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 7 — PENDING · today -->
+          <article class="lcard rise" style="--i:7" data-status="pending" data-today="true">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill datepill--today">TODAY</span>
+                <span class="lcard__time">4:30 PM</span>
+              </div>
+              <span class="chip chip--pending">Pending</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:linear-gradient(135deg,var(--wintergreen),var(--teal-700))">KL</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Đỗ Khánh Linh</h2>
+                <p class="lcard__piece">Nocturne Op.9 No.2</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 280.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__tags">
+              <p class="note">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                Work on the left-hand arpeggios, bars 17–24.
+              </p>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Đỗ Khánh Linh, 14 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 8 — PENDING · today -->
+          <article class="lcard rise" style="--i:8" data-status="pending" data-today="true">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill datepill--today">TODAY</span>
+                <span class="lcard__time">5:30 PM</span>
+              </div>
+              <span class="chip chip--pending">Pending</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true">LC</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Liam Carter</h2>
+                <p class="lcard__piece">River Flows in You</p>
+                <p class="lcard__meta"><span>60 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 350.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Liam Carter, 14 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 9 — PENDING -->
+          <article class="lcard rise" style="--i:9" data-status="pending">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 15</span>
+                <span class="lcard__time">3:30 PM</span>
+              </div>
+              <span class="chip chip--pending">Pending</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:var(--grad-mint); color:var(--mint-ink)">TT</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Vũ Thanh Trúc</h2>
+                <p class="lcard__piece">Minuet in G</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 240.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Vũ Thanh Trúc, 15 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 10 — CANCELLED -->
+          <article class="lcard rise" style="--i:10" data-status="cancelled">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 15</span>
+                <span class="lcard__time">5:00 PM</span>
+              </div>
+              <span class="chip chip--cancelled">Cancelled</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true">NP</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Hoàng Nam Phong</h2>
+                <p class="lcard__piece">Für Elise</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 250.000</span><span class="sep billnote" aria-hidden="true"></span><span class="billnote">not billed</span></p>
+              </div>
+            </div>
+            <div class="lcard__tags">
+              <span class="reason">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                Family trip
+              </span>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Hoàng Nam Phong, 15 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 11 — PENDING -->
+          <article class="lcard rise" style="--i:11" data-status="pending">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 16</span>
+                <span class="lcard__time">4:30 PM</span>
+              </div>
+              <span class="chip chip--pending">Pending</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true">MA</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Nguyễn Minh Anh</h2>
+                <p class="lcard__piece">Nocturne Op.9 No.2</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 280.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Nguyễn Minh Anh, 16 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 12 — PENDING · online -->
+          <article class="lcard rise" style="--i:12" data-status="pending">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 16</span>
+                <span class="lcard__time">6:00 PM</span>
+              </div>
+              <span class="chip chip--pending">Pending</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:linear-gradient(135deg,var(--pink-500),var(--pink-700))">ET</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Emma Thompson</h2>
+                <p class="lcard__piece">Clair de Lune</p>
+                <p class="lcard__meta"><span>60 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 350.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__tags">
+              <span class="chip chip--online">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                Online
+              </span>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Emma Thompson, 16 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 13 — CANCELLED -->
+          <article class="lcard rise" style="--i:13" data-status="cancelled">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 17</span>
+                <span class="lcard__time">3:00 PM</span>
+              </div>
+              <span class="chip chip--cancelled">Cancelled</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:var(--grad-mint); color:var(--mint-ink)">BN</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Trần Bảo Ngọc</h2>
+                <p class="lcard__piece">Arabesque No.1</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 280.000</span><span class="sep billnote" aria-hidden="true"></span><span class="billnote">not billed</span></p>
+              </div>
+            </div>
+            <div class="lcard__tags">
+              <span class="reason">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                Exam week
+              </span>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Trần Bảo Ngọc, 17 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 14 — PENDING -->
+          <article class="lcard rise" style="--i:14" data-status="pending">
+            <div class="lcard__top">
+              <div class="lcard__when">
+                <span class="datepill">JUL 17</span>
+                <span class="lcard__time">4:15 PM</span>
+              </div>
+              <span class="chip chip--pending">Pending</span>
+            </div>
+            <div class="lcard__body">
+              <span class="av av--lg" aria-hidden="true" style="background:linear-gradient(135deg,var(--wintergreen),var(--teal-700))">KL</span>
+              <div class="lcard__id">
+                <h2 class="lcard__name">Đỗ Khánh Linh</h2>
+                <p class="lcard__piece">Turkish March</p>
+                <p class="lcard__meta"><span>45 min</span><span class="sep" aria-hidden="true"></span><span class="money">đ 280.000</span></p>
+              </div>
+            </div>
+            <div class="lcard__foot">
+              <button class="btn btn--primary lcard__cta" data-act="attend">Mark attendance</button>
+              <div class="menu">
+                <button class="btn btn--icon menu__btn" aria-label="More actions for Đỗ Khánh Linh, 17 July" aria-haspopup="menu" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="menu__pop" role="menu">
+                  <button class="menu__item" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit lesson</button>
+                  <button class="menu__item" role="menuitem" data-act="attend"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Mark attendance</button>
+                  <div class="menu__sep" role="presentation"></div>
+                  <button class="menu__item menu__item--danger" role="menuitem"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+      <!-- ── Empty state reference ─────────────────────────────────── -->
+      <section aria-label="Empty state reference">
+        <div class="sectionlabel">
+          <span class="label">State reference · empty</span>
+          <span class="line" role="presentation"></span>
+        </div>
+        <div class="empty">
+          <span class="empty__ico" aria-hidden="true">🎹</span>
+          <h2>No lessons scheduled yet</h2>
+          <p>Your piano week is waiting for music.</p>
+          <button class="btn btn--primary">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18">
+              <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+            </svg>
+            Add lesson
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════ BOTTOM TAB BAR (<1024) ══════════ -->
+<nav class="tabbar print-hide" aria-label="Main (compact)">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+      <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+    </svg>Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>
+    </svg>Calendar
+  </a>
+  <a class="tab" href="/lessons" aria-current="page">
+    <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>Lessons
+  </a>
+  <button class="tab tab--add" aria-label="Add lesson">
+    <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+    </svg>Add
+  </button>
+  <button class="tab" id="moreBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="moreSheet">
+    <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
+    </svg>More
+  </button>
+</nav>
+
+<!-- ══════════ MORE SHEET ══════════ -->
+<div class="sheet" id="moreSheet" role="dialog" aria-modal="true" aria-label="More sections">
+  <div class="sheet__scrim" data-close></div>
+  <div class="sheet__panel">
+    <div class="sheet__grab" aria-hidden="true"></div>
+    <div class="sheet__head">
+      <div><h2>More</h2><p>Manage your studio</p></div>
+      <button class="btn btn--icon btn--ghost sheet__close" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <button class="opt"><span class="opt__dot" style="background:var(--wintergreen)"></span><span><b>Students</b><small>10 active</small></span></button>
+    <button class="opt"><span class="opt__dot" style="background:var(--bubblegum)"></span><span><b>Pieces</b><small>38 in the library</small></span></button>
+    <button class="opt"><span class="opt__dot" style="background:var(--sand-300)"></span><span><b>Reports</b><small>July 2026 ready</small></span></button>
+    <button class="opt"><span class="opt__dot" style="background:var(--pink-500)"></span><span><b>Payments</b><small>3 outstanding</small></span></button>
+  </div>
+</div>
+
+<!-- ══════════ ATTENDANCE DIALOG ══════════ -->
+<div class="sheet" id="attendSheet" role="dialog" aria-modal="true" aria-labelledby="attendTitle">
+  <div class="sheet__scrim" data-close></div>
+  <div class="sheet__panel">
+    <div class="sheet__grab" aria-hidden="true"></div>
+    <div class="sheet__head">
+      <div>
+        <h2 id="attendTitle">Mark attendance</h2>
+        <p id="attendWho">Đỗ Khánh Linh · 14 Jul, 4:30 PM</p>
+      </div>
+      <button class="btn btn--icon btn--ghost sheet__close" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <button class="opt opt--complete" data-set="complete">
+      <span class="opt__dot" style="background:var(--ok-dot)"></span>
+      <span><b>Complete</b><small>Billed at the lesson's frozen rate</small></span>
+    </button>
+    <button class="opt opt--cancelled" data-set="cancelled" aria-expanded="false" aria-controls="whyRow">
+      <span class="opt__dot" style="background:var(--no-dot)"></span>
+      <span><b>Cancelled</b><small>Needs a reason · never billed, tracked as loss</small></span>
+    </button>
+
+    <!-- the reason the Cancelled option promises — actually collected -->
+    <div class="why" id="whyRow" hidden>
+      <p class="why__lbl" id="whyLbl">Reason for cancelling</p>
+      <div class="why__chips" role="group" aria-labelledby="whyLbl">
+        <button class="rchip" data-reason="Sick" aria-pressed="false">Sick</button>
+        <button class="rchip" data-reason="Family trip" aria-pressed="false">Family trip</button>
+        <button class="rchip" data-reason="Exam week" aria-pressed="false">Exam week</button>
+        <button class="rchip" data-reason="Teacher away" aria-pressed="false">Teacher away</button>
+        <button class="rchip" data-reason="No reason given" aria-pressed="false">No reason given</button>
+      </div>
+      <button class="btn btn--primary why__save" id="whySave" disabled>Save cancellation</button>
+    </div>
+
+    <button class="opt opt--pending" data-set="pending">
+      <span class="opt__dot" style="background:var(--wait-dot)"></span>
+      <span><b>Pending</b><small>Not decided yet · not billed</small></span>
+    </button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.lcard'));
+
+  /* ── Quick filter chips — real filtering, and a live region that means it ── */
+  var chips = document.querySelectorAll('.fchip');
+  var resultLine = document.getElementById('resultLine');
+  var resultCount = resultLine.querySelector('b');
+  var resultMoney = resultLine.querySelector('.money');
+
+  function moneyOf(card) {
+    var el = card.querySelector('.lcard__meta .money');
+    if (!el) return 0;
+    return parseInt(el.textContent.replace(/\D/g, ''), 10) || 0;
+  }
+  function matches(card, f) {
+    switch (f) {
+      case 'today':   return card.getAttribute('data-today') === 'true';
+      case 'online':  return !!card.querySelector('.chip--online');
+      case 'complete':
+      case 'cancelled':
+      case 'pending': return card.getAttribute('data-status') === f;
+      default:        return true; /* all · week */
+    }
+  }
+  function applyFilter() {
+    var active = document.querySelector('.fchip[aria-pressed="true"]');
+    var f = active ? active.getAttribute('data-filter') : 'all';
+    var shown = 0, expected = 0;
+    cards.forEach(function (c) {
+      var hit = matches(c, f);
+      c.hidden = !hit;
+      if (!hit) return;
+      shown++;
+      /* CANCELLED is never billed — it must not inflate the expected total */
+      if (c.getAttribute('data-status') !== 'cancelled') expected += moneyOf(c);
+    });
+    var n = shown + (shown === 1 ? ' lesson' : ' lessons');
+    var m = expected.toLocaleString('de-DE') + ' ₫';
+    /* only mutate on a real change, so the live region never announces a no-op */
+    if (resultCount.textContent !== n) resultCount.textContent = n;
+    if (resultMoney.textContent !== m) resultMoney.textContent = m;
+  }
+  chips.forEach(function (c) {
+    c.addEventListener('click', function () {
+      chips.forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+      c.setAttribute('aria-pressed', 'true');
+      c.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      applyFilter();
+    });
+  });
+  var reset = document.getElementById('resetBtn');
+  if (reset) reset.addEventListener('click', function () {
+    chips.forEach(function (o, i) { o.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); });
+    applyFilter();
+  });
+
+  /* ── ⋯ menus ────────────────────────────────────────────────────────── */
+  function closeMenus() {
+    document.querySelectorAll('.menu.is-open').forEach(function (m) {
+      m.classList.remove('is-open');
+      m.closest('.lcard').classList.remove('is-open');
+      m.querySelector('.menu__btn').setAttribute('aria-expanded', 'false');
+    });
+  }
+  document.querySelectorAll('.menu__btn').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var menu = b.closest('.menu');
+      var open = menu.classList.contains('is-open');
+      closeMenus();
+      if (!open) {
+        menu.classList.add('is-open');
+        menu.closest('.lcard').classList.add('is-open');
+        b.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+  document.addEventListener('click', closeMenus);
+
+  /* ── Sheets: state, focus in, focus back, trap ──────────────────────── */
+  var lastTrigger = null;
+  var FOCUSABLE = 'button:not([disabled]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+  function focusablesIn(el) {
+    return Array.prototype.filter.call(el.querySelectorAll(FOCUSABLE), function (n) {
+      return n.offsetWidth > 0 || n.offsetHeight > 0;
+    });
+  }
+  function toggler(el) { return document.querySelector('[aria-controls="' + el.id + '"]'); }
+
+  function openSheet(el, trigger) {
+    lastTrigger = trigger || document.activeElement;
+    el.setAttribute('open', '');
+    var t = toggler(el);
+    if (t) t.setAttribute('aria-expanded', 'true');
+    var close = el.querySelector('.sheet__close');
+    if (close) close.focus();
+  }
+  function closeSheet(el) {
+    if (!el) return;
+    el.removeAttribute('open');
+    var t = toggler(el);
+    if (t) t.setAttribute('aria-expanded', 'false');
+    if (el === attendSheet) { resetWhy(); target = null; }
+    /* the trigger can have been filtered out by the very change we just made */
+    var back = (lastTrigger && document.contains(lastTrigger) &&
+                (lastTrigger.offsetWidth || lastTrigger.offsetHeight))
+      ? lastTrigger
+      : document.querySelector('.fchip[aria-pressed="true"]');
+    if (back) back.focus();
+    lastTrigger = null;
+  }
+  document.querySelectorAll('[data-close]').forEach(function (b) {
+    b.addEventListener('click', function () { closeSheet(b.closest('.sheet')); });
+  });
+  document.addEventListener('keydown', function (e) {
+    var open = document.querySelector('.sheet[open]');
+    if (e.key === 'Escape') {
+      if (open) closeSheet(open);
+      closeMenus();
+      return;
+    }
+    if (e.key !== 'Tab' || !open) return;
+    var f = focusablesIn(open);
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
+  var moreBtn = document.getElementById('moreBtn');
+  var moreSheet = document.getElementById('moreSheet');
+  if (moreBtn) moreBtn.addEventListener('click', function () { openSheet(moreSheet, moreBtn); });
+
+  /* ── Attendance: open the dialog, then repaint the card in place ────── */
+  var attendSheet = document.getElementById('attendSheet');
+  var attendWho = document.getElementById('attendWho');
+  var whyRow = document.getElementById('whyRow');
+  var whySave = document.getElementById('whySave');
+  var cancelOpt = document.querySelector('.opt--cancelled');
+  var rchips = document.querySelectorAll('.rchip');
+  var target = null;
+  var reason = null;
+
+  function resetWhy() {
+    whyRow.hidden = true;
+    cancelOpt.setAttribute('aria-expanded', 'false');
+    rchips.forEach(function (r) { r.setAttribute('aria-pressed', 'false'); });
+    whySave.disabled = true;
+    reason = null;
+  }
+
+  document.querySelectorAll('[data-act="attend"]').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      closeMenus();
+      target = b.closest('.lcard');
+      var name = target.querySelector('.lcard__name').textContent;
+      var date = target.querySelector('.datepill').textContent.trim();
+      var time = target.querySelector('.lcard__time').textContent.trim();
+      attendWho.textContent = name + ' · ' + date + ' · ' + time;
+      resetWhy();
+      openSheet(attendSheet, b);
+    });
+  });
+
+  rchips.forEach(function (r) {
+    r.addEventListener('click', function () {
+      rchips.forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+      r.setAttribute('aria-pressed', 'true');
+      reason = r.getAttribute('data-reason');
+      whySave.disabled = false;
+    });
+  });
+  whySave.addEventListener('click', function () { applyStatus('cancelled', reason); });
+
+  var LABEL = { complete: 'Complete', cancelled: 'Cancelled', pending: 'Pending' };
+  var WARN_SVG = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+
+  function tagsOf(card) {
+    var tags = card.querySelector('.lcard__tags');
+    if (!tags) {
+      tags = document.createElement('div');
+      tags.className = 'lcard__tags';
+      card.insertBefore(tags, card.querySelector('.lcard__foot'));
+    }
+    return tags;
+  }
+  function writeReason(card, text) {
+    var el = card.querySelector('.reason');
+    if (!el) {
+      el = document.createElement('span');
+      el.className = 'reason';
+      tagsOf(card).appendChild(el);
+    }
+    el.innerHTML = WARN_SVG + ' ' + text;
+
+    /* CANCELLED is never charged — say so next to the frozen rate */
+    var meta = card.querySelector('.lcard__meta');
+    if (meta && !meta.querySelector('.billnote')) {
+      var sep = document.createElement('span');
+      sep.className = 'sep billnote';
+      sep.setAttribute('aria-hidden', 'true');
+      var note = document.createElement('span');
+      note.className = 'billnote';
+      note.textContent = 'not billed';
+      meta.appendChild(sep);
+      meta.appendChild(note);
+    }
+  }
+
+  function applyStatus(next, why) {
+    if (!target) return;
+    target.setAttribute('data-status', next);
+
+    var chip = target.querySelector('.lcard__top .chip');
+    chip.className = 'chip chip--' + next;
+    chip.textContent = LABEL[next];
+
+    if (next === 'cancelled' && why) writeReason(target, why);
+
+    var cta = target.querySelector('.lcard__cta');
+    if (next === 'complete') {
+      cta.className = 'btn btn--ghost lcard__cta';
+      cta.textContent = 'Update';
+    } else {
+      cta.className = 'btn btn--primary lcard__cta';
+      cta.textContent = 'Mark attendance';
+    }
+    target = null;
+    applyFilter();            /* the set changed — re-announce it */
+    closeSheet(attendSheet);  /* …then hand focus back to something still visible */
+  }
+
+  document.querySelectorAll('.opt[data-set]').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      if (!target) return;
+      var next = opt.getAttribute('data-set');
+      /* Cancelled promises a reason, so collect one instead of applying blind */
+      if (next === 'cancelled') {
+        whyRow.hidden = false;
+        cancelOpt.setAttribute('aria-expanded', 'true');
+        var first = whyRow.querySelector('.rchip');
+        if (first) first.focus();
+        return;
+      }
+      applyStatus(next, null);
+    });
+  });
+
+  applyFilter();
+})();
+</script>
+</body>
+</html>

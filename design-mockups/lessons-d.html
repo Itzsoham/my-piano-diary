@@ -1,0 +1,1800 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Diary — Lessons · Sticker Board</title>
+<link rel="stylesheet" href="_theme.css">
+
+<style>
+  /* ======================================================================
+     LESSONS · VARIANT D — "Sticker Board"
+     The lessons list as a pinboard of taped-in diary cards.
+     Screen-specific CSS only. Every colour/radius/shadow/type token comes
+     from _theme.css; new shades are derived with color-mix().
+
+     ORNAMENT BUDGET (2): washi-tape strips + one blossom on the empty state.
+     Everything else — dates, money, status — stays sober and tabular.
+     ====================================================================== */
+
+  :root { --on-mint: #14332e; }
+
+  /* ── Shell (identical convention to dashboard-a / lessons-a) ───────── */
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* ── Sidebar ───────────────────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 14px 16px;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    scrollbar-width: none;
+    z-index: 50;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 2px; }
+  .brand-logo {
+    width: 42px; height: 42px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--grad-brand);
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .brand-text { min-width: 0; display: block; }
+  .brand-name { display: block; font: 700 15px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; }
+  .brand-tag { display: block; font: var(--t-small); font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+
+  .side-cta { width: 100%; }
+
+  .nav-group + .nav-group { margin-top: 18px; }
+  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  .nav-list { list-style: none; display: grid; gap: 3px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 12px;
+    min-height: var(--tap);
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    font: 600 13.5px/1 var(--font-sans);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-link svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link[aria-current="page"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .nav-link[aria-current="page"] svg { color: var(--pink-600); opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    font: 700 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    background: var(--wait-bg);
+    color: var(--wait-fg);
+    padding: 4px 7px;
+    border-radius: var(--r-pill);
+  }
+
+  .side-foot { margin-top: auto; padding-top: 14px; position: relative; }
+  .user-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    text-align: left;
+    transition: background var(--dur) var(--ease);
+  }
+  .user-btn:hover { background: var(--surface-2); }
+  .user-meta { min-width: 0; flex: 1; display: block; }
+  .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
+  .user-mail {
+    display: block;
+    font: 400 11px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .user-btn svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+
+  .user-menu {
+    list-style: none;
+    margin-top: 6px;
+    padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .user-menu a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .user-menu a:hover { background: var(--surface-2); color: var(--ink); }
+  .user-menu svg { width: 16px; height: 16px; }
+  .user-menu[hidden] { display: none !important; }
+
+  /* ── Main ──────────────────────────────────────────────────────────── */
+  .main {
+    min-width: 0;
+    /* top padding clears the fixed variant badge at every width */
+    padding: clamp(40px, 3vw, 46px) clamp(14px, 2.4vw, 32px) 48px;
+    display: grid;
+    gap: clamp(16px, 2vw, 22px);
+    align-content: start;
+  }
+
+  /* ── Page header ───────────────────────────────────────────────────── */
+  .pagehead { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .pagehead-l { min-width: 0; flex: 1 1 260px; }
+  .pagehead-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .hamburger { display: none; }
+
+  .page-h1 {
+    position: relative;
+    display: inline-block;
+    font: var(--t-h1);
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    padding-bottom: 4px;
+  }
+  /* Hand-drawn underline instead of a straight rule. Decorative only. */
+  .squig {
+    position: absolute;
+    left: 0; right: 0; bottom: -3px;
+    width: 100%; height: 8px;
+    overflow: visible;
+  }
+  .page-sub { margin-top: 10px; font: var(--t-small); color: var(--ink-soft); }
+
+  /* ── Filter chips — scroll-snapping, finger-sized ──────────────────── */
+  .filterbar { margin: 0 -4px; padding: 2px 4px 6px; scroll-snap-type: x proximity; }
+  .filterbar-in { display: flex; gap: 9px; width: max-content; min-width: 100%; }
+  .fchip {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: var(--tap);
+    padding: 0 17px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--sh-xs);
+    font: 650 13px/1 var(--font-sans);
+    color: var(--ink-soft);
+    white-space: nowrap;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+                box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .fchip:hover { background: var(--surface-2); color: var(--ink); }
+  .fchip .fdot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .fdot--ok { background: var(--ok-dot); }
+  .fdot--no { background: var(--no-dot); }
+  .fdot--wait { background: var(--wait-dot); }
+  .fchip .fcount {
+    font: 700 11px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    padding: 4px 7px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
+  /* Selected chip carries small 13px text, so it uses the DEEP end of the pink
+     ramp (--pink-600 → --pink-700), not --grad-pink: white clears 4.6:1 on both
+     stops. --grad-pink is reserved for the big .btn--primary label. */
+  .fchip[aria-pressed="true"] {
+    background: linear-gradient(135deg, var(--pink-600), var(--pink-700));
+    border-color: transparent;
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .fchip[aria-pressed="true"] .fcount {
+    background: rgba(255, 255, 255, .92);
+    color: var(--pink-700);
+  }
+  .fchip[aria-pressed="true"] .fdot { box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); }
+
+  /* ── Real controls — soft pills that wrap ──────────────────────────── */
+  .controls { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .ctl {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: var(--tap);
+    padding: 0 14px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--sh-xs);
+    color: var(--ink);
+  }
+  .ctl:focus-within { border-color: var(--bubblegum); box-shadow: var(--sh-sm); }
+  .ctl > svg { width: 16px; height: 16px; color: var(--teal-600); flex: 0 0 auto; }
+  .ctl-lab { font: 600 12px/1 var(--font-sans); color: var(--ink-soft); white-space: nowrap; }
+  .ctl select,
+  .ctl input {
+    border: 0;
+    background: transparent;
+    font: 650 13px/1 var(--font-sans);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    min-height: 42px;
+    padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .ctl select { padding-right: 2px; max-width: 160px; }
+  .ctl .chev { width: 14px; height: 14px; color: var(--ink-faint); flex: 0 0 auto; }
+  /* The whole date pill is the tap target — the native indicator is stretched
+     invisibly across it rather than sitting next to our own calendar icon. */
+  .ctl--date input::-webkit-calendar-picker-indicator {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .btn-reset { color: var(--pink-700); }
+  .btn-reset:hover { background: var(--pink-50); color: var(--pink-700); }
+
+  /* ── Result line — HONEST about billing ────────────────────────────── */
+  .result {
+    display: flex; align-items: center; gap: 8px 10px;
+    flex-wrap: wrap;
+    padding: 13px 16px;
+    border-radius: var(--r-lg);
+    background: linear-gradient(100deg, var(--teal-100), var(--pink-100));
+    border: 1px solid var(--line);
+    font: 600 12.5px/1.4 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .result b {
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .result .r-money { color: var(--teal-700); }
+  .result .r-seg { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .result .r-seg i { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .result .sep { color: var(--ink-faint); }
+  .result-note {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 11px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 76%, transparent);
+    font: 600 11.5px/1.3 var(--font-sans);
+    color: var(--teal-700);
+    white-space: nowrap;
+  }
+  .result-note svg { width: 13px; height: 13px; flex: 0 0 auto; }
+
+  /* ── Section headings ──────────────────────────────────────────────── */
+  .sec-title {
+    font: var(--t-label);
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  /* Real data (a date range, a hint) — so --ink-soft, never --ink-faint. */
+  .sec-note {
+    text-transform: none;
+    letter-spacing: 0;
+    font: 400 11.5px/1.4 var(--font-sans);
+    color: var(--ink-soft);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     THE STICKER BOARD
+     ═════════════════════════════════════════════════════════════════════ */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 258px), 1fr));
+    align-items: start;              /* natural heights → pinboard rhythm */
+    column-gap: 18px;
+    row-gap: 30px;                   /* room for the tape strip overhang */
+    padding-top: 12px;
+  }
+
+  .sticker {
+    --rot: 0deg;
+    --edge: var(--line-strong);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 18px 16px;
+    border-radius: var(--r-xl);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    /* the inset shadow paints the 4px status edge and hugs the radius */
+    box-shadow: var(--sh), inset 4px 0 0 0 var(--edge);
+    transform: rotate(var(--rot));
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  /* Alternating pin angles — −1° / +0.5° / −0.5° */
+  .board .sticker:nth-child(3n + 1) { --rot: -1deg; }
+  .board .sticker:nth-child(3n + 2) { --rot: 0.5deg; }
+  .board .sticker:nth-child(3n + 3) { --rot: -0.5deg; }
+
+  .sticker:hover,
+  .sticker:focus-within,
+  .sticker.is-menu-open {
+    --rot: 0deg;
+    transform: rotate(0deg) translateY(-4px);
+    box-shadow: var(--sh-lg), inset 4px 0 0 0 var(--edge);
+    z-index: 5;
+  }
+  .sticker.is-menu-open { z-index: 30; }
+
+  /* Under a fingertip the rotation games stop — nothing shifts on tap. */
+  @media (hover: none) {
+    .board .sticker,
+    .board .sticker:nth-child(3n + 1),
+    .board .sticker:nth-child(3n + 2),
+    .board .sticker:nth-child(3n + 3) { --rot: 0deg; }
+    .sticker:hover,
+    .sticker:focus-within,
+    .sticker.is-menu-open { transform: none; }
+  }
+
+  .sticker[data-status="complete"]  { --edge: var(--ok-dot); }
+  .sticker[data-status="cancelled"] { --edge: var(--no-dot); }
+  .sticker[data-status="pending"]   { --edge: var(--wait-dot); }
+
+  /* Washi tape — ORNAMENT 1. Decorative, never announced, never clickable. */
+  .tape {
+    position: absolute;
+    top: -10px; left: 50%;
+    width: 84px; height: 21px;
+    transform: translateX(-50%) rotate(-1.6deg);
+    border-radius: 2px;
+    background: repeating-linear-gradient(
+      118deg,
+      color-mix(in srgb, var(--cotton) 90%, transparent) 0 7px,
+      color-mix(in srgb, var(--cotton) 58%, #fff) 7px 14px
+    );
+    box-shadow: var(--sh-xs);
+    pointer-events: none;
+  }
+  .board .sticker:nth-child(2n) .tape {
+    transform: translateX(-50%) rotate(1.9deg);
+    background: repeating-linear-gradient(
+      118deg,
+      color-mix(in srgb, var(--mint) 92%, transparent) 0 7px,
+      color-mix(in srgb, var(--mint) 55%, #fff) 7px 14px
+    );
+  }
+
+  /* ── Card interior — deliberately sober ────────────────────────────── */
+  .s-top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; flex-wrap: wrap;
+    margin-bottom: 13px;
+  }
+  .datepill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 11px;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .datepill b {
+    font: 700 11px/1 var(--font-num);
+    letter-spacing: .06em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .datepill time {
+    font: 600 11.5px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+  .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-faint); flex: 0 0 auto; }
+
+  .s-who { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .s-who-t { min-width: 0; flex: 1; display: block; }
+  .s-name {
+    display: block;
+    font: 700 14.5px/1.3 var(--font-sans);
+    color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .s-piece {
+    display: block;
+    margin-top: 2px;
+    font: italic 400 12.5px/1.35 var(--font-sans);
+    color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* "No piece set" is real state, not chrome — it keeps --ink-soft (5.1:1). */
+  .s-piece.is-none { font-style: normal; color: var(--ink-soft); }
+
+  .s-meta {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    margin-top: 13px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line-strong);
+    font: 600 12.5px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .s-money { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .s-money.is-void { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--no-fg); font-weight: 600; }
+  .s-meta .chip { margin-left: auto; }
+
+  /* CANCELLED — desaturated frame, but the TEXT keeps full contrast. */
+  .sticker--cancelled {
+    background: linear-gradient(165deg, color-mix(in srgb, var(--no-bg) 34%, var(--surface)), var(--surface) 62%);
+    border-color: var(--line-pink);
+  }
+  .sticker--cancelled .av { filter: grayscale(.5); }
+  .sticker--cancelled .tape { filter: grayscale(.55); opacity: .8; }
+  .sticker--cancelled .s-name {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: color-mix(in srgb, var(--no-fg) 55%, transparent);
+    color: var(--ink-soft);
+  }
+  .sticker--cancelled .datepill { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+  .s-reason {
+    display: flex; align-items: flex-start; gap: 7px;
+    margin-top: 11px;
+    padding: 8px 11px;
+    border-radius: var(--r-sm);
+    background: var(--no-bg);
+    color: var(--no-fg);            /* 5.24:1 on --no-bg */
+    font: 600 12px/1.35 var(--font-sans);
+  }
+  .s-reason svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 1px; }
+
+  /* ── Card actions ──────────────────────────────────────────────────── */
+  .s-actions {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+  }
+  .s-actions .s-primary { flex: 1 1 auto; min-width: 0; }
+  .s-menu-wrap { position: relative; flex: 0 0 auto; }
+  .s-more { color: var(--ink-soft); }
+  .s-more svg { width: 18px; height: 18px; }
+
+  .s-menu {
+    position: absolute;
+    right: 0; bottom: calc(100% + 8px);
+    z-index: 40;
+    width: 186px;
+    list-style: none;
+    padding: 6px;
+    border-radius: var(--r-md);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .s-menu[hidden] { display: none !important; }
+  .s-menu button {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 0 11px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+    text-align: left;
+  }
+  .s-menu button:hover { background: var(--surface-2); color: var(--ink); }
+  .s-menu button svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  .s-menu .is-danger { color: var(--pink-700); }
+  .s-menu .is-danger:hover { background: var(--pink-50); color: var(--pink-700); }
+
+  /* Avatar fills — tokenised, so no inline style= on a single avatar. */
+  .av--mint { background: var(--grad-mint); color: var(--on-mint); }
+  .av--pink { background: var(--grad-pink); color: var(--ink-invert); }
+  .av--sand { background: var(--sand-300); color: var(--sand-700); }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     EMPTY STATE — the app's real copy, plus ORNAMENT 2 (the blossom).
+     ═════════════════════════════════════════════════════════════════════ */
+  .empty {
+    position: relative;
+    display: grid; place-items: center;
+    gap: 6px;
+    padding: clamp(28px, 5vw, 48px) 24px;
+    border-radius: var(--r-2xl);
+    border: 2px dashed var(--bubblegum);
+    background: var(--pink-50);
+    text-align: center;
+    overflow: hidden;
+  }
+  .empty-blossom {
+    position: absolute;
+    top: 14px; right: 16px;
+    width: 58px; height: 58px;
+    color: var(--cotton);
+    pointer-events: none;
+    animation: twinkle 5.5s var(--ease) infinite;
+    transform-origin: 50% 50%;
+  }
+  .empty-blossom--sm {
+    top: auto; right: auto;
+    bottom: 16px; left: 20px;
+    width: 34px; height: 34px;
+    color: var(--mint);
+    animation-delay: 1.4s;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .55; transform: scale(1) rotate(0deg); }
+    50%      { opacity: .95; transform: scale(1.06) rotate(8deg); }
+  }
+  .empty-key { font-size: 34px; line-height: 1; }
+  .empty h3 { font: 700 17px/1.3 var(--font-sans); color: var(--ink); }
+  .empty p { font: var(--t-body); color: var(--ink-soft); max-width: 34ch; }
+  .empty .btn { margin-top: 12px; }
+
+  /* ── Toast (the app's real string) ─────────────────────────────────── */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 24px;
+    transform: translateX(-50%) translateY(10px);
+    z-index: 90;
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 12px 18px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-lg);
+    font: 650 13px/1 var(--font-sans);
+    color: var(--ink);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .toast.is-on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast svg { width: 17px; height: 17px; color: var(--ok-fg); }
+
+  /* ── Off-canvas chrome ─────────────────────────────────────────────── */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease);
+  }
+  body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+  .tabbar { display: none; }
+
+  /* ── Variant badge ─────────────────────────────────────────────────── */
+  .variant-badge {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    pointer-events: none;
+  }
+
+  /* ======================================================================
+     RESPONSIVE
+     ====================================================================== */
+
+  /* Tablet landscape 1024–1279 → icon rail */
+  @media (max-width: 1279px) {
+    .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+    .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
+    .brand { justify-content: center; padding: 4px 0; }
+    .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
+    .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
+
+    /* Labels are CLIPPED, never display:none — display:none would strip every
+       icon-only control of its accessible name (the icons are aria-hidden). */
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .nav-group + .nav-group { margin-top: 12px; position: relative; padding-top: 12px; }
+    .nav-group + .nav-group::before {
+      content: ""; position: absolute; top: 0; left: 14%; right: 14%;
+      height: 1px; background: var(--line);
+    }
+    .user-btn { width: var(--tap); padding: 0; justify-content: center; border-radius: 50%; }
+    .user-meta, .user-btn > svg { display: none; }
+    .user-menu {
+      position: absolute;
+      bottom: 0; left: calc(100% + 8px);
+      width: 200px;
+      margin-top: 0;
+      z-index: 70;
+    }
+  }
+
+  /* Below 1024 → off-canvas drawer + bottom tab bar */
+  @media (max-width: 1023px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 280px;
+      padding: 20px 14px 16px;
+      align-items: stretch;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform .28s var(--ease);
+      z-index: 60;
+    }
+    body.nav-open .sidebar { transform: none; }
+    .brand { justify-content: flex-start; padding: 6px 8px 2px; }
+    .brand-text, .brand-tag, .nav-group > .label { display: block; }
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: static;
+      width: auto; height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+    }
+    .nav-badge { display: inline-block; }
+    .nav-link { justify-content: flex-start; padding: 0 12px; width: auto; }
+    .nav-link span { display: inline; }
+    .nav-link .nav-badge { display: inline-block; margin-left: auto; }
+    .side-cta { width: 100%; padding: 0 18px; border-radius: var(--r-pill); }
+    .side-cta span { display: inline; }
+    .nav-group + .nav-group { position: static; padding-top: 0; margin-top: 18px; }
+    .nav-group + .nav-group::before { content: none; }
+    .user-btn { width: 100%; padding: 8px 10px; justify-content: flex-start; border-radius: var(--r-md); }
+    .user-meta { display: block; }
+    .user-btn > svg { display: block; }
+    .user-menu { display: grid; position: static; width: auto; margin-top: 6px; }
+
+    .main { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + 24px); }
+    .hamburger { display: inline-flex; }
+    .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+
+    .tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+    }
+    .tab {
+      display: grid; place-items: center; gap: 3px;
+      min-height: var(--tap);
+      padding: 5px 2px;
+      border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1.2 var(--font-sans);
+    }
+    .tab svg { width: 21px; height: 21px; }
+    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+  }
+
+  /* Phone */
+  @media (max-width: 639px) {
+    .page-h1 { font-size: 20px; }
+    .result-note { margin-left: 0; }
+    .pagehead-r .btn span { display: none; }
+    .pagehead-r .btn { width: var(--tap); padding: 0; border-radius: 50%; }
+    .ctl select { max-width: 118px; }
+    .board { row-gap: 26px; }
+  }
+</style>
+
+<div class="variant-badge print-hide">Lessons · Sticker Board</div>
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+    <a class="brand" href="/dashboard" title="My Piano Diary">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/dashboard" title="Dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/>
+                <rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+              </svg>
+              <span>Calendar</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/lessons" aria-current="page" title="Lessons">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/>
+              </svg>
+              <span>Lessons</span>
+              <span class="nav-badge">6</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/students" title="Students">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+              </svg>
+              <span>Students</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/pieces" title="Pieces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+              </svg>
+              <span>Pieces</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/reports" title="Reports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+              <span>Reports</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/payments" title="Payments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>
+              </svg>
+              <span>Payments</span>
+              <span class="nav-badge">4</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+        <span class="av" aria-hidden="true">LD</span>
+        <span class="user-meta">
+          <span class="user-name">Linh Đặng</span>
+          <span class="user-mail">linh@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+        </svg>
+      </button>
+      <ul class="user-menu" id="userMenu" hidden>
+        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main">
+
+    <!-- ───────── Page header ───────── -->
+    <header class="pagehead rise" style="--i:0">
+      <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <div class="pagehead-l">
+        <h1 class="page-h1">
+          Lessons &amp; Attendance
+          <svg class="squig" viewBox="0 0 220 8" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M2 5.4C22 1.6 38 7.4 58 4.2 78 1 96 7.6 116 4.6c20-3 38 3.4 58 .6 16-2.2 30 1.6 44 .8"
+                  fill="none" stroke="var(--bubblegum)" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+        </h1>
+        <p class="page-sub">Track every beautiful session</p>
+      </div>
+
+      <div class="pagehead-r">
+        <button class="btn btn--primary" type="button" aria-label="Add lesson">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+          </svg>
+          <span>Add lesson</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ───────── Filter chips ───────── -->
+    <div class="filterbar scroll-x no-scrollbar rise" style="--i:1">
+      <div class="filterbar-in" role="group" aria-label="Filter lessons">
+        <button class="fchip" type="button" data-filter="all" aria-pressed="false">
+          All lessons <span class="fcount">14</span>
+        </button>
+        <button class="fchip" type="button" data-filter="today" aria-pressed="false">
+          Today <span class="fcount">4</span>
+        </button>
+        <button class="fchip" type="button" data-filter="week" aria-pressed="true">
+          This week <span class="fcount">14</span>
+        </button>
+        <button class="fchip" type="button" data-filter="complete" aria-pressed="false">
+          <span class="fdot fdot--ok" aria-hidden="true"></span>Complete <span class="fcount">5</span>
+        </button>
+        <button class="fchip" type="button" data-filter="cancelled" aria-pressed="false">
+          <span class="fdot fdot--no" aria-hidden="true"></span>Cancelled <span class="fcount">3</span>
+        </button>
+        <button class="fchip" type="button" data-filter="pending" aria-pressed="false">
+          <span class="fdot fdot--wait" aria-hidden="true"></span>Pending <span class="fcount">6</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ───────── Real controls ───────── -->
+    <div class="controls rise" style="--i:2">
+      <label class="ctl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+        </svg>
+        <span class="ctl-lab">Student</span>
+        <select id="fStudent" aria-label="Filter by student">
+          <option value="">All students</option>
+          <option>Nguyễn Minh Anh</option>
+          <option>Trần Bảo Ngọc</option>
+          <option>Lê Gia Hân</option>
+          <option>Emma Thompson</option>
+          <option>Phạm Quốc Bảo</option>
+          <option>Olivia Nguyen</option>
+          <option>Đỗ Khánh Linh</option>
+          <option>Liam Carter</option>
+          <option>Vũ Thanh Trúc</option>
+          <option>Hoàng Nam Phong</option>
+          <option>Nguyễn Gia Hân</option>
+        </select>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </label>
+
+      <label class="ctl ctl--date">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+        </svg>
+        <span class="ctl-lab">From</span>
+        <input type="date" id="fFrom" value="2026-07-13" aria-label="From date">
+      </label>
+
+      <label class="ctl ctl--date">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+        </svg>
+        <span class="ctl-lab">To</span>
+        <input type="date" id="fTo" value="2026-07-19" aria-label="To date">
+      </label>
+
+      <button class="btn btn--quiet btn-reset" type="button" id="btnReset">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/>
+        </svg>
+        Reset
+      </button>
+    </div>
+
+    <!-- ───────── Result line — only COMPLETE lessons are billable ───────── -->
+    <p class="result rise" id="result" style="--i:3" role="status" aria-live="polite">
+      <b id="rCount">14 lessons</b>
+      <span class="sep" aria-hidden="true">·</span>
+      <span class="r-seg"><b class="r-money" id="rMoney">1.450.000 ₫</b> billable <span id="rComplete">(5 complete)</span></span>
+      <span class="sep" aria-hidden="true">·</span>
+      <span class="r-seg"><i class="fdot--wait" aria-hidden="true"></i><b id="rPending">6</b> pending</span>
+      <span class="sep" aria-hidden="true">·</span>
+      <span class="r-seg"><i class="fdot--no" aria-hidden="true"></i><b id="rCancelled">3</b> cancelled</span>
+      <span class="result-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        Pending &amp; cancelled are never billed
+      </span>
+    </p>
+
+    <!-- ═══════════════ THE STICKER BOARD ═══════════════ -->
+    <section aria-labelledby="boardTitle">
+      <h2 class="sec-title" id="boardTitle">
+        Lesson board
+        <span class="sec-note">— This week · Mon 13 – Sun 19 July 2026</span>
+      </h2>
+
+      <div class="board" id="board">
+
+        <!-- 1 · COMPLETE -->
+        <article class="sticker rise" data-status="complete" data-date="2026-07-13" data-student="Nguyễn Minh Anh" data-rate="300000" style="--i:1" aria-labelledby="n1">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 13</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-13T09:00">9:00 AM</time></span>
+            <span class="chip chip--complete">Complete</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg" aria-hidden="true">MA</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n1">Nguyễn Minh Anh</span>
+              <span class="s-piece">Für Elise</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>60 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 300.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m1" aria-label="More actions for Nguyễn Minh Anh, 13 July 9:00 AM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m1" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 2 · COMPLETE -->
+        <article class="sticker rise" data-status="complete" data-date="2026-07-13" data-student="Trần Bảo Ngọc" data-rate="250000" style="--i:2" aria-labelledby="n2">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 13</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-13T10:30">10:30 AM</time></span>
+            <span class="chip chip--complete">Complete</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--mint" aria-hidden="true">BN</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n2">Trần Bảo Ngọc</span>
+              <span class="s-piece">Clair de Lune</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 250.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m2" aria-label="More actions for Trần Bảo Ngọc, 13 July 10:30 AM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m2" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 3 · CANCELLED -->
+        <article class="sticker sticker--cancelled rise" data-status="cancelled" data-date="2026-07-13" data-student="Lê Gia Hân" data-rate="250000" style="--i:3" aria-labelledby="n3">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 13</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-13T16:00">4:00 PM</time></span>
+            <span class="chip chip--cancelled">Cancelled</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--sand" aria-hidden="true">GH</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n3">Lê Gia Hân</span>
+              <span class="s-piece">Minuet in G</span>
+            </span>
+          </div>
+          <p class="s-reason">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            <span><span class="sr-only">Cancellation reason: </span>Reason: Sick</span>
+          </p>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money is-void">đ 250.000<span class="sr-only"> — not billed</span></span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m3" aria-label="More actions for Lê Gia Hân, 13 July 4:00 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m3" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 4 · COMPLETE -->
+        <article class="sticker rise" data-status="complete" data-date="2026-07-13" data-student="Emma Thompson" data-rate="350000" style="--i:4" aria-labelledby="n4">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 13</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-13T18:00">6:00 PM</time></span>
+            <span class="chip chip--complete">Complete</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--pink" aria-hidden="true">ET</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n4">Emma Thompson</span>
+              <span class="s-piece">Nocturne Op.9 No.2</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>60 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 350.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m4" aria-label="More actions for Emma Thompson, 13 July 6:00 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m4" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 5 · COMPLETE -->
+        <article class="sticker rise" data-status="complete" data-date="2026-07-14" data-student="Phạm Quốc Bảo" data-rate="250000" style="--i:5" aria-labelledby="n5">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 14</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-14T09:00">9:00 AM</time></span>
+            <span class="chip chip--complete">Complete</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg" aria-hidden="true">QB</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n5">Phạm Quốc Bảo</span>
+              <span class="s-piece">Turkish March</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 250.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m5" aria-label="More actions for Phạm Quốc Bảo, 14 July 9:00 AM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m5" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 6 · COMPLETE -->
+        <article class="sticker rise" data-status="complete" data-date="2026-07-14" data-student="Olivia Nguyen" data-rate="300000" style="--i:6" aria-labelledby="n6">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 14</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-14T14:00">2:00 PM</time></span>
+            <span class="chip chip--complete">Complete</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--mint" aria-hidden="true">ON</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n6">Olivia Nguyen</span>
+              <span class="s-piece">Gymnopédie No.1</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>60 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 300.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m6" aria-label="More actions for Olivia Nguyen, 14 July 2:00 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m6" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 7 · PENDING · ONLINE -->
+        <article class="sticker rise" data-status="pending" data-date="2026-07-14" data-student="Đỗ Khánh Linh" data-rate="220000" style="--i:7" aria-labelledby="n7">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 14</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-14T16:30">4:30 PM</time></span>
+            <span class="chip chip--pending">Pending</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--pink" aria-hidden="true">KL</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n7">Đỗ Khánh Linh</span>
+              <span class="s-piece">River Flows in You</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 220.000</span>
+            <span class="chip chip--online">💻 Online</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--primary s-primary" type="button" data-act="mark">Mark Attendance</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m7" aria-label="More actions for Đỗ Khánh Linh, 14 July 4:30 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m7" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 8 · PENDING — the OPEN ⋯ menu -->
+        <article class="sticker rise is-menu-open" data-status="pending" data-date="2026-07-14" data-student="Liam Carter" data-rate="320000" style="--i:8" aria-labelledby="n8">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 14</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-14T18:00">6:00 PM</time></span>
+            <span class="chip chip--pending">Pending</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--sand" aria-hidden="true">LC</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n8">Liam Carter</span>
+              <span class="s-piece">Arabesque No.1</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>60 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 320.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--primary s-primary" type="button" data-act="mark">Mark Attendance</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="true" aria-controls="m8" aria-label="More actions for Liam Carter, 14 July 6:00 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m8" role="menu">
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 9 · PENDING -->
+        <article class="sticker rise" data-status="pending" data-date="2026-07-15" data-student="Vũ Thanh Trúc" data-rate="250000" style="--i:9" aria-labelledby="n9">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 15</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-15T09:30">9:30 AM</time></span>
+            <span class="chip chip--pending">Pending</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg" aria-hidden="true">TT</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n9">Vũ Thanh Trúc</span>
+              <span class="s-piece">Prelude in C</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 250.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--primary s-primary" type="button" data-act="mark">Mark Attendance</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m9" aria-label="More actions for Vũ Thanh Trúc, 15 July 9:30 AM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m9" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 10 · CANCELLED -->
+        <article class="sticker sticker--cancelled rise" data-status="cancelled" data-date="2026-07-15" data-student="Hoàng Nam Phong" data-rate="250000" style="--i:10" aria-labelledby="n10">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 15</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-15T15:00">3:00 PM</time></span>
+            <span class="chip chip--cancelled">Cancelled</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--mint" aria-hidden="true">NP</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n10">Hoàng Nam Phong</span>
+              <span class="s-piece">Sonatina in G</span>
+            </span>
+          </div>
+          <p class="s-reason">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            <span><span class="sr-only">Cancellation reason: </span>Reason: Family trip to Hội An</span>
+          </p>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money is-void">đ 250.000<span class="sr-only"> — not billed</span></span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m10" aria-label="More actions for Hoàng Nam Phong, 15 July 3:00 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m10" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 11 · PENDING -->
+        <article class="sticker rise" data-status="pending" data-date="2026-07-16" data-student="Nguyễn Gia Hân" data-rate="300000" style="--i:11" aria-labelledby="n11">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 16</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-16T10:00">10:00 AM</time></span>
+            <span class="chip chip--pending">Pending</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--pink" aria-hidden="true">GH</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n11">Nguyễn Gia Hân</span>
+              <span class="s-piece">Turkish March</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>60 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 300.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--primary s-primary" type="button" data-act="mark">Mark Attendance</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m11" aria-label="More actions for Nguyễn Gia Hân, 16 July 10:00 AM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m11" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 12 · PENDING · ONLINE -->
+        <article class="sticker rise" data-status="pending" data-date="2026-07-16" data-student="Emma Thompson" data-rate="260000" style="--i:12" aria-labelledby="n12">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 16</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-16T17:00">5:00 PM</time></span>
+            <span class="chip chip--pending">Pending</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--pink" aria-hidden="true">ET</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n12">Emma Thompson</span>
+              <span class="s-piece">Nocturne Op.9 No.2</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 260.000</span>
+            <span class="chip chip--online">💻 Online</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--primary s-primary" type="button" data-act="mark">Mark Attendance</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m12" aria-label="More actions for Emma Thompson, 16 July 5:00 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m12" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 13 · CANCELLED -->
+        <article class="sticker sticker--cancelled rise" data-status="cancelled" data-date="2026-07-17" data-student="Trần Bảo Ngọc" data-rate="250000" style="--i:13" aria-labelledby="n13">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 17</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-17T16:00">4:00 PM</time></span>
+            <span class="chip chip--cancelled">Cancelled</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg av--mint" aria-hidden="true">BN</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n13">Trần Bảo Ngọc</span>
+              <span class="s-piece">Clair de Lune</span>
+            </span>
+          </div>
+          <p class="s-reason">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            <span><span class="sr-only">Cancellation reason: </span>Reason: School exam week</span>
+          </p>
+          <div class="s-meta">
+            <span>45 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money is-void">đ 250.000<span class="sr-only"> — not billed</span></span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--ghost s-primary" type="button" data-act="update">Update</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m13" aria-label="More actions for Trần Bảo Ngọc, 17 July 4:00 PM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m13" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 14 · PENDING -->
+        <article class="sticker rise" data-status="pending" data-date="2026-07-18" data-student="Nguyễn Minh Anh" data-rate="300000" style="--i:14" aria-labelledby="n14">
+          <span class="tape" aria-hidden="true"></span>
+          <div class="s-top">
+            <span class="datepill"><b>JUL 18</b><i class="dot" aria-hidden="true"></i><time datetime="2026-07-18T10:00">10:00 AM</time></span>
+            <span class="chip chip--pending">Pending</span>
+          </div>
+          <div class="s-who">
+            <span class="av av--lg" aria-hidden="true">MA</span>
+            <span class="s-who-t">
+              <span class="s-name" id="n14">Nguyễn Minh Anh</span>
+              <span class="s-piece is-none">No piece set</span>
+            </span>
+          </div>
+          <div class="s-meta">
+            <span>60 min</span><i class="dot" aria-hidden="true"></i>
+            <span class="s-money">đ 300.000</span>
+          </div>
+          <div class="s-actions">
+            <button class="btn btn--primary s-primary" type="button" data-act="mark">Mark Attendance</button>
+            <div class="s-menu-wrap">
+              <button class="btn btn--ghost btn--icon s-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="m14" aria-label="More actions for Nguyễn Minh Anh, 18 July 10:00 AM">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+              </button>
+              <ul class="s-menu" id="m14" role="menu" hidden>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><button role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>Mark attendance</button></li>
+                <li role="none"><button class="is-danger" role="menuitem" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+      </div><!-- /.board -->
+
+      <!-- shown only when a filter matches nothing -->
+      <p class="sec-note" id="noMatch" hidden style="padding:24px 4px">
+        No lessons match these filters 🎀 — try “All lessons” or press Reset.
+      </p>
+    </section>
+
+    <!-- ═══════════════ EMPTY STATE (reference) ═══════════════ -->
+    <section aria-labelledby="emptyTitle">
+      <h2 class="sec-title" id="emptyTitle">
+        Empty state
+        <span class="sec-note">— what a brand-new studio sees on /lessons</span>
+      </h2>
+
+      <div class="empty">
+        <!-- ORNAMENT 2: the blossom. Decorative, silent, untouchable. -->
+        <svg class="empty-blossom" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+          <g fill="currentColor">
+            <ellipse cx="20" cy="8"  rx="6" ry="8"/>
+            <ellipse cx="31.4" cy="16.3" rx="6" ry="8" transform="rotate(72 31.4 16.3)"/>
+            <ellipse cx="27.1" cy="29.7" rx="6" ry="8" transform="rotate(144 27.1 29.7)"/>
+            <ellipse cx="12.9" cy="29.7" rx="6" ry="8" transform="rotate(216 12.9 29.7)"/>
+            <ellipse cx="8.6"  cy="16.3" rx="6" ry="8" transform="rotate(288 8.6 16.3)"/>
+          </g>
+          <circle cx="20" cy="20" r="4.6" fill="var(--bubblegum)"/>
+        </svg>
+        <svg class="empty-blossom empty-blossom--sm" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+          <g fill="currentColor">
+            <ellipse cx="20" cy="8"  rx="6" ry="8"/>
+            <ellipse cx="31.4" cy="16.3" rx="6" ry="8" transform="rotate(72 31.4 16.3)"/>
+            <ellipse cx="27.1" cy="29.7" rx="6" ry="8" transform="rotate(144 27.1 29.7)"/>
+            <ellipse cx="12.9" cy="29.7" rx="6" ry="8" transform="rotate(216 12.9 29.7)"/>
+            <ellipse cx="8.6"  cy="16.3" rx="6" ry="8" transform="rotate(288 8.6 16.3)"/>
+          </g>
+          <circle cx="20" cy="20" r="4.6" fill="var(--wintergreen)"/>
+        </svg>
+
+        <span class="empty-key" aria-hidden="true">🎹</span>
+        <h3>No lessons scheduled yet</h3>
+        <p>Your piano week is waiting for music.</p>
+        <button class="btn btn--primary" type="button">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+          </svg>
+          Add lesson
+        </button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════ MOBILE TAB BAR ═══════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+    Students
+  </a>
+  <!-- "More" keeps Pieces · Reports · Payments · Profile reachable below 1024. -->
+  <button class="tab" type="button" id="tabMore" aria-label="More navigation" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    More
+  </button>
+</nav>
+
+<div class="toast print-hide" id="toast" role="status" aria-live="polite">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+  <span id="toastMsg">Attendance marked 💗</span>
+</div>
+
+<script>
+  (function () {
+    'use strict';
+
+    /* ══ Off-canvas navigation (below 1024px) — same contract as dashboard-a ══
+       Below 1024 the sidebar is a MODAL drawer: closed → inert & out of the tab
+       order; open → dialog semantics, focus trap, focus returned to its opener. */
+    var body = document.body;
+    var backdrop = document.getElementById('backdrop');
+    var sidebar = document.getElementById('sidebar');
+    var toggles = [document.getElementById('navToggle'), document.getElementById('tabMore')];
+    var drawerMQ = window.matchMedia('(max-width: 1023px)');
+    var opener = null;
+
+    function isOpen() { return body.classList.contains('nav-open'); }
+
+    function syncSidebar() {
+      if (drawerMQ.matches) {
+        sidebar.setAttribute('role', 'dialog');
+        sidebar.setAttribute('aria-modal', 'true');
+        sidebar.setAttribute('aria-label', 'Navigation');
+        if (isOpen()) sidebar.removeAttribute('inert');
+        else sidebar.setAttribute('inert', '');
+      } else {
+        sidebar.removeAttribute('role');
+        sidebar.removeAttribute('aria-modal');
+        sidebar.removeAttribute('inert');
+        sidebar.setAttribute('aria-label', 'Main navigation');
+      }
+    }
+
+    function focusables() {
+      var nodes = sidebar.querySelectorAll('a[href], button:not([disabled])');
+      return Array.prototype.filter.call(nodes, function (el) {
+        return el.offsetWidth > 0 || el.offsetHeight > 0;
+      });
+    }
+
+    function setNav(open, from) {
+      var was = isOpen();
+      body.classList.toggle('nav-open', open);
+      toggles.forEach(function (t) { if (t) t.setAttribute('aria-expanded', String(open)); });
+
+      if (open) {
+        opener = from || opener || toggles[0];
+        syncSidebar();                    /* drop inert BEFORE focusing */
+        var first = sidebar.querySelector('.nav-link');
+        if (first) first.focus();
+      } else {
+        userExpand(false);
+        syncSidebar();                    /* re-apply inert */
+        if (was && drawerMQ.matches && opener) opener.focus();
+        opener = null;
+      }
+    }
+
+    toggles.forEach(function (t) {
+      if (t) t.addEventListener('click', function () { setNav(!isOpen(), t); });
+    });
+    backdrop.addEventListener('click', function () { setNav(false); });
+
+    function onBreakpoint() {
+      if (!drawerMQ.matches && isOpen()) setNav(false);
+      else syncSidebar();
+    }
+    if (drawerMQ.addEventListener) drawerMQ.addEventListener('change', onBreakpoint);
+    else drawerMQ.addListener(onBreakpoint);
+
+    /* ══ Footer user dropdown ══ */
+    var userBtn = document.getElementById('userBtn');
+    var userMenu = document.getElementById('userMenu');
+    function userExpand(open) {
+      userMenu.hidden = !open;
+      userBtn.setAttribute('aria-expanded', String(open));
+    }
+    userBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      userExpand(userMenu.hidden);
+    });
+
+    /* ══ Sticker ⋯ menus ══ */
+    var board = document.getElementById('board');
+    var cards = Array.prototype.slice.call(board.querySelectorAll('.sticker'));
+
+    function closeMenus(except) {
+      cards.forEach(function (card) {
+        if (card === except) return;
+        var btn = card.querySelector('.s-more');
+        var menu = card.querySelector('.s-menu');
+        menu.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+        card.classList.remove('is-menu-open');
+      });
+    }
+
+    board.addEventListener('click', function (e) {
+      var more = e.target.closest('.s-more');
+      if (more) {
+        e.stopPropagation();
+        var card = more.closest('.sticker');
+        var menu = card.querySelector('.s-menu');
+        var willOpen = menu.hidden;
+        closeMenus(card);
+        menu.hidden = !willOpen;
+        more.setAttribute('aria-expanded', String(willOpen));
+        card.classList.toggle('is-menu-open', willOpen);
+        return;
+      }
+
+      /* Mark attendance → the lesson becomes COMPLETE (the only billable state). */
+      var prim = e.target.closest('[data-act="mark"]');
+      if (prim) {
+        var c = prim.closest('.sticker');
+        setComplete(c);
+        toast('Attendance marked 💗');
+        recount();
+        return;
+      }
+
+      var menuItem = e.target.closest('.s-menu button');
+      if (menuItem) closeMenus(null);
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!userMenu.hidden && !userMenu.contains(e.target) && !userBtn.contains(e.target)) userExpand(false);
+      if (!board.contains(e.target)) closeMenus(null);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (isOpen()) { setNav(false); return; }
+        userExpand(false);
+        closeMenus(null);
+        return;
+      }
+      /* Focus trap — only while the drawer is a modal. */
+      if (e.key !== 'Tab' || !isOpen() || !drawerMQ.matches) return;
+      var list = focusables();
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    function setComplete(card) {
+      card.dataset.status = 'complete';
+      card.classList.remove('sticker--cancelled');
+      var chip = card.querySelector('.s-top .chip');
+      chip.className = 'chip chip--complete';
+      chip.textContent = 'Complete';
+      var money = card.querySelector('.s-money');
+      money.classList.remove('is-void');
+      var reason = card.querySelector('.s-reason');
+      if (reason) reason.remove();
+      var btn = card.querySelector('.s-primary');
+      btn.className = 'btn btn--ghost s-primary';
+      btn.dataset.act = 'update';
+      btn.textContent = 'Update';
+    }
+
+    /* ══ Toast ══ */
+    var toastEl = document.getElementById('toast');
+    var toastMsg = document.getElementById('toastMsg');
+    var toastTimer;
+    function toast(msg) {
+      toastMsg.textContent = msg;
+      toastEl.classList.add('is-on');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toastEl.classList.remove('is-on'); }, 2600);
+    }
+
+    /* ══ Filters ══ */
+    var TODAY = '2026-07-14';
+    var chips = Array.prototype.slice.call(document.querySelectorAll('.fchip'));
+    var selStudent = document.getElementById('fStudent');
+    var inFrom = document.getElementById('fFrom');
+    var inTo = document.getElementById('fTo');
+    var noMatch = document.getElementById('noMatch');
+    var active = 'week';
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        active = chip.dataset.filter;
+        chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c === chip)); });
+        apply();
+      });
+    });
+    [selStudent, inFrom, inTo].forEach(function (el) { el.addEventListener('change', apply); });
+
+    document.getElementById('btnReset').addEventListener('click', function () {
+      active = 'all';
+      chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c.dataset.filter === 'all')); });
+      selStudent.value = '';
+      inFrom.value = '';
+      inTo.value = '';
+      apply();
+    });
+
+    function matches(card) {
+      var st = card.dataset.status;
+      var d = card.dataset.date;
+
+      if (active === 'today' && d !== TODAY) return false;
+      if ((active === 'complete' || active === 'cancelled' || active === 'pending') && st !== active) return false;
+      /* "week" and "all" are both the full set in this snapshot (Mon 13 – Sun 19). */
+
+      if (selStudent.value && card.dataset.student !== selStudent.value) return false;
+      if (inFrom.value && d < inFrom.value) return false;
+      if (inTo.value && d > inTo.value) return false;
+      return true;
+    }
+
+    function apply() {
+      closeMenus(null);
+      cards.forEach(function (card) { card.hidden = !matches(card); });
+      recount();
+    }
+
+    /* VND: dot grouping, zero decimals, trailing symbol. */
+    function vnd(n) { return n.toLocaleString('de-DE') + ' ₫'; }
+
+    function recount() {
+      var shown = cards.filter(function (c) { return !c.hidden; });
+      var complete = shown.filter(function (c) { return c.dataset.status === 'complete'; });
+      var pending = shown.filter(function (c) { return c.dataset.status === 'pending'; });
+      var cancelled = shown.filter(function (c) { return c.dataset.status === 'cancelled'; });
+
+      /* ONLY complete lessons are billable. Pending and cancelled never count. */
+      var billable = complete.reduce(function (sum, c) { return sum + Number(c.dataset.rate); }, 0);
+
+      document.getElementById('rCount').textContent = shown.length + (shown.length === 1 ? ' lesson' : ' lessons');
+      document.getElementById('rMoney').textContent = vnd(billable);
+      document.getElementById('rComplete').textContent = '(' + complete.length + ' complete)';
+      document.getElementById('rPending').textContent = String(pending.length);
+      document.getElementById('rCancelled').textContent = String(cancelled.length);
+
+      noMatch.hidden = shown.length > 0;
+
+      /* keep the chip counters honest against the current student/date narrowing */
+      var base = cards.filter(function (c) {
+        if (selStudent.value && c.dataset.student !== selStudent.value) return false;
+        if (inFrom.value && c.dataset.date < inFrom.value) return false;
+        if (inTo.value && c.dataset.date > inTo.value) return false;
+        return true;
+      });
+      var by = function (s) { return base.filter(function (c) { return c.dataset.status === s; }).length; };
+      var counts = {
+        all: base.length,
+        week: base.length,
+        today: base.filter(function (c) { return c.dataset.date === TODAY; }).length,
+        complete: by('complete'),
+        cancelled: by('cancelled'),
+        pending: by('pending')
+      };
+      chips.forEach(function (c) {
+        c.querySelector('.fcount').textContent = String(counts[c.dataset.filter]);
+      });
+    }
+
+    syncSidebar();   /* correct state at whatever width we loaded at */
+    recount();
+  })();
+</script>

@@ -1,0 +1,1593 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Diary — Dashboard · Sugar Bloom</title>
+<link rel="stylesheet" href="_theme.css">
+
+<style>
+  /* ======================================================================
+     DASHBOARD · VARIANT D — "Sugar Bloom"
+     The sweet, feminine take. Ornament lives in the frame; the data layer
+     stays crisp, tabular and sober. Screen-specific CSS only — every colour,
+     radius and shadow comes from _theme.css (or color-mix() off its tokens).
+     ORNAMENT BUDGET (max 2 per region):
+       hero    → drifting blobs + scalloped edge   (squiggle = typography, bow = brand mark)
+       kpis    → petal corner + piano-key strip
+       focus   → washi-tape sticker
+       podium  → petal crown + medals
+       insight → sparkle
+       chart   → blossom peak marker (nothing else inside the plot)
+     ====================================================================== */
+
+  :root { --on-mint: #14332e; }
+
+  /* ── Shell (identical conventions to dashboard-a) ──────────────────── */
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* ── Sidebar ───────────────────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 14px 16px;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    scrollbar-width: none;
+    z-index: 50;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 2px; }
+  .brand-logo {
+    width: 42px; height: 42px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--grad-brand);
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+    position: relative;
+  }
+  .brand-logo .bow-tag {
+    position: absolute; top: -7px; right: -6px;
+    width: 18px; height: 18px;
+    color: var(--pink-600);
+    filter: drop-shadow(0 1px 1px rgba(255,255,255,.9));
+  }
+  .brand-text { min-width: 0; display: block; }
+  .brand-name { display: block; font: 700 15px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; }
+  .brand-tag { display: block; font: var(--t-small); font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+
+  .side-cta { width: 100%; }
+
+  .nav-group + .nav-group { margin-top: 18px; }
+  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  .nav-list { list-style: none; display: grid; gap: 3px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 12px;
+    min-height: var(--tap);
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    font: 600 13.5px/1 var(--font-sans);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-link svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link[aria-current="page"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .nav-link[aria-current="page"] svg { color: var(--pink-600); opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    font: 700 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    background: var(--wait-bg); color: var(--wait-fg);
+    padding: 4px 7px; border-radius: var(--r-pill);
+  }
+
+  .side-foot { margin-top: auto; padding-top: 14px; position: relative; }
+  .user-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    text-align: left;
+    transition: background var(--dur) var(--ease);
+  }
+  .user-btn:hover { background: var(--surface-2); }
+  .user-meta { min-width: 0; flex: 1; display: block; }
+  .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
+  .user-mail {
+    display: block; font: 400 11px/1.3 var(--font-sans); color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .user-btn > svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+
+  .user-menu {
+    list-style: none;
+    margin-top: 6px; padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .user-menu a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .user-menu a:hover { background: var(--surface-2); color: var(--ink); }
+  .user-menu svg { width: 16px; height: 16px; }
+  .user-menu[hidden] { display: none !important; }
+
+  /* ── Main ──────────────────────────────────────────────────────────── */
+  .main { min-width: 0; padding-bottom: 40px; }
+
+  /* ══════════ HERO BAND — grad-hero + drifting blobs + scalloped edge ══ */
+  .hero {
+    position: relative;
+    isolation: isolate;
+    background: var(--grad-hero);
+    padding: clamp(44px, 4vw, 58px) clamp(18px, 3vw, 36px) calc(clamp(26px, 2.6vw, 34px) + 14px);
+    /* SIGNATURE MOVE — the one scalloped edge on this page.
+       Layer 1: a row of Ø28px circles pinned to the bottom.
+       Layer 2: the body rect, stopping 14px short = at the circles' centres. */
+    -webkit-mask:
+      radial-gradient(circle 14px at 14px 14px, #000 98%, #0000 100%) 0 100% / 28px 28px repeat-x,
+      linear-gradient(#000 0 0) 0 0 / 100% calc(100% - 14px) no-repeat;
+    mask:
+      radial-gradient(circle 14px at 14px 14px, #000 98%, #0000 100%) 0 100% / 28px 28px repeat-x,
+      linear-gradient(#000 0 0) 0 0 / 100% calc(100% - 14px) no-repeat;
+    filter: drop-shadow(0 16px 26px rgba(60, 90, 92, .14));
+  }
+
+  /* Decorative blobs — aria-hidden, pointer-events:none, clipped by the mask. */
+  .blobs { position: absolute; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; }
+  .blob {
+    position: absolute;
+    border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%;
+    filter: blur(2px);
+    will-change: transform;
+  }
+  .blob-1 {
+    width: 300px; height: 260px; top: -70px; left: -50px;
+    background: color-mix(in srgb, var(--cotton) 70%, transparent);
+    opacity: .55;
+    animation: drift-a 22s var(--ease) infinite alternate;
+  }
+  .blob-2 {
+    width: 240px; height: 220px; bottom: -80px; left: 34%;
+    background: color-mix(in srgb, var(--mint) 66%, transparent);
+    opacity: .5;
+    animation: drift-b 26s var(--ease) infinite alternate;
+  }
+  .blob-3 {
+    width: 340px; height: 300px; top: -90px; right: -70px;
+    background: color-mix(in srgb, var(--mint) 55%, transparent);
+    opacity: .5;
+    animation: drift-a 30s var(--ease) infinite alternate-reverse;
+  }
+  .blob-4 {
+    width: 170px; height: 150px; bottom: -40px; right: 16%;
+    background: color-mix(in srgb, var(--bubblegum) 34%, transparent);
+    opacity: .45;
+    animation: drift-b 19s var(--ease) infinite alternate;
+  }
+  @keyframes drift-a {
+    from { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+    to   { transform: translate3d(26px, 16px, 0) rotate(12deg) scale(1.06); }
+  }
+  @keyframes drift-b {
+    from { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+    to   { transform: translate3d(-22px, -14px, 0) rotate(-10deg) scale(1.08); }
+  }
+
+  .hero-in {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+    max-width: 1240px;
+  }
+  .hero-l { min-width: 0; flex: 1 1 320px; }
+
+  .hero-brand {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 13px 6px 9px;
+    margin-bottom: 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-xs);
+    font: 600 11.5px/1.3 var(--font-sans);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .hero-brand .bow { width: 20px; height: 20px; color: var(--pink-600); flex: 0 0 auto; }
+  .hero-brand em { font-style: normal; color: var(--ink-soft); font-weight: 500; }
+  .hero-brand .sep { color: var(--ink-faint); }
+
+  .h1-wrap { position: relative; display: inline-block; max-width: 100%; padding-bottom: 12px; }
+  .greeting {
+    font: var(--t-display);
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  /* Hand-drawn underline — replaces a straight rule under the H1. */
+  .squiggle {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 11px;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .hero-date {
+    margin-top: 10px;
+    font: 600 14px/1.4 var(--font-sans);
+    color: var(--ink);
+  }
+  .hero-warm {
+    margin-top: 3px;
+    font: var(--t-body);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-warm b { color: var(--pink-700); font-weight: 700; }
+
+  .hero-r { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .hamburger { display: none; }
+
+  /* ── Content grid ──────────────────────────────────────────────────── */
+  .content {
+    padding: clamp(18px, 2vw, 26px) clamp(14px, 2.4vw, 32px) 0;
+    display: grid;
+    gap: clamp(14px, 1.6vw, 22px);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-areas:
+      "k1     k2     k3      k4"
+      "focus  focus  podium  podium"
+      "focus  focus  insight insight"
+      "trend  trend  trend   trend";
+    align-items: start;
+  }
+  .a-k1 { grid-area: k1; } .a-k2 { grid-area: k2; }
+  .a-k3 { grid-area: k3; } .a-k4 { grid-area: k4; }
+  .a-focus { grid-area: focus; }
+  .a-podium { grid-area: podium; }
+  .a-insight { grid-area: insight; }
+  .a-trend { grid-area: trend; }
+
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  .sec-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px; margin-bottom: 12px;
+  }
+  .sec-title { font: var(--t-h2); letter-spacing: -0.01em; color: var(--ink); }
+  .sec-sub { margin-top: 2px; font: var(--t-small); color: var(--ink-soft); }
+
+  /* ══════════ CANDY TILES (the 4 real KPIs) ════════════════════════════
+     Ornament: one petal in the corner + one piano-key strip at the foot.
+     The NUMBER itself is completely undecorated. */
+  .kpi {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--r-xl);
+    padding: 18px;
+    display: flex; flex-direction: column; gap: 6px;
+    min-height: 176px;
+  }
+  .petal {
+    position: absolute;
+    top: -12px; right: -10px;
+    width: 62px; height: 62px;
+    opacity: .5;
+    pointer-events: none;
+  }
+  .petal--pink { color: var(--bubblegum); }
+  .petal--mint { color: var(--wintergreen); opacity: .38; }
+  .kpi .label { padding-right: 44px; }
+  .kpi .metric {
+    margin-top: 2px;
+    font-size: clamp(20px, 2vw, 26px);
+    letter-spacing: -0.025em;
+    white-space: nowrap;
+  }
+  .kpi-cur { font-size: .58em; font-weight: 600; margin-left: 3px; letter-spacing: 0; }
+  .kpi-note {
+    font: var(--t-small);
+    color: var(--ink-soft);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .kpi-note svg { width: 14px; height: 14px; flex: 0 0 auto; }
+  .kpi-foot { margin-top: auto; padding-top: 14px; }
+  .kpi-foot .kpi-scale {
+    display: flex; justify-content: space-between; gap: 8px;
+    margin-top: 7px;
+    font: 600 10.5px/1.2 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* PIANO-KEY MOTIF — a progress strip built from black & white keys. */
+  .keys {
+    position: relative;
+    height: 15px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+  }
+  .keys > i {
+    position: absolute; top: 0; bottom: 0; left: 0;
+    width: var(--p, 50%);
+    background: var(--grad-pink);
+    opacity: .5;
+  }
+  .keys--mint > i { background: var(--grad-mint); opacity: .75; }
+  .keys::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background:
+      /* black keys — groups of 2 and 3, period = 7 white keys (84px) */
+      repeating-linear-gradient(90deg,
+        transparent 0 8px, var(--ink) 8px 14px,
+        transparent 14px 20px, var(--ink) 20px 26px,
+        transparent 26px 42px, var(--ink) 42px 48px,
+        transparent 48px 54px, var(--ink) 54px 60px,
+        transparent 60px 66px, var(--ink) 66px 72px,
+        transparent 72px 84px) top left / 100% 62% no-repeat,
+      /* white-key separators */
+      repeating-linear-gradient(90deg,
+        transparent 0 11px,
+        color-mix(in srgb, var(--ink) 20%, transparent) 11px 12px);
+  }
+
+  /* ── SPOILER card — "Missed This Month" ────────────────────────────── */
+  .t-missed { position: relative; overflow: hidden; }
+  .spoiler-body {
+    display: flex; flex-direction: column; gap: 6px; flex: 1;
+    filter: blur(8px);
+    opacity: .4;
+    transition: filter .45s var(--ease), opacity .45s var(--ease);
+    user-select: none;
+  }
+  .t-missed.is-revealed .spoiler-body { filter: none; opacity: 1; user-select: auto; }
+  .spoiler-veil {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    border-radius: inherit;
+    background: linear-gradient(160deg,
+      color-mix(in srgb, var(--pink-100) 66%, transparent),
+      color-mix(in srgb, var(--surface) 52%, transparent));
+    backdrop-filter: blur(1px);
+    transition: opacity var(--dur) var(--ease);
+    z-index: 2;
+  }
+  .t-missed.is-revealed .spoiler-veil { opacity: 0; pointer-events: none; }
+  .veil-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    min-height: var(--tap);
+    padding: 0 16px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 13px/1 var(--font-sans);
+    color: var(--pink-700);
+  }
+  .spoiler-veil:hover .veil-chip { box-shadow: var(--sh-pink); }
+  .spoiler-hide {
+    position: absolute; top: 8px; right: 8px;
+    width: var(--tap); min-height: var(--tap);
+    display: none; place-items: center;
+    border-radius: 50%;
+    color: var(--ink-soft);
+    z-index: 3;
+  }
+  .spoiler-hide:hover { background: var(--surface-2); color: var(--ink); }
+  .t-missed.is-revealed .spoiler-hide { display: grid; }
+  .spoiler-hide svg { width: 18px; height: 18px; }
+
+  /* ══════════ WASHI-TAPE STICKER — Today's Focus ═══════════════════════ */
+  .sticker {
+    position: relative;
+    margin-top: 12px;
+    transform: rotate(-0.6deg);
+    transform-origin: 50% 0;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .sticker:hover, .sticker:focus-within { transform: rotate(0deg); box-shadow: var(--sh-lg); }
+  /* the tape strip — pseudo-element, so it is never in the a11y tree */
+  .sticker::before {
+    content: "";
+    position: absolute;
+    top: -12px; left: 50%;
+    width: 138px; height: 26px;
+    transform: translateX(-50%) rotate(1.8deg);
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--mint) 82%, transparent),
+      color-mix(in srgb, var(--cotton) 72%, transparent));
+    border-left: 2px dashed color-mix(in srgb, var(--wintergreen) 45%, transparent);
+    border-right: 2px dashed color-mix(in srgb, var(--wintergreen) 45%, transparent);
+    box-shadow: var(--sh-xs);
+    opacity: .92;
+    pointer-events: none;
+  }
+
+  .focus-stat {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 11px 15px;
+    border-radius: var(--r-pill);
+    background: linear-gradient(100deg, var(--teal-100), var(--pink-100));
+    border: 1px solid var(--line);
+    font: 600 12.5px/1.3 var(--font-sans);
+    color: var(--teal-700);
+    margin-bottom: 12px;
+  }
+  .focus-stat b { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 700; }
+  .focus-stat .sep { color: var(--ink-faint); }
+
+  /* The list itself is DELIBERATELY undecorated — sweet frame, sober data. */
+  .focus-list { list-style: none; display: grid; gap: 8px; }
+  .focus-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px 12px;
+    padding: 10px;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    border: 1px solid transparent;
+  }
+  .focus-row.is-cancelled { background: color-mix(in srgb, var(--no-bg) 38%, var(--surface)); }
+  .focus-who { min-width: 0; display: block; }
+  .focus-name {
+    display: block;
+    font: 650 13.5px/1.25 var(--font-sans);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .focus-meta {
+    margin-top: 3px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    font: 400 11.5px/1.3 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .focus-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-faint); flex: 0 0 auto; }
+  .focus-meta .piece { font-style: italic; }
+  /* cancelReason is NOT a piece — it never wears the piece styling. */
+  .focus-meta .reason { color: var(--no-fg); font-style: normal; font-weight: 600; }
+  .focus-meta .chip--online { padding: 3px 8px; font-size: 10.5px; }
+  .focus-end { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .focus-money {
+    font: 700 13px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .focus-money.is-void { text-decoration: line-through; color: var(--no-fg); font-weight: 600; }
+  .focus-act .btn { min-height: var(--tap); padding: 0 16px; }
+  .focus-more {
+    margin-top: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    min-height: var(--tap);
+    border-radius: var(--r-pill);
+    border: 2px dashed var(--bubblegum);
+    color: var(--pink-700);
+    font: 600 12.5px/1 var(--font-sans);
+    background: var(--pink-50);
+  }
+  .focus-more:hover { background: var(--pink-100); }
+  .focus-more svg { width: 15px; height: 15px; }
+
+  /* ══════════ BLOSSOM PODIUM — Top Students This Month ═════════════════ */
+  .podium {
+    list-style: none;
+    display: flex; align-items: flex-end; gap: 8px;
+    margin-top: 4px;
+  }
+  .pod { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .pod--1 { order: 2; } .pod--2 { order: 1; } .pod--3 { order: 3; }
+  .pod-crown { width: 26px; height: 26px; color: var(--bubblegum); }
+  .pod--2 .pod-crown, .pod--3 .pod-crown { visibility: hidden; }
+  .pod-av { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--line-pink); }
+  .pod--1 .pod-av { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--bubblegum); }
+  .pod-name {
+    font: 650 12.5px/1.3 var(--font-sans);
+    color: var(--ink);
+    text-align: center;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .pod-pill {
+    padding: 5px 10px;
+    border-radius: var(--r-pill);
+    background: var(--teal-100);
+    color: var(--teal-700);
+    font: 700 11px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pod-step {
+    width: 100%;
+    display: grid; place-items: center;
+    border-radius: var(--r) var(--r) 6px 6px;
+    font-size: 20px;
+    padding-top: 8px;
+  }
+  .pod--1 .pod-step { height: 66px; background: linear-gradient(180deg, var(--cotton), color-mix(in srgb, var(--cotton) 45%, var(--surface))); border: 1px solid var(--line-pink); }
+  .pod--2 .pod-step { height: 50px; background: linear-gradient(180deg, var(--mint), color-mix(in srgb, var(--mint) 40%, var(--surface))); border: 1px solid var(--line-strong); }
+  .pod--3 .pod-step { height: 40px; background: linear-gradient(180deg, var(--pink-100), var(--surface)); border: 1px solid var(--line-pink); }
+
+  .rank-rest { list-style: none; display: grid; gap: 6px; margin-top: 14px; }
+  .rank-row {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 6px 8px;
+    border-radius: var(--r-md);
+    transition: background var(--dur) var(--ease);
+  }
+  .rank-row:hover { background: var(--surface-2); }
+  .rank-badge {
+    width: 28px; height: 28px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: 9px;
+    font: 700 12px/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    background: var(--pink-100);
+    color: var(--pink-700);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .rank-name {
+    flex: 1; min-width: 0;
+    font: 650 13px/1.3 var(--font-sans);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rank-pill {
+    flex: 0 0 auto;
+    padding: 6px 11px;
+    border-radius: var(--r-pill);
+    background: var(--teal-100);
+    color: var(--teal-700);
+    font: 700 11.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ══════════ QUICK INSIGHTS ═══════════════════════════════════════════ */
+  .ins-hero {
+    position: relative;
+    padding: 16px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+  }
+  .ins-hero .metric { font-size: clamp(21px, 2.2vw, 26px); color: var(--teal-700); }
+  .ins-hero p { margin-top: 4px; font: var(--t-small); color: var(--ink-soft); }
+  .sparkle {
+    position: absolute; top: 12px; right: 14px;
+    width: 26px; height: 26px;
+    color: var(--bubblegum);
+    pointer-events: none;
+    animation: twinkle 2.8s var(--ease) infinite;
+  }
+  .sparkle--sm { width: 14px; height: 14px; top: 30px; right: 40px; animation-delay: .7s; opacity: .7; }
+  @keyframes twinkle {
+    0%, 100% { opacity: .45; transform: scale(.86) rotate(0deg); }
+    50%      { opacity: 1;   transform: scale(1.08) rotate(12deg); }
+  }
+  .ins-minis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .mini { padding: 13px; border-radius: var(--r-md); display: grid; gap: 2px; }
+  .mini b { font: 700 22px/1.1 var(--font-num); font-variant-numeric: tabular-nums; }
+  .mini span { font: 600 11px/1.3 var(--font-sans); letter-spacing: .04em; text-transform: uppercase; }
+  .mini--ok { background: var(--ok-bg); color: var(--ok-fg); }   /* COMPLETE  */
+  .mini--no { background: var(--no-bg); color: var(--no-fg); }   /* CANCELLED */
+
+  .followup {
+    display: flex; align-items: center; gap: 11px;
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: var(--r-md);
+    background: var(--pink-50);
+    border: 1px solid var(--line-pink);
+  }
+  .followup-ico {
+    width: 34px; height: 34px; flex: 0 0 auto;
+    border-radius: 11px; display: grid; place-items: center;
+    background: var(--no-bg); color: var(--no-fg);
+  }
+  .followup-ico svg { width: 17px; height: 17px; }
+  .followup-txt { min-width: 0; flex: 1; display: block; }
+  .followup-txt b { display: block; font: 650 12.5px/1.3 var(--font-sans); color: var(--ink); }
+  .followup-txt span { display: block; font: 400 11.5px/1.35 var(--font-sans); color: var(--ink-soft); }
+  .followup .btn { flex: 0 0 auto; min-height: var(--tap); }
+
+  /* ══════════ TREND CHART — data only, zero ornament in the plot ═══════ */
+  .pill-mint {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 12px;
+    border-radius: var(--r-pill);
+    background: var(--ok-bg);
+    color: var(--ok-fg);
+    font: 700 11.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pill-mint svg { width: 13px; height: 13px; }
+  .chart-wrap { margin: 4px -4px 0; padding: 0 4px; }
+  .chart-wrap svg { min-width: 580px; width: 100%; height: auto; }
+  .chart-legend {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    margin-top: 10px;
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .lg i { width: 10px; height: 10px; border-radius: 3px; display: block; flex: 0 0 auto; }
+
+  /* ── Toast ─────────────────────────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 26px;
+    transform: translate(-50%, 14px);
+    z-index: 80;
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 18px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-lg);
+    font: 650 13px/1 var(--font-sans);
+    color: var(--ink);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+  .toast svg { width: 18px; height: 18px; color: var(--pink-600); }
+
+  /* ── Off-canvas chrome ─────────────────────────────────────────────── */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease);
+  }
+  body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+  .tabbar { display: none; }
+
+  /* ── Variant badge ─────────────────────────────────────────────────── */
+  .variant-badge {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    pointer-events: none;
+  }
+
+  /* ======================================================================
+     RESPONSIVE
+     ====================================================================== */
+
+  /* Tablet landscape 1024–1279 → 76px icon rail */
+  @media (max-width: 1279px) {
+    .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+    .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
+    .brand { justify-content: center; padding: 4px 0; }
+    .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
+    .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
+
+    /* Labels are CLIPPED, never display:none — they are the accessible name
+       of every icon-only control here. */
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .nav-group + .nav-group { margin-top: 12px; position: relative; padding-top: 12px; }
+    .nav-group + .nav-group::before {
+      content: ""; position: absolute; top: 0; left: 14%; right: 14%;
+      height: 1px; background: var(--line);
+    }
+    .user-btn { width: var(--tap); padding: 0; justify-content: center; border-radius: 50%; }
+    .user-meta, .user-btn > svg { display: none; }
+    .user-menu {
+      position: absolute;
+      bottom: 0; left: calc(100% + 8px);
+      width: 200px;
+      margin-top: 0;
+      z-index: 70;
+    }
+
+    .content {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "k1      k2"
+        "k3      k4"
+        "focus   focus"
+        "podium  insight"
+        "trend   trend";
+    }
+  }
+
+  /* Below 1024 → off-canvas drawer + bottom tab bar (+ "More" sheet) */
+  @media (max-width: 1023px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 282px;
+      padding: 20px 14px 16px;
+      align-items: stretch;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform .28s var(--ease);
+      z-index: 60;
+    }
+    body.nav-open .sidebar { transform: none; }
+
+    .brand { justify-content: flex-start; padding: 6px 8px 2px; }
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: static;
+      width: auto; height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+    }
+    .nav-link { justify-content: flex-start; padding: 0 12px; width: auto; }
+    .nav-link .nav-badge { display: inline-block; margin-left: auto; }
+    .side-cta { width: 100%; padding: 0 18px; border-radius: var(--r-pill); }
+    .nav-group + .nav-group { position: static; padding-top: 0; margin-top: 18px; }
+    .nav-group + .nav-group::before { content: none; }
+    .user-btn { width: 100%; padding: 8px 10px; justify-content: flex-start; border-radius: var(--r-md); }
+    .user-meta { display: block; }
+    .user-btn > svg { display: block; }
+    .user-menu { display: grid; position: static; width: auto; margin-top: 6px; }
+
+    .main { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + 20px); }
+    .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+    .hamburger { display: inline-flex; }
+
+    .hero { padding-top: 20px; }
+    .hero-in { align-items: flex-start; }
+    .hero-top {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .content {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "k1      k2"
+        "k3      k4"
+        "focus   focus"
+        "podium  podium"
+        "insight insight"
+        "trend   trend";
+    }
+
+    .tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+    }
+    .tab {
+      display: grid; place-items: center; gap: 3px;
+      min-height: var(--tap);
+      padding: 5px 2px;
+      border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1.2 var(--font-sans);
+    }
+    .tab svg { width: 21px; height: 21px; }
+    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+  }
+
+  /* Phone */
+  @media (max-width: 639px) {
+    .content {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "k1" "k2" "k3" "k4" "focus" "podium" "insight" "trend";
+    }
+    .greeting { font-size: 24px; }
+    .hero-brand em, .hero-brand .sep { display: none; }
+    .focus-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .focus-act { grid-column: 1 / -1; }
+    .focus-act .btn { width: 100%; }
+    .sticker { transform: none; }              /* no rotation in a 1-col phone layout */
+    .sticker::before { width: 118px; }
+    .pod-name { font-size: 11.5px; }
+    .ins-minis { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+<!-- ═══ Inline SVG sprite — every ornament in one place. Decorative only. ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- 5-petal blossom: bullet, rating mark, section ornament, peak marker -->
+    <symbol id="i-blossom" viewBox="0 0 24 24">
+      <g fill="currentColor">
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(72 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(144 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(216 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(288 12 12)"/>
+      </g>
+      <circle cx="12" cy="12" r="2.7" fill="#ffffff" opacity=".9"/>
+    </symbol>
+    <!-- 4-point sparkle -->
+    <symbol id="i-sparkle" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12 1.4c.95 5.5 4.15 8.7 9.65 9.65v1.9c-5.5.95-8.7 4.15-9.65 9.65h-1.9C9.15 17.1 5.95 13.9.45 12.95v-1.9C5.95 10.1 9.15 6.9 10.1 1.4z"/>
+    </symbol>
+    <!-- ribbon bow — the brand mark ornament -->
+    <symbol id="i-bow" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.4 12C9.6 9.1 7.4 7.6 5.4 7.6 3.5 7.6 2.2 8.9 2.2 10.8c0 2.6 2.1 4.6 4.9 4.6 1.7 0 3.2-1.2 4.3-3.4z"/>
+      <path fill="currentColor" d="M12.6 12c1.8-2.9 4-4.4 6-4.4 1.9 0 3.2 1.3 3.2 3.2 0 2.6-2.1 4.6-4.9 4.6-1.7 0-3.2-1.2-4.3-3.4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M10.7 13.7 9.1 19.6M13.3 13.7l1.6 5.9"/>
+      <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="variant-badge print-hide">Dashboard · Sugar Bloom</div>
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+    <a class="brand" href="/dashboard" title="My Piano Diary">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+        </svg>
+        <svg class="bow-tag"><use href="#i-bow"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/dashboard" aria-current="page" title="Dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/>
+                <rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+              </svg>
+              <span>Calendar</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="/lessons" title="Lessons">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/>
+              </svg>
+              <span>Lessons</span>
+              <span class="nav-badge">5</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/students" title="Students">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+              </svg>
+              <span>Students</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/pieces" title="Pieces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+              </svg>
+              <span>Pieces</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/reports" title="Reports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+              <span>Reports</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="/payments" title="Payments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>
+              </svg>
+              <span>Payments</span>
+              <span class="nav-badge">4</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+        <span class="av" aria-hidden="true">LD</span>
+        <span class="user-meta">
+          <span class="user-name">Linh Đặng</span>
+          <span class="user-mail">linh@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+        </svg>
+      </button>
+      <ul class="user-menu" id="userMenu" hidden>
+        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main">
+
+    <!-- ───────── HERO BAND ───────── -->
+    <header class="hero">
+      <!-- ORNAMENT 1 · drifting blobs -->
+      <div class="blobs" aria-hidden="true">
+        <span class="blob blob-1"></span>
+        <span class="blob blob-2"></span>
+        <span class="blob blob-3"></span>
+        <span class="blob blob-4"></span>
+      </div>
+      <!-- ORNAMENT 2 · the scalloped bottom edge (CSS mask on .hero) -->
+
+      <div class="hero-in">
+        <div class="hero-l">
+          <div class="hero-top">
+            <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle"
+                    aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+
+            <span class="hero-brand">
+              <svg class="bow" aria-hidden="true"><use href="#i-bow"/></svg>
+              <span>My Piano Diary</span>
+              <span class="sep" aria-hidden="true">·</span>
+              <em>Personal teaching space</em>
+            </span>
+          </div>
+
+          <span class="h1-wrap">
+            <h1 class="greeting">Good afternoon, Linh <span aria-hidden="true">✨</span></h1>
+            <!-- hand-drawn underline, not a straight rule -->
+            <svg class="squiggle" viewBox="0 0 260 11" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M3 7.6C34 2.4 52 10.4 84 5.6c32-4.8 50 5.2 82 .8 26-3.6 60 2.4 89 1.2"
+                    fill="none" stroke="var(--bubblegum)" stroke-width="3.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+
+          <p class="hero-date">Tuesday, July 14th</p>
+          <p class="hero-warm"><b>5 lessons</b> today · <b>1.050.000 ₫</b> expected · 1 cancelled</p>
+        </div>
+
+        <div class="hero-r">
+          <button class="btn btn--primary" type="button">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+            </svg>
+            Add lesson
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ───────── KPI 1 · This Month Revenue ───────── -->
+      <section class="card card--pink kpi a-k1 rise" style="--i:1" aria-labelledby="k1t">
+        <svg class="petal petal--pink" aria-hidden="true"><use href="#i-blossom"/></svg>
+        <span class="label" id="k1t">This Month Revenue</span>
+        <div class="metric num" style="color:var(--ink)">20.550.000<span class="kpi-cur">₫</span></div>
+        <p class="kpi-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/></svg>
+          July · 23 lessons billed
+        </p>
+        <div class="kpi-foot">
+          <div class="keys" role="img" aria-label="Day 14 of 31 — 45% of July elapsed"><i style="--p:45%"></i></div>
+          <p class="kpi-scale"><span>Day 14</span><span>31 days</span></p>
+        </div>
+      </section>
+
+      <!-- ───────── KPI 2 · Missed This Month (SPOILER) ───────── -->
+      <section class="card card--pink kpi t-missed a-k2 rise" id="missedCard" style="--i:2" aria-labelledby="k2t">
+        <div class="spoiler-body" id="missedBody">
+          <svg class="petal petal--pink" aria-hidden="true"><use href="#i-blossom"/></svg>
+          <span class="label" id="k2t">Missed This Month</span>
+          <div class="metric num" style="color:var(--no-fg)">850.000<span class="kpi-cur">₫</span></div>
+          <p class="kpi-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            3 CANCELLED lessons · never billed
+          </p>
+          <div class="kpi-foot">
+            <div class="keys" role="img" aria-label="3 cancelled of 26 lessons — 12%"><i style="--p:12%"></i></div>
+            <p class="kpi-scale"><span>3 cancelled</span><span>26 lessons</span></p>
+          </div>
+        </div>
+
+        <button class="spoiler-veil" id="missedVeil" type="button" aria-controls="missedBody" aria-expanded="false">
+          <span class="veil-chip">Click to reveal 👀</span>
+        </button>
+
+        <button class="spoiler-hide" id="missedHide" type="button" aria-label="Hide missed amount again">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+        </button>
+      </section>
+
+      <!-- ───────── KPI 3 · Collected Last Month ───────── -->
+      <section class="card card--mint kpi a-k3 rise" style="--i:3" aria-labelledby="k3t">
+        <svg class="petal petal--mint" aria-hidden="true"><use href="#i-blossom"/></svg>
+        <span class="label" id="k3t">Collected Last Month</span>
+        <div class="metric num" style="color:var(--teal-700)">24.900.000<span class="kpi-cur">₫</span></div>
+        <p class="kpi-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+          June · 12 of 16 sheets settled
+        </p>
+        <div class="kpi-foot">
+          <div class="keys keys--mint" role="img" aria-label="89% of June expected amount collected"><i style="--p:89%"></i></div>
+          <p class="kpi-scale"><span>89% collected</span><span>28.100.000 ₫</span></p>
+        </div>
+      </section>
+
+      <!-- ───────── KPI 4 · Outstanding Last Month ───────── -->
+      <section class="card kpi a-k4 rise" style="--i:4" aria-labelledby="k4t">
+        <svg class="petal petal--mint" aria-hidden="true"><use href="#i-blossom"/></svg>
+        <span class="label" id="k4t">Outstanding Last Month</span>
+        <div class="metric num" style="color:var(--wait-fg)">3.200.000<span class="kpi-cur">₫</span></div>
+        <p class="kpi-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          June · 4 unpaid sheets
+        </p>
+        <div class="kpi-foot">
+          <div class="keys" role="img" aria-label="11% of June expected amount still outstanding"><i style="--p:11%"></i></div>
+          <p class="kpi-scale"><span>11% unpaid</span><span>28.100.000 ₫</span></p>
+        </div>
+      </section>
+
+      <!-- ───────── TODAY'S FOCUS · washi-tape sticker card ───────── -->
+      <section class="card card--mint sticker a-focus rise" style="--i:5" aria-labelledby="focusTitle">
+        <div class="sec-head">
+          <div>
+            <h2 class="sec-title" id="focusTitle">Today's Focus 🎹</h2>
+            <p class="sec-sub">Tuesday, July 14th · pinned to the diary</p>
+          </div>
+        </div>
+
+        <p class="focus-stat">
+          <span>Today's Total</span>
+          <span class="sep" aria-hidden="true">·</span>
+          <b>1.050.000 ₫</b>
+          <span class="sep" aria-hidden="true">·</span>
+          <b>5 lessons</b>
+        </p>
+
+        <ul class="focus-list">
+          <li class="focus-row">
+            <span class="av" aria-hidden="true">TT</span>
+            <span class="focus-who">
+              <span class="focus-name">Vũ Thanh Trúc</span>
+              <span class="focus-meta">
+                <span>08:00</span><i class="dot" aria-hidden="true"></i><span>45 min</span><i class="dot" aria-hidden="true"></i>
+                <span class="chip chip--online">Online</span>
+                <i class="dot" aria-hidden="true"></i><span class="piece">Gymnopédie No.1</span>
+              </span>
+            </span>
+            <span class="focus-end">
+              <span class="chip chip--complete">Present</span>
+              <span class="focus-money">200.000 ₫</span>
+            </span>
+            <span class="focus-act"><button class="btn btn--ghost btn--sm" type="button">Update</button></span>
+          </li>
+
+          <li class="focus-row">
+            <span class="av" aria-hidden="true">MA</span>
+            <span class="focus-who">
+              <span class="focus-name">Nguyễn Minh Anh</span>
+              <span class="focus-meta">
+                <span>09:30</span><i class="dot" aria-hidden="true"></i><span>60 min</span><i class="dot" aria-hidden="true"></i>
+                <span class="piece">Für Elise</span>
+              </span>
+            </span>
+            <span class="focus-end">
+              <span class="chip chip--complete">Present</span>
+              <span class="focus-money">250.000 ₫</span>
+            </span>
+            <span class="focus-act"><button class="btn btn--ghost btn--sm" type="button">Update</button></span>
+          </li>
+
+          <li class="focus-row">
+            <span class="av av--mint" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">ET</span>
+            <span class="focus-who">
+              <span class="focus-name">Emma Thompson</span>
+              <span class="focus-meta">
+                <span>11:00</span><i class="dot" aria-hidden="true"></i><span>45 min</span><i class="dot" aria-hidden="true"></i>
+                <span class="chip chip--online">Online</span>
+                <i class="dot" aria-hidden="true"></i><span class="piece">River Flows in You</span>
+              </span>
+            </span>
+            <span class="focus-end">
+              <span class="chip chip--complete">Present</span>
+              <span class="focus-money">200.000 ₫</span>
+            </span>
+            <span class="focus-act"><button class="btn btn--ghost btn--sm" type="button">Update</button></span>
+          </li>
+
+          <li class="focus-row is-cancelled">
+            <span class="av" aria-hidden="true" style="background:var(--grad-pink)">BN</span>
+            <span class="focus-who">
+              <span class="focus-name">Trần Bảo Ngọc</span>
+              <span class="focus-meta">
+                <span>14:00</span><i class="dot" aria-hidden="true"></i><span>60 min</span><i class="dot" aria-hidden="true"></i>
+                <span class="reason">Cancelled: Family trip to Hội An</span>
+              </span>
+            </span>
+            <span class="focus-end">
+              <span class="chip chip--cancelled">Cancelled</span>
+              <span class="focus-money is-void">300.000 ₫</span>
+            </span>
+            <span class="focus-act"><button class="btn btn--ghost btn--sm" type="button">Update</button></span>
+          </li>
+
+          <li class="focus-row" data-pending>
+            <span class="av av--mint" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">LC</span>
+            <span class="focus-who">
+              <span class="focus-name">Liam Carter</span>
+              <span class="focus-meta">
+                <span>16:00</span><i class="dot" aria-hidden="true"></i><span>60 min</span><i class="dot" aria-hidden="true"></i>
+                <span class="chip chip--online">Online</span>
+                <i class="dot" aria-hidden="true"></i><span class="piece">Turkish March</span>
+              </span>
+            </span>
+            <span class="focus-end">
+              <span class="chip chip--pending">Pending</span>
+              <span class="focus-money">200.000 ₫</span>
+            </span>
+            <span class="focus-act"><button class="btn btn--mint btn--sm js-mark" type="button">Mark</button></span>
+          </li>
+
+          <li class="focus-row" data-pending>
+            <span class="av" aria-hidden="true" style="background:var(--grad-pink)">GH</span>
+            <span class="focus-who">
+              <span class="focus-name">Lê Gia Hân</span>
+              <span class="focus-meta">
+                <span>17:30</span><i class="dot" aria-hidden="true"></i><span>45 min</span><i class="dot" aria-hidden="true"></i>
+                <span class="piece">Minuet in G</span>
+              </span>
+            </span>
+            <span class="focus-end">
+              <span class="chip chip--pending">Pending</span>
+              <span class="focus-money">200.000 ₫</span>
+            </span>
+            <span class="focus-act"><button class="btn btn--mint btn--sm js-mark" type="button">Mark</button></span>
+          </li>
+        </ul>
+
+        <a class="focus-more" href="/calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          Open the calendar · tomorrow has 4 lessons
+        </a>
+      </section>
+
+      <!-- ───────── TOP STUDENTS · blossom podium ───────── -->
+      <section class="card a-podium rise" style="--i:6" aria-labelledby="podTitle">
+        <div class="sec-head">
+          <div>
+            <h2 class="sec-title" id="podTitle">Top Students This Month</h2>
+            <p class="sec-sub">By lessons attended · July</p>
+          </div>
+        </div>
+
+        <ol class="podium">
+          <li class="pod pod--1">
+            <svg class="pod-crown" aria-hidden="true"><use href="#i-blossom"/></svg>
+            <span class="av av--lg pod-av" aria-hidden="true">MA</span>
+            <span class="pod-name">Nguyễn Minh Anh</span>
+            <span class="pod-pill">9 lessons</span>
+            <span class="pod-step"><span aria-hidden="true">🥇</span><span class="sr-only">1st place</span></span>
+          </li>
+          <li class="pod pod--2">
+            <svg class="pod-crown" aria-hidden="true"><use href="#i-blossom"/></svg>
+            <span class="av av--lg pod-av" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">QB</span>
+            <span class="pod-name">Phạm Quốc Bảo</span>
+            <span class="pod-pill">8 lessons</span>
+            <span class="pod-step"><span aria-hidden="true">🥈</span><span class="sr-only">2nd place</span></span>
+          </li>
+          <li class="pod pod--3">
+            <svg class="pod-crown" aria-hidden="true"><use href="#i-blossom"/></svg>
+            <span class="av av--lg pod-av" aria-hidden="true" style="background:var(--grad-pink)">ET</span>
+            <span class="pod-name">Emma Thompson</span>
+            <span class="pod-pill">7 lessons</span>
+            <span class="pod-step"><span aria-hidden="true">🥉</span><span class="sr-only">3rd place</span></span>
+          </li>
+        </ol>
+
+        <ol class="rank-rest" start="4">
+          <li>
+            <a class="rank-row" href="/students/gia-han">
+              <span class="rank-badge num" aria-hidden="true">4</span>
+              <span class="av av--sm" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">GH</span>
+              <span class="rank-name">Lê Gia Hân</span>
+              <span class="rank-pill">6 lessons</span>
+            </a>
+          </li>
+          <li>
+            <a class="rank-row" href="/students/thanh-truc">
+              <span class="rank-badge num" aria-hidden="true">5</span>
+              <span class="av av--sm" aria-hidden="true">TT</span>
+              <span class="rank-name">Vũ Thanh Trúc</span>
+              <span class="rank-pill">6 lessons</span>
+            </a>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ───────── QUICK INSIGHTS ───────── -->
+      <section class="card card--mint a-insight rise" style="--i:7" aria-labelledby="insTitle">
+        <div class="sec-head">
+          <div>
+            <h2 class="sec-title" id="insTitle">Quick Insights</h2>
+            <p class="sec-sub">Patterns worth a glance</p>
+          </div>
+        </div>
+
+        <div class="ins-hero">
+          <svg class="sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>
+          <svg class="sparkle sparkle--sm" aria-hidden="true"><use href="#i-sparkle"/></svg>
+          <span class="label">Best day</span>
+          <div class="metric num">Monday</div>
+          <p>Your strongest this month.</p>
+        </div>
+
+        <div class="ins-minis">
+          <div class="mini mini--ok"><b class="num">23</b><span>Taught</span></div>
+          <div class="mini mini--no"><b class="num">3</b><span>Cancelled</span></div>
+        </div>
+
+        <div class="followup">
+          <span class="followup-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <span class="followup-txt">
+            <b>Follow-up list</b>
+            <span>4 students have not attended in the last 14 days.</span>
+          </span>
+          <a class="btn btn--ghost btn--sm" href="/students">View</a>
+        </div>
+      </section>
+
+      <!-- ───────── EARNINGS TREND ───────── -->
+      <section class="card a-trend rise" style="--i:8" aria-labelledby="trendTitle">
+        <div class="sec-head">
+          <div>
+            <h2 class="sec-title" id="trendTitle">Earnings Trend This Month</h2>
+            <p class="sec-sub">Daily billed revenue · July 1 – 14 · COMPLETE lessons only</p>
+          </div>
+          <span class="pill-mint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+            87% completion
+          </span>
+        </div>
+
+        <div class="chart-wrap scroll-x">
+          <svg viewBox="0 0 760 262" role="img" aria-label="Area chart of daily billed earnings, July 1 to 14. Peak 2,55 million dong on Monday July 13. Sundays July 5 and 12 are zero. Today, July 14, is 1,05 million dong so far.">
+            <defs>
+              <linearGradient id="sbArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--bubblegum)" stop-opacity=".45"/>
+                <stop offset="52%" stop-color="var(--mint)" stop-opacity=".30"/>
+                <stop offset="100%" stop-color="var(--floss)" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="sbLine" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="var(--pink-500)"/>
+                <stop offset="100%" stop-color="var(--teal-600)"/>
+              </linearGradient>
+            </defs>
+
+            <!-- gridlines + y ticks -->
+            <g stroke="var(--line)" stroke-width="1">
+              <line x1="64" y1="20" x2="748" y2="20"/>
+              <line x1="64" y1="83.3" x2="748" y2="83.3"/>
+              <line x1="64" y1="146.7" x2="748" y2="146.7"/>
+              <line x1="64" y1="210" x2="748" y2="210" stroke="var(--line-strong)"/>
+            </g>
+            <g fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="end">
+              <text x="54" y="24">3,0 Tr ₫</text>
+              <text x="54" y="87.3">2,0 Tr ₫</text>
+              <text x="54" y="150.7">1,0 Tr ₫</text>
+              <text x="54" y="214">0</text>
+            </g>
+
+            <!-- Sunday columns — studio closed -->
+            <rect x="256" y="20" width="32" height="190" fill="var(--floss)" rx="6"/>
+            <rect x="620" y="20" width="32" height="190" fill="var(--floss)" rx="6"/>
+
+            <!-- area + line -->
+            <path fill="url(#sbArea)" d="M64,134 L116,118.2 L168,102.3 L220,73.8 L272,210 L324,58 L376,143.5 L428,124.5 L480,108.7 L532,96 L584,67.5 L636,210 L688,48.5 L740,143.5 L740,210 L64,210 Z"/>
+            <path fill="none" stroke="url(#sbLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                  d="M64,134 L116,118.2 L168,102.3 L220,73.8 L272,210 L324,58 L376,143.5 L428,124.5 L480,108.7 L532,96 L584,67.5 L636,210 L688,48.5 L740,143.5"/>
+
+            <!-- points -->
+            <g fill="var(--surface)" stroke="var(--teal-600)" stroke-width="2">
+              <circle cx="64" cy="134" r="3.4"/><circle cx="116" cy="118.2" r="3.4"/><circle cx="168" cy="102.3" r="3.4"/>
+              <circle cx="220" cy="73.8" r="3.4"/><circle cx="272" cy="210" r="3.4"/><circle cx="324" cy="58" r="3.4"/>
+              <circle cx="376" cy="143.5" r="3.4"/><circle cx="428" cy="124.5" r="3.4"/><circle cx="480" cy="108.7" r="3.4"/>
+              <circle cx="532" cy="96" r="3.4"/><circle cx="584" cy="67.5" r="3.4"/><circle cx="636" cy="210" r="3.4"/>
+            </g>
+
+            <!-- peak (Mon 13) — the one blossom allowed near the data -->
+            <use href="#i-blossom" x="675" y="35.5" width="26" height="26" style="color:var(--bubblegum)"/>
+            <circle cx="688" cy="48.5" r="3.4" fill="var(--pink-600)"/>
+            <text x="688" y="26" fill="var(--teal-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">2,55 Tr ₫</text>
+
+            <!-- today (Tue 14) -->
+            <line x1="740" y1="20" x2="740" y2="210" stroke="var(--bubblegum)" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <circle cx="740" cy="143.5" r="7" fill="var(--bubblegum)" opacity=".3"/>
+            <circle cx="740" cy="143.5" r="4" fill="var(--pink-600)"/>
+            <text x="736" y="132" fill="var(--pink-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">Today</text>
+
+            <!-- x axis: days 1–14 -->
+            <g fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="middle">
+              <text x="64" y="232">1</text><text x="116" y="232">2</text><text x="168" y="232">3</text>
+              <text x="220" y="232">4</text><text x="272" y="232">5</text><text x="324" y="232">6</text>
+              <text x="376" y="232">7</text><text x="428" y="232">8</text><text x="480" y="232">9</text>
+              <text x="532" y="232">10</text><text x="584" y="232">11</text><text x="636" y="232">12</text>
+              <text x="688" y="232">13</text><text x="740" y="232" fill="var(--pink-700)" font-weight="700">14</text>
+            </g>
+            <text x="406" y="253" fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10.5" text-anchor="middle" letter-spacing="1.4">DAY OF MONTH</text>
+          </svg>
+        </div>
+
+        <div class="chart-legend">
+          <span class="lg"><i style="background:var(--pink-500)"></i> Billed (COMPLETE only)</span>
+          <span class="lg"><i style="background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--line-strong)"></i> Sunday · studio closed</span>
+          <span class="lg"><i style="background:var(--bubblegum)"></i> Today</span>
+        </div>
+      </section>
+
+    </div><!-- /.content -->
+  </main>
+</div>
+
+<!-- ═══════════════ MOBILE TAB BAR (+ "More" opens the full drawer) ═══════════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="/dashboard" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+    Students
+  </a>
+  <button class="tab" type="button" id="tabMore" aria-label="More navigation — Pieces, Reports, Payments, account" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    More
+  </button>
+</nav>
+
+<!-- the app's real success toast -->
+<div class="toast print-hide" id="toast" role="status" aria-live="polite">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.3-9.1C1.3 8.4 3.2 5 6.6 5c2 0 3.5 1.1 4.4 2.6l1 1.6 1-1.6C13.9 6.1 15.4 5 17.4 5c3.4 0 5.3 3.4 3.9 6.9C19.5 16.3 12 21 12 21z"/></svg>
+  <span>Attendance marked 💗</span>
+</div>
+
+<script>
+  (function () {
+    /* ── SPOILER: "Missed This Month" stays blurred until asked for ────── */
+    var card = document.getElementById('missedCard');
+    var veil = document.getElementById('missedVeil');
+    var hide = document.getElementById('missedHide');
+    veil.addEventListener('click', function () {
+      card.classList.add('is-revealed');
+      veil.setAttribute('aria-expanded', 'true');
+      hide.focus();
+    });
+    hide.addEventListener('click', function () {
+      card.classList.remove('is-revealed');
+      veil.setAttribute('aria-expanded', 'false');
+      veil.focus();
+    });
+
+    /* ── Mark attendance → PENDING becomes COMPLETE ("Present") ────────── */
+    var toast = document.getElementById('toast');
+    var toastTimer = null;
+    function showToast() {
+      toast.classList.add('is-on');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toast.classList.remove('is-on'); }, 2600);
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.js-mark'), function (btn) {
+      btn.addEventListener('click', function () {
+        var row = btn.closest('.focus-row');
+        var chip = row.querySelector('.chip--pending');
+        if (chip) {
+          chip.classList.remove('chip--pending');
+          chip.classList.add('chip--complete');
+          chip.textContent = 'Present';
+        }
+        row.removeAttribute('data-pending');
+        btn.classList.remove('btn--mint', 'js-mark');
+        btn.classList.add('btn--ghost');
+        btn.textContent = 'Update';
+        showToast();
+      });
+    });
+
+    /* ── Off-canvas navigation (below 1024px) ──────────────────────────── */
+    var body = document.body;
+    var backdrop = document.getElementById('backdrop');
+    var sidebar = document.getElementById('sidebar');
+    var toggles = [document.getElementById('navToggle'), document.getElementById('tabMore')];
+    var drawerMQ = window.matchMedia('(max-width: 1023px)');
+    var opener = null;
+
+    function isOpen() { return body.classList.contains('nav-open'); }
+
+    function syncSidebar() {
+      if (drawerMQ.matches) {
+        sidebar.setAttribute('role', 'dialog');
+        sidebar.setAttribute('aria-modal', 'true');
+        sidebar.setAttribute('aria-label', 'Navigation');
+        if (isOpen()) sidebar.removeAttribute('inert');
+        else sidebar.setAttribute('inert', '');
+      } else {
+        sidebar.removeAttribute('role');
+        sidebar.removeAttribute('aria-modal');
+        sidebar.removeAttribute('inert');
+        sidebar.setAttribute('aria-label', 'Main navigation');
+      }
+    }
+
+    function focusables() {
+      var nodes = sidebar.querySelectorAll('a[href], button:not([disabled])');
+      return Array.prototype.filter.call(nodes, function (el) {
+        return el.offsetWidth > 0 || el.offsetHeight > 0;
+      });
+    }
+
+    function setNav(open, from) {
+      var was = isOpen();
+      body.classList.toggle('nav-open', open);
+      toggles.forEach(function (t) { if (t) t.setAttribute('aria-expanded', String(open)); });
+      if (open) {
+        opener = from || opener || toggles[0];
+        syncSidebar();                     /* drop inert BEFORE focusing */
+        var first = sidebar.querySelector('.nav-link');
+        if (first) first.focus();
+      } else {
+        userExpand(false);
+        syncSidebar();
+        if (was && drawerMQ.matches && opener) opener.focus();
+        opener = null;
+      }
+    }
+
+    toggles.forEach(function (t) {
+      if (t) t.addEventListener('click', function () { setNav(!isOpen(), t); });
+    });
+    backdrop.addEventListener('click', function () { setNav(false); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (isOpen()) setNav(false);
+        else userExpand(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !isOpen() || !drawerMQ.matches) return;
+      var list = focusables();
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    function onBreakpoint() {
+      if (!drawerMQ.matches && isOpen()) setNav(false);
+      else syncSidebar();
+    }
+    if (drawerMQ.addEventListener) drawerMQ.addEventListener('change', onBreakpoint);
+    else drawerMQ.addListener(onBreakpoint);
+
+    /* ── Footer account menu (a popover when the rail is collapsed) ────── */
+    var userBtn = document.getElementById('userBtn');
+    var userMenu = document.getElementById('userMenu');
+    function userExpand(open) {
+      userMenu.hidden = !open;
+      userBtn.setAttribute('aria-expanded', String(open));
+    }
+    userBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      userExpand(userMenu.hidden);
+    });
+    document.addEventListener('click', function (e) {
+      if (userMenu.hidden) return;
+      if (!userMenu.contains(e.target) && !userBtn.contains(e.target)) userExpand(false);
+    });
+
+    syncSidebar();
+  })();
+</script>
