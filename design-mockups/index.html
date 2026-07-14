@@ -8,8 +8,11 @@
 <style>
   /* ======================================================================
      MASTER GALLERY — index + device-frame previewer.
+     21 designs · 2 directions (Classic / Sugar Bloom) · one token contract.
      Only gallery-chrome CSS lives here; every token comes from _theme.css.
      ====================================================================== */
+
+  body { overflow-x: hidden; }
 
   .wrap {
     max-width: 1760px;
@@ -42,6 +45,8 @@
     align-items: center;
     gap: 14px;
     flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
   }
   .mark {
     width: 46px;
@@ -58,9 +63,7 @@
     font: var(--t-display);
     letter-spacing: -0.02em;
   }
-  .intro h1 span {
-    color: var(--pink-600);
-  }
+  .intro h1 span { color: var(--pink-600); }
   .intro .sub {
     font: var(--t-body);
     color: var(--ink-soft);
@@ -83,17 +86,82 @@
     border: 1.5px solid #fff;
     box-shadow: var(--sh-xs);
   }
-  .intro p {
-    max-width: 74ch;
-    margin-top: 14px;
-    color: var(--ink-soft);
+
+  .intro-body {
     position: relative;
     z-index: 1;
+    display: grid;
+    gap: 14px;
+    margin-top: 15px;
+    grid-template-columns: 1fr;
   }
+  @media (min-width: 1100px) {
+    .intro-body { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+  }
+  .intro p {
+    max-width: 76ch;
+    color: var(--ink-soft);
+  }
+  .intro p + p { margin-top: 10px; }
   .intro p b { color: var(--ink); font-weight: 650; }
+  .mono { font-family: var(--font-num); }
+
+  /* The two-directions explainer card */
+  .dirs {
+    background: rgba(255, 255, 255, .74);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    box-shadow: var(--sh-xs);
+    padding: 14px 16px;
+  }
+  .dirs h2 {
+    font: var(--t-label);
+    letter-spacing: var(--label-tracking);
+    text-transform: uppercase;
+    color: var(--ink-label);
+    margin-bottom: 10px;
+  }
+  .dir-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .dir-row + .dir-row { border-top: 1px solid var(--line); }
+  .dir-row b { display: block; color: var(--ink); font-weight: 700; font-size: 12.5px; }
+  .dir-key {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font: 700 13px/1 var(--font-sans);
+  }
+  .dir-key.classic {
+    background: var(--teal-100);
+    color: var(--teal-700);
+    border: 1px solid var(--line-strong);
+  }
+  .dir-key.sugar {
+    background: var(--pink-100);
+    color: var(--pink-700);
+    border: 1px solid var(--line-pink);
+  }
+  .dirs .same {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line-strong);
+    font: var(--t-small);
+    color: var(--ink-soft);
+  }
+  .dirs .same b { color: var(--ink); font-weight: 650; }
+
   .review {
     margin-top: 14px;
-    display: inline-flex;
+    display: flex;
     align-items: flex-start;
     gap: 10px;
     background: var(--surface);
@@ -106,21 +174,18 @@
     color: var(--ink);
     position: relative;
     z-index: 1;
+    max-width: 92ch;
   }
   .review svg { color: var(--pink-600); flex: 0 0 auto; }
   .review b { font-weight: 700; }
 
   /* "How to use this" disclosure */
-  .note {
-    margin-top: 14px;
-    position: relative;
-    z-index: 1;
-  }
+  .note { margin-top: 14px; position: relative; z-index: 1; }
   .note summary {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 36px;
+    min-height: 40px;
     padding: 0 14px;
     border-radius: var(--r-pill);
     background: var(--surface);
@@ -142,13 +207,13 @@
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     padding: 16px 18px;
-    max-width: 88ch;
+    max-width: 92ch;
     font: var(--t-small);
     color: var(--ink-soft);
   }
   .note-body strong { color: var(--ink); font-weight: 650; }
   .note-body ul { margin: 8px 0 0; padding-left: 18px; }
-  .note-body li { margin-top: 5px; }
+  .note-body li { margin-top: 6px; }
   .kbd {
     display: inline-block;
     min-width: 20px;
@@ -171,10 +236,58 @@
     align-items: start;
   }
   @media (min-width: 1024px) {
-    .main { grid-template-columns: 316px minmax(0, 1fr); }
+    .main { grid-template-columns: 324px minmax(0, 1fr); }
   }
 
-  /* ── Left nav (desktop) ──────────────────────────────────────────────── */
+  /* ── Direction filter (shared by rail + chipbar) ─────────────────────── */
+  .filter {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+  }
+  .filter button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: var(--r-pill);
+    font: 600 12px/1 var(--font-sans);
+    color: var(--ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .filter button:hover { color: var(--ink); background: rgba(255,255,255,.85); }
+  .filter button .n {
+    font: 600 10.5px/1 var(--font-num);
+    opacity: .7;
+    margin-left: 4px;
+  }
+  .filter button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--sh-sm);
+    border: 1px solid var(--line);
+  }
+  .filter button[data-dir="classic"][aria-pressed="true"] {
+    background: var(--grad-mint);
+    color: var(--mint-ink);
+    border-color: transparent;
+    box-shadow: var(--sh-mint);
+  }
+  .filter button[data-dir="sugar"][aria-pressed="true"] {
+    background: var(--grad-pink);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: var(--sh-pink);
+  }
+
+  /* ── Left nav (≥1024) ────────────────────────────────────────────────── */
   .rail {
     display: none;
     position: sticky;
@@ -186,24 +299,35 @@
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     box-shadow: var(--sh);
-    padding: 16px 14px 18px;
+    padding: 14px 12px 16px;
   }
   @media (min-width: 1024px) { .rail { display: block; } }
 
-  .grp + .grp { margin-top: 18px; }
+  .rail-filter {
+    position: sticky;
+    top: -14px;
+    z-index: 2;
+    margin: -14px -12px 12px;
+    padding: 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .rail-filter .label { display: block; margin-bottom: 8px; }
+
+  .grp + .grp { margin-top: 14px; }
+  .grp[hidden] { display: none; }
   .grp-head {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 8px 8px;
-    color: var(--ink-faint);
+    padding: 0 8px 7px;
+    color: var(--ink-label);
   }
-  .grp-head .label { color: var(--ink-faint); }
-  .grp-head svg { width: 16px; height: 16px; }
+  .grp-head svg { width: 16px; height: 16px; flex: 0 0 auto; }
   .grp-head .count {
     margin-left: auto;
     font: 600 10.5px/1 var(--font-num);
-    color: var(--ink-faint);
+    color: var(--ink-label);
     background: var(--surface-2);
     border-radius: var(--r-pill);
     padding: 4px 7px;
@@ -220,8 +344,9 @@
     min-height: var(--tap);
     align-items: center;
     color: var(--ink);
-    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+    transition: background var(--dur) var(--ease);
   }
+  .item[hidden] { display: none; }
   .item + .item { margin-top: 2px; }
   .item:hover { background: var(--surface-2); }
   .item .badge {
@@ -235,9 +360,15 @@
     font: 700 11px/1 var(--font-num);
     color: var(--ink-soft);
   }
+  .item .badge.sugar {
+    background: var(--pink-100);
+    border-color: var(--line-pink);
+    color: var(--pink-700);
+  }
   .item .nm { font: 600 13.5px/1.3 var(--font-sans); }
   .item .ds {
-    font: 400 11.5px/1.35 var(--font-sans);
+    display: block;
+    font: 400 11.5px/1.4 var(--font-sans);
     color: var(--ink-soft);
     margin-top: 3px;
   }
@@ -246,7 +377,7 @@
     color: #fff;
     box-shadow: var(--sh-pink);
   }
-  .item[aria-current="true"] .ds { color: rgba(255, 255, 255, .85); }
+  .item[aria-current="true"] .ds { color: rgba(255, 255, 255, .88); }
   .item[aria-current="true"] .badge {
     background: rgba(255, 255, 255, .24);
     border-color: rgba(255, 255, 255, .4);
@@ -254,7 +385,7 @@
   }
 
   .rail-foot {
-    margin-top: 18px;
+    margin-top: 16px;
     padding: 11px 12px;
     border-radius: var(--r);
     background: var(--surface-2);
@@ -264,21 +395,23 @@
   }
   .rail-foot b { color: var(--ink); font-weight: 650; }
 
-  /* ── Chip bar (tablet / phone) ───────────────────────────────────────── */
+  /* ── Chip bar (<1024) ────────────────────────────────────────────────── */
   .chipbar {
     position: sticky;
     top: 0;
     z-index: 30;
-    margin: 0 calc(-1 * clamp(14px, 2vw, 26px));
+    margin: 12px calc(-1 * clamp(14px, 2vw, 26px)) 0;
     padding: 10px clamp(14px, 2vw, 26px);
-    background: rgba(255, 255, 255, .86);
+    background: rgba(255, 255, 255, .88);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
     box-shadow: var(--sh-sm);
   }
   @media (min-width: 1024px) { .chipbar { display: none; } }
-  .chipbar-inner { display: flex; gap: 8px; }
+  .chipbar .filter { margin-bottom: 9px; max-width: 460px; }
+  .chipbar-inner { display: flex; gap: 8px; padding-bottom: 2px; }
   .navchip {
     display: inline-flex;
     align-items: center;
@@ -294,14 +427,15 @@
     color: var(--ink);
     white-space: nowrap;
   }
-  .navchip .g { color: var(--ink-faint); font-weight: 600; }
+  .navchip[hidden] { display: none; }
+  .navchip .g { color: var(--ink-label); font-weight: 600; }
   .navchip[aria-current="true"] {
     background: var(--grad-pink);
     border-color: transparent;
     color: #fff;
     box-shadow: var(--sh-pink);
   }
-  .navchip[aria-current="true"] .g { color: rgba(255, 255, 255, .8); }
+  .navchip[aria-current="true"] .g { color: rgba(255, 255, 255, .82); }
 
   /* ── Stage ───────────────────────────────────────────────────────────── */
   .stage {
@@ -326,6 +460,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
     font: var(--t-h2);
     letter-spacing: -0.01em;
   }
@@ -339,10 +474,33 @@
     border-radius: var(--r-pill);
     padding: 4px 9px;
   }
+  .dir-pill {
+    font: 600 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: var(--r-pill);
+    padding: 5px 9px;
+    white-space: nowrap;
+  }
+  .dir-pill.classic {
+    background: var(--teal-100);
+    color: var(--teal-700);
+    border: 1px solid var(--line-strong);
+  }
+  .dir-pill.sugar {
+    background: var(--pink-100);
+    color: var(--pink-700);
+    border: 1px solid var(--line-pink);
+  }
+  .dir-pill.both {
+    background: var(--surface-2);
+    color: var(--ink-label);
+    border: 1px solid var(--line);
+  }
   .now .f {
     font: 400 11.5px/1.4 var(--font-num);
-    color: var(--ink-faint);
-    margin-top: 4px;
+    color: var(--ink-soft);
+    margin-top: 5px;
   }
   .tools {
     display: flex;
@@ -352,7 +510,7 @@
     flex-wrap: wrap;
   }
 
-  /* Segmented device switcher */
+  /* Segmented device switcher — the headline feature */
   .seg {
     display: flex;
     gap: 4px;
@@ -383,10 +541,7 @@
     color: var(--mint-ink);
     box-shadow: var(--sh-mint);
   }
-  .seg button .px {
-    font: 600 10.5px/1 var(--font-num);
-    opacity: .65;
-  }
+  .seg button .px { font: 600 10.5px/1 var(--font-num); opacity: .7; }
   @media (max-width: 719px) {
     .seg button .lbl { display: none; }
     .seg button { padding: 0 11px; }
@@ -448,75 +603,88 @@
     border-radius: 18px;
     background: #fff;
     box-shadow: 0 0 0 1px var(--line);
+    transition: opacity .2s linear;
   }
-  .bezel.is-phone {
-    padding: 12px 12px 20px;
-    border-radius: 44px;
-  }
+  .bezel.is-phone { padding: 12px 12px 20px; border-radius: 44px; }
   .bezel.is-phone iframe { border-radius: 30px; }
+  .bezel .notch, .bezel .home { display: none; }
+  .bezel.is-phone .notch, .bezel.is-phone .home { display: block; }
   .bezel.is-phone .notch {
     position: absolute;
-    top: 4px;
-    left: 50%;
+    top: 4px; left: 50%;
     transform: translateX(-50%);
-    width: 74px;
-    height: 5px;
+    width: 74px; height: 5px;
     border-radius: var(--r-pill);
     background: var(--line-strong);
   }
   .bezel.is-phone .home {
     position: absolute;
-    bottom: 8px;
-    left: 50%;
+    bottom: 8px; left: 50%;
     transform: translateX(-50%);
-    width: 110px;
-    height: 5px;
+    width: 110px; height: 5px;
     border-radius: var(--r-pill);
     background: var(--line-strong);
   }
-  .bezel .notch, .bezel .home { display: none; }
-  .bezel.is-phone .notch, .bezel.is-phone .home { display: block; }
   .bezel.is-desktop { padding: 12px 12px 26px; border-radius: 22px; }
   .bezel.is-desktop iframe { border-radius: 10px; }
   .bezel.is-desktop::after {
     content: "";
     position: absolute;
-    bottom: 9px;
-    left: 50%;
+    bottom: 9px; left: 50%;
     transform: translateX(-50%);
-    width: 84px;
-    height: 6px;
+    width: 84px; height: 6px;
     border-radius: var(--r-pill);
     background: var(--line-strong);
   }
-  .bezel.is-fit {
-    flex: 1 1 auto;
-    width: 100%;
-    padding: 10px;
-    border-radius: var(--r-lg);
-  }
+  .bezel.is-fit { flex: 1 1 auto; width: 100%; padding: 10px; border-radius: var(--r-lg); }
   .bezel.is-fit iframe { width: 100%; border-radius: var(--r); }
-
   .canvas.loading .bezel iframe { opacity: .35; }
-  .bezel iframe { transition: opacity .2s linear; }
 
-  .caption {
+  /* ── Under-frame bar: Prev / caption / Next ──────────────────────────── */
+  .framenav {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
+    justify-content: space-between;
     margin-top: 12px;
+  }
+  .framenav .mid {
+    flex: 1 1 260px;
+    min-width: 0;
+    text-align: center;
     font: var(--t-small);
     color: var(--ink-soft);
-    text-align: center;
   }
-  .caption .dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: var(--ink-faint); opacity: .5;
+  .framenav .mid .hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
   }
-  .hint { font-size: 11.5px; color: var(--ink-faint); }
-  .hint .kbd { margin: 0 1px; }
+  .framenav .hint .kbd { margin: 0 1px; }
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .stepper .sub {
+    display: none;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 400 11.5px/1.2 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  @media (min-width: 900px) { .stepper .sub { display: inline; } }
+  .pos {
+    font: 600 11.5px/1 var(--font-num);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -537,7 +705,7 @@
       </div>
       <div>
         <h1>Candy&nbsp;Floss <span>— a redesign of My Piano Diary</span></h1>
-        <div class="sub">Master gallery · every mockup, in a resizable device frame</div>
+        <div class="sub">Master gallery · 21 mockups, in a resizable device frame</div>
       </div>
       <div class="swatches" role="img" aria-label="Palette: Bubble Gum, Cotton Candy, Candy Floss, Mint, Wintergreen">
         <span class="sw" style="background:#F3A2BE" title="Bubble Gum #F3A2BE"></span>
@@ -548,29 +716,59 @@
       </div>
     </div>
 
-    <p>
-      <b>12 mockups · 4 screens · 3 variants each</b>, plus the design system.
-      Every screen is built <b>tablet-first</b> (768&nbsp;×&nbsp;1024 and 1024&nbsp;×&nbsp;768 are the primary
-      targets, not an afterthought), <b>light theme only</b>, and drawn from one shared token contract —
-      <span style="font-family:var(--font-num)">_theme.css</span>. Same palette, same status chips, same
-      44px touch targets everywhere, so any combination of winners still looks like one app.
-    </p>
+    <div class="intro-body">
+      <div>
+        <p>
+          <b>21 mockups · 9 screens · 2 design directions</b>, plus the design system.
+          Dashboard, Calendar and Lessons get four takes each; Reports gets three; Students, Payments,
+          Pieces, Auth and Profile get one. Everything is built <b>tablet-first</b>
+          (768&nbsp;×&nbsp;1024 and 1024&nbsp;×&nbsp;768 are the primary targets, not an afterthought),
+          <b>light theme only</b>, and drawn from one shared token contract —
+          <span class="mono">_theme.css</span>.
+        </p>
+        <p>
+          Two directions now run side by side. <b>Classic</b> is the restrained, information-first take —
+          the a&nbsp;/&nbsp;b&nbsp;/&nbsp;c variants. <b>Sugar Bloom&nbsp;✿</b> is the sweet, feminine one —
+          scalloped edges, blossoms, washi tape and the Mochi mascot — the d-variants plus the five newer
+          screens. They share the <b>same palette</b> and the <b>same tokens</b>; only the ornament layer
+          differs, so you can mix them per-screen and the app still reads as one product. Use the filter
+          above the nav to see each direction on its own. <span class="mono">styleguide.html</span> carries
+          the <b>Tailwind v4 token handoff</b> for <span class="mono">globals.css</span>.
+        </p>
+      </div>
+
+      <div class="dirs">
+        <h2>The two directions</h2>
+        <div class="dir-row">
+          <span class="dir-key classic" aria-hidden="true">A</span>
+          <span><b>Classic</b> Restrained and professional. Data density, real tables, calm chrome. 12 designs.</span>
+        </div>
+        <div class="dir-row">
+          <span class="dir-key sugar" aria-hidden="true">✿</span>
+          <span><b>Sugar Bloom ✿</b> The sweet layer. Scallops, blossoms, washi tape, Mochi. 8 designs.</span>
+        </div>
+        <div class="same">
+          <b>Same palette. Same tokens.</b> Same status chips, same 44px targets, same
+          <span class="mono">_theme.css</span> — only the ornament changes. Mixable per screen.
+        </div>
+      </div>
+    </div>
 
     <div class="review">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M9 11l3 3L22 4"></path>
         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
       </svg>
-      <span><b>How to review:</b> for each screen, flip through A / B / C at <b>Tablet 768</b> and
-      <b>Tablet L 1024</b> — then pick <b>one winner per screen</b>. Mixing (e.g. Dashboard B + Calendar A +
-      Lessons C) is expected and safe; they share the same system.</span>
+      <span><b>How to review:</b> flip through each screen at <b>Tablet 768</b> and <b>Tablet L 1024</b>, then
+      <b>pick one winner per screen</b> — and tell me whether you want the <b>Classic</b> or the
+      <b>Sugar Bloom ✿</b> ornament layer. <b>They can be mixed.</b></span>
     </div>
 
     <details class="note">
       <summary>
-        <svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
         How to use this page
-        <svg class="caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </summary>
       <div class="note-body">
         <strong>These are static HTML references, not the app.</strong> No data is live, nothing saves, and
@@ -582,26 +780,43 @@
             mockup re-renders and <strong>its own media queries fire for real</strong> — this is not a
             screenshot being squashed. Widths past the available space are scaled down with a visible
             scale&nbsp;% so 1440 stays reviewable on a laptop.</li>
+          <li>The <strong>direction filter</strong> above the nav narrows the list to
+            <strong>Classic</strong> or <strong>Sugar Bloom ✿</strong>. The design system stays in both —
+            it is the shared contract.</li>
           <li>The <strong>Design system</strong> page carries the token handoff: the palette, the
-            LessonStatus chips and the <strong>Tailwind&nbsp;v4 <span style="font-family:var(--font-num)">@theme</span></strong>
-            block, so a winning mockup ports without re-deriving a single colour.</li>
+            LessonStatus chips and the <strong>Tailwind&nbsp;v4 <span class="mono">@theme</span></strong>
+            block for <span class="mono">globals.css</span>, so a winning mockup ports without re-deriving
+            a single colour.</li>
           <li>Shortcuts: <span class="kbd">↑</span><span class="kbd">↓</span> move between designs ·
-            <span class="kbd">1</span>–<span class="kbd">5</span> switch device · <span class="kbd">R</span> reloads the frame.
-            Each design is linkable — the URL hash updates as you browse.</li>
+            <span class="kbd">1</span>–<span class="kbd">5</span> switch device ·
+            <span class="kbd">R</span> reloads the frame. Each design is linkable — the URL hash updates as
+            you browse (<span class="mono">#dashboard-d/tablet</span>).</li>
         </ul>
       </div>
     </details>
   </header>
 
-  <!-- ══ CHIP BAR (tablet / phone) ═══════════════════════════════════════ -->
+  <!-- ══ CHIP BAR (<1024) ════════════════════════════════════════════════ -->
   <nav class="chipbar" aria-label="Designs">
+    <div class="filter" role="group" aria-label="Design direction" id="filterChips"></div>
     <div class="chipbar-inner scroll-x no-scrollbar" id="chipbar"></div>
   </nav>
 
   <div class="main">
 
-    <!-- ══ LEFT NAV (desktop) ════════════════════════════════════════════ -->
-    <aside class="rail" id="rail" aria-label="Designs"></aside>
+    <!-- ══ LEFT NAV (≥1024) ══════════════════════════════════════════════ -->
+    <aside class="rail" id="rail" aria-label="Designs">
+      <div class="rail-filter">
+        <span class="label">Design direction</span>
+        <div class="filter" role="group" aria-label="Design direction" id="filterRail"></div>
+      </div>
+      <div id="railGroups"></div>
+      <div class="rail-foot">
+        <b>Static references.</b> No live data — the real app is Next.js + tRPC + Prisma + shadcn.
+        Tokens ship from <span class="mono">_theme.css</span>; the Tailwind v4 handoff lives in
+        <span class="mono">styleguide.html</span>.
+      </div>
+    </aside>
 
     <!-- ══ STAGE ═════════════════════════════════════════════════════════ -->
     <section class="stage">
@@ -610,6 +825,7 @@
           <div class="t">
             <span class="grp-tag" id="curGroup">Dashboard</span>
             <span id="curName">Bento Bloom</span>
+            <span class="dir-pill classic" id="curDir">Classic</span>
           </div>
           <div class="f" id="curFile">dashboard-a.html</div>
         </div>
@@ -623,13 +839,13 @@
           </span>
 
           <button class="btn btn--ghost btn--sm" id="reload" title="Reload the frame">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
             <span class="sr-only">Reload frame</span>
           </button>
 
           <a class="btn btn--mint btn--sm" id="openNew" href="dashboard-a.html" target="_blank" rel="noopener">
             Open in new tab
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           </a>
         </div>
       </div>
@@ -642,13 +858,31 @@
         </div>
       </div>
 
-      <div class="caption">
-        <span id="capText">Live preview — resize with the switcher to watch the layout adapt.</span>
-        <span class="dot" aria-hidden="true"></span>
-        <span class="hint">
-          <span class="kbd">↑</span><span class="kbd">↓</span> designs ·
-          <span class="kbd">1</span>–<span class="kbd">5</span> device ·
-          <span class="kbd">R</span> reload
+      <div class="framenav">
+        <span class="stepper">
+          <button class="btn btn--ghost btn--sm" id="prev">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Previous
+          </button>
+          <span class="sub" id="prevName"></span>
+        </span>
+
+        <span class="mid">
+          <span id="capText">Live preview — resize with the switcher to watch the layout adapt.</span>
+          <span class="hint">
+            <span class="pos" id="pos">1 / 21</span> ·
+            <span class="kbd">↑</span><span class="kbd">↓</span> designs ·
+            <span class="kbd">1</span>–<span class="kbd">5</span> device ·
+            <span class="kbd">R</span> reload
+          </span>
+        </span>
+
+        <span class="stepper">
+          <span class="sub" id="nextName"></span>
+          <button class="btn btn--primary btn--sm" id="next">
+            Next design
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
         </span>
       </div>
     </section>
@@ -669,6 +903,11 @@
     calendar: S('<rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'),
     lessons: S('<line x1="9" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="9" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.4"/><circle cx="4" cy="12" r="1.4"/><circle cx="4" cy="18" r="1.4"/>'),
     reports: S('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>'),
+    students: S('<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3.5"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+    payments: S('<rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 11h20"/><circle cx="17" cy="15.5" r="1.3"/><path d="M6 3.5h9"/>'),
+    pieces: S('<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>'),
+    auth: S('<rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3"/>'),
+    profile: S('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
     system: S('<circle cx="13.5" cy="6.5" r="1.6"/><circle cx="17.5" cy="10.5" r="1.6"/><circle cx="8.5" cy="7.5" r="1.6"/><circle cx="6.5" cy="12.5" r="1.6"/><path d="M12 2a10 10 0 0 0 0 20 2.5 2.5 0 0 0 2-4 2.5 2.5 0 0 1 2-4h2a4 4 0 0 0 4-4 10 10 0 0 0-10-8z"/>'),
     phone: S('<rect x="7" y="2" width="10" height="20" rx="2.5"/><line x1="11" y1="18.5" x2="13" y2="18.5"/>'),
     tablet: S('<rect x="5" y="2" width="14" height="20" rx="2.5"/><line x1="11.5" y1="18.5" x2="12.5" y2="18.5"/>'),
@@ -677,43 +916,70 @@
     fit: S('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>')
   };
 
-  /* ── The designs ────────────────────────────────────────────────────── */
+  /* ── The designs. dir: "classic" | "sugar" | "both" ─────────────────── */
+  var C = "classic", G = "sugar";
   var GROUPS = [
     { key: "Dashboard", icon: "dashboard", items: [
-      { file: "dashboard-a.html", badge: "A", name: "Bento Bloom",
-        desc: "Asymmetric bento grid — revenue hero, today's lessons, quick stats." },
-      { file: "dashboard-b.html", badge: "B", name: "Studio Rail",
-        desc: "Metric rail beside one wide focus column led by today's schedule." },
-      { file: "dashboard-c.html", badge: "C", name: "The Diary",
-        desc: "Reads like a written page — the day's lessons as diary entries." }
+      { file: "dashboard-a.html", badge: "A", dir: C, name: "Bento Bloom",
+        desc: "Asymmetric bento of soft tiles; the spoiler card and the big revenue hero." },
+      { file: "dashboard-b.html", badge: "B", dir: C, name: "Studio Rail",
+        desc: "Dense, professional. Icon rail + KPI carousel + a real Today table." },
+      { file: "dashboard-c.html", badge: "C", dir: C, name: "The Diary",
+        desc: "Editorial and warm. Serif greeting, vertical lesson timeline, podium." },
+      { file: "dashboard-d.html", badge: "D", dir: G, name: "Sugar Bloom ✿",
+        desc: "The sweet take — scalloped hero, washi-tape cards, blossom podium." }
     ]},
     { key: "Calendar", icon: "calendar", items: [
-      { file: "calendar-a.html", badge: "A", name: "Month + Day Rail",
-        desc: "Full month grid with a persistent day-detail rail alongside it." },
-      { file: "calendar-b.html", badge: "B", name: "Week Timeline + Dialog",
-        desc: "Hour-by-hour week view; tap a lesson to open the attendance dialog." },
-      { file: "calendar-c.html", badge: "C", name: "Agenda Split",
-        desc: "Compact month picker above a scrollable agenda — strongest on phones." }
+      { file: "calendar-a.html", badge: "A", dir: C, name: "Month + Day Rail",
+        desc: "The real month grid (count pills, no chips) with a day agenda rail." },
+      { file: "calendar-b.html", badge: "B", dir: C, name: "Week Timeline",
+        desc: "timeGridWeek with status-coloured blocks — plus the attendance dialog open." },
+      { file: "calendar-c.html", badge: "C", dir: C, name: "Agenda Split",
+        desc: "Itinerary style — mini month + a grouped, thumb-friendly agenda." },
+      { file: "calendar-d.html", badge: "D", dir: G, name: "Blossom Month ✿",
+        desc: "The sweet take — blossom count-pills, scalloped day panel." }
     ]},
     { key: "Lessons", icon: "lessons", items: [
-      { file: "lessons-a.html", badge: "A", name: "Dense Table",
-        desc: "Power table: filters, bulk status, every field visible; scrolls in place." },
-      { file: "lessons-b.html", badge: "B", name: "Card Grid",
-        desc: "One card per lesson — student, piece, rate, status. Thumb-friendly." },
-      { file: "lessons-c.html", badge: "C", name: "Grouped Timeline",
-        desc: "Grouped by day into a timeline with sticky date headers." }
+      { file: "lessons-a.html", badge: "A", dir: C, name: "Dense Table",
+        desc: "The data grid: sticky filters, 7 real columns, row menus." },
+      { file: "lessons-b.html", badge: "B", dir: C, name: "Card Grid",
+        desc: "Touch-first. Mark attendance with a thumb on an iPad." },
+      { file: "lessons-c.html", badge: "C", dir: C, name: "Grouped Timeline",
+        desc: "A river of lessons grouped by day, on a timeline rail." },
+      { file: "lessons-d.html", badge: "D", dir: G, name: "Sticker Board ✿",
+        desc: "The sweet take — lessons as washi-taped stickers on a pinboard." }
     ]},
     { key: "Reports", icon: "reports", items: [
-      { file: "reports-a.html", badge: "A", name: "The Paper",
-        desc: "A printable serif tuition sheet — the artefact a parent actually receives." },
-      { file: "reports-b.html", badge: "B", name: "Split Builder",
-        desc: "Controls on the left, the paper previewing live on the right." },
-      { file: "reports-c.html", badge: "C", name: "Reports Hub + Family Sheet",
-        desc: "Month hub of student cards, then one combined sheet per family." }
+      { file: "reports-a.html", badge: "A", dir: C, name: "The Paper",
+        desc: "The printable A4 sheet, VI/EN, attendance grid, tuition totals." },
+      { file: "reports-b.html", badge: "B", dir: C, name: "Split Builder",
+        desc: "Editor left, live A4 preview right. How you actually fill a report in." },
+      { file: "reports-c.html", badge: "C", dir: C, name: "Hub + Family Sheet",
+        desc: "The /reports index, plus the combined family tuition sheet." }
+    ]},
+    { key: "Students", icon: "students", items: [
+      { file: "students.html", badge: "✿", dir: G, name: "Student Garden ✿",
+        desc: "Card garden with both rates surfaced; a Families tab with STT order." }
+    ]},
+    { key: "Payments", icon: "payments", items: [
+      { file: "payments.html", badge: "✿", dir: G, name: "Piggy Bank ✿",
+        desc: "Makes the DERIVED paid / partial / outstanding maths visible." }
+    ]},
+    { key: "Pieces", icon: "pieces", items: [
+      { file: "pieces.html", badge: "✿", dir: G, name: "Repertoire Shelf ✿",
+        desc: "Difficulty 1–5 as a blossom rating; the edit sheet open." }
+    ]},
+    { key: "Auth", icon: "auth", items: [
+      { file: "login.html", badge: "✿", dir: G, name: "Welcome ✿",
+        desc: "Split art / form. The Mochi mascot at the piano. First impression." }
+    ]},
+    { key: "Profile", icon: "profile", items: [
+      { file: "profile.html", badge: "✿", dir: G, name: "My Studio ✿",
+        desc: "Profile, password, and the real currency / timezone settings." }
     ]},
     { key: "Design system", icon: "system", items: [
-      { file: "styleguide.html", badge: "◆", name: "Candy Floss tokens",
-        desc: "Palette, status legend, components and the Tailwind v4 handoff." }
+      { file: "styleguide.html", badge: "◆", dir: "both", name: "Candy Floss",
+        desc: "Palette, status tokens, components, and the Tailwind v4 handoff." }
     ]}
   ];
 
@@ -726,6 +992,16 @@
     });
   });
 
+  var FILTERS = [
+    { key: "all",     label: "All" },
+    { key: "classic", label: "Classic" },
+    { key: "sugar",   label: "Sugar Bloom ✿" }
+  ];
+  function inFilter(it, f) { return f === "all" || it.dir === f || it.dir === "both"; }
+  function count(f) { return ALL.filter(function (x) { return inFilter(x, f); }).length; }
+
+  var DIR_LABEL = { classic: "Classic", sugar: "Sugar Bloom ✿", both: "Shared" };
+
   /* ── Devices ────────────────────────────────────────────────────────── */
   var DEVICES = [
     { key: "phone",   icon: "phone",   label: "Phone",    w: 390,  h: 844,  cls: "is-phone" },
@@ -736,18 +1012,21 @@
   ];
 
   var el = function (id) { return document.getElementById(id); };
-  var rail = el("rail"), chipbar = el("chipbar"), seg = el("seg");
+  var railGroups = el("railGroups"), chipbar = el("chipbar"), seg = el("seg");
   var canvas = el("canvas"), bezel = el("bezel"), frame = el("frame");
   var readout = el("readout"), scaleBadge = el("scale");
-  var curGroup = el("curGroup"), curName = el("curName"), curFile = el("curFile");
-  var openNew = el("openNew"), capText = el("capText");
+  var curGroup = el("curGroup"), curName = el("curName"), curFile = el("curFile"), curDir = el("curDir");
+  var openNew = el("openNew"), capText = el("capText"), pos = el("pos");
+  var prevBtn = el("prev"), nextBtn = el("next"), prevName = el("prevName"), nextName = el("nextName");
 
-  var state = { id: "dashboard-a", device: "tabletL" };
+  var state = { id: "dashboard-a", device: "tabletL", filter: "all" };
 
   /* ── Build the nav ──────────────────────────────────────────────────── */
   GROUPS.forEach(function (g) {
     var sec = document.createElement("div");
     sec.className = "grp";
+    sec.dataset.group = g.key;
+
     var head = document.createElement("div");
     head.className = "grp-head";
     head.innerHTML = ICON[g.icon] + '<span class="label">' + g.key + '</span>' +
@@ -759,47 +1038,82 @@
       b.className = "item";
       b.type = "button";
       b.dataset.id = it.id;
+      b.dataset.dir = it.dir;
       b.innerHTML =
-        '<span class="badge">' + it.badge + '</span>' +
+        '<span class="badge' + (it.dir === "sugar" ? " sugar" : "") + '">' + it.badge + '</span>' +
         '<span><span class="nm">' + it.name + '</span>' +
         '<span class="ds">' + it.desc + '</span></span>';
-      b.addEventListener("click", function () { go(it.id, true); });
+      b.addEventListener("click", function () { go(it.id); });
       sec.appendChild(b);
-    });
-    rail.appendChild(sec);
 
-    // chips
-    g.items.forEach(function (it) {
       var c = document.createElement("button");
       c.className = "navchip";
       c.type = "button";
       c.dataset.id = it.id;
+      c.dataset.dir = it.dir;
       c.innerHTML = '<span class="g">' + g.key + '</span>' + it.name;
-      c.addEventListener("click", function () { go(it.id, true); });
+      c.addEventListener("click", function () { go(it.id); });
       chipbar.appendChild(c);
     });
+
+    railGroups.appendChild(sec);
   });
 
-  var foot = document.createElement("div");
-  foot.className = "rail-foot";
-  foot.innerHTML = "<b>Static references.</b> No live data — the real app is Next.js + tRPC + Prisma + shadcn. " +
-    "Tokens ship from <span style=\"font-family:var(--font-num)\">_theme.css</span>.";
-  rail.appendChild(foot);
+  /* ── Build the direction filter (rendered twice, one state) ─────────── */
+  [el("filterRail"), el("filterChips")].forEach(function (host) {
+    FILTERS.forEach(function (f) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.dataset.dir = f.key;
+      b.innerHTML = f.label + '<span class="n">' + count(f.key) + '</span>';
+      b.addEventListener("click", function () { setFilter(f.key); });
+      host.appendChild(b);
+    });
+  });
 
   /* ── Build the device switcher ──────────────────────────────────────── */
   DEVICES.forEach(function (d) {
     var b = document.createElement("button");
     b.type = "button";
     b.dataset.device = d.key;
-    b.title = d.key === "fit"
-      ? "Fill the available column"
-      : d.label + " — " + d.w + " × " + d.h;
+    b.title = d.key === "fit" ? "Fill the available column" : d.label + " — " + d.w + " × " + d.h;
     b.innerHTML = ICON[d.icon] +
       '<span class="lbl">' + d.label + '</span>' +
       (d.w ? '<span class="px">' + d.w + '</span>' : '');
     b.addEventListener("click", function () { setDevice(d.key); });
     seg.appendChild(b);
   });
+
+  /* ── Filtering ──────────────────────────────────────────────────────── */
+  function visible() {
+    return ALL.filter(function (x) { return inFilter(x, state.filter); });
+  }
+
+  function setFilter(key, silent) {
+    state.filter = key;
+
+    Array.prototype.forEach.call(document.querySelectorAll(".filter button"), function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.dir === key));
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".item, .navchip"), function (b) {
+      b.hidden = !(key === "all" || b.dataset.dir === key || b.dataset.dir === "both");
+    });
+
+    // Hide empty groups; recount the visible ones.
+    Array.prototype.forEach.call(railGroups.children, function (sec) {
+      var shown = sec.querySelectorAll(".item:not([hidden])").length;
+      sec.hidden = shown === 0;
+      sec.querySelector(".count").textContent = shown;
+    });
+
+    var list = visible();
+    if (!list.some(function (x) { return x.id === state.id; })) {
+      go(list[0].id, silent);
+      return;
+    }
+    if (!silent) syncStepper();
+  }
 
   /* ── Layout / scale maths ───────────────────────────────────────────── */
   function fitHeight() {
@@ -847,17 +1161,33 @@
     if (!silent) writeHash();
   }
 
+  /* ── Stepper (Previous / Next) ──────────────────────────────────────── */
+  function syncStepper() {
+    var list = visible();
+    var i = list.map(function (x) { return x.id; }).indexOf(state.id);
+    var p = list[(i - 1 + list.length) % list.length];
+    var n = list[(i + 1) % list.length];
+
+    pos.textContent = (i + 1) + " / " + list.length;
+    prevName.textContent = list.length > 1 ? p.name : "";
+    nextName.textContent = list.length > 1 ? n.name : "";
+    prevBtn.disabled = nextBtn.disabled = list.length < 2;
+    prevBtn.dataset.target = p.id;
+    nextBtn.dataset.target = n.id;
+  }
+  prevBtn.addEventListener("click", function () { go(prevBtn.dataset.target); });
+  nextBtn.addEventListener("click", function () { go(nextBtn.dataset.target); });
+
   /* ── Navigation ─────────────────────────────────────────────────────── */
   function go(id, silent) {
     var it = ALL.filter(function (x) { return x.id === id; })[0];
     if (!it) return;
-    var changed = state.id !== id;
     state.id = id;
 
     Array.prototype.forEach.call(document.querySelectorAll(".item, .navchip"), function (b) {
       var on = b.dataset.id === id;
       b.setAttribute("aria-current", String(on));
-      if (on && b.classList.contains("navchip")) {
+      if (on && b.classList.contains("navchip") && !b.hidden) {
         b.scrollIntoView({ block: "nearest", inline: "nearest" });
       }
     });
@@ -865,13 +1195,16 @@
     curGroup.textContent = it.group;
     curName.textContent = it.name;
     curFile.textContent = it.file;
+    curDir.textContent = DIR_LABEL[it.dir];
+    curDir.className = "dir-pill " + it.dir;
     openNew.href = it.file;
     capText.textContent = it.desc;
 
-    if (changed || frame.getAttribute("src") !== it.file) {
+    if (frame.getAttribute("src") !== it.file) {
       canvas.classList.add("loading");
       frame.src = it.file;
     }
+    syncStepper();
     if (!silent) writeHash();
     layout();
   }
@@ -882,7 +1215,7 @@
     frame.src = frame.src;
   });
 
-  /* ── Hash routing:  #dashboard-a/tabletL ────────────────────────────── */
+  /* ── Hash routing:  #dashboard-d/tablet ─────────────────────────────── */
   var writing = false;
   function writeHash() {
     writing = true;
@@ -893,11 +1226,9 @@
     var raw = location.hash.replace(/^#/, "");
     if (!raw) return false;
     var parts = raw.split("/");
-    var id = parts[0];
-    var dev = parts[1];
-    var ok = ALL.some(function (x) { return x.id === id; });
+    var id = parts[0], dev = parts[1];
     if (dev && DEVICES.some(function (d) { return d.key === dev; })) setDevice(dev, true);
-    if (ok) { go(id, true); return true; }
+    if (ALL.some(function (x) { return x.id === id; })) { go(id, true); return true; }
     return false;
   }
   window.addEventListener("hashchange", function () {
@@ -911,11 +1242,13 @@
     var t = e.target;
     if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
 
-    var i = ALL.map(function (x) { return x.id; }).indexOf(state.id);
+    var list = visible();
+    var i = list.map(function (x) { return x.id; }).indexOf(state.id);
+
     if (e.key === "ArrowDown" || e.key === "ArrowRight") {
-      e.preventDefault(); go(ALL[(i + 1) % ALL.length].id);
+      e.preventDefault(); go(list[(i + 1) % list.length].id);
     } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
-      e.preventDefault(); go(ALL[(i - 1 + ALL.length) % ALL.length].id);
+      e.preventDefault(); go(list[(i - 1 + list.length) % list.length].id);
     } else if (/^[1-5]$/.test(e.key)) {
       setDevice(DEVICES[parseInt(e.key, 10) - 1].key);
     } else if (e.key === "r" || e.key === "R") {
@@ -931,8 +1264,10 @@
   });
 
   /* ── Boot ───────────────────────────────────────────────────────────── */
+  setFilter("all", true);
   setDevice("tabletL", true);
   if (!readHash()) go("dashboard-a", true);
+  syncStepper();
   writeHash();
   layout();
 })();

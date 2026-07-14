@@ -7,8 +7,23 @@
   /* ======================================================================
      PROFILE / SETTINGS — "MY STUDIO"   (Sugar Bloom)
      Screen-specific CSS only. Every colour/radius/shadow comes from _theme.css.
-     Ornament budget for this page: (1) the scalloped hero band, (2) the
-     piano-key password-strength meter. Nothing decorative inside a form field.
+
+     ORNAMENT BUDGET — exactly two, and this list is the whole list:
+       (1) the hero: scalloped band + drifting blobs (one composed ornament),
+       (2) the piano-key password-strength meter.
+     No squiggles, no hatch fills, no emoji in body copy. The strength meter is
+     the ONE decorative thing allowed near a form field, because it is the
+     field's own status readout, not decoration.
+
+     The page mirrors the real /profile route: three tabs → three panels
+     (Profile Information · Keep your account safe · Teacher Settings).
+     There is no delete-account procedure in src/server/api/routers/user.ts, so
+     there is no danger zone here. Log out lives in the Profile panel footer.
+
+     Every radius here is on the 8/12/16/20/26/32/40 scale. (The one off-scale
+     value the audit found — :focus-visible's 6px — was fixed in _theme.css
+     itself, NOT overridden here: a bare :focus-visible rule in this file would
+     load after the theme and strip .btn of its pill radius on focus.)
      ====================================================================== */
 
   /* ── Shell (identical conventions to dashboard-a.html) ─────────────── */
@@ -54,6 +69,14 @@
 
   .nav-group + .nav-group { margin-top: 18px; }
   .nav-group > .label { padding: 0 12px 8px; display: block; }
+
+  /* ── Eyebrow labels are CONTENT, not decoration ─────────────────────────
+     _theme.css calls --ink-faint "decorative only" (2.67:1 on white) and it is
+     the default .label colour. Every .label on this page names a real section,
+     so they all get --ink-soft (#56706f = 5.32:1 on white, AA at 11px).
+     --ink-faint survives only on true non-content: the .user-btn chevron. */
+  .panel-head .label,
+  .nav-group > .label { color: var(--ink-soft); }
   .nav-list { list-style: none; display: grid; gap: 3px; }
   .nav-link {
     display: flex; align-items: center; gap: 12px;
@@ -91,11 +114,17 @@
   }
   .user-btn:hover { background: var(--surface-2); }
   /* Profile lives in the footer menu, not the nav list — so the footer control
-     is what carries the "you are here" state on this screen. */
+     is what carries the "you are here" state on this screen.
+     "You are here" must NEVER be colour-only: the gradient is joined by a solid
+     pink bar down the leading edge (shape) and a heavier name (weight). */
   .user-btn.is-active {
     background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
-    box-shadow: inset 0 0 0 1px var(--line-pink);
+    box-shadow: inset 0 0 0 1px var(--line-pink), inset 3px 0 0 0 var(--pink-600);
+    padding-left: 13px;
   }
+  .user-btn.is-active .user-name { font-weight: 800; }
+  /* The state is spoken through the button's aria-label and through
+     .user-menu a[aria-current="page"]; the bar + weight are its visual half. */
   .user-meta { min-width: 0; flex: 1; display: block; }
   .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
   .user-mail {
@@ -147,22 +176,11 @@
   .page-h1 {
     font: var(--t-h1);
     letter-spacing: -0.015em;
-    display: inline-block;
-    position: relative;
-  }
-  /* Hand-drawn squiggle instead of a straight rule. Decorative only. */
-  .squiggle {
     display: block;
-    width: 100%;
-    height: 9px;
-    margin-top: 1px;
-    overflow: visible;
-    color: var(--bubblegum);
-    pointer-events: none;
   }
   .page-sub { margin-top: 7px; font: var(--t-small); color: var(--ink-soft); }
   .topbar-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-  .hamburger, .top-add { display: none; }
+  .hamburger { display: none; }
 
   .tz-pill {
     display: inline-flex; align-items: center; gap: 7px;
@@ -333,7 +351,7 @@
   }
   .panel-ico {
     width: 34px; height: 34px; flex: 0 0 auto;
-    border-radius: 11px;
+    border-radius: var(--r-sm);
     display: grid; place-items: center;
   }
   .panel-ico svg { width: 17px; height: 17px; }
@@ -361,7 +379,9 @@
     font: 400 14px/1.4 var(--font-sans);
     transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
   }
-  .input::placeholder { color: var(--ink-faint); }
+  /* Placeholders are instructions the user has to READ, so they take the same
+     AA-passing ink as any other secondary copy — never --ink-faint (2.67:1). */
+  .input::placeholder { color: var(--ink-soft); }
   .input:hover, .select:hover { border-color: var(--wintergreen); }
   .input:focus-visible, .select:focus-visible {
     border-color: var(--pink-600);
@@ -370,15 +390,26 @@
   .select {
     appearance: none;
     padding-right: 42px;
-    /* caret drawn as a data-free inline SVG background — no remote request */
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356706f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 13px center;
-    background-size: 18px 18px;
     cursor: pointer;
   }
+  /* The caret is a MASK, not a coloured background-image: the shape is the
+     data-URI, the colour is the token. One source of truth — change
+     --ink-soft and the caret follows. No remote request either. */
+  .select-wrap { position: relative; display: block; min-width: 0; }
+  .select-wrap::after {
+    content: "";
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    width: 18px; height: 18px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    background-color: var(--ink-soft);
+    --caret: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    -webkit-mask: var(--caret) center / 18px 18px no-repeat;
+    mask: var(--caret) center / 18px 18px no-repeat;
+  }
   .hint { font: var(--t-small); font-size: 12px; color: var(--ink-soft); }
-  .hint--strong { color: var(--ink); font-weight: 600; }
 
   /* Field with a trailing show/hide toggle */
   .pw-field { position: relative; }
@@ -405,17 +436,41 @@
     display: flex; align-items: center; justify-content: flex-end;
     gap: 10px; flex-wrap: wrap;
   }
+  /* Log out is the only account-level exit the app actually has (there is no
+     deleteAccount procedure), so it sits quietly in the Profile footer. */
+  .btn-logout { margin-right: auto; }
+
+  /* The password form now ships EMPTY, so its submit ships disabled — it needs
+     a real inert look. Muted fill, not opacity: --ink-soft on --surface-3 is
+     still 4.7:1, so the button says what it is even while it is off. */
+  .btn:disabled {
+    background: var(--surface-3);
+    color: var(--ink-soft);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  .btn:disabled:active { transform: none; }
+
+  /* Live region: ALWAYS in the DOM, always un-hidden, empty until flash()
+     writes into it. Un-hiding a node whose text is already there is announced
+     unreliably; a text insertion into a live role="status" is not. Empty = no
+     box at all, so the idle footer looks exactly as it did before. */
   .save-chip {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 12px;
     border-radius: var(--r-pill);
-    background: var(--ok-bg);
     color: var(--ok-fg);
     font: 700 12px/1 var(--font-sans);
     white-space: nowrap;
   }
-  .save-chip svg { width: 14px; height: 14px; }
-  .save-chip[hidden] { display: none !important; }
+  .save-chip:not(:empty) {
+    padding: 7px 12px;
+    background: var(--ok-bg);
+  }
+  .save-chip:not(:empty)::before {
+    content: "✓";
+    font-size: 13px;
+    line-height: 1;
+  }
 
   /* ══════════════════════════════════════════════════════════════════════
      ORNAMENT #2 of 2 — password strength drawn as an octave of piano keys.
@@ -430,7 +485,7 @@
     gap: 1.5px;
     height: 42px;
     padding: 1.5px;
-    border-radius: 4px 4px 9px 9px;
+    border-radius: var(--r-xs);
     background: var(--ink);
     overflow: hidden;
   }
@@ -448,7 +503,7 @@
     height: 60%;
     background: var(--ink);
     border-radius: 0 0 4px 4px;
-    box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .12);
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--ink-invert) 12%, transparent);
     transition: background var(--dur) var(--ease);
   }
   .pk-b.is-lit { background: color-mix(in srgb, var(--fill) 62%, var(--ink)); }
@@ -484,7 +539,15 @@
   /* ── Studio settings — currency + timezone previews ─────────────────── */
   .two-up { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
 
-  .stat-cards { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 16px; }
+  /* auto-fit + a real minimum: a track can never be crushed below 170px, so
+     the cards stack themselves in the narrow desktop column and in the phone
+     column without any breakpoint having to say so. */
+  .stat-cards {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    margin-top: 16px;
+  }
   .stat-card {
     display: flex; align-items: center; gap: 11px;
     padding: 12px 13px;
@@ -493,7 +556,7 @@
     border: 1px solid var(--line);
     min-width: 0;
   }
-  .stat-card .panel-ico { width: 38px; height: 38px; border-radius: 12px; }
+  .stat-card .panel-ico { width: 38px; height: 38px; border-radius: var(--r-sm); }
   .stat-card .panel-ico svg { width: 19px; height: 19px; }
   .stat-card-txt { min-width: 0; display: block; }
   .stat-card-txt span {
@@ -544,112 +607,11 @@
     font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
     font-size: 11.5px;
     padding: 1px 5px;
-    border-radius: 5px;
+    border-radius: var(--r-xs);
     background: var(--pink-50);
     color: var(--pink-700);
     border: 1px solid var(--line-pink);
   }
-
-  /* ══════════════════════════════════════════════════════════════════════
-     DANGER ZONE
-     ══════════════════════════════════════════════════════════════════════ */
-  .danger {
-    border: 2px dashed var(--no-dot);
-    background: linear-gradient(160deg, color-mix(in srgb, var(--no-bg) 42%, var(--surface)), var(--surface) 62%);
-    box-shadow: var(--sh-sm);
-    display: grid;
-    gap: clamp(16px, 2vw, 24px);
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-  }
-  .danger .panel-title { color: var(--no-fg); }
-  .danger-acts {
-    margin-top: 16px;
-    display: flex; gap: 10px; flex-wrap: wrap;
-  }
-  .btn--danger {
-    background: var(--no-bg);
-    color: var(--no-fg);
-    border: 1px solid color-mix(in srgb, var(--no-dot) 70%, transparent);
-    box-shadow: var(--sh-xs);
-  }
-  .btn--danger:hover { background: color-mix(in srgb, var(--no-bg) 78%, var(--bubblegum)); }
-  .danger-list {
-    margin-top: 14px;
-    list-style: none;
-    display: grid;
-    gap: 6px;
-    font: var(--t-small);
-    color: var(--ink-soft);
-  }
-  .danger-list li { display: flex; align-items: flex-start; gap: 7px; }
-  .danger-list svg { width: 13px; height: 13px; flex: 0 0 auto; margin-top: 3px; color: var(--no-fg); }
-  .danger-list b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
-
-  /* The confirm dialog, rendered OPEN so the state is reviewable in-place. */
-  .dlg-stage {
-    position: relative;
-    border-radius: var(--r-lg);
-    padding: clamp(14px, 1.6vw, 20px);
-    background:
-      repeating-linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--ink) 4%, transparent) 0 2px,
-        transparent 2px 9px
-      ),
-      var(--surface-2);
-    border: 1px solid var(--line);
-    display: grid;
-    gap: 10px;
-  }
-  .dlg-stage > .label { color: var(--ink-soft); }
-  .dlg {
-    border-radius: var(--r-lg);
-    background: var(--surface);
-    border: 1px solid var(--line-pink);
-    box-shadow: var(--sh-lg);
-    padding: clamp(16px, 1.6vw, 22px);
-    display: grid;
-    gap: 10px;
-  }
-  .dlg[hidden] { display: none !important; }
-  .dlg-ico {
-    width: 44px; height: 44px;
-    border-radius: 14px;
-    display: grid; place-items: center;
-    background: var(--no-bg);
-    color: var(--no-fg);
-  }
-  .dlg-ico svg { width: 22px; height: 22px; }
-  .dlg h3 { font: 700 17px/1.3 var(--font-sans); color: var(--ink); }
-  .dlg p { font: var(--t-body); color: var(--ink-soft); }
-  .dlg-sum {
-    margin-top: 2px;
-    padding: 11px 13px;
-    border-radius: var(--r-sm);
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    font: var(--t-small);
-    color: var(--ink-soft);
-    font-variant-numeric: tabular-nums;
-  }
-  .dlg-sum b { color: var(--ink); }
-  .dlg-acts {
-    margin-top: 4px;
-    display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
-  }
-  .dlg-acts .btn { flex: 1 1 auto; }
-  .dlg-closed {
-    display: flex; align-items: center; gap: 8px;
-    padding: 16px;
-    border-radius: var(--r-lg);
-    border: 2px dashed var(--line-strong);
-    background: var(--surface);
-    font: var(--t-small);
-    color: var(--ink-soft);
-  }
-  .dlg-closed[hidden] { display: none !important; }
-  .dlg-closed svg { width: 16px; height: 16px; color: var(--teal-600); flex: 0 0 auto; }
 
   /* ── Off-canvas chrome ─────────────────────────────────────────────── */
   .backdrop {
@@ -686,21 +648,21 @@
      RESPONSIVE
      ====================================================================== */
 
-  /* ≥1024 — two columns; the wide cards span the row. */
+  /* ≥1024 — two columns; Teacher Settings spans the row (it is the widest tab). */
   @media (min-width: 1024px) {
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .p-studio { grid-column: 1 / -1; }
-    .danger   { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); }
     .two-up   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  /* ≥1280 — desktop: the three settings cards sit side by side. */
+  /* ≥1280 — desktop: the three panels = the three real tabs, side by side.
+     .stat-cards is deliberately NOT re-forced to two tracks here: in a 1/3
+     column the auto-fit minimum stacks them, which is the only way the
+     "Total Students" label and the 21px count both survive. */
   @media (min-width: 1280px) {
     .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .p-studio { grid-column: auto; }
-    .danger   { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(320px, 460px); }
     .two-up   { grid-template-columns: minmax(0, 1fr); }
-    .stat-cards { grid-template-columns: 1fr 1fr; }
   }
 
   /* Tablet landscape 1024–1279: icon rail */
@@ -740,6 +702,18 @@
       width: 210px;
       margin-top: 0;
       z-index: 70;
+    }
+  }
+
+  /* Icon rail ONLY (1024–1279). Scoped to exactly that range so the higher
+     specificity of .is-active cannot leak down into the drawer, where
+     .user-btn is a full-width labelled row again.
+     There is no label to embolden in the rail, so the shape cue becomes a
+     solid ring — still not colour-alone, still not gradient-alone. */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .user-btn.is-active {
+      padding: 0;
+      box-shadow: inset 0 0 0 2px var(--pink-600);
     }
   }
 
@@ -802,15 +776,33 @@
       position: relative;
       display: grid; place-items: center; gap: 3px;
       min-height: var(--tap);
-      padding: 5px 2px;
+      /* 5px top padding + 3px for the indicator bar so nothing shifts */
+      padding: 8px 2px 5px;
       border-radius: var(--r-sm);
       color: var(--ink-soft);
-      font: 600 10px/1.2 var(--font-sans);
+      /* 11px, not 10px: --pink-700 at this size clears AA comfortably. */
+      font: 600 11px/1.2 var(--font-sans);
     }
     .tab svg { width: 21px; height: 21px; }
     /* Profile is reached through More → account menu, so More carries the
-       "you are here" marker on this screen. */
-    .tab.is-here { color: var(--pink-600); background: var(--pink-50); }
+       "you are here" marker on this screen.
+       --pink-600 is a FILL/indicator token (AA on white only at 16px+); the
+       11px label takes --pink-700 = 6.08:1 on --pink-50. And the state is
+       never colour-alone: a solid indicator bar sits above it. */
+    .tab.is-here {
+      color: var(--pink-700);
+      background: var(--pink-50);
+      font-weight: 700;
+    }
+    .tab.is-here::after {
+      content: "";
+      position: absolute;
+      top: 3px; left: 50%;
+      width: 18px; height: 3px;
+      transform: translateX(-50%);
+      border-radius: var(--r-pill);
+      background: var(--pink-600);
+    }
   }
 
   /* Phone */
@@ -821,10 +813,10 @@
     .av-hero { width: 82px; height: 82px; font-size: 26px; }
     .hero-act { width: 100%; }
     .hero-act .btn { flex: 1; }
-    .stat-cards { grid-template-columns: minmax(0, 1fr); }
     .form-foot { justify-content: stretch; }
     .form-foot .btn { flex: 1 1 auto; }
-    .danger-acts .btn { flex: 1 1 auto; }
+    /* Log out stays a modest, non-growing exit next to the primary action. */
+    .form-foot .btn-logout { flex: 0 0 auto; }
   }
 </style>
 
@@ -834,7 +826,10 @@
 <div class="shell">
 
   <!-- ═══════════════ SIDEBAR ═══════════════ -->
-  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+  <!-- Ships WITHOUT inert: the no-JS / pre-hydration state of the primary nav
+       must be a usable nav, not a dead one. syncSidebar() ADDS inert, and only
+       below 1024px while the drawer is closed. -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation">
     <a class="brand" href="/dashboard" title="My Piano Diary">
       <span class="brand-logo" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -928,7 +923,7 @@
     </nav>
 
     <div class="side-foot">
-      <button class="user-btn is-active" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+      <button class="user-btn is-active" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu (you are on Profile)" aria-label="Account menu, Linh Đặng — you are on Profile">
         <span class="av" aria-hidden="true">LĐ</span>
         <span class="user-meta">
           <span class="user-name">Linh Đặng</span>
@@ -970,20 +965,17 @@
       </button>
 
       <div class="topbar-l">
-        <h1 class="page-h1">
-          Profile
-          <svg class="squiggle" viewBox="0 0 120 9" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-            <path d="M1 6.2 C 12 1.4, 20 8.2, 31 4.6 S 51 1.2, 62 5.4 S 84 8.4, 95 3.6 S 112 2.4, 119 5.8"
-                  fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-          </svg>
-        </h1>
-        <p class="page-sub">Your studio, your way 🎀</p>
+        <!-- Verbatim from src/app/(root)/profile/page.tsx -->
+        <h1 class="page-h1">Profile Settings</h1>
+        <p class="page-sub">Your personal space and preferences</p>
       </div>
 
       <div class="topbar-r">
+        <!-- Driven by the SAME OFFSET map as the Timezone preview below, so the
+             two can never disagree. Change the select and this changes with it. -->
         <span class="tz-pill">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          Now <b>16:42</b> · Asia/Ho_Chi_Minh
+          Now <b id="tzNow">16:42</b> · <span id="tzZone">Asia/Ho_Chi_Minh</span>
         </span>
       </div>
     </header>
@@ -1010,6 +1002,10 @@
         <div class="hero-id">
           <p class="hero-name" id="heroName">Linh Đặng</p>
           <p class="hero-mail">linh@pianodiary.vn</p>
+          <!-- Only the two counts api.user.getProfile actually returns
+               (teacher._count.students / teacher._count.lessons). No
+               month-scoped count and no teaching-start date exist in that
+               contract, so neither is invented here. -->
           <ul class="hero-stats">
             <li class="stat-pill">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
@@ -1017,11 +1013,7 @@
             </li>
             <li class="stat-pill">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/></svg>
-              <b>31</b> lessons this month
-            </li>
-            <li class="stat-pill">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
-              Teaching since <b>2023</b>
+              <b>1.284</b> lessons
             </li>
           </ul>
         </div>
@@ -1043,8 +1035,8 @@
         <div class="panel-head">
           <div>
             <span class="label">Account</span>
-            <h2 class="panel-title" id="profTitle">Profile</h2>
-            <p class="panel-sub">How you appear across the studio.</p>
+            <h2 class="panel-title" id="profTitle">Profile Information</h2>
+            <p class="panel-sub">Update your personal information</p>
           </div>
           <span class="panel-ico ico-pink" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
@@ -1067,14 +1059,16 @@
           <div class="field">
             <label for="image">Profile picture</label>
             <input class="input" id="image" name="image" type="url" value="" placeholder="https://example.com/avatar.jpg" autocomplete="url">
-            <p class="hint">Enter a URL to an image for your profile picture. Empty = your initials, in the studio pink.</p>
+            <p class="hint">Enter a URL to an image for your profile picture</p>
           </div>
 
           <div class="form-foot">
-            <span class="save-chip" id="profSaved" role="status" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-              Saved ✓
-            </span>
+            <!-- The app's only real account-level exit. -->
+            <a class="btn btn--ghost btn-logout" href="/logout">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+              Log out
+            </a>
+            <span class="save-chip" id="profSaved" role="status"></span>
             <button class="btn btn--primary" type="submit">Save Changes</button>
           </div>
         </form>
@@ -1085,8 +1079,8 @@
         <div class="panel-head">
           <div>
             <span class="label">Security</span>
-            <h2 class="panel-title" id="pwTitle">Password</h2>
-            <p class="panel-sub">Keep your studio locked.</p>
+            <h2 class="panel-title" id="pwTitle">Keep your account safe</h2>
+            <p class="panel-sub">A strong password keeps your piano diary safe.</p>
           </div>
           <span class="panel-ico ico-mint" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
@@ -1096,7 +1090,9 @@
         <form class="form" id="passwordForm" novalidate>
           <div class="field pw-field">
             <label for="pwCurrent">Current Password</label>
-            <input class="input" id="pwCurrent" name="currentPassword" type="password" value="chopin2023" placeholder="Enter current password" autocomplete="current-password">
+            <!-- Password forms never pre-fill. The empty/idle state IS the
+                 initial state; paint() renders it on load. -->
+            <input class="input" id="pwCurrent" name="currentPassword" type="password" value="" placeholder="Enter current password" autocomplete="current-password">
             <button class="eye" type="button" aria-label="Show current password" aria-pressed="false" data-eye="pwCurrent">
               <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
@@ -1106,7 +1102,7 @@
 
           <div class="field pw-field">
             <label for="pwNew">New Password</label>
-            <input class="input" id="pwNew" name="newPassword" type="password" value="Mint-Nocturne9" placeholder="Enter new password" autocomplete="new-password">
+            <input class="input" id="pwNew" name="newPassword" type="password" value="" placeholder="Enter new password" autocomplete="new-password">
             <button class="eye" type="button" aria-label="Show new password" aria-pressed="false" data-eye="pwNew">
               <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
@@ -1123,10 +1119,10 @@
                 <span class="pk-b pk-b3"></span><span class="pk-b pk-b4"></span><span class="pk-b pk-b5"></span>
               </div>
               <p class="pk-meta">
-                <span>Strength <span class="pk-level" id="pkLevel" data-tone="ok" role="status">Good</span></span>
-                <span class="pk-rule" id="pkRule" data-met="true">
+                <span>Strength <span class="pk-level" id="pkLevel" data-tone="weak" role="status">Too short</span></span>
+                <span class="pk-rule" id="pkRule" data-met="false">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-                  <span id="pkRuleText">14 / 6 characters</span>
+                  <span id="pkRuleText">0 / 6 characters</span>
                 </span>
               </p>
             </div>
@@ -1134,19 +1130,16 @@
 
           <div class="field pw-field">
             <label for="pwConfirm">Confirm New Password</label>
-            <input class="input" id="pwConfirm" name="confirmPassword" type="password" value="Mint-Nocturne9" placeholder="Confirm new password" autocomplete="new-password">
+            <input class="input" id="pwConfirm" name="confirmPassword" type="password" value="" placeholder="Confirm new password" autocomplete="new-password">
             <button class="eye" type="button" aria-label="Show confirmed password" aria-pressed="false" data-eye="pwConfirm">
               <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
             </button>
-            <p class="match-note" id="pwMatch" data-state="ok" role="status">Passwords match ✓</p>
+            <p class="match-note" id="pwMatch" data-state="idle" role="status">Re-enter your new password to confirm</p>
           </div>
 
           <div class="form-foot">
-            <span class="save-chip" id="pwSaved" role="status" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-              Password updated ✓
-            </span>
+            <span class="save-chip" id="pwSaved" role="status"></span>
             <button class="btn btn--primary" type="submit" id="pwSubmit">Update Password</button>
           </div>
         </form>
@@ -1157,8 +1150,8 @@
         <div class="panel-head">
           <div>
             <span class="label">Preferences</span>
-            <h2 class="panel-title" id="studioTitle">Studio settings</h2>
-            <p class="panel-sub">How money and time are written, everywhere in the app.</p>
+            <h2 class="panel-title" id="studioTitle">Teacher Settings</h2>
+            <p class="panel-sub">Manage your teaching profile and rates</p>
           </div>
           <span class="panel-ico ico-sand" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14.1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.9 3H10a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/></svg>
@@ -1192,11 +1185,13 @@
             <!-- CURRENCY -->
             <div class="field">
               <label for="currency">Currency</label>
-              <select class="select" id="currency" name="currency">
-                <option value="VND" selected>VND — Vietnamese đồng</option>
-                <option value="IDR">IDR — Indonesian rupiah</option>
-                <option value="USD">USD — US dollar</option>
-              </select>
+              <div class="select-wrap">
+                <select class="select" id="currency" name="currency">
+                  <option value="VND" selected>VND — Vietnamese đồng</option>
+                  <option value="IDR">IDR — Indonesian rupiah</option>
+                  <option value="USD">USD — US dollar</option>
+                </select>
+              </div>
               <p class="hint">Used to format currency across the system</p>
 
               <div class="preview" aria-live="polite">
@@ -1223,18 +1218,20 @@
             <!-- TIMEZONE -->
             <div class="field">
               <label for="timezone">Timezone</label>
-              <select class="select" id="timezone" name="timezone">
-                <option value="Asia/Kolkata">India Standard Time — Asia/Kolkata</option>
-                <option value="Asia/Ho_Chi_Minh" selected>Vietnam Time — Asia/Ho_Chi_Minh</option>
-                <option value="Asia/Singapore">Singapore Time — Asia/Singapore</option>
-                <option value="Asia/Shanghai">China Standard Time — Asia/Shanghai</option>
-                <option value="Asia/Tokyo">Japan Standard Time — Asia/Tokyo</option>
-                <option value="America/New_York">Eastern Time (US) — America/New_York</option>
-                <option value="America/Los_Angeles">Pacific Time (US) — America/Los_Angeles</option>
-                <option value="Europe/Paris">Central European Time — Europe/Paris</option>
-                <option value="Europe/London">British Time — Europe/London</option>
-                <option value="UTC">UTC</option>
-              </select>
+              <div class="select-wrap">
+                <select class="select" id="timezone" name="timezone">
+                  <option value="Asia/Kolkata">India Standard Time — Asia/Kolkata</option>
+                  <option value="Asia/Ho_Chi_Minh" selected>Vietnam Time — Asia/Ho_Chi_Minh</option>
+                  <option value="Asia/Singapore">Singapore Time — Asia/Singapore</option>
+                  <option value="Asia/Shanghai">China Standard Time — Asia/Shanghai</option>
+                  <option value="Asia/Tokyo">Japan Standard Time — Asia/Tokyo</option>
+                  <option value="America/New_York">Eastern Time (US) — America/New_York</option>
+                  <option value="America/Los_Angeles">Pacific Time (US) — America/Los_Angeles</option>
+                  <option value="Europe/Paris">Central European Time — Europe/Paris</option>
+                  <option value="Europe/London">British Time — Europe/London</option>
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
               <p class="hint">Your single timezone setting for all scheduling</p>
 
               <div class="preview" aria-live="polite">
@@ -1256,80 +1253,16 @@
           </div>
 
           <div class="form-foot">
-            <span class="save-chip" id="studioSaved" role="status" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-              Saved ✓
-            </span>
+            <span class="save-chip" id="studioSaved" role="status"></span>
             <button class="btn btn--primary" type="submit">Save Changes</button>
           </div>
         </form>
       </section>
 
-      <!-- ───── 4 · DANGER ZONE ───── -->
-      <section class="panel danger rise" style="--i:5" aria-labelledby="dangerTitle">
-        <div>
-          <div class="panel-head">
-            <div>
-              <span class="label">Careful</span>
-              <h2 class="panel-title" id="dangerTitle">Danger zone</h2>
-              <p class="panel-sub">Leaving is easy. Deleting is forever.</p>
-            </div>
-            <span class="panel-ico" aria-hidden="true" style="background:var(--no-bg); color:var(--no-fg)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-            </span>
-          </div>
-
-          <ul class="danger-list">
-            <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
-              <span><b>Log out</b> just ends this session. Your studio stays exactly as it is.</span>
-            </li>
-            <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
-              <span><b>Delete account</b> permanently removes <b>24</b> students, <b>1.284</b> lessons, every payment sheet and every report. There is no export first, and no undo.</span>
-            </li>
-          </ul>
-
-          <div class="danger-acts">
-            <a class="btn btn--ghost" href="/logout">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
-              Log out
-            </a>
-            <button class="btn btn--danger" type="button" id="delBtn" aria-haspopup="dialog" aria-controls="delDialog">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>
-              Delete account
-            </button>
-          </div>
-        </div>
-
-        <!-- The confirm dialog, rendered OPEN so the state is reviewable. -->
-        <div class="dlg-stage">
-          <span class="label">Confirm dialog · shown open</span>
-
-          <div class="dlg" id="delDialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle" aria-describedby="dlgDesc">
-            <span class="dlg-ico" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/></svg>
-            </span>
-            <h3 id="dlgTitle">Delete account?</h3>
-            <p id="dlgDesc">This cannot be undone.</p>
-
-            <p class="dlg-sum">
-              You will lose <b>24 students</b>, <b>1.284 lessons</b>, <b>7 families</b> and every payment sheet
-              back to <b>March 2023</b>.
-            </p>
-
-            <div class="dlg-acts">
-              <button class="btn btn--ghost" type="button" id="dlgCancel">Cancel</button>
-              <button class="btn btn--danger" type="button" id="dlgDelete">Delete</button>
-            </div>
-          </div>
-
-          <div class="dlg-closed" id="dlgClosed" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-            <span>Dialog dismissed — nothing was deleted. Press <b>Delete account</b> to see it again.</span>
-          </div>
-        </div>
-      </section>
+      <!-- NO DANGER ZONE. src/server/api/routers/user.ts exposes getProfile,
+           updateProfile, updateTimezone and updatePassword — there is no
+           deleteAccount procedure, so there is nothing to confirm and nothing
+           to destroy. Log out lives in the Profile panel footer. -->
 
     </div><!-- /.grid -->
   </main>
@@ -1353,8 +1286,12 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
     Students
   </a>
-  <!-- Pieces · Reports · Payments · Profile · Updates · Log out all live behind More. -->
-  <button class="tab is-here" type="button" id="tabMore" aria-label="More navigation — Profile is in here" aria-expanded="false" aria-controls="sidebar">
+  <!-- Pieces · Reports · Payments · Profile · Updates · Log out all live behind More.
+       More is a <button>, so it cannot take aria-current="page" — the "you are
+       here" fact is spoken in its label and drawn as an indicator bar, never by
+       colour alone. The four <a> tabs get aria-current when they match the route;
+       none of them does on /profile. -->
+  <button class="tab is-here" type="button" id="tabMore" aria-label="More navigation — you are on Profile" aria-expanded="false" aria-controls="sidebar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     More
   </button>
@@ -1467,24 +1404,29 @@
 
     /* ══════════════════════════════════════════════════════════════════════
        2. Success chips — stand in for the app's real sonner toasts.
+       The role="status" container is permanently in the DOM and never hidden;
+       flash() WRITES TEXT INTO it. Un-hiding a node whose text was already
+       there is announced inconsistently across SR/browser pairs; a text
+       insertion into a live region is the one thing they all handle.
+       The chip has no box while it is empty (see .save-chip:not(:empty)).
        ══════════════════════════════════════════════════════════════════════ */
-    function flash(chip) {
-      chip.hidden = false;
+    function flash(chip, msg) {
+      chip.textContent = msg;
       clearTimeout(chip._t);
-      chip._t = setTimeout(function () { chip.hidden = true; }, 3000);
+      chip._t = setTimeout(function () { chip.textContent = ''; }, 3000);
     }
 
     document.getElementById('profileForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      flash(document.getElementById('profSaved'));
+      flash(document.getElementById('profSaved'), 'Saved');
     });
     document.getElementById('studioForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      flash(document.getElementById('studioSaved'));
+      flash(document.getElementById('studioSaved'), 'Saved');
     });
     document.getElementById('passwordForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      flash(document.getElementById('pwSaved'));
+      flash(document.getElementById('pwSaved'), 'Password updated');
     });
 
     /* Camera affordance → the profile picture URL field (the only real way to
@@ -1606,49 +1548,38 @@
       prevRate.textContent = m.rate;
     });
 
+    /* ONE map drives THREE readouts: the zone offset, the "next lesson" preview
+       and the topbar clock. The pill can no longer contradict the panel three
+       inches below it, because they are the same source.
+       [ zone offset, a 09:00 UTC lesson in that zone, 09:42 UTC "now" ] */
     var OFFSET = {
-      'Asia/Kolkata': ['UTC+05:30', '14:30'],
-      'Asia/Ho_Chi_Minh': ['UTC+07:00', '16:00'],
-      'Asia/Singapore': ['UTC+08:00', '17:00'],
-      'Asia/Shanghai': ['UTC+08:00', '17:00'],
-      'Asia/Tokyo': ['UTC+09:00', '18:00'],
-      'America/New_York': ['UTC−04:00', '05:00'],
-      'America/Los_Angeles': ['UTC−07:00', '02:00'],
-      'Europe/Paris': ['UTC+02:00', '11:00'],
-      'Europe/London': ['UTC+01:00', '10:00'],
-      'UTC': ['UTC+00:00', '09:00']
+      'Asia/Kolkata':        ['UTC+05:30', '14:30', '15:12'],
+      'Asia/Ho_Chi_Minh':    ['UTC+07:00', '16:00', '16:42'],
+      'Asia/Singapore':      ['UTC+08:00', '17:00', '17:42'],
+      'Asia/Shanghai':       ['UTC+08:00', '17:00', '17:42'],
+      'Asia/Tokyo':          ['UTC+09:00', '18:00', '18:42'],
+      'America/New_York':    ['UTC−04:00', '05:00', '05:42'],
+      'America/Los_Angeles': ['UTC−07:00', '02:00', '02:42'],
+      'Europe/Paris':        ['UTC+02:00', '11:00', '11:42'],
+      'Europe/London':       ['UTC+01:00', '10:00', '10:42'],
+      'UTC':                 ['UTC+00:00', '09:00', '09:42']
     };
     var tz = document.getElementById('timezone');
     var prevTime = document.getElementById('prevTime');
     var prevOffset = document.getElementById('prevOffset');
-    tz.addEventListener('change', function () {
-      var o = OFFSET[tz.value] || ['UTC+00:00', '09:00'];
+    var tzNow = document.getElementById('tzNow');
+    var tzZone = document.getElementById('tzZone');
+
+    function applyTz() {
+      var o = OFFSET[tz.value] || ['UTC+00:00', '09:00', '09:42'];
       prevOffset.textContent = o[0];
       prevTime.textContent = 'Tue 14 Jul · ' + o[1];
-    });
-
-    /* ══════════════════════════════════════════════════════════════════════
-       6. Delete-account confirm dialog (rendered open on load).
-       ══════════════════════════════════════════════════════════════════════ */
-    var dlg = document.getElementById('delDialog');
-    var dlgClosed = document.getElementById('dlgClosed');
-    var delBtn = document.getElementById('delBtn');
-
-    function setDialog(open, focusIt) {
-      dlg.hidden = !open;
-      dlgClosed.hidden = open;
-      delBtn.setAttribute('aria-expanded', String(open));
-      if (open && focusIt) document.getElementById('dlgCancel').focus();
+      tzNow.textContent = o[2];
+      tzZone.textContent = tz.value;
     }
-    delBtn.setAttribute('aria-expanded', 'true');
-    delBtn.addEventListener('click', function () { setDialog(true, true); });
-    document.getElementById('dlgCancel').addEventListener('click', function () {
-      setDialog(false);
-      delBtn.focus();
-    });
-    document.getElementById('dlgDelete').addEventListener('click', function () {
-      setDialog(false);
-      delBtn.focus();
-    });
+    tz.addEventListener('change', applyTz);
+    applyTz();   /* the pill and the preview agree on load, too */
   })();
 </script>
+</body>
+</html>

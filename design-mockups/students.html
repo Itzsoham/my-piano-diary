@@ -9,13 +9,38 @@
      Screen-specific CSS only. Every colour / radius / shadow comes from
      _theme.css. New shades are derived with color-mix() from its tokens.
 
-     ORNAMENT BUDGET (max 2 types): 1) BLOSSOM — watermark on the card strip,
-     the section mark, Mochi's bow.  2) SCALLOP — the underside of each card's
-     header strip.  Nothing else decorates. The ♡ is a real control, not an
-     ornament. The blob canvas is the page background, not a flourish.
+     ORNAMENT BUDGET — exactly 2 decorative motifs, and this list is the whole
+     inventory, no exemptions:
+       1) BLOSSOM — watermark on the card strip, the section mark, Mochi's bow.
+       2) SCALLOP — the underside of each card's header strip.
+     Everything else that was here has been cut: the hand-drawn squiggle under
+     the H1 and all emoji (🌸 / 👨‍👩‍👧 / 🎀) are gone. Two non-motif graphics remain
+     and are declared, not exempted: the drifting blob wash (the page's
+     background layer, shared by every screen) and Mochi (the empty-state
+     illustration — she appears once, only when there is nothing to show).
      Data regions (rates, counts, money) get ZERO decoration — tabular-nums,
      aligned, boring. Sweet frame, sober data.
+
+     CONTRAST — no --ink-invert on a raw pastel, ever. Avatar initials carry
+     real data (student names), so every .av uses --mint-ink on its pastel:
+     6.5:1 → 10:1 at both ends of every gradient. --ink-faint is reserved for
+     non-informational strokes (Mochi's whiskers); every label, count and
+     separator that carries meaning uses --ink-soft (5.1:1) or darker.
      ====================================================================== */
+
+  /* ── Shared-primitive corrections (scoped to this screen) ───────────────
+     _theme.css ships two primitives that fail AA the moment they carry data.
+     Fixed here rather than in the shared file so no other mockup shifts.   */
+
+  /* .av — was #ffffff on --grad-brand (1.95:1 → 2.07:1). The initials ARE the
+     student's name. --mint-ink on --grad-brand: 6.9:1 on the bubblegum end,
+     6.5:1 on the wintergreen end. Same ink as .st-av--mint → one rule, one
+     avatar ink, everywhere (36 / 46 / 28px sizes all inherit it).           */
+  .av { color: var(--mint-ink); }
+
+  /* .label — was --ink-faint (2.66:1). On this screen it names the three KPIs
+     and the two sidebar nav groups. --ink-soft = 5.1:1 on white.            */
+  .label { color: var(--ink-soft); }
 
   /* ── Drifting blob canvas (decorative, behind everything) ──────────────── */
   .blobs {
@@ -135,7 +160,8 @@
     color: var(--ink-soft);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .user-btn svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+  /* The chevron says "this opens" — that is information, not a stroke. */
+  .user-btn svg { width: 16px; height: 16px; color: var(--ink-soft); flex: 0 0 auto; }
 
   .user-menu {
     list-style: none;
@@ -159,20 +185,27 @@
   .user-menu[hidden] { display: none !important; }
 
   /* ── Main ──────────────────────────────────────────────────────────────── */
+  /* Every track down this column is minmax(0, 1fr) and every item may shrink
+     below its min-content. Without this, an auto grid track is floored at the
+     widest item's min-content — the .fam-chips row (~616px of nowrap chips) —
+     so the track, and then the BODY, grew wider than the viewport and the
+     chips' own overflow-x never got the chance to engage. The scroll box is
+     the thing that gives now; the page never scrolls sideways. */
   .main {
     min-width: 0;
     /* top padding clears the fixed variant badge at every width */
     padding: clamp(40px, 3vw, 46px) clamp(14px, 2.4vw, 32px) 40px;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: clamp(16px, 2vw, 22px);
     align-content: start;
   }
+  #panelStudents,
+  #panelFamilies { grid-template-columns: minmax(0, 1fr); min-width: 0; }
 
   .topbar { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
   .topbar-l { min-width: 0; flex: 1 1 260px; }
   .page-h1 { font: var(--t-h1); letter-spacing: -0.015em; }
-  /* Hand-drawn underline instead of a straight rule. */
-  .squiggle { width: 124px; height: 7px; margin: 3px 0 0 1px; overflow: visible; }
   .page-sub { margin-top: 6px; font: var(--t-small); color: var(--ink-soft); }
   .topbar-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
   .hamburger { display: none; }
@@ -242,7 +275,7 @@
   .seg-tab[aria-selected="true"] .cnt { color: var(--pink-700); }
 
   /* ── Tools row: search · sort · family chips ───────────────────────────── */
-  .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
   .search { position: relative; flex: 1 1 260px; min-width: 220px; max-width: 380px; }
   .search svg {
     position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
@@ -291,11 +324,20 @@
   .sort-menu svg { width: 15px; height: 15px; flex: 0 0 auto; opacity: 0; }
   .sort-menu button[aria-checked="true"] svg { opacity: 1; }
 
+  /* The chips ALWAYS own their own line and ALWAYS own their own scroll box —
+     at every width, not just below 640. The five chips are ~660px of nowrap
+     content; the main column is ~609px at 640px wide, so without the container
+     here the BODY scrolled sideways in the 640–700px band. */
   .fam-chips {
     display: flex; align-items: center; gap: 7px;
     flex: 1 1 100%;
-    padding-bottom: 2px;
+    min-width: 0;
+    padding: 3px 0 5px;            /* room for the focus ring inside the box */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .fam-chips::-webkit-scrollbar { display: none; }
   .fchip {
     display: inline-flex; align-items: center; gap: 7px;
     min-height: var(--tap);
@@ -315,7 +357,9 @@
     border-color: var(--line-pink);
     color: var(--pink-700);
   }
-  .fchip .n { font-variant-numeric: tabular-nums; opacity: .8; }
+  /* The count is DATA. No opacity — 80% of --ink-soft on white is 3.55:1.
+     It sits back on weight alone, at full ink. */
+  .fchip .n { font-variant-numeric: tabular-nums; font-weight: 600; }
 
   .result-line {
     font: var(--t-small);
@@ -365,22 +409,10 @@
     color: color-mix(in srgb, var(--bubblegum) 34%, transparent);
   }
 
-  .fav {
-    position: absolute;
-    top: 8px; right: 8px;
-    z-index: 3;
-    width: var(--tap); height: var(--tap);
-    display: grid; place-items: center;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--surface) 72%, transparent);
-    backdrop-filter: blur(4px);
-    color: var(--ink-soft);
-    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
-  }
-  .fav svg { width: 19px; height: 19px; }
-  .fav:hover { background: var(--surface); color: var(--pink-600); transform: scale(1.06); }
-  .fav[aria-pressed="true"] { color: var(--pink-600); }
-  .fav[aria-pressed="true"] svg { fill: currentColor; }
+  /* The ♡ "favourite" button used to live here. Cut: Student has no favourite
+     / starred field, so aria-pressed="true" was persisted-looking state that
+     nothing in the model can back. Unbacked state is not a decoration you can
+     budget for — it is a lie about the data. */
 
   .st-body {
     flex: 1;
@@ -390,14 +422,28 @@
     padding: 0 var(--pad-card) var(--pad-card);
     margin-top: -26px;
   }
+  /* .st-strip is position:relative, so it paints ABOVE static in-flow content —
+     including this avatar, which .st-body pulls 26px up into it. The initials
+     were being half-covered by the strip. Now that they are legible ink rather
+     than near-invisible white, that had to be fixed too: lift the avatar into
+     the positioned layer so the whole circle (and both letters) reads. */
   .st-av {
+    position: relative;
+    z-index: 1;                    /* over the strip, under .st-menu (40) */
     width: 58px; height: 58px;
     font-size: 17px;
     border: 3px solid var(--surface);
     box-shadow: var(--sh-sm);
   }
+  /* All three avatar fills carry initials, so all three take --mint-ink.
+     --grad-pink ran to --pink-500 (#e0729a); --mint-ink on that end is only
+     4.57:1, so the pink avatar fill stops at --bubblegum instead: 10.1:1 on
+     --cotton, 6.9:1 on --bubblegum. Still unmistakably the pink one. */
   .st-av--mint { background: var(--grad-mint); color: var(--mint-ink); }
-  .st-av--pink { background: var(--grad-pink); color: var(--ink-invert); }
+  .st-av--pink {
+    background: linear-gradient(135deg, var(--cotton), var(--bubblegum));
+    color: var(--mint-ink);
+  }
 
   .st-head { display: block; }
   .st-name {
@@ -443,7 +489,12 @@
     color: var(--ink);
     white-space: nowrap;
   }
-  .rate-v .d { color: var(--ink-soft); font-weight: 600; margin-right: 2px; }
+  /* ONE money convention on this screen:
+       unit rate  →  "đ 300.000"   (prefix, real space)   .rate-v / .fam-rate
+       total      →  "7.260.000 ₫" (suffix, real space)   .fam-total b / .sum-item b
+     The space in .rate-v is a literal space in the markup, not a margin, so
+     the rendered string matches .fam-rate character for character. */
+  .rate-v .d { color: var(--ink-soft); font-weight: 600; }
 
   .st-note {
     font: var(--t-small);
@@ -462,7 +513,9 @@
     font-variant-numeric: tabular-nums;
   }
   .st-stats b { color: var(--ink); font-weight: 700; }
-  .st-stats .sep { color: var(--ink-faint); }
+  /* The "·" sits inside the attendance data line — it reads at the same ink as
+     the line it punctuates. --ink-faint (2.7:1) has no business in here. */
+  .st-stats .sep { color: var(--ink-soft); }
   .st-stats i {
     width: 7px; height: 7px; border-radius: 50%;
     display: inline-block; flex: 0 0 auto;
@@ -593,7 +646,10 @@
     min-width: 0;
   }
   .fam-row:hover { border-color: var(--line-strong); }
+  /* 34px keeps the row tight; the ::before pushes the real hit area out to
+     44 × 54 so a fingertip lands on the drag handle at 768 and 1024. */
   .grip {
+    position: relative;
     width: 34px; min-height: var(--tap);
     display: grid; place-items: center;
     border-radius: var(--r-xs);
@@ -601,7 +657,8 @@
     cursor: grab;
     flex: 0 0 auto;
   }
-  .grip:hover { color: var(--ink-soft); background: var(--surface-3); }
+  .grip::before { content: ""; position: absolute; inset: -5px; }
+  .grip:hover { color: var(--ink); background: var(--surface-3); }
   .grip svg { width: 16px; height: 16px; }
   .stt {
     width: 22px;
@@ -642,12 +699,6 @@
   .fam-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
   .fam-actions .btn { min-height: var(--tap); }
   .fam-actions .btn--mint { flex: 1 1 auto; }
-
-  .fam-caption {
-    margin-top: 2px;
-    font: var(--t-small);
-    color: var(--ink-soft);
-  }
 
   /* ── Section heads (blossom mark) ──────────────────────────────────────── */
   .sec-head { display: flex; align-items: center; gap: 9px; }
@@ -709,7 +760,7 @@
   @media (min-width: 640px) {
     .garden { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .fam-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .fam-chips { flex: 0 1 auto; }
+    /* .fam-chips keeps flex: 1 1 100% at every width — see the base rule. */
   }
 
   /* Tablet landscape (rail) — main is ~948px at 1024 */
@@ -727,7 +778,8 @@
     .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
     /* overflow stays visible so the user popover can escape the rail */
     .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
-    .brand { justify-content: center; padding: 4px 0; }
+    /* the rail's home link was the one control under 44px wide (42 × 50) */
+    .brand { justify-content: center; padding: 4px 0; min-width: var(--tap); }
     .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
     .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
 
@@ -828,7 +880,9 @@
       font: 600 10px/1.2 var(--font-sans);
     }
     .tab svg { width: 21px; height: 21px; }
-    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+    /* 10px/600 is the smallest text on the phone — it needs the full 4.5:1.
+       --pink-600 on --pink-50 was 4.04:1; --pink-700 is 6.1:1. Same pill. */
+    .tab[aria-current="page"] { color: var(--pink-700); background: var(--pink-50); }
   }
 
   /* Phone */
@@ -838,14 +892,7 @@
     .search { max-width: none; flex: 1 1 100%; }
     .sort-wrap { flex: 1 1 auto; }
     .sort-wrap > .btn { width: 100%; }
-    /* chips scroll in their OWN box — the body never scrolls sideways */
-    .fam-chips {
-      flex: 1 1 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .fam-chips::-webkit-scrollbar { display: none; }
+    /* (the chip scroll box now lives in the base rule, at every width) */
     .summary { gap: 14px 18px; }
     .sum-sep { display: none; }
     .sum-item { flex: 1 1 40%; }
@@ -869,7 +916,7 @@
   <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
     <a class="brand" href="/dashboard" title="My Piano Diary">
       <span class="brand-logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
           <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
         </svg>
       </span>
@@ -960,7 +1007,7 @@
     </nav>
 
     <div class="side-foot">
-      <button class="user-btn" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
+      <button class="user-btn" type="button" id="userBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="userMenu" title="Linh Đặng — account menu" aria-label="Account menu, Linh Đặng">
         <span class="av" aria-hidden="true">LD</span>
         <span class="user-meta">
           <span class="user-name">Linh Đặng</span>
@@ -970,10 +1017,10 @@
           <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
         </svg>
       </button>
-      <ul class="user-menu" id="userMenu" hidden>
-        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
-        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
-        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+      <ul class="user-menu" id="userMenu" role="menu" aria-labelledby="userBtn" hidden>
+        <li role="none"><a role="menuitem" href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li role="none"><a role="menuitem" href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li role="none"><a role="menuitem" href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
       </ul>
     </div>
   </aside>
@@ -984,15 +1031,11 @@
     <!-- ───────── Header ───────── -->
     <header class="topbar rise" style="--i:0">
       <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
 
       <div class="topbar-l">
         <h1 class="page-h1">Students</h1>
-        <svg class="squiggle" viewBox="0 0 160 8" aria-hidden="true" focusable="false">
-          <path d="M2 5.5c13-5.4 25 2.6 38 .4s25-5 38-1.2 25 4.8 38 1 26-3 42-1.4"
-                fill="none" stroke="var(--bubblegum)" stroke-width="3" stroke-linecap="round"/>
-        </svg>
         <p class="page-sub">Your garden of 24 — rates, notes and this month's attendance, all in one place.</p>
       </div>
 
@@ -1020,7 +1063,7 @@
       <div class="sum-sep" aria-hidden="true"></div>
       <div class="sum-item">
         <span class="label">Expected this month</span>
-        <b class="num">18.400.000<span class="cur">₫</span></b>
+        <b class="num">49.680.000<span class="cur">₫</span></b>
       </div>
       <p class="sum-note">July 2026 · the sum of every student's expected tuition. Only COMPLETE lessons are billed.</p>
     </section>
@@ -1030,11 +1073,11 @@
       <div class="seg" role="tablist" aria-label="Students view">
         <button class="seg-tab" type="button" role="tab" id="tabStudents"
                 aria-selected="true" aria-controls="panelStudents">
-          <span aria-hidden="true">🌸</span> Students <span class="cnt">24</span>
+          Students <span class="cnt">24</span>
         </button>
         <button class="seg-tab" type="button" role="tab" id="tabFamilies"
                 aria-selected="false" aria-controls="panelFamilies" tabindex="-1">
-          <span aria-hidden="true">👨‍👩‍👧</span> Families <span class="cnt">3</span>
+          Families <span class="cnt">3</span>
         </button>
       </div>
     </div>
@@ -1054,7 +1097,7 @@
         </div>
 
         <div class="sort-wrap">
-          <button class="btn btn--ghost" type="button" id="sortBtn" aria-haspopup="true" aria-expanded="false" aria-controls="sortMenu">
+          <button class="btn btn--ghost" type="button" id="sortBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="sortMenu">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M4 7h16M6 12h12M9 17h6"/>
             </svg>
@@ -1062,10 +1105,10 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <ul class="sort-menu" id="sortMenu" role="menu" aria-labelledby="sortBtn" hidden>
-            <li><button type="button" role="menuitemradio" aria-checked="true" data-sort="Name A–Z"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Name A–Z</button></li>
-            <li><button type="button" role="menuitemradio" aria-checked="false" data-sort="Most lessons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Most lessons</button></li>
-            <li><button type="button" role="menuitemradio" aria-checked="false" data-sort="Highest rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Highest rate</button></li>
-            <li><button type="button" role="menuitemradio" aria-checked="false" data-sort="Recently joined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>Recently joined</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="true" data-sort="Name A–Z"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4 4 10-10"/></svg>Name A–Z</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-sort="Most lessons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4 4 10-10"/></svg>Most lessons</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-sort="Highest rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4 4 10-10"/></svg>Highest rate</button></li>
+            <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-sort="Recently joined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4 4 10-10"/></svg>Recently joined</button></li>
           </ul>
         </div>
 
@@ -1086,17 +1129,11 @@
         <!-- ░░ 1 · Nguyễn Minh Anh ░░ -->
         <article class="card st-card rise" style="--i:4" data-name="nguyễn minh anh" data-fam="nguyen">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="true" aria-label="Favourite — Nguyễn Minh Anh">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av" aria-hidden="true">MA</span>
             <div class="st-head">
@@ -1107,11 +1144,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>300.000</b>
+                <b class="rate-v"><span class="d">đ</span> 300.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>250.000</b>
+                <b class="rate-v"><span class="d">đ</span> 250.000</b>
               </div>
             </div>
 
@@ -1140,15 +1177,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/1">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Nguyễn Minh Anh">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu for Nguyễn Minh Anh">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu" hidden>
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1157,17 +1194,11 @@
         <!-- ░░ 2 · Trần Bảo Ngọc — MENU SHOWN OPEN ░░ -->
         <article class="card st-card rise is-menu-open" style="--i:5" data-name="trần bảo ngọc" data-fam="tranvu">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Trần Bảo Ngọc">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av st-av--mint" aria-hidden="true">BN</span>
             <div class="st-head">
@@ -1178,11 +1209,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>280.000</b>
+                <b class="rate-v"><span class="d">đ</span> 280.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>230.000</b>
+                <b class="rate-v"><span class="d">đ</span> 230.000</b>
               </div>
             </div>
 
@@ -1211,15 +1242,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/2">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="true" aria-label="Open menu for Trần Bảo Ngọc">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="true" aria-label="Open menu for Trần Bảo Ngọc">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu">
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1228,17 +1259,11 @@
         <!-- ░░ 3 · Lê Gia Hân ░░ -->
         <article class="card st-card rise" style="--i:6" data-name="lê gia hân" data-fam="none">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Lê Gia Hân">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av st-av--pink" aria-hidden="true">GH</span>
             <div class="st-head">
@@ -1249,11 +1274,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>250.000</b>
+                <b class="rate-v"><span class="d">đ</span> 250.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>200.000</b>
+                <b class="rate-v"><span class="d">đ</span> 200.000</b>
               </div>
             </div>
 
@@ -1282,15 +1307,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/3">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Lê Gia Hân">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu for Lê Gia Hân">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu" hidden>
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1299,17 +1324,11 @@
         <!-- ░░ 4 · Emma Thompson ░░ -->
         <article class="card st-card rise" style="--i:7" data-name="emma thompson" data-fam="carter">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="true" aria-label="Favourite — Emma Thompson">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av st-av--mint" aria-hidden="true">ET</span>
             <div class="st-head">
@@ -1320,11 +1339,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>350.000</b>
+                <b class="rate-v"><span class="d">đ</span> 350.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>300.000</b>
+                <b class="rate-v"><span class="d">đ</span> 300.000</b>
               </div>
             </div>
 
@@ -1353,15 +1372,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/4">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Emma Thompson">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu for Emma Thompson">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu" hidden>
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1370,17 +1389,11 @@
         <!-- ░░ 5 · Phạm Quốc Bảo ░░ -->
         <article class="card st-card rise" style="--i:8" data-name="phạm quốc bảo" data-fam="none">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Phạm Quốc Bảo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av" aria-hidden="true">QB</span>
             <div class="st-head">
@@ -1391,11 +1404,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>260.000</b>
+                <b class="rate-v"><span class="d">đ</span> 260.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>210.000</b>
+                <b class="rate-v"><span class="d">đ</span> 210.000</b>
               </div>
             </div>
 
@@ -1424,15 +1437,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/5">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Phạm Quốc Bảo">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu for Phạm Quốc Bảo">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu" hidden>
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1441,17 +1454,11 @@
         <!-- ░░ 6 · Olivia Nguyen ░░ -->
         <article class="card st-card rise" style="--i:9" data-name="olivia nguyen" data-fam="nguyen">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Olivia Nguyen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av st-av--pink" aria-hidden="true">ON</span>
             <div class="st-head">
@@ -1462,11 +1469,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>320.000</b>
+                <b class="rate-v"><span class="d">đ</span> 320.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>270.000</b>
+                <b class="rate-v"><span class="d">đ</span> 270.000</b>
               </div>
             </div>
 
@@ -1495,15 +1502,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/6">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Olivia Nguyen">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu for Olivia Nguyen">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu" hidden>
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1512,17 +1519,11 @@
         <!-- ░░ 7 · Đỗ Khánh Linh ░░ -->
         <article class="card st-card rise" style="--i:10" data-name="đỗ khánh linh" data-fam="none">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Đỗ Khánh Linh">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av st-av--mint" aria-hidden="true">KL</span>
             <div class="st-head">
@@ -1533,11 +1534,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>240.000</b>
+                <b class="rate-v"><span class="d">đ</span> 240.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>200.000</b>
+                <b class="rate-v"><span class="d">đ</span> 200.000</b>
               </div>
             </div>
 
@@ -1566,15 +1567,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/7">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Đỗ Khánh Linh">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu for Đỗ Khánh Linh">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu" hidden>
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1583,17 +1584,11 @@
         <!-- ░░ 8 · Liam Carter ░░ -->
         <article class="card st-card rise" style="--i:11" data-name="liam carter" data-fam="carter">
           <div class="st-strip" aria-hidden="true">
-            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false">
+            <svg class="st-bloom" viewBox="0 0 40 40" fill="currentColor" focusable="false" aria-hidden="true">
               <g><ellipse cx="20" cy="10" rx="5.4" ry="8"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(72 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(144 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(216 20 20)"/><ellipse cx="20" cy="10" rx="5.4" ry="8" transform="rotate(288 20 20)"/></g>
               <circle cx="20" cy="20" r="3.6" fill="var(--surface)" opacity=".6"/>
             </svg>
           </div>
-          <button class="fav" type="button" aria-pressed="false" aria-label="Favourite — Liam Carter">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-9.3A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/>
-            </svg>
-          </button>
-
           <div class="st-body">
             <span class="av av--lg st-av" aria-hidden="true">LC</span>
             <div class="st-head">
@@ -1604,11 +1599,11 @@
             <div class="st-rates">
               <div class="rate rate--in">
                 <span class="rate-l">In-person</span>
-                <b class="rate-v"><span class="d">đ</span>300.000</b>
+                <b class="rate-v"><span class="d">đ</span> 300.000</b>
               </div>
               <div class="rate rate--on">
                 <span class="rate-l">Online</span>
-                <b class="rate-v"><span class="d">đ</span>260.000</b>
+                <b class="rate-v"><span class="d">đ</span> 260.000</b>
               </div>
             </div>
 
@@ -1637,15 +1632,15 @@
 
             <div class="st-actions">
               <a class="btn btn--ghost st-view" href="/students/8">View</a>
-              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Open menu for Liam Carter">
+              <button class="btn btn--quiet btn--icon st-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu for Liam Carter">
                 <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01"/></svg>
               </button>
               <ul class="st-menu" role="menu" hidden>
-                <li><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-                <li><a role="menuitem" href="/reports/8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
-                <li><a role="menuitem" href="/payments?studentId=8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
-                <li><hr class="divider"></li>
-                <li><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
+                <li role="none"><button type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+                <li role="none"><a role="menuitem" href="/reports/8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>View Reports</a></li>
+                <li role="none"><a role="menuitem" href="/payments?studentId=8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>View Payments</a></li>
+                <li role="none"><hr class="divider"></li>
+                <li role="none"><button type="button" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>Delete</button></li>
               </ul>
             </div>
           </div>
@@ -1654,13 +1649,13 @@
         <!-- ░░ Add student tile ░░ -->
         <button class="add-tile rise" type="button" style="--i:12">
           <span class="add-ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
           </span>
           <b>Add student</b>
-          <span>A new face for the garden 🎀</span>
+          <span>A new face for the garden</span>
         </button>
 
-        <p class="no-match" id="noMatch" hidden>No students match that filter 🎀 — try another name or family.</p>
+        <p class="no-match" id="noMatch" hidden>No students match that filter — try another name or family.</p>
       </div>
     </section>
 
@@ -1724,9 +1719,10 @@
             </li>
           </ol>
 
+          <!-- 9×300.000 + 8×250.000 + 8×320.000 = 7.260.000 (COMPLETE lessons only) -->
           <p class="fam-total">
             <span>Combined expected · July</span>
-            <b>7.150.000 ₫</b>
+            <b>7.260.000 ₫</b>
           </p>
 
           <div class="fam-actions">
@@ -1771,6 +1767,7 @@
             </li>
           </ol>
 
+          <!-- 8×280.000 + 8×260.000 = 4.320.000 (COMPLETE lessons only) -->
           <p class="fam-total">
             <span>Combined expected · July</span>
             <b>4.320.000 ₫</b>
@@ -1818,9 +1815,10 @@
             </li>
           </ol>
 
+          <!-- Liam 5×300.000 + Emma 9×300.000 (online while in Hội An) = 4.200.000 -->
           <p class="fam-total">
             <span>Combined expected · July</span>
-            <b>5.100.000 ₫</b>
+            <b>4.200.000 ₫</b>
           </p>
 
           <div class="fam-actions">
@@ -1835,14 +1833,16 @@
         <!-- ░░ New family tile ░░ -->
         <button class="add-tile" type="button">
           <span class="add-ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
           </span>
           <b>New family</b>
           <span>Bundle 2+ students onto one combined sheet.</span>
         </button>
       </div>
-
-      <p class="fam-caption">No families yet — create one on the Students page.</p>
+      <!-- The "No families yet" caption used to sit here, unconditionally,
+           under three populated family cards and a "Families 3" KPI. Deleted:
+           an empty state that renders when the list is full is not a caption,
+           it is a contradiction. The New family tile already says what to do. -->
     </section>
 
     <!-- ═══════════ EMPTY STATE (reference) ═══════════ -->
@@ -1898,7 +1898,7 @@
           <circle cx="96" cy="26" r="2.6" fill="var(--pink-600)"/>
         </svg>
 
-        <b>No students yet 🎀 — add your first one and the garden starts growing.</b>
+        <b>No students yet — add your first one and the garden starts growing.</b>
         <p>Mochi is waiting by the piano. Add a student, set their in-person and online rates, and every lesson you mark COMPLETE will start filling this month's sheet.</p>
         <button class="btn btn--primary" type="button">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
@@ -2091,13 +2091,6 @@
       });
     });
 
-    /* ── ♡ favourite — affection, never a status ────────────────────────── */
-    document.querySelectorAll('.fav').forEach(function (f) {
-      f.addEventListener('click', function () {
-        f.setAttribute('aria-pressed', f.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
-      });
-    });
-
     /* ── Search + family-chip filtering ─────────────────────────────────── */
     var search = document.getElementById('stSearch');
     var chips = Array.prototype.slice.call(document.querySelectorAll('.fchip'));
@@ -2165,3 +2158,5 @@
     syncSidebar();  /* correct state at whatever width we loaded at */
   })();
 </script>
+</body>
+</html>

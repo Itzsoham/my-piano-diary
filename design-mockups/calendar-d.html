@@ -9,16 +9,17 @@
      Screen-specific CSS only. Every colour/radius/shadow/font comes from
      _theme.css. New shades are derived with color-mix() from existing tokens.
 
-     ORNAMENT BUDGET (deliberately small):
-       1. drifting blobs + squiggle underline + bow  → page CHROME only
-       2. 5-petal blossom (count pill dot, today watermark, empty state)
+     ORNAMENT BUDGET (deliberately small, and enforced):
+       1. drifting blobs + one squiggle underline  → page CHROME only
+       2. 5-petal blossom — ONE instance, the empty state, inside the panel
        3. one scalloped edge — the day panel header
-     The GRID itself carries no decoration beyond the blossom pill dot.
+     The GRID carries NO decoration at all: every mark inside a day cell
+     (day number, count pill, today ring, selection ring) encodes data.
      ====================================================================== */
 
   :root {
     --panel: 340px;         /* day panel width ≥1280 */
-    --peek: 150px;          /* bottom-sheet peek height <1024 */
+    --peek: 172px;          /* bottom-sheet peek: grab + date + summary + key */
     --tabbar-h: 74px;
   }
 
@@ -107,7 +108,9 @@
   .side-cta { width: 100%; }
 
   .nav-group + .nav-group { margin-top: 18px; }
-  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  /* _theme.css paints .label with --ink-faint (2.67:1). These are visible
+     navigation headings, not decoration — lift them to --ink-soft (5.33:1). */
+  .nav-group > .label { padding: 0 12px 8px; display: block; color: var(--ink-soft); }
   .nav-list { list-style: none; display: grid; gap: 3px; }
   .nav-link {
     display: flex; align-items: center; gap: 12px;
@@ -226,28 +229,35 @@
   .btn--icon svg { width: 20px; height: 20px; }
 
   .month-title {
-    display: flex; align-items: center; justify-content: center; gap: 9px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
     min-width: 0;
   }
+  /* The note is decoration: aria-hidden, and OUTSIDE the live #monthTitle
+     node so "September 2026" is what gets announced, not "musical note …". */
+  .month-title .note { flex: 0 0 auto; font-size: 15px; line-height: 1; }
   .month-title h2 {
+    min-width: 0;
     font: 700 clamp(16px, 1.7vw, 20px)/1.2 var(--font-sans);
     letter-spacing: -0.01em;
     color: var(--ink);
+    /* The 1fr toolbar track can get very narrow on a phone — the title must
+       truncate inside it, never push the body into a horizontal scroll. */
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-variant-numeric: tabular-nums;
   }
-  .bow { width: 26px; height: 18px; flex: 0 0 auto; color: var(--bubblegum); }
 
   .seg {
     display: inline-flex;
-    padding: 4px;
+    padding: 3px;
     gap: 2px;
     border-radius: var(--r-pill);
     background: var(--surface-2);
     border: 1px solid var(--line);
   }
   .seg button {
-    min-height: 36px;
+    min-height: var(--tap);
     padding: 0 14px;
     border-radius: var(--r-pill);
     font: 600 12.5px/1 var(--font-sans);
@@ -277,9 +287,12 @@
     flex: 0 0 auto;
     box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 12%, transparent);
   }
-  .lg--ok { color: var(--ok-fg); } .lg--ok i { background: var(--ok-dot); }
-  .lg--no { color: var(--no-fg); } .lg--no i { background: var(--no-dot); }
-  .lg--wait { color: var(--wait-fg); } .lg--wait i { background: var(--wait-dot); }
+  /* The -dot tokens are 1.5–2.2:1 on white — invisible as a status swatch.
+     A legend swatch is a meaningful graphic: it needs ≥3:1. Use the -fg
+     ramp, which is the same hue, only deep enough to actually be seen. */
+  .lg--ok { color: var(--ok-fg); } .lg--ok i { background: var(--teal-600); }
+  .lg--no { color: var(--no-fg); } .lg--no i { background: var(--pink-600); }
+  .lg--wait { color: var(--wait-fg); } .lg--wait i { background: var(--sand-700); }
   .lg--online { color: var(--teal-700); }
   .lg-sep { width: 1px; height: 14px; background: var(--line-strong); }
   .legend-cap { font: var(--t-small); font-size: 12px; color: var(--ink-soft); }
@@ -304,7 +317,14 @@
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 4px;
   }
+  /* .cal-row is a purely visual grouping — it carries NO aria role, so
+     display:contents costs nothing in the accessibility tree. */
   .cal-row { display: contents; }
+
+  /* Week / Day scopes render only the cells in scope — no dimmed data. */
+  .cal-grid.view-week .cell { min-height: 108px; }
+  .cal-grid.view-day { grid-template-columns: minmax(0, 1fr); }
+  .cal-grid.view-day .cell { min-height: 128px; }
 
   .colhead {
     padding: 6px 2px 8px;
@@ -314,7 +334,9 @@
     text-transform: uppercase;
     color: var(--ink-soft);
   }
-  .colhead.is-wknd { color: var(--teal-600); }
+  /* --teal-600 is only 3.75:1 — fine for a graphic, not for 10.5px text.
+     --teal-700 keeps the weekend hue and clears AA at 6.29:1. */
+  .colhead.is-wknd { color: var(--teal-700); }
 
   /* Day cell — the information layer. Sober on purpose. */
   .cell {
@@ -365,7 +387,9 @@
     z-index: 1;
   }
 
-  /* TODAY — filled pink number + ring + a very low-opacity blossom watermark. */
+  /* TODAY — bubblegum border + inset ring + a --grad-pink filled day number.
+     That is already unambiguous, so there is no watermark: the grid stays
+     free of decoration. */
   .cal-row .cell.is-today {
     border-color: var(--bubblegum);
     box-shadow: inset 0 0 0 1px var(--bubblegum);
@@ -375,15 +399,6 @@
     background: var(--grad-pink);
     color: var(--ink-invert);
     box-shadow: var(--sh-pink);
-  }
-  .today-bloom {
-    position: absolute;
-    top: -8px; left: -10px;
-    width: 62px; height: 62px;
-    color: var(--bubblegum);
-    opacity: .16;
-    pointer-events: none;
-    z-index: 0;
   }
 
   /* SELECTED — teal ring, so it never fights "today". */
@@ -397,7 +412,8 @@
     background: var(--pink-50);
   }
 
-  /* Count pill — the ONLY thing a day shows (the app sets eventDisplay:"none"). */
+  /* Count pill — the ONLY thing a day shows (the app sets eventDisplay:"none").
+     Its icon is the lessons glyph, not an ornament: the pill reads as data. */
   .count {
     display: inline-flex;
     align-items: center;
@@ -463,6 +479,20 @@
   .panel-sum .sep { color: color-mix(in srgb, var(--pink-700) 45%, transparent); }
   .panel-sum .muted { color: var(--ink-soft); font-weight: 600; }
 
+  /* The status key lives HERE, next to the only marks it actually explains:
+     the .ag-bar rails and .chip badges in the agenda below. It sits inside
+     the 150px sheet peek on phones, so it is never off-screen. */
+  .panel-key {
+    margin-top: 11px;
+    display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap;
+    width: fit-content; max-width: 100%;
+    padding: 7px 11px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+  }
+  .panel-key .lg { font-size: 11px; }
+
   .panel-body {
     padding: 20px 14px 16px;
     display: flex;
@@ -490,10 +520,12 @@
     color: var(--ink);
     padding-top: 1px;
   }
+  /* A 4px rail is a small graphic: it must clear 3:1, which the pastel -dot
+     tokens (1.5–2.2:1) never do. Same hue, deeper ramp. */
   .ag-bar { border-radius: var(--r-pill); align-self: stretch; }
-  .ag-bar.s-complete { background: var(--ok-dot); }
-  .ag-bar.s-cancelled { background: var(--no-dot); }
-  .ag-bar.s-pending { background: var(--wait-dot); }
+  .ag-bar.s-complete { background: var(--teal-600); }
+  .ag-bar.s-cancelled { background: var(--pink-600); }
+  .ag-bar.s-pending { background: var(--sand-700); }
 
   .ag-main { min-width: 0; display: grid; gap: 5px; }
   .ag-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -746,6 +778,10 @@
     }
     .sheet-handle:hover .grab { background: var(--pink-500); }
 
+    /* Compact enough that the whole key fits inside the 172px peek. */
+    .panel-key { margin-top: 8px; padding: 6px 9px; gap: 5px 10px; }
+    .panel-key .lg { font-size: 10.5px; gap: 6px; }
+
     .panel-body {
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -773,7 +809,10 @@
       font: 600 10px/1.2 var(--font-sans);
     }
     .tab svg { width: 21px; height: 21px; }
-    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+    /* --pink-600 on --pink-50 is 3.99:1 — enough for the icon (needs 3:1),
+       not for the 10px label (needs 4.5:1). Deepen the text, keep the icon. */
+    .tab[aria-current="page"] { color: var(--pink-700); background: var(--pink-50); }
+    .tab[aria-current="page"] svg { color: var(--pink-600); }
   }
 
   /* Phone */
@@ -788,13 +827,33 @@
   }
 
   @media (max-width: 480px) {
+    /* Buy the day columns their 44px: the cell is this page's main target. */
+    .main { padding-left: 10px; padding-right: 10px; }
+    .cal-card { padding: 6px; }
     .cell { padding: 5px 4px; gap: 3px; }
     .daynum { width: 24px; height: 24px; font-size: 12px; }
     .count { padding: 3px 6px 3px 4px; gap: 4px; font-size: 10.5px; }
     .cal-grid { gap: 3px; }
     .colhead { font-size: 9.5px; letter-spacing: .06em; }
-    .pagehead-r .btn span { display: none; }
-    .pagehead-r .btn { padding: 0; width: var(--tap); border-radius: 50%; }
+
+    /* These two controls collapse to icon-only circles. Their <span> is the
+       ONLY accessible name they have (the SVGs are aria-hidden), so it is
+       CLIPPED, never display:none — same recipe as the sidebar rail above. */
+    .pagehead-r .btn span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+    .pagehead-r .btn {
+      position: relative;
+      padding: 0;
+      width: var(--tap);
+      border-radius: 50%;
+    }
   }
 </style>
 
@@ -930,9 +989,9 @@
         </svg>
       </button>
       <ul class="user-menu" id="userMenu" hidden>
-        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
-        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
-        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+        <li><a href="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li><a href="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li><a href="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
       </ul>
     </div>
   </aside>
@@ -988,14 +1047,8 @@
       </div>
 
       <div class="month-title">
-        <h2 id="monthTitle" aria-live="polite">🎵 July 2026</h2>
-        <span class="bow" aria-hidden="true">
-          <svg viewBox="0 0 34 24" fill="none">
-            <path d="M17 12c-3.2-5.6-7-8-10.2-6.4C3.4 7.3 3.4 15.9 6.8 18c3 1.8 7-.6 10.2-6z" fill="var(--cotton)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M17 12c3.2-5.6 7-8 10.2-6.4 3.4 1.7 3.4 10.3 0 12.4-3 1.8-7-.6-10.2-6z" fill="var(--cotton)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-            <circle cx="17" cy="12" r="2.7" fill="currentColor"/>
-          </svg>
-        </span>
+        <span class="note" aria-hidden="true">🎵</span>
+        <h2 id="monthTitle" aria-live="polite">July 2026</h2>
       </div>
 
       <div class="seg" role="group" aria-label="Calendar view">
@@ -1005,34 +1058,42 @@
       </div>
     </div>
 
-    <!-- ───────── Legend (a genuine addition — the real app has none) ───────── -->
+    <!-- ───────── Legend (a genuine addition — the real app has none) ─────────
+         It annotates the GRID, so it only names what the grid actually draws.
+         The three status swatches moved into the day-panel header, where the
+         status rails and chips they explain really live. -->
     <div class="legend rise" style="--i:2">
-      <span class="lg lg--ok"><i aria-hidden="true"></i>Complete</span>
-      <span class="lg lg--no"><i aria-hidden="true"></i>Cancelled</span>
-      <span class="lg lg--wait"><i aria-hidden="true"></i>Pending</span>
-      <span class="lg-sep" aria-hidden="true"></span>
       <span class="lg lg--online">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
           <rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>
         </svg>
         Online
       </span>
-      <span class="legend-cap"><b>Colour = status.</b> Month cells show a lesson count only — open a day to see each lesson.</span>
+      <span class="lg-sep" aria-hidden="true"></span>
+      <span class="legend-cap"><b>Month cells show a lesson count only.</b> Open a day to see each lesson and its status.</span>
     </div>
 
     <!-- ───────── Calendar + day panel ───────── -->
     <div class="cal-layout">
 
+      <!-- Each day is a <button> with a full aria-label ("Tuesday, July 14,
+           today, 5 lessons"). We deliberately do NOT layer role="grid" /
+           role="row" / role="gridcell" on top: role="gridcell" would override
+           the button's implicit role and hide the fact that the cell is the
+           page's primary control, and .cal-row uses display:contents, which
+           drops role="row" out of the accessibility tree anyway. A labelled
+           list of buttons under a labelled <section> is honest and complete.
+           The weekday header row is redundant with those labels → aria-hidden. -->
       <section class="card cal-card rise" style="--i:3" aria-labelledby="monthTitle">
-        <div class="cal-grid" role="grid" aria-labelledby="monthTitle" id="calGrid">
-          <div class="cal-row" role="row">
-            <span class="colhead" role="columnheader"><abbr title="Monday">Mon</abbr></span>
-            <span class="colhead" role="columnheader"><abbr title="Tuesday">Tue</abbr></span>
-            <span class="colhead" role="columnheader"><abbr title="Wednesday">Wed</abbr></span>
-            <span class="colhead" role="columnheader"><abbr title="Thursday">Thu</abbr></span>
-            <span class="colhead" role="columnheader"><abbr title="Friday">Fri</abbr></span>
-            <span class="colhead is-wknd" role="columnheader"><abbr title="Saturday">Sat</abbr></span>
-            <span class="colhead is-wknd" role="columnheader"><abbr title="Sunday">Sun</abbr></span>
+        <div class="cal-grid" id="calGrid">
+          <div class="cal-row" id="colheadRow" aria-hidden="true">
+            <span class="colhead"><abbr title="Monday">Mon</abbr></span>
+            <span class="colhead"><abbr title="Tuesday">Tue</abbr></span>
+            <span class="colhead"><abbr title="Wednesday">Wed</abbr></span>
+            <span class="colhead"><abbr title="Thursday">Thu</abbr></span>
+            <span class="colhead"><abbr title="Friday">Fri</abbr></span>
+            <span class="colhead is-wknd"><abbr title="Saturday">Sat</abbr></span>
+            <span class="colhead is-wknd"><abbr title="Sunday">Sun</abbr></span>
           </div>
           <!-- day rows injected by script -->
         </div>
@@ -1055,6 +1116,11 @@
             <span class="muted">2 pending</span>
             <span class="sep" aria-hidden="true">·</span>
             <span class="muted">1 cancelled</span>
+          </p>
+          <p class="panel-key">
+            <span class="lg lg--ok"><i aria-hidden="true"></i>Complete</span>
+            <span class="lg lg--no"><i aria-hidden="true"></i>Cancelled</span>
+            <span class="lg lg--wait"><i aria-hidden="true"></i>Pending</span>
           </p>
         </header>
 
@@ -1221,26 +1287,20 @@
     return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫';
   }
 
-  /* ── The blossom: petals filled = lesson count (capped at 5) ── */
-  function blossomSVG(count) {
-    var filled = Math.min(count, 5), p = '';
-    for (var k = 0; k < 5; k++) {
-      var a = (k * 72) * Math.PI / 180;
-      var cx = (6 + 3.2 * Math.sin(a)).toFixed(2);
-      var cy = (6 - 3.2 * Math.cos(a)).toFixed(2);
-      p += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="1.85" ry="2.5" transform="rotate(' +
-           (k * 72) + ' ' + cx + ' ' + cy + ')" fill="currentColor" opacity="' +
-           (k < filled ? '1' : '0.22') + '"/>';
-    }
-    return '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">' + p +
-           '<circle cx="6" cy="6" r="1.45" fill="var(--pink-100)"/></svg>';
-  }
+  /* ── The count pill's icon: the app's own "lessons" glyph, not an ornament.
+     (It replaced a 5-petal blossom whose filled petals re-encoded the number
+     printed right next to it — decoration inside the data layer.) ── */
+  var LESSON_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+    '<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>';
 
   /* ════════════════════════════════════════════════════════════════════
      RENDER
      ════════════════════════════════════════════════════════════════════ */
 
   var grid       = document.getElementById('calGrid');
+  var colheadRow = document.getElementById('colheadRow');
   var monthTitle = document.getElementById('monthTitle');
   var panelDate  = document.getElementById('panelDate');
   var panelSum   = document.getElementById('panelSum');
@@ -1259,7 +1319,9 @@
   }
 
   function renderGrid() {
-    monthTitle.textContent = '🎵 ' + MONTHS[viewM - 1] + ' ' + viewY;
+    /* The 🎵 is a separate aria-hidden node, so this live region announces
+       "September 2026" — not "musical note September 2026". */
+    monthTitle.textContent = MONTHS[viewM - 1] + ' ' + viewY;
 
     /* Drop every old row, keep the column headers. */
     var old = grid.querySelectorAll('.cal-row.days');
@@ -1269,54 +1331,74 @@
     var total = daysInMonth(viewY, viewM);
     var rows = Math.ceil((lead + total) / 7);                  // July 2026 → 5
     var cursor = new Date(viewY, viewM - 1, 1 - lead);
-    var selWeek = (sel.y === viewY && sel.m === viewM) ? weekIndexOf(sel.y, sel.m, sel.d) : -1;
+    var selInView = (sel.y === viewY && sel.m === viewM);
+    var selWeek = selInView ? weekIndexOf(sel.y, sel.m, sel.d) : -1;
+
+    /* Week and Day are REAL scopes: the cells out of scope are not rendered.
+       We never dim live data with opacity — a day number at 2.3:1 that is
+       still clickable and still keyboard-reachable is worse than absent.
+       (If the selection sits in another month there is nothing to scope to,
+       so the full month stays on screen and the segment is a no-op.) */
+    var scopeWeek = (view === 'week' && selInView);
+    var scopeDay  = (view === 'day'  && selInView);
+
+    grid.classList.toggle('view-week', scopeWeek);
+    grid.classList.toggle('view-day', scopeDay);
+    colheadRow.hidden = scopeDay;                 // one column → no weekday rail
 
     for (var r = 0; r < rows; r++) {
+      if (scopeWeek && r !== selWeek) { cursor.setDate(cursor.getDate() + 7); continue; }
+
       var row = document.createElement('div');
       row.className = 'cal-row days';
-      row.setAttribute('role', 'row');
 
       for (var c = 0; c < 7; c++) {
         var y = cursor.getFullYear(), m = cursor.getMonth() + 1, d = cursor.getDate();
+        cursor.setDate(cursor.getDate() + 1);
+
+        var isSel = (y === sel.y && m === sel.m && d === sel.d);
+        if (scopeDay && !isSel) continue;
+
         var isOut = (m !== viewM || y !== viewY);
         var isToday = (y === TODAY.y && m === TODAY.m && d === TODAY.d);
-        var isSel = (y === sel.y && m === sel.m && d === sel.d);
         var n = isOut ? 0 : countFor(y, m, d);
 
+        /* A <button> with a full accessible name. No role="gridcell": that
+           would override the implicit button role and hide the fact that this
+           is the primary control on the page. */
         var cell = document.createElement('button');
         cell.type = 'button';
         cell.className = 'cell' + (isOut ? ' is-out' : '') + (isToday ? ' is-today' : '') + (isSel ? ' is-sel' : '');
-        cell.setAttribute('role', 'gridcell');
         cell.dataset.y = y; cell.dataset.m = m; cell.dataset.d = d;
         cell.tabIndex = isSel ? 0 : -1;
         if (isToday) cell.setAttribute('aria-current', 'date');
-        cell.setAttribute('aria-selected', String(isSel));
-
-        /* Out-of-view dimming for the Week / Day scopes. */
-        if (view === 'week' && r !== selWeek) cell.style.opacity = '.42';
-        if (view === 'day' && !isSel) cell.style.opacity = '.42';
+        cell.setAttribute('aria-pressed', String(isSel));
 
         var label = DAYS[dow(y, m, d)] + ', ' + MONTHS[m - 1] + ' ' + d +
                     (isToday ? ', today' : '') + ', ' +
                     (n ? n + (n === 1 ? ' lesson' : ' lessons') : 'no lessons');
         cell.setAttribute('aria-label', label);
 
-        var html = '';
-        if (isToday) {
-          html += '<svg class="today-bloom" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#bloom"/></svg>';
-        }
-        html += '<span class="daynum">' + d + '</span>';
+        var html = '<span class="daynum">' + d + '</span>';
         if (n) {
-          html += '<span class="count">' + blossomSVG(n) +
+          html += '<span class="count">' + LESSON_ICON +
                   '<span class="n">' + n + '</span>' +
                   '<span class="word">&nbsp;' + (n === 1 ? 'lesson' : 'lessons') + '</span>' +
                   '</span>';
         }
         cell.innerHTML = html;
         row.appendChild(cell);
-        cursor.setDate(cursor.getDate() + 1);
       }
-      grid.appendChild(row);
+
+      if (row.children.length) grid.appendChild(row);
+    }
+
+    /* Roving tabindex: exactly ONE cell must be tabbable. When the selection
+       lives in another month, no cell is .is-sel — without this the calendar
+       would have zero tab stops and a keyboard user could not enter it. */
+    if (!grid.querySelector('.cell[tabindex="0"]')) {
+      var entry = grid.querySelector('.cell:not(.is-out)') || grid.querySelector('.cell');
+      if (entry) entry.tabIndex = 0;
     }
   }
 
@@ -1347,7 +1429,7 @@
       agenda.innerHTML =
         '<li class="quiet">' +
           '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#bloom"/></svg>' +
-          '<b>A quiet day 🎀</b>' +
+          '<b>A quiet day</b>' +
           '<p>No lessons yet — your piano week is waiting for music.</p>' +
         '</li>';
       return;
@@ -1355,7 +1437,9 @@
 
     agenda.innerHTML = list.map(function (l) {
       var s = l.status.toLowerCase();
-      var chipTxt = l.status === 'COMPLETE' ? 'Present'
+      /* The enum is PENDING | COMPLETE | CANCELLED. The chip, the panel key
+         and the .chip--complete token all say the same word: "Complete". */
+      var chipTxt = l.status === 'COMPLETE' ? 'Complete'
                   : l.status === 'CANCELLED' ? 'Cancelled' : 'Pending';
       var online = l.isOnline
         ? '<i class="dot" aria-hidden="true"></i><span class="online">' +
@@ -1562,3 +1646,5 @@
   syncSidebar();
 })();
 </script>
+</body>
+</html>

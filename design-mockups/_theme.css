@@ -40,7 +40,8 @@
   /* ── 3. Ink (text) — a deep teal-slate, never pure black ───────────────── */
   --ink: #24393b; /* headings, primary text — 12.4:1 on white */
   --ink-soft: #56706f; /* secondary text — 5.1:1 on white */
-  --ink-faint: #8ba3a2; /* labels, axis ticks — decorative only */
+  --ink-faint: #8ba3a2; /* hairline ink — DECORATIVE ONLY, 2.67:1. Never text. */
+  --ink-label: #52706e; /* the .label convention — 5.38:1 on white */
   --ink-invert: #ffffff;
   --mint-ink: #14332e; /* the only ink that sits on --grad-mint fills */
 
@@ -81,13 +82,28 @@
   --special-fg: #6b4b95;
   --special-dot: #b9a3d9;
 
+  /* ── 5b. Form validation — a SEPARATE semantic layer from LessonStatus ───
+     A form error is not a CANCELLED lesson. These aliases keep the status
+     vocabulary single-meaning: never style a form error with --no-*. */
+  --danger-fg: var(--pink-700); /* error ink + error border */
+  --danger-bg: var(--no-bg); /* error field wash */
+
   /* ── 6. Gradients ──────────────────────────────────────────────────────── */
   --grad-brand: linear-gradient(135deg, var(--bubblegum), var(--wintergreen));
-  --grad-pink: linear-gradient(135deg, #f7b6cd, var(--pink-500));
+  /* Carries WHITE text (.btn--primary, pressed filter chips), so EVERY stop
+     must clear 4.5:1 on #fff. The old ramp (#f7b6cd → --pink-500) ran
+     1.68:1 → 2.98:1: unreadable end to end. This one runs 4.83:1 → 6.49:1
+     and is built from the ramp's own accessible pinks. --sh-pink unchanged. */
+  --grad-pink: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pink-600) 70%, var(--pink-700)),
+    var(--pink-700)
+  );
   --grad-mint: linear-gradient(135deg, var(--mint), var(--wintergreen));
   --grad-hero: linear-gradient(135deg, #fbe0e8 0%, #f2f9f8 50%, #d5eeea 100%);
 
   /* ── 7. Radii — generously round; this app should feel soft ────────────── */
+  --r-2xs: 2px; /* the only "hard" radius: tape strips, ticks, rules */
   --r-xs: 8px;
   --r-sm: 12px;
   --r: 16px;
@@ -195,7 +211,7 @@ a {
 :focus-visible {
   outline: 2px solid var(--pink-600);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 }
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -230,11 +246,13 @@ a {
   border: 0;
 }
 
+/* Section labels are real UI structure ("Main", "Manage"), not decoration:
+   11px uppercase at .14em tracking needs 4.5:1, and --ink-faint is 2.67:1. */
 .label {
   font: var(--t-label);
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--ink-label);
 }
 .metric {
   font-family: var(--font-num);
@@ -346,7 +364,9 @@ a {
   display: grid;
   place-items: center;
   font: 700 12px/1 var(--font-sans);
-  color: var(--ink-invert);
+  /* Dark ink, NOT white: white on --grad-brand is 1.95:1 and fails outright.
+     --mint-ink clears 6:1 across the whole bubblegum→wintergreen sweep. */
+  color: var(--mint-ink);
   background: var(--grad-brand);
 }
 .av--lg {

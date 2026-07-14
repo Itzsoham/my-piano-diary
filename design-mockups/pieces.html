@@ -14,36 +14,31 @@
 
      Piece model is SMALL — title, description?, level?, difficulty (Int 1-5),
      createdAt, _count.lessons. Nothing else is shown, because nothing else
-     exists.
+     exists. There is NO Piece→Student relation, so no per-piece student count
+     and no avatar stack; and no "in rotation" flag exists anywhere — the only
+     aggregate pieceRouter.getAll returns is _count.lessons.
      ====================================================================== */
 
   :root {
     /* the solid colour the header band lands on — the scallop must match it */
-    --head-end: #fdeef2;                                  /* cotton @ ~45% on white */
-    --petal-off: color-mix(in srgb, var(--bubblegum) 42%, var(--surface));
+    --head-end: color-mix(in srgb, var(--cotton) 45%, var(--surface));
+    /* The EMPTY blossom of the 5-point meter. It is a graphical object that
+       carries meaning ("out of 5"), so it must clear 3:1 — and it does, on
+       --surface (3.46:1) and on the picker's --pink-50 (3.24:1). The old 42%
+       bubblegum tint (#FAD8E4) was 1.32:1: an invisible track. */
+    --petal-off: color-mix(in srgb, var(--bubblegum) 65%, var(--ink) 35%);
     --cover-line: color-mix(in srgb, var(--ink) 12%, transparent);
+    /* scallop shadow tint — token-derived, was a raw rgba() */
+    --sh-scallop: color-mix(in srgb, var(--ink) 6%, transparent);
   }
 
-  /* ── Decorative blob field (fixed, behind everything) ─────────────────── */
-  .blobs { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-  .blob {
-    position: absolute;
-    border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%;
-    filter: blur(2px);
-    animation: drift 26s var(--ease) infinite alternate;
-  }
-  .blob--1 { width: 46vmax; height: 46vmax; top: -14vmax; right: -12vmax;
-             background: color-mix(in srgb, var(--cotton) 55%, transparent); }
-  .blob--2 { width: 40vmax; height: 40vmax; bottom: -16vmax; left: -12vmax;
-             background: color-mix(in srgb, var(--mint) 48%, transparent);
-             animation-duration: 34s; animation-direction: alternate-reverse; }
-  .blob--3 { width: 26vmax; height: 26vmax; top: 42%; left: 46%;
-             background: color-mix(in srgb, var(--cotton) 28%, transparent);
-             animation-duration: 42s; }
-  @keyframes drift {
-    from { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-    to   { transform: translate3d(2.5vmax,-2vmax,0) rotate(14deg) scale(1.06); }
-  }
+  /* ── ORNAMENT BUDGET: two families, no more ────────────────────────────
+     (1) the blossom petals — they ARE the difficulty encoding, not decoration;
+     (2) one atmospheric family — the pastel cover with its piano-key strip,
+         the scalloped edge the header hangs on, and Mochi on the empty state.
+     Deleted: the drifting blob field (+ @keyframes drift), the h1 squiggle,
+     the endlessly twinkling sparkle (with the invented "In rotation" chip),
+     and the note watermark that sat on all 18 covers behind the ⋯ button. */
 
   /* ── Shell ───────────────────────────────────────────────────────────── */
   .shell {
@@ -105,7 +100,9 @@
     margin-left: auto;
     font: 700 10.5px/1 var(--font-sans);
     font-variant-numeric: tabular-nums;
-    background: var(--wait-bg); color: var(--wait-fg);
+    /* NOT the --wait-* ramp: butterscotch is reserved for PENDING lessons, and
+       a count of 18 pieces is not a pending lesson. 5.54:1 on --surface-3. */
+    background: var(--surface-3); color: var(--teal-700);
     padding: 4px 7px; border-radius: var(--r-pill);
   }
 
@@ -128,7 +125,10 @@
     display: block; font: 400 11px/1.3 var(--font-sans); color: var(--ink-soft);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .user-btn svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+  .user-btn svg { width: 16px; height: 16px; color: var(--ink-soft); flex: 0 0 auto; }
+  /* white initials on --grad-brand are 1.96:1. --mint-ink is 6.5–7.0:1 across
+     the whole ramp — and the gradient stays. */
+  .user-btn .av { color: var(--mint-ink); }
 
   .user-menu {
     list-style: none; margin-top: 6px; padding: 6px;
@@ -181,7 +181,7 @@
     background-image: radial-gradient(circle at 12px 0, var(--head-end) 0 11.5px, transparent 12px);
     background-size: 24px 14px;
     background-repeat: repeat-x;
-    filter: drop-shadow(0 4px 6px rgba(60,90,92,.06));
+    filter: drop-shadow(0 4px 6px var(--sh-scallop));
     pointer-events: none;
   }
 
@@ -190,14 +190,7 @@
     display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;
   }
   .head-l { min-width: 0; flex: 1 1 260px; }
-  .h1-wrap { position: relative; display: inline-block; padding-bottom: 6px; }
   h1 { font: var(--t-h1); letter-spacing: -0.015em; color: var(--ink); }
-  .squiggle {
-    position: absolute; left: 0; right: -6px; bottom: -2px;
-    width: calc(100% + 6px); height: 9px;
-    color: var(--bubblegum);
-    pointer-events: none;
-  }
   .head-sub { margin-top: 8px; font: var(--t-small); color: var(--ink-soft); }
   .head-r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
   .hamburger { display: none; }
@@ -269,7 +262,10 @@
     box-shadow: var(--sh-pink);
   }
   .fchip[aria-pressed="true"] .b { color: var(--ink-invert); }
-  .fchip[aria-pressed="true"] .fcount { background: rgba(255,255,255,.24); color: var(--ink-invert); }
+  .fchip[aria-pressed="true"] .fcount {
+    background: color-mix(in srgb, var(--ink-invert) 24%, transparent);
+    color: var(--ink-invert);
+  }
 
   .countline {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -288,14 +284,16 @@
     align-items: start;
   }
 
+  /* The card is NOT a link: the product has no piece-detail route — pieces/
+     page.tsx renders a list, and the only actions on a piece are Edit / Delete
+     from the ⋯ menu. So the card must not advertise a click it cannot honour:
+     no hover lift, no shadow bloom. The ⋯ button carries the interaction. */
   .piece {
     position: relative;
     padding: 0;
     display: flex; flex-direction: column;
     min-width: 0;
-    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
   }
-  .piece:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
   /* a card with its ⋯ menu open must out-paint the cards that follow it */
   .piece.is-menu-open { z-index: 30; }
 
@@ -334,30 +332,6 @@
       transparent 74px 80px, var(--ink) 80px 88px,
       transparent 88px 98px);
   }
-  .cover-mark {
-    position: absolute; right: 10px; top: 26px;
-    width: 60px; height: 60px;
-    color: var(--ink);
-    opacity: .09;
-    pointer-events: none;
-  }
-
-  .rot {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 10px;
-    border-radius: var(--r-pill);
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    color: var(--pink-700);
-    font: 700 11px/1 var(--font-sans);
-    box-shadow: var(--sh-xs);
-    white-space: nowrap;
-  }
-  .rot svg { width: 12px; height: 12px; color: var(--pink-500); animation: twinkle 2.8s var(--ease) infinite; }
-  @keyframes twinkle {
-    0%, 100% { opacity: .55; transform: scale(.86); }
-    50%      { opacity: 1;   transform: scale(1.12); }
-  }
-
   .kebab {
     margin-left: auto;
     width: var(--tap); min-height: var(--tap);
@@ -426,7 +400,10 @@
   .diff { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
   .petals { display: inline-flex; align-items: center; gap: 3px; }
   .b { width: 17px; height: 17px; flex: 0 0 auto; }
-  .b--on  { color: var(--pink-500); }
+  /* --pink-500 is 2.98:1 on white — under the 3:1 a meaningful graphic needs,
+     and it would sit LIGHTER than the now-visible empty petal, inverting the
+     meter. --pink-600 is 4.29:1 and keeps the filled mark dominant. */
+  .b--on  { color: var(--pink-600); }
   .b--off { color: var(--petal-off); }
   .diff-label {
     font: 600 11.5px/1.3 var(--font-sans);
@@ -456,19 +433,17 @@
     display: flex; align-items: center; gap: 10px;
     border-top: 1px solid var(--line);
   }
-  .stack { display: flex; align-items: center; flex: 0 0 auto; }
-  .stack .av { box-shadow: 0 0 0 2px var(--surface); }
-  .stack .av + .av { margin-left: -10px; }
-  .av--mint { background: var(--grad-mint); color: var(--mint-ink); }
-  .av--sand { background: var(--sand-300); color: var(--sand-700); }
-  .av--more { background: var(--surface-3); color: var(--teal-700); }
+  /* The ONLY aggregate the API ships per piece is _count.lessons: there is no
+     Piece→Student relation, so no avatar stack and no "n students learning".
+     Same string family as the sheet's real "Total lessons". */
+  .pfoot svg { width: 15px; height: 15px; flex: 0 0 auto; color: var(--ink-soft); }
   .learners {
     font: 600 12px/1.3 var(--font-sans);
     color: var(--ink-soft);
     font-variant-numeric: tabular-nums;
     min-width: 0;
   }
-  .learners--none { color: var(--ink-soft); font-weight: 400; font-style: italic; }
+  .learners b { color: var(--ink); font-weight: 700; }
 
   /* ── Add tile ────────────────────────────────────────────────────────── */
   .add-tile {
@@ -602,8 +577,8 @@
   }
   .pick:hover { background: color-mix(in srgb, var(--cotton) 40%, transparent); transform: scale(1.06); }
   .pick svg { width: 30px; height: 30px; }
-  .pick.is-on { color: var(--pink-500); }
-  .pick.is-peak { color: var(--pink-600); }
+  .pick.is-on { color: var(--pink-600); }
+  .pick.is-peak { color: var(--pink-700); }
   .pick-read {
     font: 700 12.5px/1.3 var(--font-sans);
     color: var(--pink-700);
@@ -770,7 +745,7 @@
       font: 600 10px/1.2 var(--font-sans);
     }
     .tab svg { width: 21px; height: 21px; }
-    .tab[aria-current="page"] { color: var(--pink-600); background: var(--pink-50); }
+    .tab[aria-current="page"] { color: var(--pink-700); background: var(--pink-50); }
 
     /* the sheet keeps clear of the tab bar */
     .sheet { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
@@ -799,13 +774,6 @@
 <body>
 
 <div class="variant-badge print-hide">Pieces · Repertoire Shelf</div>
-
-<!-- decorative blob field -->
-<div class="blobs print-hide" aria-hidden="true">
-  <span class="blob blob--1"></span>
-  <span class="blob blob--2"></span>
-  <span class="blob blob--3"></span>
-</div>
 
 <div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
 
@@ -838,7 +806,7 @@
 <div class="shell">
 
   <!-- ═══════════════ SIDEBAR ═══════════════ -->
-  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation">
     <a class="brand" href="/dashboard" title="My Piano Diary">
       <span class="brand-logo" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -962,13 +930,8 @@
         </button>
 
         <div class="head-l">
-          <span class="h1-wrap">
-            <h1>Pieces</h1>
-            <svg class="squiggle" viewBox="0 0 220 12" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-              <path d="M2 8C20 2 38 12 56 6s36-4 54 2 36 4 54-2 34-2 54 3" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <p class="head-sub">Your repertoire library</p>
+          <h1>Pieces</h1>
+          <p class="head-sub">Manage your music pieces and repertoire</p>
         </div>
 
         <div class="head-r">
@@ -1022,7 +985,7 @@
       </div>
 
       <p class="countline" id="countline" aria-live="polite">
-        <b>18</b> pieces <span class="sep">·</span> <b>6</b> in rotation this month
+        <b>18</b> pieces <span class="sep">·</span> <b>316</b> lessons taught
       </p>
     </section>
 
@@ -1030,19 +993,17 @@
     <section class="shelf" id="shelf" aria-label="Repertoire shelf">
 
       <!-- 1 · Für Elise -->
-      <article class="piece card rise" style="--i:2" data-diff="3" data-title="für elise" data-level="Grade 4" data-desc="Watch the left hand in the B section — everyone rushes it. Slow the middle down, keep the pedal shallow.">
+      <article class="piece card rise" style="--i:2" data-diff="3" data-title="für elise" data-level="Grade 4" data-desc="Watch the left hand in the B section — everyone rushes it. Slow the middle down, keep the pedal shallow." data-lessons="6" data-created="June 28, 2026">
         <div class="cover cover--d3">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
-          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
           <button class="kebab" type="button" aria-label="Options for Für Elise" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Für Elise options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Für Elise</h3>
@@ -1060,29 +1021,23 @@
           <p class="desc">Watch the left hand in the B section — everyone rushes it. Slow the middle down, keep the pedal shallow.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm">MA</span>
-            <span class="av av--sm av--mint">GH</span>
-            <span class="av av--sm av--sand">LC</span>
-            <span class="av av--sm av--more">+2</span>
-          </span>
-          <span class="learners">5 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>6</b> lessons</span>
         </footer>
       </article>
 
       <!-- 2 · Clair de Lune -->
-      <article class="piece card rise" style="--i:3" data-diff="5" data-title="clair de lune" data-level="ABRSM 8" data-desc="Pedal is the whole piece. Only Bảo Ngọc is ready for it — she has the patience for the silences.">
+      <article class="piece card rise" style="--i:3" data-diff="5" data-title="clair de lune" data-level="ABRSM 8" data-desc="Pedal is the whole piece. Only Bảo Ngọc is ready for it — she has the patience for the silences." data-lessons="4" data-created="June 14, 2026">
         <div class="cover cover--d5">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Clair de Lune" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Clair de Lune options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Clair de Lune</h3>
@@ -1100,25 +1055,23 @@
           <p class="desc">Pedal is the whole piece. Only Bảo Ngọc is ready for it — she has the patience for the silences.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true"><span class="av av--sm av--mint">BN</span></span>
-          <span class="learners">1 student learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>4</b> lessons</span>
         </footer>
       </article>
 
       <!-- 3 · Nocturne Op.9 No.2 — menu shown OPEN -->
-      <article class="piece card rise is-menu-open" style="--i:4" data-diff="4" data-title="nocturne op.9 no.2" data-level="ABRSM 6" data-desc="Rubato in the right hand, metronome-steady in the left. Make them sing the melody before they touch a key.">
+      <article class="piece card rise" style="--i:4" data-diff="4" data-title="nocturne op.9 no.2" data-level="ABRSM 6" data-desc="Rubato in the right hand, metronome-steady in the left. Make them sing the melody before they touch a key." data-lessons="24" data-created="June 2, 2026">
         <div class="cover cover--d4">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
-          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
-          <button class="kebab" type="button" aria-label="Options for Nocturne Op.9 No.2" aria-haspopup="menu" aria-expanded="true">
+          <button class="kebab" type="button" aria-label="Options for Nocturne Op.9 No.2" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
-        <ul class="pmenu" role="menu" aria-label="Nocturne Op.9 No.2 options">
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+        <ul class="pmenu" role="menu" aria-label="Nocturne Op.9 No.2 options" hidden>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Nocturne Op.9 No.2</h3>
@@ -1136,29 +1089,23 @@
           <p class="desc">Rubato in the right hand, metronome-steady in the left. Make them sing the melody before they touch a key.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--mint">BN</span>
-            <span class="av av--sm">ET</span>
-            <span class="av av--sm av--sand">KL</span>
-          </span>
-          <span class="learners">3 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>24</b> lessons</span>
         </footer>
       </article>
 
       <!-- 4 · Turkish March -->
-      <article class="piece card rise" style="--i:5" data-diff="4" data-title="turkish march" data-level="Grade 5" data-desc="Light wrist for the octave runs. Start at 60 bpm and add four a week — no faster, no exceptions.">
+      <article class="piece card rise" style="--i:5" data-diff="4" data-title="turkish march" data-level="Grade 5" data-desc="Light wrist for the octave runs. Start at 60 bpm and add four a week — no faster, no exceptions." data-lessons="12" data-created="May 22, 2026">
         <div class="cover cover--d4">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
-          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
           <button class="kebab" type="button" aria-label="Options for Turkish March" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Turkish March options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Turkish March</h3>
@@ -1176,30 +1123,23 @@
           <p class="desc">Light wrist for the octave runs. Start at 60 bpm and add four a week — no faster, no exceptions.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--sand">QB</span>
-            <span class="av av--sm">NP</span>
-            <span class="av av--sm av--mint">LC</span>
-            <span class="av av--sm av--more">+1</span>
-          </span>
-          <span class="learners">4 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>12</b> lessons</span>
         </footer>
       </article>
 
       <!-- 5 · Gymnopédie No.1 -->
-      <article class="piece card rise" style="--i:6" data-diff="2" data-title="gymnopédie no.1" data-level="Grade 3" data-desc="Slow, floaty and forgiving — the piece I hand to a student who badly needs a win this month.">
+      <article class="piece card rise" style="--i:6" data-diff="2" data-title="gymnopédie no.1" data-level="Grade 3" data-desc="Slow, floaty and forgiving — the piece I hand to a student who badly needs a win this month." data-lessons="19" data-created="May 9, 2026">
         <div class="cover cover--d2">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
-          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
           <button class="kebab" type="button" aria-label="Options for Gymnopédie No.1" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Gymnopédie No.1 options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Gymnopédie No.1</h3>
@@ -1217,29 +1157,23 @@
           <p class="desc">Slow, floaty and forgiving — the piece I hand to a student who badly needs a win this month.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--mint">GH</span>
-            <span class="av av--sm">ON</span>
-            <span class="av av--sm av--sand">TT</span>
-            <span class="av av--sm av--more">+3</span>
-          </span>
-          <span class="learners">6 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>19</b> lessons</span>
         </footer>
       </article>
 
       <!-- 6 · Arabesque No.1 -->
-      <article class="piece card rise" style="--i:7" data-diff="4" data-title="arabesque no.1" data-level="ABRSM 5" data-desc="Three against two. Clap the cross-rhythm away from the piano first, then let the hands try it.">
+      <article class="piece card rise" style="--i:7" data-diff="4" data-title="arabesque no.1" data-level="ABRSM 5" data-desc="Three against two. Clap the cross-rhythm away from the piano first, then let the hands try it." data-lessons="9" data-created="April 30, 2026">
         <div class="cover cover--d4">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Arabesque No.1" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Arabesque No.1 options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Arabesque No.1</h3>
@@ -1257,28 +1191,23 @@
           <p class="desc">Three against two. Clap the cross-rhythm away from the piano first, then let the hands try it.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm">ET</span>
-            <span class="av av--sm av--mint">BN</span>
-          </span>
-          <span class="learners">2 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>9</b> lessons</span>
         </footer>
       </article>
 
       <!-- 7 · River Flows in You -->
-      <article class="piece card rise" style="--i:8" data-diff="3" data-title="river flows in you" data-level="Grade 4" data-desc="Every single student asks for this one. Loop the ostinato until the left hand forgets it is working.">
+      <article class="piece card rise" style="--i:8" data-diff="3" data-title="river flows in you" data-level="Grade 4" data-desc="Every single student asks for this one. Loop the ostinato until the left hand forgets it is working." data-lessons="42" data-created="April 18, 2026">
         <div class="cover cover--d3">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
-          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
           <button class="kebab" type="button" aria-label="Options for River Flows in You" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="River Flows in You options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">River Flows in You</h3>
@@ -1296,30 +1225,23 @@
           <p class="desc">Every single student asks for this one. Loop the ostinato until the left hand forgets it is working.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm">MA</span>
-            <span class="av av--sm av--sand">KL</span>
-            <span class="av av--sm av--mint">ON</span>
-            <span class="av av--sm av--more">+5</span>
-          </span>
-          <span class="learners">8 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>42</b> lessons</span>
         </footer>
       </article>
 
       <!-- 8 · Minuet in G -->
-      <article class="piece card rise" style="--i:9" data-diff="2" data-title="minuet in g" data-level="Grade 2" data-desc="The ornaments can wait. Get the two voices balanced and Bach does the rest of the teaching.">
+      <article class="piece card rise" style="--i:9" data-diff="2" data-title="minuet in g" data-level="Grade 2" data-desc="The ornaments can wait. Get the two voices balanced and Bach does the rest of the teaching." data-lessons="33" data-created="April 4, 2026">
         <div class="cover cover--d2">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
-          <span class="rot"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>In rotation</span>
           <button class="kebab" type="button" aria-label="Options for Minuet in G" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Minuet in G options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Minuet in G</h3>
@@ -1337,29 +1259,23 @@
           <p class="desc">The ornaments can wait. Get the two voices balanced and Bach does the rest of the teaching.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--mint">GH</span>
-            <span class="av av--sm av--sand">QB</span>
-            <span class="av av--sm">TT</span>
-            <span class="av av--sm av--more">+4</span>
-          </span>
-          <span class="learners">7 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>33</b> lessons</span>
         </footer>
       </article>
 
       <!-- 9 · Prelude in C — NO description (proves the empty case reads fine) -->
-      <article class="piece card rise" style="--i:10" data-diff="2" data-title="prelude in c" data-level="Grade 3" data-desc="">
+      <article class="piece card rise" style="--i:10" data-diff="2" data-title="prelude in c" data-level="Grade 3" data-desc="" data-lessons="15" data-created="March 26, 2026">
         <div class="cover cover--d2">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Prelude in C" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Prelude in C options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Prelude in C</h3>
@@ -1380,29 +1296,23 @@
           </p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm">MA</span>
-            <span class="av av--sm av--mint">ET</span>
-            <span class="av av--sm av--sand">NP</span>
-            <span class="av av--sm av--more">+1</span>
-          </span>
-          <span class="learners">4 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>15</b> lessons</span>
         </footer>
       </article>
 
       <!-- 10 · Sonatina in G -->
-      <article class="piece card rise" style="--i:11" data-diff="3" data-title="sonatina in g" data-level="Grade 4" data-desc="Sonata form without the panic. The right stepping stone before anyone touches Beethoven properly.">
+      <article class="piece card rise" style="--i:11" data-diff="3" data-title="sonatina in g" data-level="Grade 4" data-desc="Sonata form without the panic. The right stepping stone before anyone touches Beethoven properly." data-lessons="12" data-created="March 15, 2026">
         <div class="cover cover--d3">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Sonatina in G" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Sonatina in G options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Sonatina in G</h3>
@@ -1420,28 +1330,23 @@
           <p class="desc">Sonata form without the panic. The right stepping stone before anyone touches Beethoven properly.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--sand">LC</span>
-            <span class="av av--sm">ON</span>
-            <span class="av av--sm av--mint">KL</span>
-          </span>
-          <span class="learners">3 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>12</b> lessons</span>
         </footer>
       </article>
 
       <!-- 11 · Ode to Joy -->
-      <article class="piece card rise" style="--i:12" data-diff="1" data-title="ode to joy" data-level="Beginner" data-desc="First recital piece for almost everyone. Two hands, five fingers, instant pride on the face.">
+      <article class="piece card rise" style="--i:12" data-diff="1" data-title="ode to joy" data-level="Beginner" data-desc="First recital piece for almost everyone. Two hands, five fingers, instant pride on the face." data-lessons="38" data-created="March 2, 2026">
         <div class="cover cover--d1">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Ode to Joy" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Ode to Joy options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Ode to Joy</h3>
@@ -1459,29 +1364,23 @@
           <p class="desc">First recital piece for almost everyone. Two hands, five fingers, instant pride on the face.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--sand">TT</span>
-            <span class="av av--sm">NP</span>
-            <span class="av av--sm av--mint">QB</span>
-            <span class="av av--sm av--more">+6</span>
-          </span>
-          <span class="learners">9 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>38</b> lessons</span>
         </footer>
       </article>
 
       <!-- 12 · Twinkle, Twinkle Variations -->
-      <article class="piece card rise" style="--i:13" data-diff="1" data-title="twinkle, twinkle variations" data-level="Beginner" data-desc="Six variations in one afternoon. Teaches articulation without ever saying the word articulation.">
+      <article class="piece card rise" style="--i:13" data-diff="1" data-title="twinkle, twinkle variations" data-level="Beginner" data-desc="Six variations in one afternoon. Teaches articulation without ever saying the word articulation." data-lessons="26" data-created="February 19, 2026">
         <div class="cover cover--d1">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Twinkle, Twinkle Variations" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Twinkle, Twinkle Variations options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Twinkle, Twinkle Variations</h3>
@@ -1499,29 +1398,23 @@
           <p class="desc">Six variations in one afternoon. Teaches articulation without ever saying the word articulation.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm">MA</span>
-            <span class="av av--sm av--mint">GH</span>
-            <span class="av av--sm av--sand">ON</span>
-            <span class="av av--sm av--more">+3</span>
-          </span>
-          <span class="learners">6 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>26</b> lessons</span>
         </footer>
       </article>
 
       <!-- 13 · Kiss the Rain — no level -->
-      <article class="piece card rise" style="--i:14" data-diff="2" data-title="kiss the rain" data-level="" data-desc="Requested constantly. Watch that the pedal doesn't turn the whole thing into soup.">
+      <article class="piece card rise" style="--i:14" data-diff="2" data-title="kiss the rain" data-level="" data-desc="Requested constantly. Watch that the pedal doesn't turn the whole thing into soup." data-lessons="21" data-created="February 6, 2026">
         <div class="cover cover--d2">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Kiss the Rain" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Kiss the Rain options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Kiss the Rain</h3>
@@ -1539,29 +1432,23 @@
           <p class="desc">Requested constantly. Watch that the pedal doesn't turn the whole thing into soup.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--sand">KL</span>
-            <span class="av av--sm av--mint">BN</span>
-            <span class="av av--sm">ET</span>
-            <span class="av av--sm av--more">+2</span>
-          </span>
-          <span class="learners">5 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>21</b> lessons</span>
         </footer>
       </article>
 
       <!-- 14 · The Entertainer -->
-      <article class="piece card rise" style="--i:15" data-diff="3" data-title="the entertainer" data-level="Grade 4" data-desc="A syncopation lesson in disguise. The left hand must stay strict or the joke stops landing.">
+      <article class="piece card rise" style="--i:15" data-diff="3" data-title="the entertainer" data-level="Grade 4" data-desc="A syncopation lesson in disguise. The left hand must stay strict or the joke stops landing." data-lessons="14" data-created="January 28, 2026">
         <div class="cover cover--d3">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for The Entertainer" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="The Entertainer options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">The Entertainer</h3>
@@ -1579,28 +1466,23 @@
           <p class="desc">A syncopation lesson in disguise. The left hand must stay strict or the joke stops landing.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm">LC</span>
-            <span class="av av--sm av--sand">QB</span>
-            <span class="av av--sm av--mint">NP</span>
-          </span>
-          <span class="learners">3 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>14</b> lessons</span>
         </footer>
       </article>
 
       <!-- 15 · Waltz in A minor -->
-      <article class="piece card rise" style="--i:16" data-diff="3" data-title="waltz in a minor" data-level="ABRSM 4" data-desc="Chopin's easiest, and still the best lesson in phrasing I own. Count in one, never in three.">
+      <article class="piece card rise" style="--i:16" data-diff="3" data-title="waltz in a minor" data-level="ABRSM 4" data-desc="Chopin's easiest, and still the best lesson in phrasing I own. Count in one, never in three." data-lessons="17" data-created="January 16, 2026">
         <div class="cover cover--d3">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Waltz in A minor" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Waltz in A minor options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Waltz in A minor</h3>
@@ -1618,29 +1500,23 @@
           <p class="desc">Chopin's easiest, and still the best lesson in phrasing I own. Count in one, never in three.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--mint">ON</span>
-            <span class="av av--sm">MA</span>
-            <span class="av av--sm av--sand">TT</span>
-            <span class="av av--sm av--more">+1</span>
-          </span>
-          <span class="learners">4 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>17</b> lessons</span>
         </footer>
       </article>
 
       <!-- 16 · Solfeggietto -->
-      <article class="piece card rise" style="--i:17" data-diff="4" data-title="solfeggietto" data-level="ABRSM 6" data-desc="Pure finger work. Hands alone for two full weeks before anyone is allowed to put them together.">
+      <article class="piece card rise" style="--i:17" data-diff="4" data-title="solfeggietto" data-level="ABRSM 6" data-desc="Pure finger work. Hands alone for two full weeks before anyone is allowed to put them together." data-lessons="8" data-created="January 5, 2026">
         <div class="cover cover--d4">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Solfeggietto" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Solfeggietto options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Solfeggietto</h3>
@@ -1658,27 +1534,23 @@
           <p class="desc">Pure finger work. Hands alone for two full weeks before anyone is allowed to put them together.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm av--mint">BN</span>
-            <span class="av av--sm">NP</span>
-          </span>
-          <span class="learners">2 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>8</b> lessons</span>
         </footer>
       </article>
 
       <!-- 17 · Moonlight Sonata · 1st mvt -->
-      <article class="piece card rise" style="--i:18" data-diff="4" data-title="moonlight sonata · 1st mvt" data-level="ABRSM 6" data-desc="The triplets must be even and unhurried. A slow piece that punishes rushing more than a fast one.">
+      <article class="piece card rise" style="--i:18" data-diff="4" data-title="moonlight sonata · 1st mvt" data-level="ABRSM 6" data-desc="The triplets must be even and unhurried. A slow piece that punishes rushing more than a fast one." data-lessons="11" data-created="December 20, 2025">
         <div class="cover cover--d4">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Moonlight Sonata, 1st movement" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Moonlight Sonata options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Moonlight Sonata · 1st mvt</h3>
@@ -1696,28 +1568,23 @@
           <p class="desc">The triplets must be even and unhurried. A slow piece that punishes rushing more than a fast one.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true">
-            <span class="av av--sm">ET</span>
-            <span class="av av--sm av--sand">KL</span>
-            <span class="av av--sm av--mint">BN</span>
-          </span>
-          <span class="learners">3 students learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>11</b> lessons</span>
         </footer>
       </article>
 
       <!-- 18 · Fantaisie-Impromptu -->
-      <article class="piece card rise" style="--i:19" data-diff="5" data-title="fantaisie-impromptu" data-level="ABRSM 8" data-desc="Four against three, at speed. Only Khánh Linh has asked for it — we are taking a whole year over it.">
+      <article class="piece card rise" style="--i:19" data-diff="5" data-title="fantaisie-impromptu" data-level="ABRSM 8" data-desc="Four against three, at speed. Only Khánh Linh has asked for it — we are taking a whole year over it." data-lessons="5" data-created="December 8, 2025">
         <div class="cover cover--d5">
           <span class="keys" aria-hidden="true"></span>
-          <svg class="cover-mark" aria-hidden="true"><use href="#note-mark"/></svg>
           <button class="kebab" type="button" aria-label="Options for Fantaisie-Impromptu" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
           </button>
         </div>
         <ul class="pmenu" role="menu" aria-label="Fantaisie-Impromptu options" hidden>
-          <li><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
-          <li><hr></li>
-          <li><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
+          <li role="none"><button role="menuitem" type="button" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button></li>
+          <li role="none"><hr role="separator"></li>
+          <li role="none"><button role="menuitem" type="button" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button></li>
         </ul>
         <div class="pbody">
           <h3 class="ptitle">Fantaisie-Impromptu</h3>
@@ -1735,8 +1602,8 @@
           <p class="desc">Four against three, at speed. Only Khánh Linh has asked for it — we are taking a whole year over it.</p>
         </div>
         <footer class="pfoot">
-          <span class="stack" aria-hidden="true"><span class="av av--sm av--sand">KL</span></span>
-          <span class="learners">1 student learning</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#note-mark"/></svg>
+          <span class="learners"><b>5</b> lessons</span>
         </footer>
       </article>
 
@@ -1790,7 +1657,7 @@
             <circle cx="126" cy="26" r="3.4"/><rect x="128.6" y="12" width="1.8" height="15" rx="1"/>
           </g>
         </svg>
-        <h2 id="emptyTitle">No pieces yet 🎀</h2>
+        <h2 id="emptyTitle">No pieces yet</h2>
         <p id="emptyText">Add the first one and your shelf starts filling up. Mochi is warming up already.</p>
         <button class="btn btn--mint" type="button" id="clearFilters" hidden>Clear filters</button>
       </div>
@@ -1824,13 +1691,15 @@
   </button>
 </nav>
 
-<!-- ═══════════════ SIDE SHEET · Edit piece (rendered OPEN) ═══════════════ -->
-<div class="sheet-scrim print-hide" id="sheetScrim"></div>
+<!-- ═══ SIDE SHEET · Edit Piece — ships CLOSED: the page is the shelf. Opened
+     from ⋯ → Edit, from "Add piece", or from the add tile. While it is open the
+     shell + tab bar are inert. Copy matches piece-sheet.tsx / piece-form.tsx. -->
+<div class="sheet-scrim print-hide" id="sheetScrim" hidden></div>
 
-<aside class="sheet print-hide" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" aria-describedby="sheetSub">
+<aside class="sheet print-hide" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" aria-describedby="sheetSub" hidden>
   <header class="sheet-head">
     <div>
-      <h2 id="sheetTitle">Edit piece</h2>
+      <h2 id="sheetTitle">Edit Piece</h2>
       <p class="sheet-sub" id="sheetSub">Update piece details and information.</p>
     </div>
     <button class="sheet-close" type="button" id="sheetClose" aria-label="Close edit piece panel">
@@ -1845,16 +1714,14 @@
     </div>
 
     <div class="field">
-      <label for="f-desc">Description</label>
+      <label for="f-desc">Notes</label>
       <textarea id="f-desc" placeholder="Add details about the piece…">Rubato in the right hand, metronome-steady in the left. Make them sing the melody before they touch a key.</textarea>
       <span class="hint">Add notes about the composer, style, or key details.</span>
     </div>
 
-    <div class="field">
-      <label for="f-level">Level</label>
-      <input id="f-level" type="text" value="ABRSM 6" placeholder="e.g. Grade 4, ABRSM 5, Beginner">
-      <span class="hint">Free text — whatever wording you use with parents.</span>
-    </div>
+    <!-- No Level field. pieceFormSchema is { title, description, difficulty }:
+         Piece.level exists on the model and is shown on the cards, but the
+         product does not let you edit it — so this form must not either. -->
 
     <div class="field">
       <span id="diffLabel" class="field-label" style="font:650 12.5px/1 var(--font-sans); color:var(--ink)">Difficulty</span>
@@ -1883,16 +1750,16 @@
       </div>
     </div>
 
-    <div class="info">
+    <div class="info" id="sheetInfo">
       <h3>Piece information</h3>
-      <p>Total lessons <b>24</b></p>
-      <p>Created <b>March 2, 2026</b></p>
+      <p>Total lessons <b id="infoLessons">24</b></p>
+      <p>Created <b id="infoCreated">June 2, 2026</b></p>
     </div>
   </form>
 
   <footer class="sheet-foot">
     <button class="btn btn--quiet" type="button" id="sheetCancel">Cancel</button>
-    <button class="btn btn--primary" type="submit" form="sheetForm">Save piece</button>
+    <button class="btn btn--primary" type="submit" form="sheetForm" id="sheetSubmit">Save Changes</button>
   </footer>
 </aside>
 
@@ -1984,27 +1851,33 @@
   var clearBtn = document.getElementById('clearFilters');
   var addTile = document.getElementById('addTile');
   var TOTAL = pieces.length;          /* 18 */
-  var ROTATION = 6;                   /* pieces taught at least once this month */
   var activeDiff = 'all';
+
+  /* The only aggregate the API returns per piece is _count.lessons, so that is
+     the only second stat the countline may carry. It is summed over the cards
+     that are actually visible, so it stays true while filtering. */
+  function lessonsOf(p) { return Number(p.dataset.lessons) || 0; }
+  var TOTAL_LESSONS = pieces.reduce(function (n, p) { return n + lessonsOf(p); }, 0);
 
   function apply() {
     var term = q.value.trim().toLowerCase();
     var shown = 0;
+    var lessons = 0;
 
     pieces.forEach(function (p) {
       var okDiff = activeDiff === 'all' || p.dataset.diff === activeDiff;
       var okTerm = !term || p.dataset.title.indexOf(term) !== -1;
       var visible = okDiff && okTerm;
       p.hidden = !visible;
-      if (visible) shown++;
+      if (visible) { shown++; lessons += lessonsOf(p); }
       if (!visible) closeMenu(p);   /* never leave a menu open on a hidden card */
     });
 
     var filtering = activeDiff !== 'all' || term !== '';
 
     countline.innerHTML = filtering
-      ? 'Showing <b>' + shown + '</b> of <b>' + TOTAL + '</b> pieces <span class="sep">·</span> <b>' + ROTATION + '</b> in rotation this month'
-      : '<b>' + TOTAL + '</b> pieces <span class="sep">·</span> <b>' + ROTATION + '</b> in rotation this month';
+      ? 'Showing <b>' + shown + '</b> of <b>' + TOTAL + '</b> pieces <span class="sep">·</span> <b>' + lessons + '</b> lessons taught'
+      : '<b>' + TOTAL + '</b> pieces <span class="sep">·</span> <b>' + TOTAL_LESSONS + '</b> lessons taught';
 
     var none = shown === 0;
     empty.hidden = !none;
@@ -2013,10 +1886,10 @@
 
     if (none) {
       if (filtering) {
-        emptyTitle.textContent = 'Nothing on that shelf yet 🎀';
+        emptyTitle.textContent = 'Nothing on that shelf yet';
         emptyText.textContent = 'No piece matches this filter. Try another difficulty, or clear the search.';
       } else {
-        emptyTitle.textContent = 'No pieces yet 🎀';
+        emptyTitle.textContent = 'No pieces yet';
         emptyText.textContent = 'Add the first one and your shelf starts filling up. Mochi is warming up already.';
       }
     }
@@ -2074,6 +1947,21 @@
       if (act) openSheet(card);
       else kebab.focus();
     });
+
+    /* role="menu" promises Up/Down/Home/End — so honour it. */
+    menu.addEventListener('keydown', function (e) {
+      var items = Array.prototype.slice.call(menu.querySelectorAll('[role="menuitem"]'));
+      var i = items.indexOf(document.activeElement);
+      var next = null;
+      if (e.key === 'ArrowDown') next = items[(i + 1) % items.length];
+      else if (e.key === 'ArrowUp') next = items[(i - 1 + items.length) % items.length];
+      else if (e.key === 'Home') next = items[0];
+      else if (e.key === 'End') next = items[items.length - 1];
+      else if (e.key === 'Tab') { closeMenu(card); return; }
+      if (!next) return;
+      e.preventDefault();
+      next.focus();
+    });
   });
 
   document.addEventListener('click', function (e) {
@@ -2088,9 +1976,23 @@
   var sheetSub = document.getElementById('sheetSub');
   var fTitle = document.getElementById('f-title');
   var fDesc = document.getElementById('f-desc');
-  var fLevel = document.getElementById('f-level');
   var sheetForm = document.getElementById('sheetForm');
+  var sheetSubmit = document.getElementById('sheetSubmit');
+  var sheetInfo = document.getElementById('sheetInfo');
+  var infoLessons = document.getElementById('infoLessons');
+  var infoCreated = document.getElementById('infoCreated');
+  var shell = document.querySelector('.shell');
+  var tabbar = document.querySelector('.tabbar');
   var sheetOpener = null;
+
+  /* An aria-modal dialog must not leave the page behind it reachable. */
+  function setBackgroundInert(on) {
+    [shell, tabbar].forEach(function (el) {
+      if (!el) return;
+      if (on) el.setAttribute('inert', '');
+      else el.removeAttribute('inert');
+    });
+  }
 
   /* The five difficulty steps, exactly as the real app names them. */
   var SCALE = {
@@ -2133,37 +2035,46 @@
     });
   });
 
+  /* Copy below is lifted verbatim from piece-sheet.tsx / piece-form.tsx. */
   function openSheet(card) {
     sheetOpener = card ? card.querySelector('.kebab') : document.activeElement;
     if (card) {
-      sheetTitle.textContent = 'Edit piece';
+      sheetTitle.textContent = 'Edit Piece';
       sheetSub.textContent = 'Update piece details and information.';
+      sheetSubmit.textContent = 'Save Changes';
       fTitle.value = card.querySelector('.ptitle').textContent.trim();
       fDesc.value = card.dataset.desc || '';
-      fLevel.value = card.dataset.level || '';
       paint(Number(card.dataset.diff) || 1);
+      /* the two real read-only fields: _count.lessons and createdAt */
+      infoLessons.textContent = card.dataset.lessons || '0';
+      infoCreated.textContent = card.dataset.created || '—';
+      sheetInfo.hidden = false;
     }
     sheet.hidden = false;
     scrim.hidden = false;
+    setBackgroundInert(true);
     fTitle.focus();
   }
 
   function openCreateSheet(from) {
     sheetOpener = from || document.activeElement;
     sheetTitle.textContent = 'Add a new piece 🎶';
-    sheetSub.textContent = 'This will appear in your teaching repertoire.';
+    sheetSub.textContent = 'This will appear in your teaching repertoire';
+    sheetSubmit.textContent = 'Add to Diary';
     fTitle.value = '';
     fDesc.value = '';
-    fLevel.value = '';
     paint(1);
+    sheetInfo.hidden = true;   /* a piece that does not exist yet has no counts */
     sheet.hidden = false;
     scrim.hidden = false;
+    setBackgroundInert(true);
     fTitle.focus();
   }
 
   function closeSheet() {
     sheet.hidden = true;
     scrim.hidden = true;
+    setBackgroundInert(false);
     if (sheetOpener && document.contains(sheetOpener)) sheetOpener.focus();
     sheetOpener = null;
   }
@@ -2208,7 +2119,7 @@
     }
   });
 
-  /* ══ 5. Boot — the sheet ships OPEN on "Nocturne Op.9 No.2" ═══════════ */
+  /* ══ 5. Boot — the page loads on the SHELF: no open dialog, no open menu. ══ */
   syncSidebar();
   paint(4);
   apply();

@@ -9,16 +9,15 @@
      The sweet, feminine take. Ornament lives in the frame; the data layer
      stays crisp, tabular and sober. Screen-specific CSS only — every colour,
      radius and shadow comes from _theme.css (or color-mix() off its tokens).
-     ORNAMENT BUDGET (max 2 per region):
-       hero    → drifting blobs + scalloped edge   (squiggle = typography, bow = brand mark)
-       kpis    → petal corner + piano-key strip
+     ORNAMENT BUDGET (max 2 per region — enforced, not excused):
+       hero    → drifting blobs + scalloped edge
+       kpis    → petal corner + piano-key strip (keys clipped OFF the data fill)
        focus   → washi-tape sticker
        podium  → petal crown + medals
-       insight → sparkle
-       chart   → blossom peak marker (nothing else inside the plot)
+       insight → none (the numbers are the ornament)
+       chart   → none inside the plot
+     One motif family (blossom) + the tape. Nothing decorative touches a value.
      ====================================================================== */
-
-  :root { --on-mint: #14332e; }
 
   /* ── Shell (identical conventions to dashboard-a) ──────────────────── */
   .shell {
@@ -69,7 +68,8 @@
   .side-cta { width: 100%; }
 
   .nav-group + .nav-group { margin-top: 18px; }
-  .nav-group > .label { padding: 0 12px 8px; display: block; }
+  /* same reason as .kpi .label — a real heading, not decoration */
+  .nav-group > .label { padding: 0 12px 8px; display: block; color: var(--ink-soft); }
   .nav-list { list-style: none; display: grid; gap: 3px; }
   .nav-link {
     display: flex; align-items: center; gap: 12px;
@@ -219,22 +219,13 @@
     color: var(--ink);
     white-space: nowrap;
   }
-  .hero-brand .bow { width: 20px; height: 20px; color: var(--pink-600); flex: 0 0 auto; }
   .hero-brand em { font-style: normal; color: var(--ink-soft); font-weight: 500; }
   .hero-brand .sep { color: var(--ink-faint); }
 
-  .h1-wrap { position: relative; display: inline-block; max-width: 100%; padding-bottom: 12px; }
   .greeting {
     font: var(--t-display);
     letter-spacing: -0.02em;
     color: var(--ink);
-  }
-  /* Hand-drawn underline — replaces a straight rule under the H1. */
-  .squiggle {
-    position: absolute; left: 0; right: 0; bottom: 0;
-    width: 100%; height: 11px;
-    overflow: visible;
-    pointer-events: none;
   }
   .hero-date {
     margin-top: 10px;
@@ -274,6 +265,10 @@
 
   .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
+  /* Avatar variants — --mint-ink is the only ink allowed on a --grad-mint fill. */
+  .av--mint { background: var(--grad-mint); color: var(--mint-ink); }
+  .av--pink { background: var(--grad-pink); color: var(--ink-invert); }
+
   .sec-head {
     display: flex; align-items: flex-start; justify-content: space-between;
     gap: 10px; margin-bottom: 12px;
@@ -287,7 +282,6 @@
   .kpi {
     position: relative;
     overflow: hidden;
-    border-radius: var(--r-xl);
     padding: 18px;
     display: flex; flex-direction: column; gap: 6px;
     min-height: 176px;
@@ -301,7 +295,11 @@
   }
   .petal--pink { color: var(--bubblegum); }
   .petal--mint { color: var(--wintergreen); opacity: .38; }
-  .kpi .label { padding-right: 44px; }
+  /* --ink-faint (the .label default) is decorative-only ink. These labels are
+     the ONLY name each KPI number has, so they get real text ink. */
+  .kpi .label,
+  .ins-hero .label { color: var(--ink-soft); padding-right: 44px; }
+  .ins-hero .label { padding-right: 0; }
   .kpi .metric {
     margin-top: 2px;
     font-size: clamp(20px, 2vw, 26px);
@@ -324,11 +322,15 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* PIANO-KEY MOTIF — a progress strip built from black & white keys. */
+  /* PIANO-KEY MOTIF — a progress strip whose EMPTY track is a keyboard.
+     --p (the real value) lives on .keys; the key pattern is masked away from
+     0 → --p, so the ornament never paints on top of the fill. The end of the
+     fill — the one thing the meter exists to show — is the highest-contrast
+     edge in the strip. */
   .keys {
     position: relative;
     height: 15px;
-    border-radius: 5px;
+    border-radius: 6px;
     overflow: hidden;
     background: var(--surface);
     box-shadow: inset 0 0 0 1px var(--line-strong);
@@ -337,9 +339,9 @@
     position: absolute; top: 0; bottom: 0; left: 0;
     width: var(--p, 50%);
     background: var(--grad-pink);
-    opacity: .5;
+    border-right: 1.5px solid var(--pink-600);
   }
-  .keys--mint > i { background: var(--grad-mint); opacity: .75; }
+  .keys--mint > i { background: var(--grad-mint); border-right-color: var(--teal-600); }
   .keys::after {
     content: "";
     position: absolute; inset: 0;
@@ -357,53 +359,11 @@
       repeating-linear-gradient(90deg,
         transparent 0 11px,
         color-mix(in srgb, var(--ink) 20%, transparent) 11px 12px);
+    /* keyboard is clipped to the UNFILLED track only */
+    -webkit-mask: linear-gradient(90deg, transparent 0 var(--p, 50%), #000 var(--p, 50%));
+    mask: linear-gradient(90deg, transparent 0 var(--p, 50%), #000 var(--p, 50%));
+    opacity: .55;
   }
-
-  /* ── SPOILER card — "Missed This Month" ────────────────────────────── */
-  .t-missed { position: relative; overflow: hidden; }
-  .spoiler-body {
-    display: flex; flex-direction: column; gap: 6px; flex: 1;
-    filter: blur(8px);
-    opacity: .4;
-    transition: filter .45s var(--ease), opacity .45s var(--ease);
-    user-select: none;
-  }
-  .t-missed.is-revealed .spoiler-body { filter: none; opacity: 1; user-select: auto; }
-  .spoiler-veil {
-    position: absolute; inset: 0;
-    display: grid; place-items: center;
-    border-radius: inherit;
-    background: linear-gradient(160deg,
-      color-mix(in srgb, var(--pink-100) 66%, transparent),
-      color-mix(in srgb, var(--surface) 52%, transparent));
-    backdrop-filter: blur(1px);
-    transition: opacity var(--dur) var(--ease);
-    z-index: 2;
-  }
-  .t-missed.is-revealed .spoiler-veil { opacity: 0; pointer-events: none; }
-  .veil-chip {
-    display: inline-flex; align-items: center; gap: 7px;
-    min-height: var(--tap);
-    padding: 0 16px;
-    border-radius: var(--r-pill);
-    background: var(--surface);
-    border: 1px solid var(--line-pink);
-    box-shadow: var(--sh-sm);
-    font: 700 13px/1 var(--font-sans);
-    color: var(--pink-700);
-  }
-  .spoiler-veil:hover .veil-chip { box-shadow: var(--sh-pink); }
-  .spoiler-hide {
-    position: absolute; top: 8px; right: 8px;
-    width: var(--tap); min-height: var(--tap);
-    display: none; place-items: center;
-    border-radius: 50%;
-    color: var(--ink-soft);
-    z-index: 3;
-  }
-  .spoiler-hide:hover { background: var(--surface-2); color: var(--ink); }
-  .t-missed.is-revealed .spoiler-hide { display: grid; }
-  .spoiler-hide svg { width: 18px; height: 18px; }
 
   /* ══════════ WASHI-TAPE STICKER — Today's Focus ═══════════════════════ */
   .sticker {
@@ -528,7 +488,7 @@
   .pod-step {
     width: 100%;
     display: grid; place-items: center;
-    border-radius: var(--r) var(--r) 6px 6px;
+    border-radius: var(--r) var(--r) var(--r-xs) var(--r-xs);
     font-size: 20px;
     padding-top: 8px;
   }
@@ -548,7 +508,7 @@
   .rank-badge {
     width: 28px; height: 28px; flex: 0 0 auto;
     display: grid; place-items: center;
-    border-radius: 9px;
+    border-radius: var(--r-xs);
     font: 700 12px/1 var(--font-num);
     font-variant-numeric: tabular-nums;
     background: var(--pink-100);
@@ -581,18 +541,6 @@
   }
   .ins-hero .metric { font-size: clamp(21px, 2.2vw, 26px); color: var(--teal-700); }
   .ins-hero p { margin-top: 4px; font: var(--t-small); color: var(--ink-soft); }
-  .sparkle {
-    position: absolute; top: 12px; right: 14px;
-    width: 26px; height: 26px;
-    color: var(--bubblegum);
-    pointer-events: none;
-    animation: twinkle 2.8s var(--ease) infinite;
-  }
-  .sparkle--sm { width: 14px; height: 14px; top: 30px; right: 40px; animation-delay: .7s; opacity: .7; }
-  @keyframes twinkle {
-    0%, 100% { opacity: .45; transform: scale(.86) rotate(0deg); }
-    50%      { opacity: 1;   transform: scale(1.08) rotate(12deg); }
-  }
   .ins-minis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
   .mini { padding: 13px; border-radius: var(--r-md); display: grid; gap: 2px; }
   .mini b { font: 700 22px/1.1 var(--font-num); font-variant-numeric: tabular-nums; }
@@ -610,7 +558,7 @@
   }
   .followup-ico {
     width: 34px; height: 34px; flex: 0 0 auto;
-    border-radius: 11px; display: grid; place-items: center;
+    border-radius: var(--r-xs); display: grid; place-items: center;
     background: var(--no-bg); color: var(--no-fg);
   }
   .followup-ico svg { width: 17px; height: 17px; }
@@ -632,7 +580,9 @@
   }
   .pill-mint svg { width: 13px; height: 13px; }
   .chart-wrap { margin: 4px -4px 0; padding: 0 4px; }
-  .chart-wrap svg { min-width: 580px; width: 100%; height: auto; }
+  /* min-width == the viewBox width: the chart never downscales below 1:1, so
+     every axis value stays at its authored 11px. Narrow screens scroll it. */
+  .chart-wrap svg { min-width: 760px; width: 100%; height: auto; }
   .chart-legend {
     display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
     margin-top: 10px;
@@ -863,10 +813,6 @@
       </g>
       <circle cx="12" cy="12" r="2.7" fill="#ffffff" opacity=".9"/>
     </symbol>
-    <!-- 4-point sparkle -->
-    <symbol id="i-sparkle" viewBox="0 0 24 24">
-      <path fill="currentColor" d="M12 1.4c.95 5.5 4.15 8.7 9.65 9.65v1.9c-5.5.95-8.7 4.15-9.65 9.65h-1.9C9.15 17.1 5.95 13.9.45 12.95v-1.9C5.95 10.1 9.15 6.9 10.1 1.4z"/>
-    </symbol>
     <!-- ribbon bow — the brand mark ornament -->
     <symbol id="i-bow" viewBox="0 0 24 24">
       <path fill="currentColor" d="M11.4 12C9.6 9.1 7.4 7.6 5.4 7.6 3.5 7.6 2.2 8.9 2.2 10.8c0 2.6 2.1 4.6 4.9 4.6 1.7 0 3.2-1.2 4.3-3.4z"/>
@@ -1019,21 +965,13 @@
             </button>
 
             <span class="hero-brand">
-              <svg class="bow" aria-hidden="true"><use href="#i-bow"/></svg>
               <span>My Piano Diary</span>
               <span class="sep" aria-hidden="true">·</span>
               <em>Personal teaching space</em>
             </span>
           </div>
 
-          <span class="h1-wrap">
-            <h1 class="greeting">Good afternoon, Linh <span aria-hidden="true">✨</span></h1>
-            <!-- hand-drawn underline, not a straight rule -->
-            <svg class="squiggle" viewBox="0 0 260 11" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M3 7.6C34 2.4 52 10.4 84 5.6c32-4.8 50 5.2 82 .8 26-3.6 60 2.4 89 1.2"
-                    fill="none" stroke="var(--bubblegum)" stroke-width="3.4" stroke-linecap="round"/>
-            </svg>
-          </span>
+          <h1 class="greeting">Good afternoon, Linh</h1>
 
           <p class="hero-date">Tuesday, July 14th</p>
           <p class="hero-warm"><b>5 lessons</b> today · <b>1.050.000 ₫</b> expected · 1 cancelled</p>
@@ -1056,40 +994,30 @@
       <section class="card card--pink kpi a-k1 rise" style="--i:1" aria-labelledby="k1t">
         <svg class="petal petal--pink" aria-hidden="true"><use href="#i-blossom"/></svg>
         <span class="label" id="k1t">This Month Revenue</span>
-        <div class="metric num" style="color:var(--ink)">20.550.000<span class="kpi-cur">₫</span></div>
+        <div class="metric num" style="color:var(--ink)">20.150.000<span class="kpi-cur">₫</span></div>
         <p class="kpi-note">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/></svg>
           July · 23 lessons billed
         </p>
         <div class="kpi-foot">
-          <div class="keys" role="img" aria-label="Day 14 of 31 — 45% of July elapsed"><i style="--p:45%"></i></div>
+          <div class="keys" style="--p:45%" role="img" aria-label="Day 14 of 31 — 45% of July elapsed"><i></i></div>
           <p class="kpi-scale"><span>Day 14</span><span>31 days</span></p>
         </div>
       </section>
 
-      <!-- ───────── KPI 2 · Missed This Month (SPOILER) ───────── -->
-      <section class="card card--pink kpi t-missed a-k2 rise" id="missedCard" style="--i:2" aria-labelledby="k2t">
-        <div class="spoiler-body" id="missedBody">
-          <svg class="petal petal--pink" aria-hidden="true"><use href="#i-blossom"/></svg>
-          <span class="label" id="k2t">Missed This Month</span>
-          <div class="metric num" style="color:var(--no-fg)">850.000<span class="kpi-cur">₫</span></div>
-          <p class="kpi-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-            3 CANCELLED lessons · never billed
-          </p>
-          <div class="kpi-foot">
-            <div class="keys" role="img" aria-label="3 cancelled of 26 lessons — 12%"><i style="--p:12%"></i></div>
-            <p class="kpi-scale"><span>3 cancelled</span><span>26 lessons</span></p>
-          </div>
+      <!-- ───────── KPI 2 · Missed This Month ───────── -->
+      <section class="card card--pink kpi a-k2 rise" style="--i:2" aria-labelledby="k2t">
+        <svg class="petal petal--pink" aria-hidden="true"><use href="#i-blossom"/></svg>
+        <span class="label" id="k2t">Missed This Month</span>
+        <div class="metric num" style="color:var(--no-fg)">850.000<span class="kpi-cur">₫</span></div>
+        <p class="kpi-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          3 CANCELLED lessons · never billed
+        </p>
+        <div class="kpi-foot">
+          <div class="keys" style="--p:12%" role="img" aria-label="3 cancelled of 26 lessons — 12%"><i></i></div>
+          <p class="kpi-scale"><span>3 cancelled</span><span>26 lessons</span></p>
         </div>
-
-        <button class="spoiler-veil" id="missedVeil" type="button" aria-controls="missedBody" aria-expanded="false">
-          <span class="veil-chip">Click to reveal 👀</span>
-        </button>
-
-        <button class="spoiler-hide" id="missedHide" type="button" aria-label="Hide missed amount again">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 7 9 7a17 17 0 0 1-2.7 3.6M6.4 6.5A16.8 16.8 0 0 0 3 12s3.5 7 9 7a9.7 9.7 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
-        </button>
       </section>
 
       <!-- ───────── KPI 3 · Collected Last Month ───────── -->
@@ -1102,7 +1030,7 @@
           June · 12 of 16 sheets settled
         </p>
         <div class="kpi-foot">
-          <div class="keys keys--mint" role="img" aria-label="89% of June expected amount collected"><i style="--p:89%"></i></div>
+          <div class="keys keys--mint" style="--p:89%" role="img" aria-label="89% of June expected amount collected"><i></i></div>
           <p class="kpi-scale"><span>89% collected</span><span>28.100.000 ₫</span></p>
         </div>
       </section>
@@ -1117,7 +1045,7 @@
           June · 4 unpaid sheets
         </p>
         <div class="kpi-foot">
-          <div class="keys" role="img" aria-label="11% of June expected amount still outstanding"><i style="--p:11%"></i></div>
+          <div class="keys" style="--p:11%" role="img" aria-label="11% of June expected amount still outstanding"><i></i></div>
           <p class="kpi-scale"><span>11% unpaid</span><span>28.100.000 ₫</span></p>
         </div>
       </section>
@@ -1126,7 +1054,7 @@
       <section class="card card--mint sticker a-focus rise" style="--i:5" aria-labelledby="focusTitle">
         <div class="sec-head">
           <div>
-            <h2 class="sec-title" id="focusTitle">Today's Focus 🎹</h2>
+            <h2 class="sec-title" id="focusTitle">Today's Focus <span aria-hidden="true">🎹</span></h2>
             <p class="sec-sub">Tuesday, July 14th · pinned to the diary</p>
           </div>
         </div>
@@ -1151,7 +1079,7 @@
               </span>
             </span>
             <span class="focus-end">
-              <span class="chip chip--complete">Present</span>
+              <span class="chip chip--complete">Complete</span>
               <span class="focus-money">200.000 ₫</span>
             </span>
             <span class="focus-act"><button class="btn btn--ghost btn--sm" type="button">Update</button></span>
@@ -1167,14 +1095,14 @@
               </span>
             </span>
             <span class="focus-end">
-              <span class="chip chip--complete">Present</span>
+              <span class="chip chip--complete">Complete</span>
               <span class="focus-money">250.000 ₫</span>
             </span>
             <span class="focus-act"><button class="btn btn--ghost btn--sm" type="button">Update</button></span>
           </li>
 
           <li class="focus-row">
-            <span class="av av--mint" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">ET</span>
+            <span class="av av--mint" aria-hidden="true">ET</span>
             <span class="focus-who">
               <span class="focus-name">Emma Thompson</span>
               <span class="focus-meta">
@@ -1184,14 +1112,14 @@
               </span>
             </span>
             <span class="focus-end">
-              <span class="chip chip--complete">Present</span>
+              <span class="chip chip--complete">Complete</span>
               <span class="focus-money">200.000 ₫</span>
             </span>
             <span class="focus-act"><button class="btn btn--ghost btn--sm" type="button">Update</button></span>
           </li>
 
           <li class="focus-row is-cancelled">
-            <span class="av" aria-hidden="true" style="background:var(--grad-pink)">BN</span>
+            <span class="av av--pink" aria-hidden="true">BN</span>
             <span class="focus-who">
               <span class="focus-name">Trần Bảo Ngọc</span>
               <span class="focus-meta">
@@ -1207,7 +1135,7 @@
           </li>
 
           <li class="focus-row" data-pending>
-            <span class="av av--mint" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">LC</span>
+            <span class="av av--mint" aria-hidden="true">LC</span>
             <span class="focus-who">
               <span class="focus-name">Liam Carter</span>
               <span class="focus-meta">
@@ -1224,7 +1152,7 @@
           </li>
 
           <li class="focus-row" data-pending>
-            <span class="av" aria-hidden="true" style="background:var(--grad-pink)">GH</span>
+            <span class="av av--pink" aria-hidden="true">GH</span>
             <span class="focus-who">
               <span class="focus-name">Lê Gia Hân</span>
               <span class="focus-meta">
@@ -1265,14 +1193,14 @@
           </li>
           <li class="pod pod--2">
             <svg class="pod-crown" aria-hidden="true"><use href="#i-blossom"/></svg>
-            <span class="av av--lg pod-av" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">QB</span>
+            <span class="av av--lg av--mint pod-av" aria-hidden="true">QB</span>
             <span class="pod-name">Phạm Quốc Bảo</span>
             <span class="pod-pill">8 lessons</span>
             <span class="pod-step"><span aria-hidden="true">🥈</span><span class="sr-only">2nd place</span></span>
           </li>
           <li class="pod pod--3">
             <svg class="pod-crown" aria-hidden="true"><use href="#i-blossom"/></svg>
-            <span class="av av--lg pod-av" aria-hidden="true" style="background:var(--grad-pink)">ET</span>
+            <span class="av av--lg av--pink pod-av" aria-hidden="true">ET</span>
             <span class="pod-name">Emma Thompson</span>
             <span class="pod-pill">7 lessons</span>
             <span class="pod-step"><span aria-hidden="true">🥉</span><span class="sr-only">3rd place</span></span>
@@ -1282,15 +1210,15 @@
         <ol class="rank-rest" start="4">
           <li>
             <a class="rank-row" href="/students/gia-han">
-              <span class="rank-badge num" aria-hidden="true">4</span>
-              <span class="av av--sm" aria-hidden="true" style="background:var(--grad-mint); color:var(--on-mint)">GH</span>
+              <span class="rank-badge num">4<span class="sr-only">th place</span></span>
+              <span class="av av--sm av--mint" aria-hidden="true">GH</span>
               <span class="rank-name">Lê Gia Hân</span>
               <span class="rank-pill">6 lessons</span>
             </a>
           </li>
           <li>
             <a class="rank-row" href="/students/thanh-truc">
-              <span class="rank-badge num" aria-hidden="true">5</span>
+              <span class="rank-badge num">5<span class="sr-only">th place</span></span>
               <span class="av av--sm" aria-hidden="true">TT</span>
               <span class="rank-name">Vũ Thanh Trúc</span>
               <span class="rank-pill">6 lessons</span>
@@ -1309,15 +1237,13 @@
         </div>
 
         <div class="ins-hero">
-          <svg class="sparkle" aria-hidden="true"><use href="#i-sparkle"/></svg>
-          <svg class="sparkle sparkle--sm" aria-hidden="true"><use href="#i-sparkle"/></svg>
           <span class="label">Best day</span>
           <div class="metric num">Monday</div>
           <p>Your strongest this month.</p>
         </div>
 
         <div class="ins-minis">
-          <div class="mini mini--ok"><b class="num">23</b><span>Taught</span></div>
+          <div class="mini mini--ok"><b class="num">23</b><span>Complete</span></div>
           <div class="mini mini--no"><b class="num">3</b><span>Cancelled</span></div>
         </div>
 
@@ -1342,12 +1268,12 @@
           </div>
           <span class="pill-mint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-            87% completion
+            88% completion
           </span>
         </div>
 
         <div class="chart-wrap scroll-x">
-          <svg viewBox="0 0 760 262" role="img" aria-label="Area chart of daily billed earnings, July 1 to 14. Peak 2,55 million dong on Monday July 13. Sundays July 5 and 12 are zero. Today, July 14, is 1,05 million dong so far.">
+          <svg viewBox="0 0 760 262" role="img" aria-label="Area chart of daily billed earnings, July 1 to 14, COMPLETE lessons only. Peak 2,55 million dong on Monday July 13. Sundays July 5 and 12 are zero. Today, July 14, is 0,65 million dong billed so far; a further 0,40 million is still pending.">
             <defs>
               <linearGradient id="sbArea" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="var(--bubblegum)" stop-opacity=".45"/>
@@ -1378,10 +1304,11 @@
             <rect x="256" y="20" width="32" height="190" fill="var(--floss)" rx="6"/>
             <rect x="620" y="20" width="32" height="190" fill="var(--floss)" rx="6"/>
 
-            <!-- area + line -->
-            <path fill="url(#sbArea)" d="M64,134 L116,118.2 L168,102.3 L220,73.8 L272,210 L324,58 L376,143.5 L428,124.5 L480,108.7 L532,96 L584,67.5 L636,210 L688,48.5 L740,143.5 L740,210 L64,210 Z"/>
+            <!-- area + line — day 14 = 0,65 Tr (the 3 COMPLETE lessons only;
+                 the 2 PENDING lessons are NOT booked as billed revenue) -->
+            <path fill="url(#sbArea)" d="M64,134 L116,118.2 L168,102.3 L220,73.8 L272,210 L324,58 L376,143.5 L428,124.5 L480,108.7 L532,96 L584,67.5 L636,210 L688,48.5 L740,168.8 L740,210 L64,210 Z"/>
             <path fill="none" stroke="url(#sbLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                  d="M64,134 L116,118.2 L168,102.3 L220,73.8 L272,210 L324,58 L376,143.5 L428,124.5 L480,108.7 L532,96 L584,67.5 L636,210 L688,48.5 L740,143.5"/>
+                  d="M64,134 L116,118.2 L168,102.3 L220,73.8 L272,210 L324,58 L376,143.5 L428,124.5 L480,108.7 L532,96 L584,67.5 L636,210 L688,48.5 L740,168.8"/>
 
             <!-- points -->
             <g fill="var(--surface)" stroke="var(--teal-600)" stroke-width="2">
@@ -1391,16 +1318,15 @@
               <circle cx="532" cy="96" r="3.4"/><circle cx="584" cy="67.5" r="3.4"/><circle cx="636" cy="210" r="3.4"/>
             </g>
 
-            <!-- peak (Mon 13) — the one blossom allowed near the data -->
-            <use href="#i-blossom" x="675" y="35.5" width="26" height="26" style="color:var(--bubblegum)"/>
+            <!-- peak (Mon 13) — marked by the point + its value. No ornament. -->
             <circle cx="688" cy="48.5" r="3.4" fill="var(--pink-600)"/>
             <text x="688" y="26" fill="var(--teal-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">2,55 Tr ₫</text>
 
             <!-- today (Tue 14) -->
             <line x1="740" y1="20" x2="740" y2="210" stroke="var(--bubblegum)" stroke-width="1.5" stroke-dasharray="4 4"/>
-            <circle cx="740" cy="143.5" r="7" fill="var(--bubblegum)" opacity=".3"/>
-            <circle cx="740" cy="143.5" r="4" fill="var(--pink-600)"/>
-            <text x="736" y="132" fill="var(--pink-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">Today</text>
+            <circle cx="740" cy="168.8" r="7" fill="var(--bubblegum)" opacity=".3"/>
+            <circle cx="740" cy="168.8" r="4" fill="var(--pink-600)"/>
+            <text x="736" y="157" fill="var(--pink-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">Today</text>
 
             <!-- x axis: days 1–14 -->
             <g fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="middle">
@@ -1452,27 +1378,12 @@
 <!-- the app's real success toast -->
 <div class="toast print-hide" id="toast" role="status" aria-live="polite">
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.3-9.1C1.3 8.4 3.2 5 6.6 5c2 0 3.5 1.1 4.4 2.6l1 1.6 1-1.6C13.9 6.1 15.4 5 17.4 5c3.4 0 5.3 3.4 3.9 6.9C19.5 16.3 12 21 12 21z"/></svg>
-  <span>Attendance marked 💗</span>
+  <span>Attendance marked <span aria-hidden="true">💗</span></span>
 </div>
 
 <script>
   (function () {
-    /* ── SPOILER: "Missed This Month" stays blurred until asked for ────── */
-    var card = document.getElementById('missedCard');
-    var veil = document.getElementById('missedVeil');
-    var hide = document.getElementById('missedHide');
-    veil.addEventListener('click', function () {
-      card.classList.add('is-revealed');
-      veil.setAttribute('aria-expanded', 'true');
-      hide.focus();
-    });
-    hide.addEventListener('click', function () {
-      card.classList.remove('is-revealed');
-      veil.setAttribute('aria-expanded', 'false');
-      veil.focus();
-    });
-
-    /* ── Mark attendance → PENDING becomes COMPLETE ("Present") ────────── */
+    /* ── Mark attendance → PENDING becomes COMPLETE ───────────────────── */
     var toast = document.getElementById('toast');
     var toastTimer = null;
     function showToast() {
@@ -1487,7 +1398,7 @@
         if (chip) {
           chip.classList.remove('chip--pending');
           chip.classList.add('chip--complete');
-          chip.textContent = 'Present';
+          chip.textContent = 'Complete';
         }
         row.removeAttribute('data-pending');
         btn.classList.remove('btn--mint', 'js-mark');
@@ -1591,3 +1502,5 @@
     syncSidebar();
   })();
 </script>
+</body>
+</html>
