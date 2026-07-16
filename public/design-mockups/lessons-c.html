@@ -655,11 +655,11 @@ select.control{
       <p class="label nav-label">Main</p>
       <!-- aria-label on every link: at 1024–1279 the <span> is display:none, so
            the label is the ONLY accessible name left (the <svg> is aria-hidden). -->
-      <a class="nav-item" href="/dashboard" aria-label="Dashboard">
+      <a class="nav-item" href="dashboard-c.html" data-route="/dashboard" aria-label="Dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
         <span>Dashboard</span>
       </a>
-      <a class="nav-item" href="/calendar" aria-label="Calendar">
+      <a class="nav-item" href="calendar-c.html" data-route="/calendar" aria-label="Calendar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
         <span>Calendar</span>
       </a>
@@ -667,23 +667,23 @@ select.control{
 
     <nav class="nav-group" aria-label="Manage">
       <p class="label nav-label">Manage</p>
-      <a class="nav-item" href="/lessons" aria-current="page" aria-label="Lessons">
+      <a class="nav-item" href="lessons-c.html" data-route="/lessons" aria-current="page" aria-label="Lessons">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
         <span>Lessons</span>
       </a>
-      <a class="nav-item" href="/students" aria-label="Students">
+      <a class="nav-item" href="students.html" data-route="/students" aria-label="Students">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span>Students</span>
       </a>
-      <a class="nav-item" href="/pieces" aria-label="Pieces">
+      <a class="nav-item" href="pieces.html" data-route="/pieces" aria-label="Pieces">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         <span>Pieces</span>
       </a>
-      <a class="nav-item" href="/reports" aria-label="Reports">
+      <a class="nav-item" href="reports-c.html" data-route="/reports" aria-label="Reports">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="11" width="4" height="7" rx="1"/><rect x="12" y="6" width="4" height="12" rx="1"/><rect x="19" y="14" width="2" height="4" rx="1"/></svg>
         <span>Reports</span>
       </a>
-      <a class="nav-item" href="/payments" aria-label="Payments">
+      <a class="nav-item" href="payments.html" data-route="/payments" aria-label="Payments">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg>
         <span>Payments</span>
       </a>
@@ -1293,19 +1293,19 @@ select.control{
 
 <!-- ══ BOTTOM TAB BAR (tablet portrait & phone) ═════════════════════════ -->
 <nav class="tabbar print-hide" aria-label="Primary">
-  <a class="tab" href="/dashboard">
+  <a class="tab" href="dashboard-c.html" data-route="/dashboard">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
     Dashboard
   </a>
-  <a class="tab" href="/calendar">
+  <a class="tab" href="calendar-c.html" data-route="/calendar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
     Calendar
   </a>
-  <a class="tab" href="/lessons" aria-current="page">
+  <a class="tab" href="lessons-c.html" data-route="/lessons" aria-current="page">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
     Lessons
   </a>
-  <a class="tab" href="/students">
+  <a class="tab" href="students.html" data-route="/students">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
     Students
   </a>

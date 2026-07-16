@@ -903,6 +903,35 @@ export default function ForeverPage() {
             )}
           </motion.div>
 
+          {/* ─ DESIGN GALLERY ────────────────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 1.5 }}
+            className="mb-8 rounded-2xl border border-pink-500/20 bg-white/5 p-5 backdrop-blur-sm sm:p-6"
+          >
+            <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-pink-400 uppercase">
+              A little surprise 🎨
+            </p>
+            <p className="mb-5 text-sm leading-relaxed text-pink-200/70 italic">
+              I redesigned your whole piano diary — soft pinks and mints, just
+              like you 🌸
+              <br />
+              There are a few different looks. Have a peek and tell me which one
+              you love the most.
+            </p>
+            <button
+              id="design-gallery"
+              onClick={() => window.open("/design-mockups/index.html", "_blank")}
+              className="w-full rounded-2xl bg-linear-to-r from-pink-600 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-pink-900/50 transition-all duration-300 hover:scale-105 hover:from-pink-500 hover:to-rose-400 hover:shadow-xl hover:shadow-pink-500/40 active:scale-[0.97] sm:text-base"
+            >
+              ✨ See the new designs
+            </button>
+            <p className="mt-3 text-center text-[10px] text-pink-400/40">
+              you&apos;ll need to be signed in 🔒
+            </p>
+          </motion.div>
+
           {/* ─ PROGRESS TO 1 YEAR ────────────────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
