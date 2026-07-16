@@ -21,6 +21,11 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth-schemas";
 import { loginAction } from "@/server/actions/auth-actions";
 import { useUserStore } from "@/store/use-user-store";
 
+const DEMO_CREDENTIALS = {
+  email: "demo@pianodiary.dev",
+  password: "demo1234",
+} as const;
+
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +66,13 @@ export function LoginForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Fill the fields so the credentials are visible, then sign straight in.
+  const handleDemoLogin = async () => {
+    form.setValue("email", DEMO_CREDENTIALS.email);
+    form.setValue("password", DEMO_CREDENTIALS.password);
+    await onSubmit({ ...DEMO_CREDENTIALS, remember: false });
   };
 
   return (
@@ -129,6 +141,26 @@ export function LoginForm() {
         <Button className="w-full" type="submit" disabled={isLoading}>
           {isLoading ? "Logging in..." : "Login"}
         </Button>
+
+        <div className="flex items-center gap-3">
+          <span className="bg-border h-px flex-1" />
+          <span className="text-muted-foreground text-xs">or</span>
+          <span className="bg-border h-px flex-1" />
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={isLoading}
+          onClick={handleDemoLogin}
+        >
+          🎹 Try the demo
+        </Button>
+        <p className="text-muted-foreground text-center text-xs">
+          Explore a sample studio — {DEMO_CREDENTIALS.email} /{" "}
+          {DEMO_CREDENTIALS.password}
+        </p>
       </form>
     </Form>
   );
