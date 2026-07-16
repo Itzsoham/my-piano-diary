@@ -4,12 +4,14 @@ const currencyLocaleMap: Record<CurrencyCode, string> = {
   VND: "vi-VN",
   IDR: "id-ID",
   USD: "en-US",
+  INR: "en-IN",
 };
 
 const currencyFractionDigits: Record<CurrencyCode, number> = {
   VND: 0,
   IDR: 0,
   USD: 2,
+  INR: 0,
 };
 
 export const formatCurrency = (amount: number, currency: CurrencyCode) => {

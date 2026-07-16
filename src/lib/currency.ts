@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-export type CurrencyCode = "VND" | "IDR" | "USD";
+export type CurrencyCode = "VND" | "IDR" | "USD" | "INR";
 
 type CurrencyOption = {
   code: CurrencyCode;
@@ -10,18 +10,22 @@ type CurrencyOption = {
 const STORAGE_KEY = "mpd.currency";
 
 export const currencyOptions: CurrencyOption[] = [
-  { code: "VND", label: "VND" },
-  { code: "IDR", label: "IND" },
-  { code: "USD", label: "USD" },
+  { code: "VND", label: "VND — Vietnamese đồng" },
+  { code: "IDR", label: "IDR — Indonesian rupiah" },
+  { code: "USD", label: "USD — US dollar" },
+  { code: "INR", label: "INR — Indian rupee" },
 ];
+
+const CURRENCY_CODES = currencyOptions.map((o) => o.code);
+
+const isCurrencyCode = (value: unknown): value is CurrencyCode =>
+  typeof value === "string" && CURRENCY_CODES.includes(value as CurrencyCode);
 
 export const getStoredCurrency = (): CurrencyCode => {
   if (typeof window === "undefined") return "VND";
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "VND" || stored === "IDR" || stored === "USD") {
-      return stored;
-    }
+    if (isCurrencyCode(stored)) return stored;
   } catch {
     // Ignore storage access errors and fall back to default.
   }

@@ -17,19 +17,39 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { setStoredCurrency } from "@/lib/currency";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth-schemas";
 import { loginAction } from "@/server/actions/auth-actions";
+import {
+  DEMO_EMAIL,
+  DEMO_PASSWORD,
+  DEMO_STEPS,
+  type DemoStepKey,
+} from "@/server/demo/demo-data";
 import { useUserStore } from "@/store/use-user-store";
+import { api } from "@/trpc/react";
 
-const DEMO_CREDENTIALS = {
-  email: "demo@pianodiary.dev",
-  password: "demo1234",
-} as const;
+import { DemoSeedProgress, type StepState } from "./demo-seed-progress";
+
+const initialStepStates = () =>
+  Object.fromEntries(DEMO_STEPS.map((s) => [s.key, "pending"])) as Record<
+    DemoStepKey,
+    StepState
+  >;
 
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const setUser = useUserStore((state) => state.setUser);
+
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [stepStates, setStepStates] = useState(initialStepStates);
+  const [stepResults, setStepResults] = useState<
+    Partial<Record<DemoStepKey, string>>
+  >({});
+  const [seedError, setSeedError] = useState<string | null>(null);
+
+  const utils = api.useUtils();
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -68,11 +88,81 @@ export function LoginForm() {
     }
   };
 
-  // Fill the fields so the credentials are visible, then sign straight in.
+  /**
+   * Build the demo studio, then sign in. Each step is its own mutation, so the
+   * checklist reflects work that actually happened rather than a fake timer.
+   */
   const handleDemoLogin = async () => {
-    form.setValue("email", DEMO_CREDENTIALS.email);
-    form.setValue("password", DEMO_CREDENTIALS.password);
-    await onSubmit({ ...DEMO_CREDENTIALS, remember: false });
+    setIsSeeding(true);
+    setSeedError(null);
+    setStepStates(initialStepStates());
+    setStepResults({});
+
+    const mark = (key: DemoStepKey, state: StepState) =>
+      setStepStates((prev) => ({ ...prev, [key]: state }));
+
+    // Keyed by step so the UI and the server can't drift apart.
+    const runners: Record<DemoStepKey, () => Promise<string>> = {
+      setup: async () => {
+        const r = await utils.client.demo.setup.mutate();
+        return `${r.pieces} pieces`;
+      },
+      students: async () => {
+        const r = await utils.client.demo.students.mutate();
+        return `${r.students} students`;
+      },
+      families: async () => {
+        const r = await utils.client.demo.families.mutate();
+        return `${r.families} families`;
+      },
+      lessons: async () => {
+        const r = await utils.client.demo.lessons.mutate();
+        return `${r.lessons} lessons`;
+      },
+      attendance: async () => {
+        const r = await utils.client.demo.attendance.mutate();
+        return `${r.complete} complete · ${r.cancelled} cancelled`;
+      },
+      reports: async () => {
+        const r = await utils.client.demo.reports.mutate();
+        return `${r.reports} reports`;
+      },
+      payments: async () => {
+        const r = await utils.client.demo.payments.mutate();
+        return `${r.transactions} payments`;
+      },
+    };
+
+    try {
+      for (const step of DEMO_STEPS) {
+        mark(step.key, "running");
+        const summary = await runners[step.key]();
+        setStepResults((prev) => ({ ...prev, [step.key]: summary }));
+        mark(step.key, "done");
+      }
+    } catch (err) {
+      const current = DEMO_STEPS.find((s) => stepStates[s.key] === "running");
+      if (current) mark(current.key, "error");
+      setSeedError(
+        err instanceof Error
+          ? err.message
+          : "Could not build the demo studio. Please try again.",
+      );
+      setIsSeeding(false);
+      return;
+    }
+
+    // The demo teacher bills in INR; currency lives in localStorage, not the DB.
+    setStoredCurrency("INR");
+
+    form.setValue("email", DEMO_EMAIL);
+    form.setValue("password", DEMO_PASSWORD);
+    await onSubmit({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+      remember: false,
+    });
+    setIsSeeding(false);
   };
 
   return (
@@ -148,19 +238,41 @@ export function LoginForm() {
           <span className="bg-border h-px flex-1" />
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={isLoading}
-          onClick={handleDemoLogin}
-        >
-          🎹 Try the demo
-        </Button>
-        <p className="text-muted-foreground text-center text-xs">
-          Explore a sample studio — {DEMO_CREDENTIALS.email} /{" "}
-          {DEMO_CREDENTIALS.password}
-        </p>
+        {isSeeding || seedError ? (
+          <div className="rounded-lg border p-4">
+            <DemoSeedProgress
+              states={stepStates}
+              results={stepResults}
+              error={seedError}
+            />
+            {seedError && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={handleDemoLogin}
+              >
+                Try again
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={isLoading}
+              onClick={handleDemoLogin}
+            >
+              🎹 Try the demo
+            </Button>
+            <p className="text-muted-foreground text-center text-xs">
+              Builds a sample studio on the spot — no sign-up needed.
+            </p>
+          </>
+        )}
       </form>
     </Form>
   );
