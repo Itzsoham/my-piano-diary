@@ -1,0 +1,2041 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Calendar · Blossom Diary</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+/* ==========================================================================
+   CALENDAR · VARIANT E — "BLOSSOM DIARY"
+   The fusion, third screen. Bones from dashboard-c ("The Diary"), soul from
+   dashboard-d ("Sugar Bloom"), shell + sprite from its own siblings
+   (lessons-e.html, dashboard-e.html) so the family resemblance is real.
+
+   FROM THE DIARY (c):  the serif page title, editorial whitespace, the
+                        VERTICAL TIMELINE — reborn here as the day panel's
+                        agenda rail (.ag-item / .ag-rail / .ag-node, the same
+                        anatomy as .tl__item / .tl__rail / .tl__dot), the
+                        serif-italic date line, the sober lesson-card layer.
+   FROM SUGAR BLOOM (d): #i-blossom, the drifting .blob shapes, the scalloped
+                        mask edge, the .sticker washi tape, the .keys piano
+                        strip, the icon-rail breakpoint recipe.
+   FROM calendar-d:     the month-grid engine and its two hard-won a11y
+                        lessons, kept verbatim — (1) legend/rail swatches use
+                        the -fg ramp because the pastel -dot tokens are
+                        1.5–2.2:1 and vanish; (2) the cell is a real <button>
+                        whose aria-label carries the whole day.
+   MOCHI:               #i-mochi-head + #i-mochi-nap. Identical geometry, two
+                        moods — a developer extracts ONE <Mochi mood="…" />.
+
+   THE RULE: BLOOM THE FRAME, NOT THE DATA.
+   ORNAMENT BUDGET — max 3 motif types per region; Mochi is the mascot and is
+   counted separately. ONE washi-tape card, ONE scalloped edge per page:
+     hero band  → drifting blobs + squiggle        (+ Mochi, bobbing)
+     toolbar    → one blossom beside the serif title
+     legend     → none. It is a key to the data; a key must be literal.
+     THE GRID   → the count pill's dot is a blossom + today's blossom
+                  watermark. NOTHING else: no blobs, no tape, no sparkles
+                  between cells. The grid's whole job is to be scannable.
+     day panel  → the page's ONE scallop (its head) + blossom agenda nodes
+                  (+ Mochi, napping in the footer)
+     sticker    → washi tape + piano keys. No emoji: it carries money.
+     empty      → Mochi asleep + blossom
+
+   TWO DELIBERATE DIFFS a developer will spot against the siblings:
+   1. THE SCALLOP MOVED. lessons-e/dashboard-e scallop the hero band's
+      underside. The budget allows exactly one per page and this screen's
+      brief puts it on the day panel, so .pagehead here keeps a plain
+      var(--r-xl) bottom — and, freed of the mask, it can carry a real
+      box-shadow again (a filter on a masked element is clipped by its own
+      mask; see lessons-e.html:150).
+   2. THE COUNT PILL WEARS A BLOSSOM. calendar-d pulled a blossom out of this
+      pill on purpose (calendar-d.html:415) — but that one had FILLED PETALS
+      re-encoding the number printed beside it, which is decoration inside the
+      data layer. This blossom is a constant, single bullet: it never encodes
+      the count, so the objection does not apply.
+
+   CONTRAST — raw pastels are backgrounds only. Every label and figure uses
+   --ink (12.4:1) or --ink-soft (5.1:1); pink/teal text uses the 600/700 ramp.
+   --ink-faint is reserved for non-informational strokes (rails, Mochi's
+   whiskers, separators) and never names a value.
+   Only screen-specific rules live here; every colour comes from _theme.css.
+   ========================================================================== */
+
+:root{
+  --panel: 360px;      /* day panel width ≥1280                          */
+  --peek: 172px;       /* bottom-sheet peek: grab + date + honest summary */
+  /* MEASURED, not guessed — and now ENFORCED: .tabbar sets
+     height:calc(var(--tabbar-h) + safe-area), so the constant and the render
+     can never diverge. .tab is 46px (21px icon + 3px gap + 12px label + 10px
+     padding); + .tabbar's 6px/6px = 58px. The old 74px floated the docked
+     sheet 16px above the bar and exposed a strip of --app-bg under its
+     square-cut bottom edge. */
+  --tabbar-h: 58px;
+}
+
+/* ── Variant badge (scaffolding) ─────────────────────────────────────────
+   Fixed at top-right, y ≈ 10–34px. .main reserves a top gutter so no real
+   control ever slides under it. */
+.variant-badge{
+  position:fixed; top:10px; right:10px; z-index:99;
+  pointer-events:none;
+  display:inline-flex; align-items:center; gap:7px;
+  padding:7px 13px; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter:blur(10px) saturate(1.4);
+  border:1px solid var(--line-pink); box-shadow:var(--sh-sm);
+  font:700 10.5px/1 var(--font-sans); letter-spacing:.06em;
+  text-transform:uppercase; color:var(--pink-700);
+}
+
+/* ══════════ SHELL — ≥1280 sidebar · 1024–1279 rail · <1024 drawer ══════════
+   Recipe lifted from lessons-e.html so the two files diff cleanly. */
+.shell{ display:grid; grid-template-columns:var(--sidebar) minmax(0,1fr); min-height:100dvh; }
+
+.sidebar{
+  position:sticky; top:0; align-self:start; height:100dvh; z-index:50;
+  display:flex; flex-direction:column; gap:18px;
+  padding:20px 14px 16px;
+  background:color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter:blur(14px);
+  border-right:1px solid var(--line);
+  overflow-y:auto; scrollbar-width:none;
+}
+.sidebar::-webkit-scrollbar{ display:none; }
+
+.brand{ display:flex; align-items:center; gap:11px; padding:6px 8px 2px; }
+.brand-logo{
+  position:relative; flex:0 0 auto;
+  width:42px; height:42px; display:grid; place-items:center;
+  border-radius:var(--r-sm); background:var(--grad-brand);
+  color:var(--ink-invert); box-shadow:var(--sh-pink);
+}
+.brand-logo .bow-tag{
+  position:absolute; top:-7px; right:-6px; width:18px; height:18px;
+  color:var(--pink-600); filter:drop-shadow(0 1px 1px rgba(255,255,255,.9));
+}
+.brand-text{ min-width:0; display:block; }
+.brand-name{ display:block; font:700 15px/1.2 var(--font-sans); color:var(--ink); white-space:nowrap; }
+.brand-tag{ display:block; font:400 11.5px/1.35 var(--font-sans); color:var(--ink-soft); white-space:nowrap; }
+
+.side-cta{ width:100%; }
+
+.nav-group + .nav-group{ margin-top:18px; }
+.nav-group > .label{ padding:0 12px 8px; display:block; color:var(--ink-soft); }
+.nav-list{ list-style:none; display:grid; gap:3px; }
+.nav-link{
+  display:flex; align-items:center; gap:12px;
+  min-height:var(--tap); padding:0 12px; border-radius:var(--r-sm);
+  color:var(--ink-soft); font:600 13.5px/1 var(--font-sans);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav-link svg{ width:20px; height:20px; flex:0 0 auto; opacity:.85; }
+.nav-link:hover{ background:var(--surface-2); color:var(--ink); }
+.nav-link[aria-current="page"]{
+  background:linear-gradient(100deg, var(--pink-100), var(--teal-100));
+  color:var(--ink); box-shadow:inset 0 0 0 1px var(--line-pink);
+}
+.nav-link[aria-current="page"] svg{ color:var(--pink-600); opacity:1; }
+.nav-badge{
+  margin-left:auto;
+  font:700 10.5px/1 var(--font-sans); font-variant-numeric:tabular-nums;
+  background:var(--wait-bg); color:var(--wait-fg);
+  padding:4px 7px; border-radius:var(--r-pill);
+}
+
+.side-foot{ margin-top:auto; padding-top:14px; position:relative; }
+.user-btn{
+  width:100%; display:flex; align-items:center; gap:10px;
+  min-height:var(--tap); padding:8px 10px; border-radius:var(--r-md);
+  border:1px solid var(--line); background:var(--surface);
+  box-shadow:var(--sh-xs); text-align:left;
+  transition:background var(--dur) var(--ease);
+}
+.user-btn:hover{ background:var(--surface-2); }
+.user-meta{ min-width:0; flex:1; display:block; }
+.user-name{ display:block; font:650 13px/1.25 var(--font-sans); color:var(--ink); }
+.user-mail{
+  display:block; font:400 11px/1.3 var(--font-sans); color:var(--ink-soft);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+/* The chevron is the ONLY visual signal that #userBtn opens a menu, so it is
+   a UI graphic (3:1), not a decorative hairline: --ink-faint is 2.67:1 and
+   _theme.css declares it DECORATIVE ONLY. --ink-soft is 5.1:1 and matches the
+   .user-mail ink directly beside it. */
+.user-btn > svg{ width:16px; height:16px; color:var(--ink-soft); flex:0 0 auto; }
+.user-menu{
+  list-style:none; margin-top:6px; padding:6px;
+  border-radius:var(--r-md); border:1px solid var(--line);
+  background:var(--surface); box-shadow:var(--sh-lg);
+  display:grid; gap:2px;
+}
+.user-menu a{
+  display:flex; align-items:center; gap:10px;
+  min-height:var(--tap); padding:0 10px; border-radius:var(--r-xs);
+  font:600 12.5px/1 var(--font-sans); color:var(--ink-soft);
+}
+.user-menu a:hover{ background:var(--surface-2); color:var(--ink); }
+.user-menu svg{ width:16px; height:16px; }
+.user-menu[hidden]{ display:none !important; }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+.main{ min-width:0; padding:clamp(46px,5vw,58px) clamp(14px,2.6vw,34px) 48px; }
+.wrap{ width:100%; max-width:1180px; margin-inline:auto; }
+.topbar{ display:none; }
+
+/* ══════════ HERO BAND — grad-hero + blobs + squiggle + Mochi ═══════════
+   The Diary's hero band. No mask here (see the header note): the scallop is
+   spent on the day panel, so this band is a plain rounded card and gets to
+   keep a real shadow. */
+.pagehead{
+  position:relative; isolation:isolate; overflow:hidden;
+  display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap;
+  background:var(--grad-hero);
+  border:1px solid var(--line-pink);
+  border-radius:var(--r-xl);
+  box-shadow:var(--sh-lg);
+  padding:clamp(22px,3vw,32px) clamp(18px,2.6vw,30px);
+}
+.pagehead-l{ min-width:0; flex:1 1 300px; }
+
+/* Drifting blobs — decorative, clipped by the band's own overflow. */
+.blobs{ position:absolute; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+.blob{
+  position:absolute; border-radius:46% 54% 40% 60% / 55% 45% 60% 40%;
+  filter:blur(3px); will-change:transform;
+}
+.blob-1{
+  width:260px; height:220px; top:-70px; left:-70px;
+  background:color-mix(in srgb, var(--cotton) 70%, transparent); opacity:.5;
+  animation:drift-a 24s var(--ease) infinite alternate;
+}
+.blob-2{
+  width:230px; height:200px; bottom:-90px; left:38%;
+  background:color-mix(in srgb, var(--mint) 62%, transparent); opacity:.45;
+  animation:drift-b 28s var(--ease) infinite alternate;
+}
+.blob-3{
+  width:300px; height:250px; top:-90px; right:-90px;
+  background:color-mix(in srgb, var(--mint) 52%, transparent); opacity:.45;
+  animation:drift-a 32s var(--ease) infinite alternate-reverse;
+}
+@keyframes drift-a{
+  from{ transform:translate3d(0,0,0) rotate(0deg) scale(1); }
+  to{ transform:translate3d(24px,14px,0) rotate(12deg) scale(1.06); }
+}
+@keyframes drift-b{
+  from{ transform:translate3d(0,0,0) rotate(0deg) scale(1); }
+  to{ transform:translate3d(-20px,-12px,0) rotate(-10deg) scale(1.08); }
+}
+
+.head-eyebrow{
+  display:inline-flex; align-items:center; gap:7px;
+  font:var(--t-label); letter-spacing:var(--label-tracking); text-transform:uppercase;
+  color:var(--teal-700);
+  background:color-mix(in srgb, var(--surface) 65%, transparent);
+  border:1px solid var(--line); box-shadow:var(--sh-xs);
+  padding:7px 13px; border-radius:var(--r-pill); margin-bottom:14px;
+}
+.head-eyebrow svg{ width:13px; height:13px; flex:0 0 auto; color:var(--bubblegum); }
+
+/* The serif H1 — The Diary's single loudest signature. */
+.page-h1{
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(30px,4.4vw,46px); line-height:1.06; letter-spacing:-.015em;
+  color:var(--ink);
+}
+/* HAND-DRAWN SQUIGGLE instead of a straight rule. */
+.squiggle{
+  display:block; width:min(230px,64%); height:10px; margin-top:8px;
+  color:var(--bubblegum); overflow:visible;
+}
+.head-date{
+  margin-top:10px;
+  font-family:var(--font-serif); font-style:italic;
+  font-size:clamp(15px,1.6vw,19px); line-height:1.3; color:var(--ink-soft);
+}
+.page-sub{ margin-top:6px; font:400 clamp(14px,1.4vw,15.5px)/1.55 var(--font-sans); color:var(--ink-soft); }
+
+.pagehead-r{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.pagehead-r .btn--primary{ min-height:48px; padding:0 22px; }
+.pagehead-r .btn--ghost{ min-height:48px; }
+
+/* Mochi beside the header — decoration, gently bobbing. aria-hidden AND
+   pointer-events:none: she is never allowed to intercept a pointer. */
+.mochi-hi{
+  width:74px; height:58px; flex:0 0 auto; pointer-events:none;
+  animation:bob 4.5s var(--ease) infinite;
+}
+@keyframes bob{
+  0%,100%{ transform:translateY(0) rotate(-2deg); }
+  50%{ transform:translateY(-5px) rotate(2deg); }
+}
+
+/* ══════════ TOOLBAR ═══════════════════════════════════════════════════ */
+.toolbar{
+  display:grid; align-items:center; gap:10px;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  margin-top:clamp(18px,2.4vw,26px);
+}
+.tb-nav{ display:flex; align-items:center; gap:6px; }
+.tb-nav .btn--icon svg{ width:19px; height:19px; }
+.tb-today{ min-height:var(--tap); padding:0 15px; }
+
+/* The centred serif title (The Diary) + one blossom (Sugar Bloom). */
+.tb-title{
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  min-width:0;
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(19px,2.4vw,27px); line-height:1.2; letter-spacing:-.01em;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.tb-title .tb-bloom{ width:15px; height:15px; color:var(--bubblegum); flex:0 0 auto; }
+.tb-title .tb-when{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+
+.seg{
+  display:inline-flex; gap:2px; padding:3px;
+  border-radius:var(--r-pill);
+  background:var(--surface-2); border:1px solid var(--line);
+}
+.seg button{
+  min-height:var(--tap); padding:0 14px;
+  border-radius:var(--r-pill);
+  font:600 12.5px/1 var(--font-sans); color:var(--ink-soft);
+  white-space:nowrap;
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.seg button:hover{ color:var(--ink); }
+.seg button[aria-pressed="true"]{
+  background:var(--surface); color:var(--pink-700); box-shadow:var(--sh-xs);
+}
+
+/* ══════════ LEGEND — a genuine improvement; the real app has none ══════
+   No ornament: a key must show the literal mark it explains, at the size it
+   appears. That rule is now actually kept — the swatch is a 4px RAIL, the
+   literal .ag-bar, not a round dot the app never draws. The colours are the
+   deep ramp for the same reason .ag-bar is: the -dot tokens are 1.5–2.2:1 on
+   white and disappear as swatches.
+   AND IT NAMES ITS SURFACE. The month grid carries no status colour at all
+   (the real app sets eventDisplay:"none"; a cell shows only .daynum and the
+   pink .count pill), so this key does not caption the grid — it captions the
+   day panel, which is where every mark below actually lives. */
+.legend{
+  display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap;
+  margin-top:14px; padding:0 4px;
+}
+.lg{ display:inline-flex; align-items:center; gap:7px; font:600 12px/1 var(--font-sans); color:var(--ink-soft); }
+/* the literal mark: .ag-bar is width:4px, so this is width:4px */
+.lg i{
+  width:4px; height:14px; border-radius:var(--r-2xs); flex:0 0 auto;
+}
+.lg svg{ width:14px; height:14px; flex:0 0 auto; }
+.lg--ok{ color:var(--ok-fg); }     .lg--ok i{ background:var(--teal-600); }
+.lg--no{ color:var(--no-fg); }     .lg--no i{ background:var(--pink-600); }
+.lg--wait{ color:var(--wait-fg); } .lg--wait i{ background:var(--sand-700); }
+.lg--online{ color:var(--teal-700); }
+.lg-sep{ width:1px; height:14px; background:var(--line-strong); }
+.legend-cap{ font:var(--t-small); color:var(--ink-soft); }
+.legend-cap b{ color:var(--ink); font-weight:650; }
+
+/* ══════════ LAYOUT — grid + day panel ═════════════════════════════════ */
+.cal-layout{
+  display:grid; grid-template-columns:minmax(0,1fr); gap:18px;
+  align-items:start;
+  margin-top:14px;
+}
+.cal-col{ min-width:0; }
+
+.cal-card{ padding:clamp(10px,1.2vw,16px); border-radius:var(--r-xl); min-width:0; }
+
+.cal-grid{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:4px; }
+/* .cal-row is a purely visual grouping — it carries no aria role, so
+   display:contents costs nothing in the accessibility tree. */
+.cal-row{ display:contents; }
+.cal-grid.view-day{ grid-template-columns:minmax(0,1fr); }
+.cal-grid.view-day .colhead{ display:none; }
+.cal-grid.view-day .cell{ min-height:132px; }
+.cal-grid.view-week .cell{ min-height:110px; }
+
+.colhead{
+  padding:6px 2px 8px; text-align:center;
+  font:700 10.5px/1 var(--font-sans); letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+/* --teal-600 is 3.75:1 — fine for a graphic, not for 10.5px text.
+   --teal-700 keeps the weekend hue and clears AA at 6.29:1. */
+.colhead.is-wknd{ color:var(--teal-700); }
+.colhead abbr{ text-decoration:none; }
+
+/* ── THE DAY CELL — the information layer. Sober on purpose. ──────────── */
+.cell{
+  position:relative; overflow:hidden;
+  display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between;
+  gap:4px;
+  min-height:52px; padding:6px;
+  border-radius:var(--r-sm);
+  background:var(--surface); border:1px solid var(--line);
+  text-align:left;
+  transition:background var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+             transform var(--dur) var(--ease);
+}
+.cell:hover{ background:var(--pink-50); box-shadow:var(--sh-sm); }
+.cell:active{ transform:translateY(1px); }
+
+/* Weekends: a barely-there --floss wash (--surface-2 IS --floss). */
+.cal-row .cell.is-wknd{ background:var(--surface-2); }
+.cal-row .cell.is-wknd:hover{ background:var(--pink-50); }
+
+/* Other-month days: recessed — but the number stays legible (--ink-soft).
+   Scoped through .cal-row so they outrank the weekend wash. */
+.cal-row .cell.is-out{ background:transparent; border-color:transparent; box-shadow:none; }
+.cal-row .cell.is-out:hover{ background:color-mix(in srgb, var(--surface) 55%, transparent); }
+.cal-row .cell.is-out .daynum{ color:var(--ink-soft); font-weight:500; }
+
+.daynum{
+  position:relative; z-index:1;
+  display:grid; place-items:center;
+  width:26px; height:26px; border-radius:50%;
+  font:650 12.5px/1 var(--font-num); font-variant-numeric:tabular-nums;
+  color:var(--ink);
+}
+
+/* TODAY — filled pink day number + a ring. */
+.cal-row .cell.is-today{
+  border-color:var(--bubblegum);
+  box-shadow:inset 0 0 0 1px var(--bubblegum);
+  background:var(--pink-50);
+}
+.cell.is-today .daynum{
+  background:var(--grad-pink); color:var(--ink-invert); box-shadow:var(--sh-pink);
+}
+/* ORNAMENT — today's blossom watermark. The ONLY decorative mark inside a
+   cell besides the pill's bullet. z-index:0 keeps it strictly behind the
+   number; .18 opacity keeps it a watermark, not a graphic. */
+.cell__wm{
+  position:absolute; z-index:0; top:-9px; left:-9px;
+  width:54px; height:54px;
+  color:var(--bubblegum); opacity:.18;
+  pointer-events:none;
+}
+
+/* SELECTED — a teal ring, so it never fights "today". */
+.cal-row .cell[aria-pressed="true"]{
+  box-shadow:inset 0 0 0 2px var(--teal-600), var(--sh);
+  background:var(--surface);
+}
+.cal-row .cell.is-out[aria-pressed="true"]{ background:color-mix(in srgb, var(--surface) 55%, transparent); }
+.cal-row .cell.is-today[aria-pressed="true"]{
+  box-shadow:inset 0 0 0 2px var(--teal-600), var(--sh-pink);
+  background:var(--pink-50);
+}
+
+/* ── COUNT PILL — the only thing a day shows.
+   The real app sets eventDisplay:"none", so month view carries no event
+   chips at all: one pill per day, bottom-left. Its dot is a blossom — a
+   constant bullet that never encodes the number beside it. The cell's
+   aria-label always spells out "3 lessons", so hiding .word on narrow cells
+   costs the a11y tree nothing. */
+.count{
+  position:relative; z-index:1;
+  display:inline-flex; align-items:center; gap:3px;
+  max-width:100%;
+  padding:3px 8px 3px 5px;
+  border-radius:var(--r-pill);
+  background:var(--pink-100); color:var(--pink-700);
+  font:700 11px/1 var(--font-num); font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+/* The bullet is priced in the DATA's own units — it lives inside the pill, in
+   a cell capped at ~89px inner — so it is held to a bullet's size: 8px + a
+   3px gap ≈ 11px, not the ~15px that used to squeeze the word out. */
+.count .bloom{ width:8px; height:8px; flex:0 0 auto; color:var(--pink-500); }
+.count .word{ display:none; }
+
+/* ══════════ DAY PANEL ═════════════════════════════════════════════════ */
+.daypanel{
+  position:relative; min-width:0; overflow:hidden;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r-xl); box-shadow:var(--sh-lg);
+}
+.sheet-grab{ display:none; }
+
+/* THE PAGE'S ONE SCALLOPED EDGE — the LIVE panel's head, scalloping down into
+   the agenda. Circles pinned under the band, in the band's own end colour.
+   SCOPED TO .daypanel ON PURPOSE. .empty-demo renders this same component a
+   second time as a reference, and "one component, shown twice" is an
+   authoring argument — the budget is ONE SCALLOP PER RENDERED PAGE, and a
+   reader scrolling would see two. The reference head therefore stays plain;
+   the live panel keeps the scallop. */
+.panel-head{
+  position:relative;
+  padding:16px 18px 18px;
+  background:linear-gradient(180deg, var(--pink-50), var(--pink-100));
+}
+.daypanel .panel-head::after{
+  content:""; position:absolute; left:0; right:0; bottom:-11px; height:12px;
+  background-image:radial-gradient(circle at 50% 0, var(--pink-100) 5.6px, transparent 6.1px);
+  background-size:18px 12px; background-repeat:repeat-x;
+  pointer-events:none;
+}
+.panel-date{
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(19px,2vw,23px); line-height:1.2; letter-spacing:-.01em;
+  color:var(--ink);
+}
+/* THE HONEST SUMMARY. Only COMPLETE lessons are billable
+   (src/lib/report/tuition.ts filters l.status === "COMPLETE"), so the money
+   here is COMPLETE-only and the pending/cancelled counts are named, never
+   summed. No emoji: this string carries money. */
+.panel-sum{
+  margin-top:8px;
+  display:flex; align-items:center; gap:6px 8px; flex-wrap:wrap;
+  font:600 12px/1.4 var(--font-sans); color:var(--pink-700);
+  font-variant-numeric:tabular-nums;
+}
+.panel-sum .money{ color:var(--ink); font-weight:700; }
+.panel-sum .muted{ color:var(--ink-soft); font-weight:600; }
+.panel-sum .sep{ color:color-mix(in srgb, var(--pink-700) 45%, transparent); }
+
+/* THE SCALLOP GETS ITS OWN DEAD SPACE, and the data gets a clean box.
+   The discs are painted by the positioned .panel-head, 11px BELOW it — so at
+   ≤1023, where .panel-body is the scroll container and its top edge IS the
+   head's bottom edge, they were not clipped by the scroll box: once the top
+   padding scrolled away, the top ~11px of every .ag-card (name, time, status
+   chip) slid under solid --pink-100 circles. The 11px margin moves the scroll
+   box below the discs entirely; padding drops 22px→11px so the total gap
+   above the first card is unchanged at 22px, and the discs still land on the
+   panel's own --surface exactly as before. */
+.panel-body{ margin-top:11px; padding:11px 14px 0; }
+
+/* ── THE AGENDA — The Diary's vertical timeline, at panel scale.
+   Same anatomy as dashboard-c's .tl__item / .tl__rail / .tl__dot; the dot
+   has bloomed into a blossom node (lessons-e's .tl__node). ──────────── */
+.agenda{ list-style:none; display:flex; flex-direction:column; gap:var(--row-gap,10px); }
+.ag-item{
+  --row-gap:10px;
+  display:grid; grid-template-columns:56px 20px minmax(0,1fr);
+  column-gap:8px; align-items:start;
+}
+.ag-time{ text-align:right; padding-top:11px; }
+.ag-hr{
+  display:block; font:700 11.5px/1.2 var(--font-num); font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em; color:var(--ink); white-space:nowrap;
+}
+.ag-dur{ display:block; margin-top:3px; font:500 10.5px/1.2 var(--font-sans); color:var(--ink-soft); white-space:nowrap; }
+
+.ag-rail{ position:relative; display:flex; justify-content:center; align-self:stretch; }
+.ag-rail::before{
+  content:""; position:absolute; top:0; bottom:calc(-1 * var(--row-gap));
+  width:2px; border-radius:var(--r-2xs); background:var(--line);
+}
+.ag-item:last-child .ag-rail::before{ bottom:auto; height:24px; }
+
+.ag-node{
+  position:relative; z-index:1; margin-top:9px;
+  width:20px; height:20px; border-radius:50%; flex:0 0 auto;
+  display:grid; place-items:center; background:var(--surface);
+}
+.ag-node svg{ width:14px; height:14px; }
+/* The blossom node is a STATUS-BEARING GRAPHIC on --surface and must clear
+   3:1 — so it takes the SAME deep ramp as the .ag-bar rail beside it, never
+   the pastel -dot tokens (--ok-dot 2.09:1, --no-dot 1.97:1, --wait-dot
+   1.49:1: they vanish). Same hue, deeper ramp; the rings are mixed deeper to
+   match, and stay a ring, not a graphic. */
+.ag-node--complete{ box-shadow:0 0 0 3px var(--surface), 0 0 0 4px color-mix(in srgb, var(--teal-600) 55%, transparent); }
+.ag-node--complete svg{ color:var(--teal-600); }      /* #4f8f86 · 3.75:1 */
+.ag-node--cancelled{ box-shadow:0 0 0 3px var(--surface), 0 0 0 4px color-mix(in srgb, var(--pink-600) 55%, transparent); }
+.ag-node--cancelled svg{ color:var(--pink-600); }     /* #c94f7c · 4.83:1 */
+.ag-node--pending{ box-shadow:0 0 0 3px var(--surface), 0 0 0 4px color-mix(in srgb, var(--sand-700) 55%, transparent); }
+.ag-node--pending svg{ color:var(--sand-700); }       /* #8a6524 · 5.24:1 */
+
+/* The lesson card — DELIBERATELY undecorated. Sweet frame, sober data. */
+.ag-card{
+  position:relative; overflow:hidden;
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto;
+  column-gap:9px; row-gap:7px; align-items:center;
+  padding:10px 11px 11px 15px;
+  border-radius:var(--r-md);
+  background:var(--surface-2); border:1px solid var(--line);
+}
+.ag-card.is-cancelled{ background:color-mix(in srgb, var(--no-bg) 34%, var(--surface)); border-color:var(--line-pink); }
+.ag-card.is-pending{ background:color-mix(in srgb, var(--wait-bg) 40%, var(--surface)); }
+
+/* The status bar. A 4px rail is a small graphic and must clear 3:1, which
+   the pastel -dot tokens never do — same hue, deeper ramp. */
+.ag-bar{ position:absolute; left:0; top:0; bottom:0; width:4px; }
+.ag-bar.s-complete{ background:var(--teal-600); }
+.ag-bar.s-cancelled{ background:var(--pink-600); }
+.ag-bar.s-pending{ background:var(--sand-700); }
+
+.ag-card > .av{ grid-column:1; grid-row:1; }
+.ag-id{ grid-column:2; grid-row:1; min-width:0; }
+.ag-name{
+  display:block; font:650 12.5px/1.3 var(--font-sans); color:var(--ink);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.is-cancelled .ag-name{ text-decoration:line-through; text-decoration-thickness:1.5px; color:var(--ink-soft); }
+.ag-piece{
+  display:block; margin-top:3px;
+  font-family:var(--font-serif); font-style:italic;
+  font-size:12px; line-height:1.3; color:var(--ink-soft);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ag-card > .chip{ grid-column:3; grid-row:1; justify-self:end; letter-spacing:.05em; }
+.ag-foot{
+  grid-column:2 / -1; grid-row:2;
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+}
+.ag-foot .chip--online{ padding:3px 8px; font-size:10.5px; }
+.ag-foot .chip--online svg{ width:11px; height:11px; }
+.ag-rate{
+  margin-left:auto;
+  font:700 12.5px/1 var(--font-num); font-variant-numeric:tabular-nums;
+  color:var(--ink); white-space:nowrap;
+}
+.ag-rate small{ font-size:.78em; font-weight:600; color:var(--ink-soft); margin-left:1px; }
+.ag-rate.is-void{ color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:1.5px; }
+/* cancelReason is REQUIRED on a CANCELLED lesson in the real app. */
+.ag-reason{
+  grid-column:1 / -1; grid-row:3;
+  padding:7px 10px; border-radius:var(--r-xs);
+  background:var(--no-bg); color:var(--no-fg);
+  font:500 11.5px/1.4 var(--font-sans);
+}
+.ag-reason b{ font-weight:700; }
+
+/* ── Panel footer — the dashed add affordance + Mochi, napping.
+   She is a FLEX SIBLING of the button, not an absolute overlay: at 390px the
+   panel corner gets tight, and a sibling can never overlap the control no
+   matter how the text reflows. */
+.panel-foot{
+  display:flex; align-items:flex-end; gap:10px;
+  padding:14px 14px 12px;
+}
+.add-lesson{
+  flex:1 1 auto; min-width:0;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  min-height:var(--tap); padding:0 14px;
+  border:2px dashed var(--bubblegum); border-radius:var(--r-pill);
+  background:var(--pink-50); color:var(--pink-700);
+  font:700 13px/1 var(--font-sans);
+  transition:background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.add-lesson:hover{ background:var(--pink-100); box-shadow:var(--sh-sm); }
+.add-lesson svg{ width:17px; height:17px; flex:0 0 auto; }
+.mochi-nap{
+  flex:0 0 auto; width:58px; height:46px;
+  pointer-events:none; margin-bottom:-4px;
+  animation:snooze 5.5s var(--ease) infinite;
+}
+@keyframes snooze{
+  0%,100%{ transform:translateY(0) rotate(-3deg); }
+  50%{ transform:translateY(-3px) rotate(-6deg); }
+}
+
+/* ── Quiet-day empty state — Mochi owns it. ─────────────────────────── */
+.quiet{
+  display:grid; justify-items:center; gap:7px;
+  padding:22px 12px 18px; text-align:center;
+}
+.quiet .mochi-sleep{ width:96px; height:75px; }
+.quiet .bloom{ width:16px; height:16px; color:var(--bubblegum); }
+.quiet b{ font:650 14px/1.35 var(--font-sans); color:var(--ink); }
+.quiet p{ font:var(--t-small); color:var(--ink-soft); max-width:28ch; }
+
+/* ══════════ WASHI-TAPE STICKER — the one taped card on this page ═══════
+   A month summary. It carries money, so it wears no emoji and no blossom:
+   tape + piano keys only. */
+.sticker-wrap{ position:relative; max-width:340px; margin-top:clamp(26px,3vw,36px); }
+.sticker{
+  position:relative;
+  padding:18px 18px 16px;
+  border-radius:var(--r-lg);
+  background:linear-gradient(160deg, var(--pink-50), var(--surface) 65%);
+  border:1px solid var(--line-pink);
+  box-shadow:var(--sh);
+  transform:rotate(-1.4deg); transform-origin:50% 0;
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.sticker:hover, .sticker:focus-within{ transform:rotate(0deg); box-shadow:var(--sh-lg); }
+/* the tape strip — a pseudo-element, so it never enters the a11y tree */
+.sticker::before{
+  content:""; position:absolute; z-index:2;
+  top:-12px; left:32%; width:132px; height:26px;
+  transform:translateX(-50%) rotate(2.2deg);
+  background:linear-gradient(180deg,
+    color-mix(in srgb, var(--mint) 82%, transparent),
+    color-mix(in srgb, var(--cotton) 72%, transparent));
+  border-left:2px dashed color-mix(in srgb, var(--wintergreen) 45%, transparent);
+  border-right:2px dashed color-mix(in srgb, var(--wintergreen) 45%, transparent);
+  box-shadow:var(--sh-xs); opacity:.92; pointer-events:none;
+}
+.sticker-title{
+  display:block;
+  font-family:var(--font-serif); font-weight:400;
+  font-size:17px; line-height:1.25; color:var(--ink);
+}
+.sticker-stats{ margin-top:10px; font:var(--t-small); color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.sticker-stats b{ color:var(--ink); font-weight:700; }
+.sticker-money{
+  margin-top:9px;
+  font:700 19px/1.1 var(--font-num); font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em; color:var(--ink);
+}
+.sticker-money small{ font-size:.62em; font-weight:600; color:var(--ink-soft); margin-left:2px; }
+.sticker-cap{ margin-top:3px; font:500 11.5px/1.4 var(--font-sans); color:var(--ink-soft); }
+.sticker-keys{ margin-top:13px; }
+
+/* PIANO-KEY MOTIF — the empty track is a keyboard; the key pattern is masked
+   OFF the fill, so the ornament never paints on top of the real value. */
+.keys{
+  position:relative; height:15px; border-radius:var(--r-xs); overflow:hidden;
+  background:var(--surface); box-shadow:inset 0 0 0 1px var(--line-strong);
+}
+.keys > i{
+  position:absolute; top:0; bottom:0; left:0; width:var(--p,50%);
+  background:var(--grad-pink); border-right:1.5px solid var(--pink-600);
+}
+.keys--mint > i{ background:var(--grad-mint); border-right-color:var(--teal-600); }
+.keys::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0 8px, var(--ink) 8px 14px,
+      transparent 14px 20px, var(--ink) 20px 26px,
+      transparent 26px 42px, var(--ink) 42px 48px,
+      transparent 48px 54px, var(--ink) 54px 60px,
+      transparent 60px 66px, var(--ink) 66px 72px,
+      transparent 72px 84px) top left / 100% 62% no-repeat,
+    repeating-linear-gradient(90deg,
+      transparent 0 11px,
+      color-mix(in srgb, var(--ink) 20%, transparent) 11px 12px);
+  -webkit-mask:linear-gradient(90deg, transparent 0 var(--p,50%), #000 var(--p,50%));
+  mask:linear-gradient(90deg, transparent 0 var(--p,50%), #000 var(--p,50%));
+  opacity:.55;
+}
+.keys-cap{
+  display:flex; justify-content:space-between; gap:8px; margin-top:7px;
+  font:600 10.5px/1.2 var(--font-sans); color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ══════════ EMPTY-STATE REFERENCE ═════════════════════════════════════ */
+.sec-title{
+  display:flex; align-items:center; gap:9px;
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(21px,2.5vw,28px); line-height:1.15; letter-spacing:-.01em;
+  color:var(--ink);
+}
+.sec-bloom{ width:16px; height:16px; color:var(--bubblegum); flex:0 0 auto; }
+.empty-sec{ margin-top:clamp(34px,4.4vw,54px); }
+.empty-note{ margin-top:6px; font:var(--t-small); color:var(--ink-soft); }
+.empty-demo{
+  margin-top:14px; max-width:360px;
+  border-radius:var(--r-xl); overflow:hidden;
+  border:1px solid var(--line); background:var(--surface); box-shadow:var(--sh);
+}
+
+/* ── Toast ─────────────────────────────────────────────────────────────── */
+.toast{
+  position:fixed; left:50%; bottom:26px; z-index:95;
+  transform:translate(-50%,14px);
+  display:flex; align-items:center; gap:8px;
+  padding:12px 18px; border-radius:var(--r-pill);
+  background:var(--surface); border:1px solid var(--line-pink); box-shadow:var(--sh-lg);
+  font:650 13px/1 var(--font-sans); color:var(--ink);
+  opacity:0; pointer-events:none;
+  transition:opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.toast.is-on{ opacity:1; transform:translate(-50%,0); }
+.toast svg{ width:18px; height:18px; color:var(--wintergreen); }
+
+/* ── Off-canvas chrome ───────────────────────────────────────────────── */
+.backdrop{
+  position:fixed; inset:0; z-index:45;
+  background:color-mix(in srgb, var(--ink) 38%, transparent); backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; transition:opacity var(--dur) var(--ease);
+}
+body.nav-open .backdrop, body.sheet-open .backdrop{ opacity:1; pointer-events:auto; }
+.tabbar{ display:none; }
+.sheet, .sheet-scrim{ display:none; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ≥1024 — the grid gets real height and the panel docks to the right. */
+@media (min-width:1024px){
+  .cal-layout{ grid-template-columns:minmax(0,1fr) 340px; }
+  .cal-grid{ gap:6px; }
+  .cell{ min-height:88px; padding:8px; border-radius:var(--r-md); }
+  .daynum{ width:28px; height:28px; font-size:13px; }
+  .daypanel{ position:sticky; top:20px; }
+}
+
+/* Desktop */
+@media (min-width:1280px){
+  .cal-layout{ grid-template-columns:minmax(0,1fr) var(--panel); }
+  .cell{ min-height:96px; }
+}
+/* Only here is a cell genuinely wide enough to spell the pill out.
+   Measured, not guessed: .wrap caps at 1180px, so the day cell tops out at
+   ~105px (inner ~89px) and stops growing. "3 lessons" at 11.5px needs ~87px
+   — which is why this rule is NOT at 1400px, where the inner cell is only
+   ~75px and the pill would clip mid-word inside .cell{overflow:hidden}.
+   The 11px/tighter padding buys ~8px of real headroom on top. */
+@media (min-width:1500px){
+  .count{ padding:4px 9px 4px 5px; gap:3px; font-size:11px; }
+  .count .word{ display:inline; }
+}
+
+/* 640–1023 — tablet portrait: taller cells, one column. */
+@media (min-width:640px) and (max-width:1023px){
+  .cell{ min-height:74px; }
+}
+
+/* Tablet landscape 1024–1279 → 76px icon rail */
+@media (max-width:1279px){
+  .shell{ grid-template-columns:var(--rail) minmax(0,1fr); }
+  .sidebar{ padding:18px 10px 14px; align-items:center; overflow:visible; }
+  .brand{ justify-content:center; padding:4px 0; }
+  .nav-link{ justify-content:center; padding:0; width:var(--tap); margin:0 auto; }
+  .side-cta{ width:var(--tap); padding:0; border-radius:50%; }
+
+  /* Labels are CLIPPED, never display:none — they are the accessible name of
+     every icon-only control in the rail. */
+  .brand-text,
+  .nav-group > .label,
+  .nav-link span,
+  .side-cta span{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+  /* The badge is REAL DATA — "Lessons 5" — so it gets the same clip as every
+     other label in this block, never display:none. display:none silently
+     dropped the count from the link's accessible name at 1024–1279 while
+     every other rail label survived as clipped text. */
+  .nav-link .nav-badge{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+
+  .nav-group + .nav-group{ margin-top:12px; position:relative; padding-top:12px; }
+  .nav-group + .nav-group::before{
+    content:""; position:absolute; top:0; left:14%; right:14%; height:1px; background:var(--line);
+  }
+  .user-btn{ width:var(--tap); padding:0; justify-content:center; border-radius:50%; }
+  .user-meta, .user-btn > svg{ display:none; }
+  .user-menu{ position:absolute; bottom:0; left:calc(100% + 8px); width:200px; margin-top:0; z-index:70; }
+}
+
+/* Below 1024 → off-canvas drawer + bottom tab bar + "More" sheet, and the
+   day panel becomes a peeked bottom sheet. */
+@media (max-width:1023px){
+  .shell{ grid-template-columns:minmax(0,1fr); }
+  .sidebar{
+    position:fixed; top:0; left:0; bottom:0; z-index:60;
+    width:282px; padding:20px 14px 16px; align-items:stretch;
+    background:var(--surface); box-shadow:var(--sh-xl); overflow-y:auto;
+    transform:translateX(-102%); transition:transform .28s var(--ease);
+  }
+  body.nav-open .sidebar{ transform:none; }
+
+  .brand{ justify-content:flex-start; padding:6px 8px 2px; }
+  .brand-text,
+  .nav-group > .label,
+  .nav-link span,
+  .side-cta span{
+    position:static; width:auto; height:auto; margin:0; overflow:visible; clip-path:none;
+  }
+  .nav-link{ justify-content:flex-start; padding:0 12px; width:auto; }
+  .nav-link .nav-badge{ display:inline-block; margin-left:auto; }
+  .side-cta{ width:100%; padding:0 18px; border-radius:var(--r-pill); }
+  .nav-group + .nav-group{ position:static; padding-top:0; margin-top:18px; }
+  .nav-group + .nav-group::before{ content:none; }
+  .user-btn{ width:100%; padding:8px 10px; justify-content:flex-start; border-radius:var(--r-md); }
+  .user-meta{ display:block; }
+  .user-btn > svg{ display:block; }
+  .user-menu{ display:grid; position:static; width:auto; margin-top:6px; }
+
+  /* Clear the tab bar AND the peeked day sheet. */
+  .main{ padding-bottom:calc(var(--tabbar-h) + var(--peek) + env(safe-area-inset-bottom, 0px) + 16px); }
+  .toast{ bottom:calc(var(--tabbar-h) + var(--peek) + env(safe-area-inset-bottom, 0px) + 14px); }
+
+  .topbar{
+    display:flex; align-items:center; gap:10px;
+    width:100%; max-width:1180px; margin:0 auto clamp(12px,2vw,18px);
+  }
+  .topbar .brand{ padding:0; }
+  .topbar__spacer{ margin-left:auto; }
+
+  /* ── Day panel → bottom sheet, shown PEEKED ── */
+  .daypanel{
+    position:fixed; left:0; right:0;
+    bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    z-index:56;
+    display:flex; flex-direction:column;
+    max-height:min(76dvh, 620px);
+    border-radius:var(--r-xl) var(--r-xl) 0 0;
+    border-bottom:0;
+    box-shadow:var(--sh-up), var(--sh-xl);
+    transform:translateY(calc(100% - var(--peek)));
+    transition:transform .3s var(--ease);
+  }
+  body.sheet-open .daypanel{ transform:none; }
+
+  .sheet-grab{ display:block; flex:0 0 auto; background:var(--pink-50); }
+  .sheet-handle{ display:grid; place-items:center; width:100%; min-height:var(--tap); padding:0; }
+  .grab{
+    width:44px; height:5px; border-radius:var(--r-pill);
+    background:var(--bubblegum);
+    transition:background var(--dur) var(--ease);
+  }
+  .sheet-handle:hover .grab{ background:var(--pink-500); }
+
+  /* The head must never shrink: it IS the peek. Only the body scrolls. */
+  .panel-head{ flex:0 0 auto; }
+  .panel-body{ overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1 1 auto; }
+  .panel-foot{ flex:0 0 auto; padding-bottom:16px; }
+
+  /* height is DECLARED from the same constant .daypanel/.main/.toast reserve
+     against, so the sheet's bottom edge always lands exactly on the bar. */
+  .tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:75;
+    display:grid; grid-template-columns:repeat(6,1fr); gap:2px;
+    height:calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    background:color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter:blur(14px) saturate(1.4);
+    border-top:1px solid var(--line);
+  }
+  .tab{
+    display:grid; place-items:center; gap:3px;
+    min-height:var(--tap); padding:5px 2px; border-radius:var(--r-sm);
+    color:var(--ink-soft); font:600 10px/1.2 var(--font-sans);
+  }
+  .tab svg{ width:21px; height:21px; }
+  .tab[aria-current="page"], .tab[aria-expanded="true"]{ color:var(--pink-700); background:var(--pink-50); }
+
+  .sheet-scrim{
+    display:block; position:fixed; inset:0; z-index:65;
+    background:color-mix(in srgb, var(--ink) 28%, transparent); backdrop-filter:blur(2px);
+  }
+  .sheet{
+    display:flex; flex-direction:column; gap:4px;
+    position:fixed; z-index:70; left:50%; transform:translateX(-50%);
+    bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    width:min(460px, calc(100% - 20px));
+    padding:10px; border-radius:var(--r-lg);
+    background:color-mix(in srgb, var(--surface) 96%, transparent);
+    backdrop-filter:blur(20px) saturate(1.5);
+    border:1px solid var(--line); box-shadow:var(--sh-xl);
+  }
+  .sheet[hidden], .sheet-scrim[hidden]{ display:none !important; }
+  .sheet__grab{ width:38px; height:4px; border-radius:var(--r-2xs); margin:0 auto 6px; background:var(--line-strong); }
+  .sheet a{
+    display:flex; align-items:center; gap:12px;
+    min-height:var(--tap); padding:0 14px; border-radius:var(--r-sm);
+    font:600 14px/1 var(--font-sans); color:var(--ink-soft);
+  }
+  .sheet a svg{ width:19px; height:19px; flex:0 0 auto; }
+  .sheet a:hover{ background:var(--surface-2); color:var(--ink); }
+}
+
+/* Tablet portrait & phone — the toolbar unstacks into three honest rows so
+   the serif title never collides with the segmented control. */
+@media (max-width:767px){
+  .toolbar{
+    grid-template-columns:minmax(0,1fr);
+    justify-items:stretch;
+    gap:12px;
+  }
+  .tb-title{ justify-content:flex-start; order:-1; }
+  .tb-nav{ justify-content:flex-start; }
+  .seg{ width:100%; justify-content:space-between; }
+  .seg button{ flex:1; padding:0 8px; }
+}
+
+/* Phone */
+@media (max-width:639px){
+  /* The bar loses 2px of padding and ~0.6px of label here, so the constant
+     tracks it: 45.4px .tab + 5px/5px = ~56px. */
+  :root{ --tabbar-h:56px; }
+  .pagehead{ align-items:flex-start; }
+  /* flex-wrap is load-bearing. At 390–414px, Mochi + "List view" + "Add
+     lesson" intrinsically need ~356px against ~326px of room. Without wrap
+     the buttons squash to min-content and break their own labels across two
+     lines ("List / view"). With it, "Add lesson" drops to a full-width
+     second row instead — and the body still never scrolls sideways. */
+  .pagehead-r{ width:100%; flex-wrap:wrap; }
+  .pagehead-r .btn{ flex:1 1 140px; min-width:0; }
+  .mochi-hi{ width:62px; height:49px; }
+  .tabbar{ gap:1px; padding:5px 3px calc(5px + env(safe-area-inset-bottom, 0px)); }
+  .tab{ font-size:9.5px; letter-spacing:0; }
+  .sticker{ transform:none; }            /* no tilt in a 1-col phone layout */
+  .sticker:hover{ transform:none; }
+  .sticker::before{ width:110px; left:34%; }
+  .sticker-wrap{ max-width:none; }
+  .empty-demo{ max-width:none; }
+}
+
+@media (max-width:400px){
+  /* 45px cells at 390: the pill drops to the blossom + the number, and the
+     cell's aria-label goes on carrying "3 lessons" in full. */
+  .cell{ padding:5px; gap:3px; }
+  .daynum{ width:24px; height:24px; font-size:12px; }
+  .count{ padding:3px 6px 3px 4px; gap:3px; font-size:10.5px; }
+  .count .bloom{ width:7px; height:7px; }
+  /* The TIME TRACK KEEPS ITS 56px. hhmm() renders "10:30 AM" / "12:45 PM",
+     which measure ~50–53px at 700/11.5px with tabular figures — a 50px track
+     spilled them left into .panel-body's padding and broke the rail
+     alignment. Only the rail column narrows; the 1fr card absorbs the 2px. */
+  .ag-item{ grid-template-columns:56px 18px minmax(0,1fr); column-gap:7px; }
+  /* Mochi tucks in rather than crowding the add button at the tightest width. */
+  .mochi-nap{ width:48px; height:38px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ Inline SVG sprite — every ornament + the mascot in one place ═══
+     All decorative. Mochi's geometry matches lessons-e.html / students.html
+     verbatim so a developer can extract a single <Mochi mood="…" /> component:
+     #i-mochi-head (content) and #i-mochi-nap (sleepy) differ ONLY in the eyes
+     and the paws. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- 5-petal blossom — the signature mark: heading ornament, agenda node,
+         count-pill bullet, today's watermark. (from dashboard-d) -->
+    <symbol id="i-blossom" viewBox="0 0 24 24">
+      <g fill="currentColor">
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(72 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(144 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(216 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(288 12 12)"/>
+      </g>
+      <circle cx="12" cy="12" r="2.7" fill="#ffffff" opacity=".9"/>
+    </symbol>
+
+    <!-- ribbon bow — the brand-mark ornament (from dashboard-d) -->
+    <symbol id="i-bow" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.4 12C9.6 9.1 7.4 7.6 5.4 7.6 3.5 7.6 2.2 8.9 2.2 10.8c0 2.6 2.1 4.6 4.9 4.6 1.7 0 3.2-1.2 4.3-3.4z"/>
+      <path fill="currentColor" d="M12.6 12c1.8-2.9 4-4.4 6-4.4 1.9 0 3.2 1.3 3.2 3.2 0 2.6-2.1 4.6-4.9 4.6-1.7 0-3.2-1.2-4.3-3.4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M10.7 13.7 9.1 19.6M13.3 13.7l1.6 5.9"/>
+      <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+    </symbol>
+
+    <!-- MOCHI · content — ears up, eyes open. Beside the page header.
+         --ink-faint is legal here: whiskers carry no information. -->
+    <symbol id="i-mochi-head" viewBox="0 0 84 66">
+      <path d="M20 32 L16 12 L32 22 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M56 32 L60 12 L44 22 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <g stroke="var(--ink-faint)" stroke-width="1.5" stroke-linecap="round">
+        <line x1="11" y1="40" x2="3" y2="37"/><line x1="11" y1="45" x2="2" y2="46"/>
+        <line x1="65" y1="40" x2="73" y2="37"/><line x1="65" y1="45" x2="74" y2="46"/>
+      </g>
+      <ellipse cx="38" cy="40" rx="26" ry="23" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <circle cx="28" cy="38" r="3" fill="var(--ink)"/>
+      <circle cx="48" cy="38" r="3" fill="var(--ink)"/>
+      <path d="M34 47q4 4 8 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="46" r="4" fill="var(--cotton)" opacity=".85"/>
+      <circle cx="56" cy="46" r="4" fill="var(--cotton)" opacity=".85"/>
+      <path d="M71 20 l7 -5 v10 z" fill="var(--bubblegum)"/>
+      <path d="M71 20 l-7 -5 v10 z" fill="var(--bubblegum)"/>
+      <circle cx="71" cy="20" r="2.6" fill="var(--pink-600)"/>
+    </symbol>
+
+    <!-- MOCHI · sleepy — the SAME cat, eyes closed, paws tucked. She owns the
+         quiet day: the panel footer at small size, the empty state at large. -->
+    <symbol id="i-mochi-nap" viewBox="0 0 84 66">
+      <path d="M20 32 L16 12 L32 22 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M56 32 L60 12 L44 22 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <g stroke="var(--ink-faint)" stroke-width="1.5" stroke-linecap="round">
+        <line x1="11" y1="40" x2="3" y2="37"/><line x1="11" y1="45" x2="2" y2="46"/>
+        <line x1="65" y1="40" x2="73" y2="37"/><line x1="65" y1="45" x2="74" y2="46"/>
+      </g>
+      <ellipse cx="38" cy="40" rx="26" ry="23" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <!-- the only difference from #i-mochi-head: closed eyes -->
+      <g fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round">
+        <path d="M24 40q4 -5 8 0"/>
+        <path d="M44 40q4 -5 8 0"/>
+      </g>
+      <path d="M34 47q4 4 8 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="46" r="4" fill="var(--cotton)" opacity=".85"/>
+      <circle cx="56" cy="46" r="4" fill="var(--cotton)" opacity=".85"/>
+      <path d="M71 20 l7 -5 v10 z" fill="var(--bubblegum)"/>
+      <path d="M71 20 l-7 -5 v10 z" fill="var(--bubblegum)"/>
+      <circle cx="71" cy="20" r="2.6" fill="var(--pink-600)"/>
+      <ellipse cx="18" cy="61" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <ellipse cx="58" cy="61" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+    </symbol>
+
+    <!-- shared line icons (identical to lessons-e.html) -->
+    <symbol id="i-piano" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>
+    </symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
+    </symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+    </symbol>
+    <symbol id="i-people" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/>
+      <path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M16 3.6a4 4 0 0 1 0 7"/>
+    </symbol>
+    <symbol id="i-notes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+    </symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
+    </symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 11h20"/><path d="M6 15.5h3"/>
+    </symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+      <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 6h16M4 12h16M4 18h10"/>
+    </symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/>
+    </symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 5l-7 7 7 7"/>
+    </symbol>
+    <symbol id="i-next" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 5l7 7-7 7"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="variant-badge print-hide">Calendar · Blossom Diary <span aria-hidden="true">✿</span></div>
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation">
+    <a class="brand" href="dashboard-e.html" data-route="/dashboard">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><use href="#i-piano"/></svg>
+        <svg class="bow-tag" aria-hidden="true"><use href="#i-bow"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson" data-add>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><use href="#i-plus"/></svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="dashboard-e.html" data-route="/dashboard" title="Dashboard">
+            <svg aria-hidden="true"><use href="#i-grid"/></svg><span>Dashboard</span></a></li>
+          <li><a class="nav-link" href="calendar-e.html" data-route="/calendar" aria-current="page" title="Calendar">
+            <svg aria-hidden="true"><use href="#i-cal"/></svg><span>Calendar</span></a></li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="lessons-e.html" data-route="/lessons" title="Lessons">
+            <svg aria-hidden="true"><use href="#i-list"/></svg><span>Lessons</span><span class="nav-badge">5</span></a></li>
+          <li><a class="nav-link" href="students.html" data-route="/students" title="Students">
+            <svg aria-hidden="true"><use href="#i-people"/></svg><span>Students</span></a></li>
+          <li><a class="nav-link" href="pieces.html" data-route="/pieces" title="Pieces">
+            <svg aria-hidden="true"><use href="#i-notes"/></svg><span>Pieces</span></a></li>
+          <li><a class="nav-link" href="reports-e.html" data-route="/reports" title="Reports">
+            <svg aria-hidden="true"><use href="#i-chart"/></svg><span>Reports</span></a></li>
+          <li><a class="nav-link" href="payments.html" data-route="/payments" title="Payments">
+            <svg aria-hidden="true"><use href="#i-card"/></svg><span>Payments</span></a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn" type="button" id="userBtn" aria-haspopup="menu" aria-expanded="false"
+              aria-controls="userMenu" aria-label="Account menu: Profile, Updates, Log out">
+        <span class="av" aria-hidden="true">TT</span>
+        <span class="user-meta">
+          <span class="user-name">Thuy Tran</span>
+          <span class="user-mail">thuy@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg>
+      </button>
+      <ul class="user-menu" id="userMenu" role="menu" hidden>
+        <li role="none"><a role="menuitem" href="profile.html" data-route="/profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>Profile</a></li>
+        <li role="none"><a role="menuitem" href="index.html" data-route="/updates">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 19a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li role="none"><a role="menuitem" href="login.html" data-route="/logout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8"/><path d="M17 15l3-3-3-3M20 12H10"/></svg>Log out</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="main">
+    <div class="wrap">
+
+      <!-- compact top bar (below 1024) -->
+      <div class="topbar print-hide">
+        <button class="btn btn--icon btn--ghost" type="button" id="hamburger"
+                aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="brand">
+          <span class="brand-logo" aria-hidden="true" style="width:36px;height:36px">
+            <svg viewBox="0 0 24 24" width="19" height="19"><use href="#i-piano"/></svg>
+            <svg class="bow-tag" aria-hidden="true"><use href="#i-bow"/></svg>
+          </span>
+          <span class="brand-text">
+            <span class="brand-name">My Piano Diary</span>
+            <span class="brand-tag">Personal teaching space</span>
+          </span>
+        </div>
+        <span class="topbar__spacer"></span>
+      </div>
+
+      <!-- ══════════ PAGE HEADER ══════════ -->
+      <header class="pagehead rise" style="--i:0">
+        <span class="blobs" aria-hidden="true">
+          <span class="blob blob-1"></span>
+          <span class="blob blob-2"></span>
+          <span class="blob blob-3"></span>
+        </span>
+
+        <div class="pagehead-l">
+          <span class="head-eyebrow">
+            <svg aria-hidden="true"><use href="#i-blossom"/></svg>
+            Đà Nẵng studio
+          </span>
+          <h1 class="page-h1">Calendar</h1>
+          <!-- hand-drawn squiggle instead of a straight rule -->
+          <svg class="squiggle" viewBox="0 0 240 10" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M3 6.5 Q 18 1, 33 6.5 T 63 6.5 T 93 6.5 T 123 6.5 T 153 6.5 T 183 6.5 T 213 6.5 T 237 5"
+                  fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+          </svg>
+          <p class="head-date">Thursday, July 16th</p>
+          <p class="page-sub">Manage lessons and track attendance</p>
+        </div>
+
+        <div class="pagehead-r">
+          <!-- Mochi, content — a flex sibling, so she can never overlap text. -->
+          <svg class="mochi-hi" aria-hidden="true" focusable="false"><use href="#i-mochi-head"/></svg>
+          <a class="btn btn--ghost" href="lessons-e.html" data-route="/lessons">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><use href="#i-list"/></svg>
+            List view
+          </a>
+          <button class="btn btn--primary" type="button" data-add>
+            <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><use href="#i-plus"/></svg>
+            Add lesson
+          </button>
+        </div>
+      </header>
+
+      <!-- ══════════ TOOLBAR ══════════ -->
+      <div class="toolbar rise" style="--i:1">
+        <div class="tb-nav">
+          <button class="btn btn--icon btn--ghost" type="button" id="prevBtn" aria-label="Previous month">
+            <svg aria-hidden="true"><use href="#i-prev"/></svg>
+          </button>
+          <button class="btn btn--icon btn--ghost" type="button" id="nextBtn" aria-label="Next month">
+            <svg aria-hidden="true"><use href="#i-next"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm tb-today" type="button" id="todayBtn">Today</button>
+        </div>
+
+        <!-- ONE ornament: the .tb-bloom blossom, the family motif and the
+             toolbar's declared budget. The 🎵 that used to sit inside
+             .tb-when was a second ornament glued to a figure — and this h2
+             IS the page's month/year state, the aria-labelledby target of the
+             calendar section, and sets tabular-nums for it. -->
+        <h2 class="tb-title" id="calTitle" aria-live="polite">
+          <svg class="tb-bloom" aria-hidden="true"><use href="#i-blossom"/></svg>
+          <span class="tb-when">July 2026</span>
+        </h2>
+
+        <div class="seg" role="group" aria-label="Calendar view">
+          <button type="button" data-view="month" aria-pressed="true">Month</button>
+          <button type="button" data-view="week" aria-pressed="false">Week</button>
+          <button type="button" data-view="day" aria-pressed="false">Day</button>
+        </div>
+      </div>
+
+      <!-- ══════════ LEGEND — the real app has none; adding it is the point ══════════
+           The swatches are the LITERAL marks: 4px rails, the same width and
+           the same ramp as .ag-bar. The caption names the surface that draws
+           them — the day panel — because the month grid below carries no
+           status colour to caption. -->
+      <div class="legend rise" style="--i:2">
+        <span class="lg lg--ok"><i aria-hidden="true"></i>Complete</span>
+        <span class="lg lg--no"><i aria-hidden="true"></i>Cancelled</span>
+        <span class="lg lg--wait"><i aria-hidden="true"></i>Pending</span>
+        <span class="lg-sep" aria-hidden="true"></span>
+        <span class="lg lg--online"><svg aria-hidden="true"><use href="#i-monitor"/></svg>Online</span>
+        <span class="legend-cap">Key to the <b>day panel</b></span>
+      </div>
+
+      <!-- ══════════ GRID + DAY PANEL ══════════ -->
+      <div class="cal-layout">
+
+        <div class="cal-col">
+          <section class="card cal-card" aria-labelledby="calTitle">
+            <div class="cal-grid" id="calGrid">
+              <span class="colhead"><abbr title="Monday">Mon</abbr></span>
+              <span class="colhead"><abbr title="Tuesday">Tue</abbr></span>
+              <span class="colhead"><abbr title="Wednesday">Wed</abbr></span>
+              <span class="colhead"><abbr title="Thursday">Thu</abbr></span>
+              <span class="colhead"><abbr title="Friday">Fri</abbr></span>
+              <span class="colhead is-wknd"><abbr title="Saturday">Sat</abbr></span>
+              <span class="colhead is-wknd"><abbr title="Sunday">Sun</abbr></span>
+              <!-- day rows injected by the script -->
+            </div>
+          </section>
+
+          <!-- ═══ THE ONE WASHI-TAPE CARD ON THIS PAGE ═══
+               A derived month summary — every figure is computed from the same
+               data the grid renders, so it can never drift out of sync. -->
+          <div class="sticker-wrap">
+            <article class="sticker">
+              <b class="sticker-title" id="stickerTitle">July at a glance</b>
+              <!-- These are the pre-hydration values and they are not guesses:
+                   they are exactly what renderSticker() computes for July 2026,
+                   so the card reads true even with the script disabled. -->
+              <p class="sticker-stats" id="stickerStats">
+                <b>55</b> lessons · <b>30</b> complete · <b>22</b> pending · <b>3</b> cancelled
+              </p>
+              <p class="sticker-money" id="stickerMoney">7.660.000 <small>₫</small></p>
+              <p class="sticker-cap">Billable — COMPLETE lessons only</p>
+              <div class="sticker-keys">
+                <div class="keys keys--mint" id="stickerKeys" style="--p:55%" role="img"
+                     aria-label="30 of 55 lessons marked complete — 55 percent">
+                  <i></i>
+                </div>
+                <p class="keys-cap" id="stickerCap"><span>30 of 55 marked complete</span><span>55%</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <!-- ═══ DAY PANEL · becomes a peeked bottom sheet below 1024 ═══ -->
+        <aside class="daypanel" id="dayPanel" aria-labelledby="panelDate">
+          <div class="sheet-grab print-hide">
+            <button class="sheet-handle" type="button" id="sheetHandle" aria-expanded="false" aria-controls="panelBody">
+              <span class="grab" aria-hidden="true"></span>
+              <span class="sr-only">Expand day details</span>
+            </button>
+          </div>
+
+          <header class="panel-head">
+            <h2 class="panel-date" id="panelDate">Thursday, July 16</h2>
+            <p class="panel-sum" id="panelSum" aria-live="polite">
+              <span class="money">550.000 ₫</span> billable
+              <span class="sep" aria-hidden="true">·</span>
+              <span class="muted">2 pending</span>
+              <span class="sep" aria-hidden="true">·</span>
+              <span class="muted">1 cancelled</span>
+            </p>
+          </header>
+
+          <div class="panel-body" id="panelBody">
+            <ol class="agenda" id="agenda"></ol>
+          </div>
+
+          <div class="panel-foot">
+            <button class="add-lesson" type="button" data-add>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"/></svg>
+              Add lesson
+            </button>
+            <!-- Mochi, sleepy — a flex sibling of the button, never an overlay. -->
+            <svg class="mochi-nap" aria-hidden="true" focusable="false"><use href="#i-mochi-nap"/></svg>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ══════════ EMPTY STATE (reference) ══════════ -->
+      <section class="empty-sec" aria-labelledby="empty-h">
+        <h2 class="sec-title" id="empty-h">
+          <svg class="sec-bloom" aria-hidden="true"><use href="#i-blossom"/></svg>
+          Empty state
+        </h2>
+        <p class="empty-note">What the day panel shows for a day with nothing on it — tap Wed 22 July in the grid to see it live.</p>
+
+        <!-- This is the SAME .daypanel component, rendered a second time as a
+             reference — but its head does NOT scallop: .panel-head::after is
+             scoped to .daypanel, so the page renders exactly one scalloped
+             edge, on the live panel, as the budget says. -->
+        <div class="empty-demo">
+          <header class="panel-head">
+            <h3 class="panel-date">Wednesday, July 22</h3>
+            <p class="panel-sum">
+              <span class="money">0 ₫</span> billable
+              <span class="sep" aria-hidden="true">·</span>
+              <span class="muted">no lessons</span>
+            </p>
+          </header>
+          <div class="panel-body">
+            <!-- Budget: "Mochi asleep + blossom" — so no 🎀 glued to the
+                 heading. The copy is calendar-d's canonical string, verbatim
+                 (calendar-d.html:1432): two files in the same family must not
+                 ship two different empty states for the same component and
+                 the same condition. .quiet p{max-width:28ch} already fits it. -->
+            <div class="quiet">
+              <svg class="mochi-sleep" aria-hidden="true" focusable="false"><use href="#i-mochi-nap"/></svg>
+              <svg class="bloom" aria-hidden="true"><use href="#i-blossom"/></svg>
+              <b>A quiet day</b>
+              <p>No lessons yet — your piano week is waiting for music.</p>
+            </div>
+          </div>
+          <div class="panel-foot">
+            <button class="add-lesson" type="button" data-add>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"/></svg>
+              Add lesson
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ BOTTOM TAB BAR (below 1024) ══════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="dashboard-e.html" data-route="/dashboard">
+    <svg aria-hidden="true"><use href="#i-grid"/></svg><span>Dashboard</span>
+  </a>
+  <a class="tab" href="calendar-e.html" data-route="/calendar" aria-current="page">
+    <svg aria-hidden="true"><use href="#i-cal"/></svg><span>Calendar</span>
+  </a>
+  <a class="tab" href="lessons-e.html" data-route="/lessons">
+    <svg aria-hidden="true"><use href="#i-list"/></svg><span>Lessons</span>
+  </a>
+  <a class="tab" href="students.html" data-route="/students">
+    <svg aria-hidden="true"><use href="#i-people"/></svg><span>Students</span>
+  </a>
+  <a class="tab" href="reports-e.html" data-route="/reports">
+    <svg aria-hidden="true"><use href="#i-chart"/></svg><span>Reports</span>
+  </a>
+  <!-- 7 destinations don't fit; Pieces + Payments live in the "More" sheet. -->
+  <button class="tab" type="button" id="more-tab" aria-haspopup="menu" aria-expanded="false" aria-controls="more-sheet">
+    <svg aria-hidden="true"><use href="#i-dots"/></svg><span>More</span>
+  </button>
+</nav>
+
+<div class="sheet-scrim print-hide" id="more-scrim" hidden></div>
+<div class="sheet print-hide" id="more-sheet" role="menu" aria-label="More destinations" hidden>
+  <span class="sheet__grab" aria-hidden="true"></span>
+  <a role="menuitem" href="pieces.html" data-route="/pieces">
+    <svg aria-hidden="true"><use href="#i-notes"/></svg>Pieces
+  </a>
+  <a role="menuitem" href="payments.html" data-route="/payments">
+    <svg aria-hidden="true"><use href="#i-card"/></svg>Payments
+  </a>
+</div>
+
+<div class="toast print-hide" id="toast" role="status" aria-live="polite">
+  <svg aria-hidden="true"><use href="#i-check"/></svg>
+  <span id="toastMsg">Saved</span>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ════════════════════════════════════════════════════════════════════
+     DATA — shaped exactly like the real Prisma models.
+       Lesson:  date, duration, status, isOnline, rate (FROZEN snapshot
+                stamped at creation), cancelReason?, pieceId?
+       Student: name, lessonRate (in-person), onlineLessonRate. No email/phone.
+       LessonStatus = PENDING | COMPLETE | CANCELLED — exactly three.
+     BILLING: only COMPLETE is billable (src/lib/report/tuition.ts filters
+     l.status === "COMPLETE"). Nothing in this file ever sums PENDING or
+     CANCELLED into a money figure.
+     ════════════════════════════════════════════════════════════════════ */
+
+  var TODAY = { y: 2026, m: 7, d: 16 };            // Thursday, July 16 2026
+  var MONTHS = ['January','February','March','April','May','June','July',
+                'August','September','October','November','December'];
+  var DOWS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  var ROSTER = [
+    { n: 'Nguyễn Minh Anh',  i: 'MA', rate: 250000, online: 220000 },
+    { n: 'Trần Bảo Ngọc',    i: 'BN', rate: 300000, online: 260000 },
+    { n: 'Lê Gia Hân',       i: 'GH', rate: 250000, online: 210000 },
+    { n: 'Emma Thompson',    i: 'ET', rate: 350000, online: 300000 },
+    { n: 'Phạm Quốc Bảo',    i: 'QB', rate: 220000, online: 190000 },
+    { n: 'Olivia Nguyen',    i: 'ON', rate: 300000, online: 260000 },
+    { n: 'Đỗ Khánh Linh',    i: 'KL', rate: 260000, online: 220000 },
+    { n: 'Liam Carter',      i: 'LC', rate: 300000, online: 260000 },
+    { n: 'Vũ Thanh Trúc',    i: 'TT', rate: 250000, online: 210000 },
+    { n: 'Hoàng Nam Phong',  i: 'NP', rate: 280000, online: 240000 },
+    { n: 'Nguyễn Gia Hân',   i: 'NG', rate: 250000, online: 210000 }
+  ];
+
+  var PIECES = ['Für Elise','Clair de Lune','Nocturne Op.9 No.2','Turkish March',
+                'Gymnopédie No.1','Minuet in G','Arabesque No.1','River Flows in You',
+                'Prelude in C','Sonatina in G'];
+
+  var REASONS = ['Sick','Family trip','School exam','Travelling'];
+  var SLOTS = ['08:30','09:00','10:30','14:00','15:30','16:00','17:30','18:45'];
+
+  /* July 2026 — 18 of the 35 cells carry lessons; Sundays the studio is
+     closed. Counts run 1–4 everywhere except today, which is 5: the day
+     panel's brief fixes today at five lessons, and the pill must agree with
+     the panel it opens. */
+  var JULY_COUNTS = {
+    1: 3, 3: 4, 4: 2,
+    6: 3, 7: 2, 8: 4, 10: 3,
+    13: 4, 14: 3, 15: 2, 16: 5, 17: 4,
+    20: 3, 23: 3, 24: 4,
+    27: 3, 28: 2, 31: 1
+  };
+
+  /* Today is written by hand so the panel summary is exactly honest:
+     550.000 ₫ billable (250.000 + 300.000, the two COMPLETE lessons)
+     · 2 pending · 1 cancelled. The CANCELLED 350.000 ₫ is never added. */
+  var TODAY_LESSONS = [
+    { t: '09:00', s: 0, piece: 'Für Elise',          dur: 60, status: 'COMPLETE',  isOnline: false, rate: 250000 },
+    { t: '10:30', s: 1, piece: 'Clair de Lune',      dur: 45, status: 'COMPLETE',  isOnline: false, rate: 300000 },
+    { t: '14:00', s: 3, piece: 'Gymnopédie No.1',    dur: 60, status: 'CANCELLED', isOnline: false, rate: 350000, cancelReason: 'Sick' },
+    { t: '16:00', s: 6, piece: 'River Flows in You', dur: 60, status: 'PENDING',   isOnline: false, rate: 260000 },
+    { t: '17:30', s: 4, piece: 'Nocturne Op.9 No.2', dur: 45, status: 'PENDING',   isOnline: true,  rate: 190000 }
+  ];
+
+  /* ── Deterministic pseudo-random: every render of a date is identical.
+     EVERY step is forced back to unsigned. calendar-d.html:62 writes the
+     last two as `s ^= s >>> 13` / `s ^= s >>> 16`, but ^= yields a SIGNED
+     int32 — so that hash returns a NEGATIVE value ~50% of the time, and
+     every caller silently breaks: `1 + Math.floor(h * 4)` can produce a
+     "-1 lessons" count pill, and `h < 0.11` (the CANCELLED test) fires on
+     every negative draw, which turned ~11% cancelled into ~36%. Bug fixed
+     here; calendar-d still has it. ── */
+  function hash(a, b, c, salt) {
+    var s = ((a * 73856093) ^ (b * 19349663) ^ (c * 83492791) ^ (salt * 2654435761)) >>> 0;
+    s = (s ^ (s >>> 13)) >>> 0;
+    s = (s * 1274126177) >>> 0;
+    s = (s ^ (s >>> 16)) >>> 0;
+    return s / 4294967296;
+  }
+
+  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+  function dow(y, m, d) { return new Date(y, m - 1, d).getDay(); }        // 0 = Sun
+  function cmp(y, m, d) { return (y * 10000 + m * 100 + d) - (TODAY.y * 10000 + TODAY.m * 100 + TODAY.d); }
+  function isToday(y, m, d) { return y === TODAY.y && m === TODAY.m && d === TODAY.d; }
+
+  function countFor(y, m, d) {
+    if (dow(y, m, d) === 0) return 0;                    // Sundays: closed
+    if (y === 2026 && m === 7) return JULY_COUNTS[d] || 0;
+    if (hash(y, m, d, 11) < 0.42) return 0;
+    return 1 + Math.floor(hash(y, m, d, 29) * 4);        // 1–4
+  }
+
+  /* Past → COMPLETE (with the odd CANCELLED); future → PENDING, because
+     attendance has not been marked yet. */
+  function lessonsFor(y, m, d) {
+    if (isToday(y, m, d)) {
+      return TODAY_LESSONS.map(function (l) {
+        var st = ROSTER[l.s];
+        return {
+          time: l.t, name: st.n, ini: st.i, piece: l.piece, dur: l.dur,
+          status: l.status, isOnline: l.isOnline, rate: l.rate, cancelReason: l.cancelReason
+        };
+      });
+    }
+
+    var n = countFor(y, m, d);
+    if (!n) return [];
+    var past = cmp(y, m, d) < 0;
+    var out = [];
+    var slotStart = Math.floor(hash(y, m, d, 53) * 3);
+
+    for (var k = 0; k < n; k++) {
+      var st = ROSTER[(d * 3 + k * 5 + m) % ROSTER.length];
+      var online = hash(y, m, d + k, 71) < 0.22;
+      var status = past ? (hash(y, m, d + k, 97) < 0.11 ? 'CANCELLED' : 'COMPLETE') : 'PENDING';
+      out.push({
+        time: SLOTS[(slotStart + k) % SLOTS.length],
+        name: st.n,
+        ini: st.i,
+        piece: PIECES[(d + k * 3 + m) % PIECES.length],
+        dur: hash(y, m, d + k, 131) < 0.42 ? 45 : 60,
+        status: status,
+        isOnline: online,
+        rate: online ? st.online : st.rate,            // the frozen snapshot
+        cancelReason: status === 'CANCELLED'
+          ? REASONS[Math.floor(hash(y, m, d + k, 149) * REASONS.length)]
+          : undefined
+      });
+    }
+    out.sort(function (a, b) { return a.time < b.time ? -1 : 1; });
+    return out;
+  }
+
+  /* ── VND: trailing symbol, DOT grouping, zero decimals → 1.500.000 ₫ ── */
+  function group(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function vnd(n) { return group(n) + ' ₫'; }
+
+  function hhmm(t) {
+    var p = t.split(':'), h = +p[0];
+    var ap = h < 12 ? 'AM' : 'PM';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + p[1] + ' ' + ap;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+
+  /* ════════════════════════════════════════════════════════════════════
+     STATE + RENDER
+     ════════════════════════════════════════════════════════════════════ */
+  var state = { y: TODAY.y, m: TODAY.m, sel: { y: TODAY.y, m: TODAY.m, d: TODAY.d }, view: 'month' };
+
+  var body      = document.body;
+  var grid      = document.getElementById('calGrid');
+  var calTitle  = document.getElementById('calTitle').querySelector('.tb-when');
+  var panelDate = document.getElementById('panelDate');
+  var panelSum  = document.getElementById('panelSum');
+  var agenda    = document.getElementById('agenda');
+  var panelBody = document.getElementById('panelBody');
+
+  var BLOSSOM = '<svg aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>';
+
+  /* ── The month grid. Mon-first, one <button> per day. ────────────────── */
+  function renderGrid() {
+    Array.prototype.slice.call(grid.querySelectorAll('.cal-row')).forEach(function (r) { r.remove(); });
+
+    var first = new Date(state.y, state.m - 1, 1);
+    var monOffset = (first.getDay() + 6) % 7;                 // Mon = 0
+    var total = monOffset + daysInMonth(state.y, state.m);
+    var rows = Math.ceil(total / 7);
+
+    var cursor = new Date(state.y, state.m - 1, 1 - monOffset);
+
+    for (var r = 0; r < rows; r++) {
+      var row = document.createElement('div');
+      row.className = 'cal-row';
+      row.dataset.row = String(r);
+
+      for (var c = 0; c < 7; c++) {
+        var y = cursor.getFullYear(), m = cursor.getMonth() + 1, d = cursor.getDate();
+        var out = m !== state.m || y !== state.y;
+        var wknd = c >= 5;
+        var today = isToday(y, m, d);
+        var n = countFor(y, m, d);
+
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cell' + (out ? ' is-out' : '') + (wknd ? ' is-wknd' : '') + (today ? ' is-today' : '');
+        cell.dataset.date = y + '-' + m + '-' + d;
+        cell.dataset.row = String(r);
+
+        /* The aria-label carries the whole day, always — which is why the
+           pill may hide the word "lessons" on a narrow cell. */
+        var label = DOWS[dow(y, m, d)] + ' ' + d + ' ' + MONTHS[m - 1] + ' ' + y;
+        if (today) label += ', today';
+        label += ', ' + (n ? plural(n, 'lesson') : 'no lessons');
+        cell.setAttribute('aria-label', label);
+        cell.setAttribute('aria-pressed', String(
+          y === state.sel.y && m === state.sel.m && d === state.sel.d
+        ));
+
+        var html = '';
+        /* ORNAMENT — today's blossom watermark, behind the number. */
+        if (today) html += '<svg class="cell__wm" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>';
+        html += '<span class="daynum" aria-hidden="true">' + d + '</span>';
+        if (n) {
+          html += '<span class="count" aria-hidden="true">' +
+                    '<svg class="bloom" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>' +
+                    '<span class="n">' + n + '</span>' +
+                    '<span class="word">' + (n === 1 ? 'lesson' : 'lessons') + '</span>' +
+                  '</span>';
+        }
+        cell.innerHTML = html;
+        row.appendChild(cell);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      grid.appendChild(row);
+    }
+
+    /* textContent, not innerHTML: this is the month/year state, nothing more.
+       The toolbar's one ornament is the .tb-bloom blossom beside it. */
+    calTitle.textContent = MONTHS[state.m - 1] + ' ' + state.y;
+    applyView();
+  }
+
+  /* ── Month / Week / Day scoping. Week shows the selected day's row; Day
+     shows the selected day alone. Nothing is dimmed — it is simply out of
+     scope, which is what the real views do. ─────────────────────────────── */
+  function applyView() {
+    grid.classList.toggle('view-week', state.view === 'week');
+    grid.classList.toggle('view-day', state.view === 'day');
+
+    var selCell = grid.querySelector('.cell[data-date="' + state.sel.y + '-' + state.sel.m + '-' + state.sel.d + '"]');
+    var selRow = selCell ? selCell.dataset.row : '0';
+
+    Array.prototype.slice.call(grid.querySelectorAll('.cal-row')).forEach(function (row) {
+      row.hidden = state.view !== 'month' && row.dataset.row !== selRow;
+    });
+    Array.prototype.slice.call(grid.querySelectorAll('.cell')).forEach(function (cell) {
+      cell.hidden = state.view === 'day' && cell !== selCell;
+    });
+  }
+
+  /* ── The day panel ───────────────────────────────────────────────────── */
+  function renderPanel() {
+    var s = state.sel;
+    var list = lessonsFor(s.y, s.m, s.d);
+
+    panelDate.textContent = DOWS[dow(s.y, s.m, s.d)] + ', ' + MONTHS[s.m - 1] + ' ' + s.d;
+
+    /* THE HONEST SUMMARY — billable is COMPLETE-only, always. */
+    var billable = 0, pending = 0, cancelled = 0;
+    list.forEach(function (l) {
+      if (l.status === 'COMPLETE') billable += l.rate;
+      else if (l.status === 'PENDING') pending++;
+      else cancelled++;
+    });
+
+    /* The spaces around each separator are load-bearing, not formatting:
+       .panel-sum is aria-live, and a screen reader reads the concatenated
+       text. Without them it announces "billable·2 pending". Whitespace
+       between flex items generates no box, so this costs nothing visually. */
+    var sum = '<span class="money">' + vnd(billable) + '</span> billable';
+    if (!list.length) {
+      sum += ' <span class="sep" aria-hidden="true">·</span> <span class="muted">no lessons</span>';
+    } else {
+      if (pending) sum += ' <span class="sep" aria-hidden="true">·</span> <span class="muted">' + pending + ' pending</span>';
+      if (cancelled) sum += ' <span class="sep" aria-hidden="true">·</span> <span class="muted">' + cancelled + ' cancelled</span>';
+    }
+    panelSum.innerHTML = sum;
+
+    if (!list.length) {
+      agenda.innerHTML = '';
+      agenda.hidden = true;
+      var q = panelBody.querySelector('.quiet');
+      if (!q) {
+        q = document.createElement('div');
+        q.className = 'quiet';
+        q.innerHTML =
+          '<svg class="mochi-sleep" aria-hidden="true" focusable="false"><use href="#i-mochi-nap"/></svg>' +
+          '<svg class="bloom" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>' +
+          '<b>A quiet day</b>' +
+          '<p>No lessons yet — your piano week is waiting for music.</p>';
+        panelBody.appendChild(q);
+      }
+      return;
+    }
+
+    var quiet = panelBody.querySelector('.quiet');
+    if (quiet) quiet.remove();
+    agenda.hidden = false;
+
+    agenda.innerHTML = list.map(function (l) {
+      var st = l.status.toLowerCase();
+      var chipCls = 'chip chip--' + st;
+      var cancelled = l.status === 'CANCELLED';
+
+      var foot = '';
+      if (l.isOnline) {
+        foot += '<span class="chip chip--online">' +
+                  '<svg aria-hidden="true" focusable="false"><use href="#i-monitor"/></svg>Online' +
+                '</span>';
+      }
+      foot += '<span class="ag-rate' + (cancelled ? ' is-void' : '') + '">' +
+                group(l.rate) + ' <small>₫</small></span>';
+
+      var reason = cancelled
+        ? '<p class="ag-reason"><b>Reason:</b> ' + esc(l.cancelReason || 'Sick') + '</p>'
+        : '';
+
+      return '' +
+        '<li class="ag-item">' +
+          '<div class="ag-time">' +
+            '<span class="ag-hr">' + hhmm(l.time) + '</span>' +
+            '<span class="ag-dur">' + l.dur + ' min</span>' +
+          '</div>' +
+          '<div class="ag-rail">' +
+            '<span class="ag-node ag-node--' + st + '" aria-hidden="true">' + BLOSSOM + '</span>' +
+          '</div>' +
+          '<article class="ag-card' + (cancelled ? ' is-cancelled' : (l.status === 'PENDING' ? ' is-pending' : '')) + '">' +
+            '<span class="ag-bar s-' + st + '" aria-hidden="true"></span>' +
+            '<span class="av av--sm" aria-hidden="true">' + esc(l.ini) + '</span>' +
+            '<span class="ag-id">' +
+              '<span class="ag-name">' + esc(l.name) + '</span>' +
+              '<span class="ag-piece">' + esc(l.piece) + '</span>' +
+            '</span>' +
+            '<span class="' + chipCls + '">' + l.status + '</span>' +
+            '<span class="ag-foot">' + foot + '</span>' +
+            reason +
+          '</article>' +
+        '</li>';
+    }).join('');
+  }
+
+  /* ── The washi sticker — derived from the very same data. ─────────────── */
+  function renderSticker() {
+    var tot = 0, comp = 0, pend = 0, canc = 0, billable = 0;
+    var n = daysInMonth(state.y, state.m);
+    for (var d = 1; d <= n; d++) {
+      lessonsFor(state.y, state.m, d).forEach(function (l) {
+        tot++;
+        if (l.status === 'COMPLETE') { comp++; billable += l.rate; }
+        else if (l.status === 'PENDING') pend++;
+        else canc++;
+      });
+    }
+    var pct = tot ? Math.round(comp / tot * 100) : 0;
+
+    document.getElementById('stickerTitle').textContent = MONTHS[state.m - 1] + ' at a glance';
+    document.getElementById('stickerStats').innerHTML =
+      '<b>' + tot + '</b> lessons · <b>' + comp + '</b> complete · <b>' +
+      pend + '</b> pending · <b>' + canc + '</b> cancelled';
+    document.getElementById('stickerMoney').innerHTML = group(billable) + ' <small>₫</small>';
+
+    var keys = document.getElementById('stickerKeys');
+    keys.style.setProperty('--p', pct + '%');
+    keys.setAttribute('aria-label', comp + ' of ' + tot + ' lessons marked complete — ' + pct + ' percent');
+    document.getElementById('stickerCap').innerHTML =
+      '<span>' + comp + ' of ' + tot + ' marked complete</span><span>' + pct + '%</span>';
+  }
+
+  function renderAll() { renderGrid(); renderPanel(); renderSticker(); }
+
+  /* ════════════════════════════════════════════════════════════════════
+     INTERACTION
+     ════════════════════════════════════════════════════════════════════ */
+  var mqSheet = window.matchMedia('(max-width: 1023px)');
+
+  /* ══════════════════════════════════════════════════════════════════════
+     THE SHEET IS A MODAL DIALOG BELOW 1024 — so it is declared as one.
+     body.sheet-open drops a 38%-ink scrim (z-45, pointer-events:auto) over
+     the whole page and .daypanel rides above it at z-56. That is a modal by
+     every visual measure; without the semantics, keyboard and screen-reader
+     users tabbed straight through the visually-blocked calendar grid behind
+     the scrim. So: role=dialog + aria-modal while open, focus moved in, Tab
+     trapped, the scrimmed content inert, focus restored on close.
+
+     WHY NOT inert .shell > .main WHOLESALE: .daypanel LIVES inside .main —
+     it is a grid column of .cal-layout at ≥1024 — and inert cannot be undone
+     by a descendant, so inerting .main would inert the dialog itself. We
+     inert .main's content AROUND the panel instead: every .wrap child except
+     .cal-layout, plus .cal-col. That is exactly what the scrim covers.
+
+     The tab bar sits at z-75 ABOVE the scrim and stays tappable by design;
+     aria-modal hides it from AT only for as long as the dialog is up, and
+     Escape (already wired below) brings it straight back.
+     ══════════════════════════════════════════════════════════════════════ */
+  var dayPanel    = document.getElementById('dayPanel');
+  var sheetHandle = document.getElementById('sheetHandle');
+  var wrapEl      = document.querySelector('.wrap');
+  var calLayout   = document.querySelector('.cal-layout');
+  var calCol      = document.querySelector('.cal-col');
+  var sheetOpener = null;
+
+  var FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),' +
+                  'select:not([disabled]),textarea:not([disabled]),' +
+                  '[tabindex]:not([tabindex="-1"])';
+
+  function scrimContent(on) {
+    Array.prototype.slice.call(wrapEl.children).forEach(function (kid) {
+      if (kid !== calLayout) kid.inert = on;
+    });
+    if (calCol) calCol.inert = on;
+  }
+
+  function panelTabbables() {
+    return Array.prototype.slice.call(dayPanel.querySelectorAll(FOCUSABLE))
+      .filter(function (n) {
+        return n.offsetWidth || n.offsetHeight || n === document.activeElement;
+      });
+  }
+
+  function setSheet(open, opener) {
+    body.classList.toggle('sheet-open', open);
+    sheetHandle.setAttribute('aria-expanded', String(open));
+
+    if (open && mqSheet.matches) {
+      if (opener) sheetOpener = opener;
+      dayPanel.setAttribute('role', 'dialog');
+      dayPanel.setAttribute('aria-modal', 'true');
+      sheetHandle.focus();          /* move focus FIRST, then inert what it left */
+      scrimContent(true);
+      return;
+    }
+
+    dayPanel.removeAttribute('role');
+    dayPanel.removeAttribute('aria-modal');
+    scrimContent(false);            /* un-inert BEFORE restoring focus into it */
+    var back = sheetOpener; sheetOpener = null;
+    if (!open && back && document.contains(back)) back.focus();
+  }
+
+  /* Tab is trapped inside the panel for as long as the scrim is up. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') return;
+    if (!mqSheet.matches || !body.classList.contains('sheet-open')) return;
+    var nodes = panelTabbables();
+    if (!nodes.length) return;
+    var first = nodes[0], last = nodes[nodes.length - 1];
+    if (!dayPanel.contains(document.activeElement)) { e.preventDefault(); first.focus(); return; }
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
+  /* Crossing up to ≥1024 the panel docks and stops being a dialog at all. */
+  function syncSheetMode() {
+    if (mqSheet.matches) return;
+    body.classList.remove('sheet-open');
+    dayPanel.removeAttribute('role');
+    dayPanel.removeAttribute('aria-modal');
+    sheetHandle.setAttribute('aria-expanded', 'false');
+    scrimContent(false);
+    sheetOpener = null;
+  }
+  if (mqSheet.addEventListener) mqSheet.addEventListener('change', syncSheetMode);
+  else if (mqSheet.addListener) mqSheet.addListener(syncSheetMode);
+
+  grid.addEventListener('click', function (e) {
+    var cell = e.target.closest('.cell');
+    if (!cell) return;
+    var p = cell.dataset.date.split('-');
+    state.sel = { y: +p[0], m: +p[1], d: +p[2] };
+
+    Array.prototype.slice.call(grid.querySelectorAll('.cell')).forEach(function (c) {
+      c.setAttribute('aria-pressed', String(c === cell));
+    });
+    renderPanel();
+    applyView();
+    /* the cell is the opener: Escape hands focus back to it */
+    if (mqSheet.matches) setSheet(true, cell);
+  });
+
+  document.getElementById('prevBtn').addEventListener('click', function () { step(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function () { step(1); });
+
+  function step(dir) {
+    var m = state.m + dir, y = state.y;
+    if (m < 1) { m = 12; y--; }
+    if (m > 12) { m = 1; y++; }
+    state.y = y; state.m = m;
+    state.sel = pickDefaultDay(y, m);
+    renderAll();
+  }
+
+  /* Landing on a month, select today if it lives here, else the first day
+     that actually has lessons, else the 1st. */
+  function pickDefaultDay(y, m) {
+    if (y === TODAY.y && m === TODAY.m) return { y: y, m: m, d: TODAY.d };
+    var n = daysInMonth(y, m);
+    for (var d = 1; d <= n; d++) if (countFor(y, m, d)) return { y: y, m: m, d: d };
+    return { y: y, m: m, d: 1 };
+  }
+
+  document.getElementById('todayBtn').addEventListener('click', function () {
+    state.y = TODAY.y; state.m = TODAY.m;
+    state.sel = { y: TODAY.y, m: TODAY.m, d: TODAY.d };
+    renderAll();
+    if (mqSheet.matches) setSheet(true, this);
+  });
+
+  Array.prototype.slice.call(document.querySelectorAll('.seg button')).forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.view = b.dataset.view;
+      Array.prototype.slice.call(document.querySelectorAll('.seg button')).forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      applyView();
+    });
+  });
+
+  sheetHandle.addEventListener('click', function () {
+    setSheet(!body.classList.contains('sheet-open'));
+  });
+
+  /* ── Nav drawer ──────────────────────────────────────────────────────── */
+  var hamburger = document.getElementById('hamburger');
+  var backdrop  = document.getElementById('backdrop');
+  function setNav(open) {
+    body.classList.toggle('nav-open', open);
+    hamburger.setAttribute('aria-expanded', String(open));
+  }
+  hamburger.addEventListener('click', function () { setNav(!body.classList.contains('nav-open')); });
+  backdrop.addEventListener('click', function () {
+    if (body.classList.contains('nav-open')) setNav(false);
+    else if (body.classList.contains('sheet-open')) setSheet(false);
+  });
+
+  /* ── Account menu ────────────────────────────────────────────────────── */
+  var userBtn = document.getElementById('userBtn');
+  var userMenu = document.getElementById('userMenu');
+  userBtn.addEventListener('click', function () {
+    var open = userMenu.hidden;
+    userMenu.hidden = !open;
+    userBtn.setAttribute('aria-expanded', String(open));
+  });
+
+  /* ── "More" sheet — the destinations the tab bar can't show ──────────── */
+  var moreTab = document.getElementById('more-tab');
+  var sheet = document.getElementById('more-sheet');
+  var sheetScrim = document.getElementById('more-scrim');
+  function setMore(open, refocus) {
+    sheet.hidden = !open;
+    sheetScrim.hidden = !open;
+    moreTab.setAttribute('aria-expanded', String(open));
+    if (open) sheet.querySelector('a').focus();
+    else if (refocus) moreTab.focus();
+  }
+  moreTab.addEventListener('click', function () { setMore(sheet.hidden, false); });
+  sheetScrim.addEventListener('click', function () { setMore(false, false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!sheet.hidden) { setMore(false, true); return; }
+    if (!userMenu.hidden) { userMenu.hidden = true; userBtn.setAttribute('aria-expanded', 'false'); userBtn.focus(); return; }
+    if (body.classList.contains('nav-open')) { setNav(false); return; }
+    if (body.classList.contains('sheet-open')) setSheet(false);
+  });
+
+  /* ── Toast, for the add affordances ──────────────────────────────────── */
+  var toast = document.getElementById('toast');
+  var toastMsg = document.getElementById('toastMsg');
+  var toastT;
+  Array.prototype.slice.call(document.querySelectorAll('[data-add]')).forEach(function (b) {
+    b.addEventListener('click', function () {
+      var s = state.sel;
+      toastMsg.textContent = 'New lesson · ' + MONTHS[s.m - 1] + ' ' + s.d + ' — PENDING until marked';
+      toast.classList.add('is-on');
+      clearTimeout(toastT);
+      toastT = setTimeout(function () { toast.classList.remove('is-on'); }, 2600);
+    });
+  });
+
+  renderAll();
+})();
+</script>
+
+</body>
+</html>

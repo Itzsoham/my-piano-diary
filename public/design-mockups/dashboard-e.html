@@ -33,18 +33,32 @@
        timeline → blossom nodes                          (cards stay sober)
        podium   → blossom (crown + sec-mark) + sparkles + rank medals
        insights → washi tape + sparkle + blossom         (+ Mochi peek)
-       chart    → ONE blossom on the peak. Nothing else inside the plot.
-     No blob, tape or sparkle ever touches a number, a chip or a table.
+       chart    → ONE blossom ABOVE the peak. Nothing inside the plot band.
+     No blob, tape or sparkle ever touches a number, a chip or a table — and no
+     ornament ever stands in for a data mark: the blossom crowns the peak from
+     outside the plot, it is not the peak's dot. Every plotted day owns an
+     identical --teal-600 dot, the peak included.
      The budget counts MOTIFS, not glyphs: the ✨ in the h1 and the 🎹 in
      "Today's Focus" are inherited verbatim from C (dashboard-c.html:604, 665)
      and ride along as part of that copy. Decorative emoji are otherwise BANNED
      from ornamented regions — the SVG motif carries the bloom, and nothing
-     decorative may sit in a string that also carries money.
+     decorative may sit in a string that also carries money. (The 👀 that used
+     to trail "Click to reveal" was NOT inherited — dashboard-c.html:637 has no
+     emoji — and it sat on a money tile. Gone; the eye SVG beside it is the
+     same idea, drawn as a motif.)
 
-     CONTRAST — raw pastels are backgrounds only. Every label/figure uses
-     --ink (12.4:1) or --ink-soft (5.1:1); pink/teal text uses the 600/700
-     ramp. --ink-faint is reserved for non-informational strokes (gridlines,
-     Mochi's whiskers, decorative separators) and never names a value.
+     CONTRAST — raw pastels are backgrounds only. Ratios are quoted AGAINST THE
+     SURFACE THE TEXT ACTUALLY SITS ON, never against white by default:
+       on --surface (#fff)      → --ink 12.4:1 · --ink-soft 5.1:1 · both pass.
+       on the tinted hero band  → --ink-soft is only ~4.3:1 once --grad-hero and
+                                  .blob-1's cotton wash composite (and 4.56:1
+                                  even blob-free — no headroom). So EVERY string
+                                  inside .hero-l is --ink (9.6:1 there); pink
+                                  copy uses --pink-700, which holds on --cotton.
+     Pink/teal text uses the 600/700 ramp. --ink-faint is reserved for strokes
+     that name nothing (gridlines, Mochi's whiskers, .hero-brand .sep) — it is
+     never text, and never a state-carrying affordance either: the .user-btn
+     disclosure chevron is --ink-soft because it reports the expanded state.
      Screen-specific rules only — every colour comes from _theme.css.
      ====================================================================== */
 
@@ -163,7 +177,10 @@
     display: block; font: 400 11px/1.3 var(--font-sans); color: var(--ink-soft);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .user-btn > svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+  /* --ink-soft, NOT --ink-faint: this chevron is the only visual signal that
+     the button expands a menu, so it is a UI affordance (needs 3:1), not an
+     ornament. 5.1:1 on --surface, and it now matches .user-mail beside it. */
+  .user-btn > svg { width: 16px; height: 16px; color: var(--ink-soft); flex: 0 0 auto; }
 
   .user-menu {
     list-style: none;
@@ -296,16 +313,21 @@
     pointer-events: none;
   }
 
+  /* NOT --ink-soft. This copy sits on --grad-hero UNDER .blob-1's cotton wash,
+     where --ink-soft measures ~4.3:1 — under the 4.5:1 body floor. --ink is
+     9.6:1 on that composited band. Hierarchy is carried by face, size and
+     weight instead of by tint: the date is serif italic, the warm line is
+     small, and .hero-warm b still steps up on weight alone. */
   .hero-date {
     margin-top: 12px;
     font-family: var(--font-serif); font-style: italic;
     font-size: clamp(15px, 1.6vw, 19px);
-    color: var(--ink-soft);
+    color: var(--ink);
   }
   .hero-warm {
     margin-top: 10px;
     font-size: clamp(13.5px, 1.35vw, 15.5px); line-height: 1.6;
-    color: var(--ink-soft);
+    color: var(--ink);
     font-variant-numeric: tabular-nums;
     max-width: 46ch;
   }
@@ -448,8 +470,8 @@
     color: var(--ink-soft);
     font-variant-numeric: tabular-nums;
   }
+  /* .kpi--rev has NO rule — the piano-key strip is that tile's foot instead. */
   .kpi__rule { display: block; height: 3px; border-radius: var(--r-2xs); }
-  .kpi--rev  .kpi__rule { background: var(--grad-mint); }
   .kpi--miss .kpi__rule { background: var(--grad-pink); }
   .kpi--coll .kpi__rule { background: linear-gradient(90deg, var(--wintergreen), var(--mint)); }
   .kpi--out  .kpi__rule { background: linear-gradient(90deg, var(--sand-300), var(--cotton)); }
@@ -725,9 +747,18 @@
     display: flex; flex-direction: column; align-items: center; gap: 5px; justify-content: flex-end;
     border: 1px solid var(--line); min-width: 0;
   }
-  .pod--1 .pod__col { height: clamp(124px, 15vw, 154px); background: linear-gradient(180deg, var(--cotton), color-mix(in srgb, var(--cotton) 30%, var(--surface))); border-color: var(--line-pink); }
-  .pod--2 .pod__col { height: clamp(102px, 12.5vw, 126px); background: linear-gradient(180deg, var(--mint), color-mix(in srgb, var(--mint) 30%, var(--surface))); border-color: var(--line-strong); }
-  .pod--3 .pod__col { height: clamp(86px, 10.5vw, 106px); background: linear-gradient(180deg, var(--sand-100), var(--surface)); border-color: color-mix(in srgb, var(--sand-300) 45%, transparent); }
+  /* STAIRCASE HEIGHTS — `min-height`, never `height`. A fixed height shorter
+     than its own content overflows out the TOP here (justify-content:flex-end)
+     and hides the medal behind .pod .av, which is opaque and z-index:1. The
+     column's content is ~64.5px (medal 19 + 5 + name 15 + 5 + pill 20.5) plus
+     32px padding = ~96.5px, so the old 86px floor broke 3rd place on every
+     viewport under ~918px — 390 and 768 included. Floors are lifted by a flat
+     +14px, which keeps the 22px/16px steps identical, and min-height lets a
+     column that wraps to a 2-line name grow instead of clip. The ≥1024 render
+     is untouched: the upper clamp bounds still win there. */
+  .pod--1 .pod__col { min-height: clamp(138px, 15vw, 154px); background: linear-gradient(180deg, var(--cotton), color-mix(in srgb, var(--cotton) 30%, var(--surface))); border-color: var(--line-pink); }
+  .pod--2 .pod__col { min-height: clamp(116px, 12.5vw, 126px); background: linear-gradient(180deg, var(--mint), color-mix(in srgb, var(--mint) 30%, var(--surface))); border-color: var(--line-strong); }
+  .pod--3 .pod__col { min-height: clamp(100px, 10.5vw, 106px); background: linear-gradient(180deg, var(--sand-100), var(--surface)); border-color: color-mix(in srgb, var(--sand-300) 45%, transparent); }
   .pod__medal { font-size: 19px; line-height: 1; }
   .pod__name { font: 650 11.5px/1.3 var(--font-sans); color: var(--ink); overflow-wrap: anywhere; }
   .pod__pill {
@@ -795,7 +826,9 @@
   .ins-hero {
     position: relative;
     padding: 15px 16px;
-    border-radius: var(--r-lg);
+    /* --r-md, matching .mini and .followup: an inner panel must never carry its
+       parent .card's own 26px outer corner, or the nesting reads inverted. */
+    border-radius: var(--r-md);
     background: var(--surface);
     border: 1px solid var(--line-strong);
     margin-top: 4px;
@@ -832,8 +865,23 @@
   .followup .btn { flex: 0 0 auto; min-height: var(--tap); }
 
   /* ══════════════════════════════════════════════════════════════════════
-     EARNINGS TREND — the plot is DATA. One blossom on the peak, nothing else.
+     EARNINGS TREND — the plot is DATA. The one blossom crowns the peak from
+     ABOVE the plot band; it never stands in for a data mark.
      ══════════════════════════════════════════════════════════════════════ */
+  /* The "studio closed" band is ONE pair of values, declared on the card that
+     owns both the plot and the legend. The <rect> and the legend swatch read
+     the same two vars, so the legend can never again name a mark the plot
+     doesn't draw.
+     WHY --teal-600 AND NOT --line-strong: no fill in this pastel ramp can carry
+     the band on its own (--floss is 1.07:1 on the card, --surface-3 only 1.14:1),
+     so the OUTLINE has to be the mark — and --line-strong is just 1.33:1, still
+     invisible. --teal-600 is the lightest token that clears the 3:1 a meaningful
+     graphical object needs (3.75:1 on the card, 3.30:1 against its own fill).
+     It is dashed in the plot, borrowing the "dashed = annotation, not data"
+     convention the Today line already sets, so a 1px rule can't be mistaken for
+     the 3px series. The 10px legend swatch takes the same colour solid — dashes
+     that small would mush — so the two agree on hue, which is the point. */
+  .chart-card { --closed-fill: var(--surface-3); --closed-line: var(--teal-600); }
   .chart-wrap { margin: 4px -4px 0; padding: 0 4px; }
   /* min-width == the viewBox width: the chart never downscales below 1:1, so
      every axis value stays at its authored size. Narrow screens scroll it. */
@@ -1342,7 +1390,7 @@
           <button class="kpi__reveal" type="button" aria-label="Reveal missed revenue this month">
             <span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
-              Click to reveal <span aria-hidden="true">👀</span>
+              Click to reveal
             </span>
           </button>
         </article>
@@ -1680,20 +1728,28 @@
             <svg class="sec-mark" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
             Earnings Trend This Month
           </h2>
-          <span class="sec__sub">Daily billed revenue · July 1–16 · COMPLETE lessons only</span>
+          <span class="sec__sub">Daily billed revenue · July 1–16 · COMPLETE lessons only · completion = 57 COMPLETE of 65 scheduled</span>
           <span class="sec__act">
+            <!-- 57/65 = 87.69% → 88%, rounded like every other figure here.
+                 The denominator is the 65 the legend below already prints, so
+                 the 2 PENDING lessons count against completion until resolved
+                 — and .sec__sub says so, the way it does for "COMPLETE only". -->
             <span class="pill-mint">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-              87% completion
+              88% completion
             </span>
           </span>
         </div>
 
-        <article class="card rise" style="--i:1; padding:clamp(16px,2.2vw,26px)">
+        <article class="card chart-card rise" style="--i:1; padding:clamp(16px,2.2vw,26px)">
           <!-- the plot is 880px wide and scrolls below ~900px: the scroller is
                focusable + named so keyboard-only users can reach days 14–16. -->
           <div class="chart-wrap scroll-x" tabindex="0" role="group" aria-label="Earnings trend, scrollable">
-            <svg viewBox="0 0 880 280" role="img" aria-label="Area chart of daily billed earnings, 1 to 16 July, in Vietnamese đồng, COMPLETE lessons only. Peak 1,65 million đồng on Monday 13 July. Sundays 5 and 12 July are closed at zero. Today, Thursday 16 July, is 1,05 million đồng billed so far. Month to date 14.800.000 đồng.">
+            <!-- ONE number format, dot-grouped, matching every other figure on
+                 the page and dashboard-c.html:926. A comma decimal reads as a
+                 thousands group in lang="en" and a screen reader says "1,65
+                 million" as a malformed group rather than one-point-six-five. -->
+            <svg viewBox="0 0 880 280" role="img" aria-label="Area chart of daily billed earnings, 1 to 16 July, in Vietnamese đồng, COMPLETE lessons only. Peak 1.650.000 đồng on Monday 13 July. Sundays 5 and 12 July are closed at zero. Today, Thursday 16 July, is 1.050.000 đồng billed so far. Month to date 14.800.000 đồng.">
               <defs>
                 <linearGradient id="beArea" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%"   stop-color="var(--bubblegum)" stop-opacity=".5"/>
@@ -1714,16 +1770,22 @@
                 <line x1="72" y1="168" x2="864" y2="168"/>
                 <line x1="72" y1="216" x2="864" y2="216" stroke="var(--line-strong)"/>
               </g>
-              <!-- y axis · compact VND, comma decimal, the local convention -->
+              <!-- y axis · compact VND. Both ticks are whole millions, so they
+                   print with no decimal at all — that sidesteps the separator
+                   question entirely and keeps the labels inside the 62px gutter
+                   that a full "2.000.000 ₫" would overrun. -->
               <g fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="end">
-                <text x="62" y="28">2,0 Tr ₫</text>
-                <text x="62" y="124">1,0 Tr ₫</text>
+                <text x="62" y="28">2 Tr ₫</text>
+                <text x="62" y="124">1 Tr ₫</text>
                 <text x="62" y="220">0</text>
               </g>
 
-              <!-- Sundays — studio closed -->
-              <rect x="264" y="24" width="32" height="192" fill="var(--floss)" rx="6"/>
-              <rect x="628" y="24" width="32" height="192" fill="var(--floss)" rx="6"/>
+              <!-- Sundays — studio closed. Fill AND outline come from the same
+                   two vars the legend swatch reads; see .chart-card. The fill
+                   alone is ~1.1:1 on the card and simply is not there, so the
+                   dashed --teal-600 outline is the mark that carries this band. -->
+              <rect x="264" y="24" width="32" height="192" rx="6" fill="var(--closed-fill)" stroke="var(--closed-line)" stroke-width="1" stroke-dasharray="3 3"/>
+              <rect x="628" y="24" width="32" height="192" rx="6" fill="var(--closed-fill)" stroke="var(--closed-line)" stroke-width="1" stroke-dasharray="3 3"/>
 
               <!-- area + line -->
               <path fill="url(#beArea)" d="M72,134.4 L124,115.2 L176,129.6 L228,86.4 L280,216 L332,72 L384,144 L436,124.8 L488,110.4 L540,139.2 L592,96 L644,216 L696,57.6 L748,148.8 L800,129.6 L852,115.2 L852,216 L72,216 Z"/>
@@ -1739,15 +1801,22 @@
                 <circle cx="436" cy="124.8" r="3.4"/><circle cx="488" cy="110.4" r="3.4"/>
                 <circle cx="540" cy="139.2" r="3.4"/><circle cx="592" cy="96"    r="3.4"/>
                 <circle cx="644" cy="216"   r="3.4" stroke="var(--line-strong)"/>
+                <!-- day 13, the peak. A --bubblegum blossom used to stand here
+                     INSTEAD of a dot: 1.93:1, which made the one value the eye
+                     is sent to the only non-conforming mark in the plot. Every
+                     plotted day now carries the identical --teal-600 dot. -->
+                <circle cx="696" cy="57.6"  r="3.4"/>
                 <circle cx="748" cy="148.8" r="3.4"/><circle cx="800" cy="129.6" r="3.4"/>
               </g>
 
-              <!-- PEAK · Monday 13 July — the plot's one ornament -->
-              <svg x="685" y="46.6" width="22" height="22" viewBox="0 0 24 24" style="color:var(--bubblegum)" overflow="visible">
+              <!-- PEAK · Monday 13 July. The label carries the SAME full form
+                   the legend prints; the blossom is a flourish crowning the
+                   column from ABOVE the y=24 gridline — outside the plot band,
+                   on the peak's x, touching no data mark. -->
+              <text x="696" y="34" fill="var(--teal-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">1.650.000 ₫</text>
+              <svg x="685" y="2" width="22" height="22" viewBox="0 0 24 24" style="color:var(--bubblegum)" overflow="visible" aria-hidden="true" focusable="false">
                 <use href="#i-blossom"/>
               </svg>
-              <!-- the peak label carries the SAME full form the legend prints -->
-              <text x="696" y="34" fill="var(--teal-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">1.650.000 ₫</text>
 
               <!-- today · Thursday 16 July -->
               <line x1="852" y1="24" x2="852" y2="216" stroke="var(--bubblegum)" stroke-width="1.5" stroke-dasharray="4 4"/>
@@ -1770,7 +1839,7 @@
 
           <p class="chart-legend">
             <span class="lg"><i style="background:var(--pink-500)"></i> Billed (COMPLETE only)</span>
-            <span class="lg"><i style="background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--line-strong)"></i> Sunday · studio closed</span>
+            <span class="lg"><i style="background:var(--closed-fill); box-shadow:inset 0 0 0 1px var(--closed-line)"></i> Sunday · studio closed</span>
             <span class="lg"><i style="background:var(--bubblegum)"></i> Today</span>
             <span>Month to date <b>14.800.000 ₫</b></span>
             <span>Best day <b>Mon 13 Jul — 1.650.000 ₫</b></span>
