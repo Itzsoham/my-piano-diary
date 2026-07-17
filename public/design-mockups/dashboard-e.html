@@ -1,0 +1,1990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Dashboard · Blossom Diary</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+  /* ======================================================================
+     DASHBOARD · VARIANT E — "BLOSSOM DIARY"
+     A fusion: the DIARY's bones (variant C) + SUGAR BLOOM's soul (variant D).
+
+       from C → editorial calm, serif greeting + serif section heads, the
+                vertical timeline, the tall podium, hero → kpis → timeline →
+                2-up → full-width chart rhythm, the spoiler KPI mechanic.
+       from D → the full-bleed hero BAND with a scalloped underside, drifting
+                blobs, the blossom sprite, the piano-key progress strip, the
+                washi-tape sticker, the shell (sidebar → rail → drawer+tabbar).
+       new    → Mochi gets a real role (hero + a peek), blossom timeline nodes,
+                the hand-drawn squiggle under the greeting.
+
+     MOCHI'S SCOPE — WIDENED HERE, ON PURPOSE. students.html scoped the sprite
+     to "empty states and the login screen only"; this variant's brief requires
+     her, so the rule is now "empty states, the login screen, and the dashboard
+     hero" — and students.html:1862 has been updated to say so. #i-mochi is
+     byte-identical to students.html's copy: one component, two callers.
+
+     THE RULE: BLOOM THE FRAME, NOT THE DATA.
+     ORNAMENT BUDGET — max 3 SVG motif types per region, one washi-tape card
+     per page. Mochi is the mascot and is counted separately, not against the 3:
+       hero     → drifting blobs + scallop + squiggle   (+ Mochi, the mascot)
+       kpis     → corner blossom + one piano-key strip
+       timeline → blossom nodes                          (cards stay sober)
+       podium   → blossom (crown + sec-mark) + sparkles + rank medals
+       insights → washi tape + sparkle + blossom         (+ Mochi peek)
+       chart    → ONE blossom on the peak. Nothing else inside the plot.
+     No blob, tape or sparkle ever touches a number, a chip or a table.
+     The budget counts MOTIFS, not glyphs: the ✨ in the h1 and the 🎹 in
+     "Today's Focus" are inherited verbatim from C (dashboard-c.html:604, 665)
+     and ride along as part of that copy. Decorative emoji are otherwise BANNED
+     from ornamented regions — the SVG motif carries the bloom, and nothing
+     decorative may sit in a string that also carries money.
+
+     CONTRAST — raw pastels are backgrounds only. Every label/figure uses
+     --ink (12.4:1) or --ink-soft (5.1:1); pink/teal text uses the 600/700
+     ramp. --ink-faint is reserved for non-informational strokes (gridlines,
+     Mochi's whiskers, decorative separators) and never names a value.
+     Screen-specific rules only — every colour comes from _theme.css.
+     ====================================================================== */
+
+  /* ── Variant badge ─────────────────────────────────────────────────── */
+  .variant-badge {
+    position: fixed;
+    top: 10px; right: 10px;
+    z-index: 99;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(8px) saturate(1.4);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-sm);
+    font: 700 10.5px/1 var(--font-sans);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--pink-700);
+    pointer-events: none;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     SHELL — sidebar ≥1280 · icon rail 1024–1279 · drawer + tabbar ≤1023
+     (identical conventions to dashboard-d / lessons-d so a dev can diff)
+     ══════════════════════════════════════════════════════════════════════ */
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  .sidebar {
+    position: sticky; top: 0; align-self: start;
+    height: 100dvh;
+    display: flex; flex-direction: column; gap: 18px;
+    padding: 20px 14px 16px;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    scrollbar-width: none;
+    z-index: 50;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 2px; }
+  .brand-logo {
+    position: relative;
+    width: 42px; height: 42px; flex: 0 0 auto;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--grad-brand);
+    color: var(--ink-invert);
+    box-shadow: var(--sh-pink);
+  }
+  .brand-logo .bow-tag {
+    position: absolute; top: -7px; right: -6px;
+    width: 18px; height: 18px;
+    color: var(--pink-600);
+    filter: drop-shadow(0 1px 1px rgba(255, 255, 255, .9));
+  }
+  .brand-text { min-width: 0; display: block; }
+  .brand-name { display: block; font: 700 15px/1.2 var(--font-sans); color: var(--ink); white-space: nowrap; }
+  .brand-tag { display: block; font: 400 11.5px/1.35 var(--font-sans); color: var(--ink-soft); white-space: nowrap; }
+
+  .side-cta { width: 100%; }
+
+  .nav-group + .nav-group { margin-top: 18px; }
+  /* the .label default (--ink-faint) is decorative ink; "Main"/"Manage" are
+     real structure, so they get real text ink. Same fix as C and D. */
+  .nav-group > .label { padding: 0 12px 8px; display: block; color: var(--ink-soft); }
+  .nav-list { list-style: none; display: grid; gap: 3px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 12px;
+    min-height: var(--tap);
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-soft);
+    font: 600 13.5px/1 var(--font-sans);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .nav-link svg { width: 20px; height: 20px; flex: 0 0 auto; opacity: .85; }
+  .nav-link:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-link[aria-current="page"] {
+    background: linear-gradient(100deg, var(--pink-100), var(--teal-100));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .nav-link[aria-current="page"] svg { color: var(--pink-600); opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    font: 700 10.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    background: var(--wait-bg); color: var(--wait-fg);
+    padding: 4px 7px; border-radius: var(--r-pill);
+  }
+
+  .side-foot { margin-top: auto; padding-top: 14px; position: relative; }
+  .user-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-xs);
+    text-align: left;
+    transition: background var(--dur) var(--ease);
+  }
+  .user-btn:hover { background: var(--surface-2); }
+  .user-meta { min-width: 0; flex: 1; display: block; }
+  .user-name { display: block; font: 650 13px/1.25 var(--font-sans); color: var(--ink); }
+  .user-mail {
+    display: block; font: 400 11px/1.3 var(--font-sans); color: var(--ink-soft);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .user-btn > svg { width: 16px; height: 16px; color: var(--ink-faint); flex: 0 0 auto; }
+
+  .user-menu {
+    list-style: none;
+    margin-top: 6px; padding: 6px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--sh-lg);
+    display: grid; gap: 2px;
+  }
+  .user-menu a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 10px;
+    border-radius: var(--r-xs);
+    font: 600 12.5px/1 var(--font-sans);
+    color: var(--ink-soft);
+  }
+  .user-menu a:hover { background: var(--surface-2); color: var(--ink); }
+  .user-menu svg { width: 16px; height: 16px; }
+  .user-menu[hidden] { display: none !important; }
+
+  .main { min-width: 0; padding-bottom: 44px; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     HERO BAND — D's full-bleed band + scallop + blobs, carrying C's serif
+     greeting. Plus the squiggle and Mochi.
+     ══════════════════════════════════════════════════════════════════════ */
+  .hero {
+    position: relative;
+    isolation: isolate;
+    background: var(--grad-hero);
+    padding: clamp(20px, 2.6vw, 34px) clamp(14px, 2.6vw, 32px)
+             calc(clamp(28px, 3vw, 44px) + 14px);
+    /* SIGNATURE MOVE — the page's one scalloped edge (inherited from D).
+       Layer 1: a row of Ø28px circles pinned to the bottom.
+       Layer 2: the body rect, stopping 14px short = at the circles' centres. */
+    -webkit-mask:
+      radial-gradient(circle 14px at 14px 14px, #000 98%, #0000 100%) 0 100% / 28px 28px repeat-x,
+      linear-gradient(#000 0 0) 0 0 / 100% calc(100% - 14px) no-repeat;
+    mask:
+      radial-gradient(circle 14px at 14px 14px, #000 98%, #0000 100%) 0 100% / 28px 28px repeat-x,
+      linear-gradient(#000 0 0) 0 0 / 100% calc(100% - 14px) no-repeat;
+    filter: drop-shadow(0 16px 26px rgba(60, 90, 92, .14));
+  }
+
+  /* DRIFTING BLOBS — decorative, aria-hidden, clipped by the hero mask. */
+  .blobs { position: absolute; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; }
+  .blob {
+    position: absolute;
+    border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%;
+    filter: blur(2px);
+    will-change: transform;
+  }
+  .blob-1 {
+    width: 300px; height: 260px; top: -70px; left: -50px;
+    background: color-mix(in srgb, var(--cotton) 70%, transparent);
+    opacity: .55; animation: drift-a 22s var(--ease) infinite alternate;
+  }
+  .blob-2 {
+    width: 240px; height: 220px; bottom: -80px; left: 34%;
+    background: color-mix(in srgb, var(--mint) 66%, transparent);
+    opacity: .5; animation: drift-b 26s var(--ease) infinite alternate;
+  }
+  .blob-3 {
+    width: 340px; height: 300px; top: -90px; right: -70px;
+    background: color-mix(in srgb, var(--mint) 55%, transparent);
+    opacity: .5; animation: drift-a 30s var(--ease) infinite alternate-reverse;
+  }
+  .blob-4 {
+    width: 170px; height: 150px; bottom: -40px; right: 16%;
+    background: color-mix(in srgb, var(--bubblegum) 34%, transparent);
+    opacity: .45; animation: drift-b 19s var(--ease) infinite alternate;
+  }
+  @keyframes drift-a {
+    from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+    to   { transform: translate3d(26px, 16px, 0) rotate(12deg) scale(1.06); }
+  }
+  @keyframes drift-b {
+    from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+    to   { transform: translate3d(-22px, -14px, 0) rotate(-10deg) scale(1.08); }
+  }
+
+  .hero-in { position: relative; max-width: 1180px; margin-inline: auto; }
+
+  .hero-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .hero-brand {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 13px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-xs);
+    font: 600 11.5px/1.3 var(--font-sans);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .hero-brand em { font-style: normal; color: var(--ink-soft); font-weight: 500; }
+  .hero-brand .sep { color: var(--ink-faint); }
+  .hamburger { display: none; }
+
+  .hero-body {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: clamp(12px, 2vw, 28px);
+    flex-wrap: wrap;
+  }
+  .hero-l { min-width: 0; flex: 1 1 320px; }
+
+  /* Greeting row: serif h1 + Mochi. Flex, never absolute — Mochi can only
+     ever sit BESIDE the words, and wraps below them rather than over them. */
+  .hero-head { display: flex; align-items: flex-end; gap: clamp(8px, 1.4vw, 16px); }
+  .hero-title { min-width: 0; flex: 1 1 auto; }
+
+  .greeting {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(29px, 4.6vw, 48px);
+    line-height: 1.06;
+    letter-spacing: -.015em;
+    color: var(--ink);
+  }
+  .greeting em { font-style: italic; color: var(--pink-700); }
+
+  /* HAND-DRAWN SQUIGGLE — replaces a straight rule under the greeting. */
+  .squiggle {
+    display: block;
+    width: min(240px, 100%);
+    height: 11px;
+    margin-top: 6px;
+    color: var(--bubblegum);
+    pointer-events: none;
+  }
+
+  .hero-date {
+    margin-top: 12px;
+    font-family: var(--font-serif); font-style: italic;
+    font-size: clamp(15px, 1.6vw, 19px);
+    color: var(--ink-soft);
+  }
+  .hero-warm {
+    margin-top: 10px;
+    font-size: clamp(13.5px, 1.35vw, 15.5px); line-height: 1.6;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    max-width: 46ch;
+  }
+  .hero-warm b { color: var(--ink); font-weight: 700; }
+  .hero-warm .void { color: var(--pink-700); font-weight: 650; }
+
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 10px; flex: 0 0 auto; }
+  .hero-cta .btn { min-height: 50px; padding: 0 22px; font-size: 14px; }
+
+  /* ── MOCHI · the studio cat ────────────────────────────────────────────
+     Same cat everywhere (extract to one component). Always aria-hidden and
+     pointer-events:none; motion dies under prefers-reduced-motion. */
+  .mochi-hero {
+    flex: 0 0 auto;
+    width: clamp(72px, 9vw, 104px);
+    height: auto;
+    pointer-events: none;
+    transform-origin: 50% 100%;
+    animation: bob 4.2s var(--ease) infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-5px) rotate(-1.6deg); }
+  }
+  /* Mochi PEEKS over the sticker card's top edge, paws hooked on the border. */
+  .mochi-peek {
+    position: absolute;
+    top: -34px; right: 14px;
+    width: 84px; height: 62px;
+    pointer-events: none;
+    z-index: 2;
+    animation: peek-bob 5.4s var(--ease) infinite;
+  }
+  @keyframes peek-bob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-3px) rotate(2deg); }
+  }
+
+  /* SPARKLE — a 4-point star. Celebration only: the winner, the best stat. */
+  .spark { position: absolute; color: var(--bubblegum); pointer-events: none; }
+  .spark--a { width: 13px; height: 13px; animation: twinkle 2.6s var(--ease) infinite; }
+  .spark--b { width: 9px;  height: 9px;  animation: twinkle 2.6s var(--ease) .9s infinite; }
+  .spark--c { width: 11px; height: 11px; animation: twinkle 2.6s var(--ease) 1.7s infinite; }
+  @keyframes twinkle {
+    0%, 100% { opacity: .35; transform: scale(.8) rotate(0deg); }
+    50%      { opacity: 1;   transform: scale(1.15) rotate(22deg); }
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     PAGE COLUMN — C's editorial measure inside D's band
+     ══════════════════════════════════════════════════════════════════════ */
+  .wrap {
+    width: 100%; max-width: 1180px; margin-inline: auto;
+    padding: clamp(18px, 2.4vw, 30px) clamp(14px, 2.6vw, 32px) 0;
+  }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+
+  /* .av initials carry student names → --mint-ink, never white on a pastel. */
+  .av { color: var(--mint-ink); }
+  .av--mint { background: var(--grad-mint); color: var(--mint-ink); }
+  .av--pink { background: var(--grad-pink); color: var(--ink-invert); }
+
+  /* ── Section heads — serif, editorial, with a blossom mark ──────────── */
+  .sec { margin-top: clamp(28px, 3.6vw, 48px); }
+  .sec__head {
+    display: flex; align-items: flex-end; gap: 10px 12px; flex-wrap: wrap;
+    margin-bottom: clamp(12px, 1.8vw, 18px);
+  }
+  .sec__title {
+    display: flex; align-items: center; gap: 9px;
+    font-family: var(--font-serif); font-weight: 400;
+    font-size: clamp(21px, 2.6vw, 29px); line-height: 1.15; letter-spacing: -.01em;
+    color: var(--ink);
+  }
+  .sec-mark { width: 17px; height: 17px; flex: 0 0 auto; color: var(--bubblegum); }
+  .sec__sub { font: var(--t-small); color: var(--ink-soft); padding-bottom: 4px; }
+  .sec__act { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .sec__act .btn { min-height: var(--tap); }
+
+  .pill-mint {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 13px;
+    border-radius: var(--r-pill);
+    background: var(--ok-bg);
+    color: var(--ok-fg);
+    border: 1px solid color-mix(in srgb, var(--wintergreen) 35%, transparent);
+    font: 700 11.5px/1 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pill-mint svg { width: 13px; height: 13px; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     THE 4 REAL KPIs — corner blossom + one piano-key strip.
+     The NUMBERS are completely undecorated. That is the point.
+     ══════════════════════════════════════════════════════════════════════ */
+  .kpis {
+    display: grid; gap: clamp(10px, 1.4vw, 16px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 900px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  .kpi {
+    position: relative; overflow: hidden;
+    padding: 17px;
+    display: flex; flex-direction: column; gap: 6px;
+    min-height: 178px;
+  }
+  /* the corner blossom — the tile's only ornament (bar the one key strip) */
+  .kpi-bloom {
+    position: absolute; top: -13px; right: -11px;
+    width: 62px; height: 62px;
+    opacity: .5;
+    pointer-events: none;
+  }
+  .kpi-bloom--pink { color: var(--bubblegum); }
+  .kpi-bloom--mint { color: var(--wintergreen); opacity: .38; }
+  /* the KPI title is the number's ONLY name → real ink, not --ink-faint */
+  .kpi .label { color: var(--ink-soft); padding-right: 44px; }
+  .kpi__val {
+    margin-top: 2px;
+    font-family: var(--font-num); font-variant-numeric: tabular-nums;
+    font-weight: 700; letter-spacing: -.025em;
+    font-size: clamp(19px, 2vw, 26px); line-height: 1.1;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .kpi__cur { font-size: .6em; font-weight: 600; margin-left: 3px; letter-spacing: 0; color: var(--ink-soft); }
+  .kpi__note {
+    font: 400 11.5px/1.4 var(--font-sans);
+    color: var(--ink-soft);
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .kpi__note svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 1px; }
+  .kpi__foot { margin-top: auto; padding-top: 14px; }
+  .kpi__scale {
+    display: flex; justify-content: space-between; gap: 8px;
+    margin-top: 7px;
+    font: 600 10.5px/1.2 var(--font-sans);
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi__rule { display: block; height: 3px; border-radius: var(--r-2xs); }
+  .kpi--rev  .kpi__rule { background: var(--grad-mint); }
+  .kpi--miss .kpi__rule { background: var(--grad-pink); }
+  .kpi--coll .kpi__rule { background: linear-gradient(90deg, var(--wintergreen), var(--mint)); }
+  .kpi--out  .kpi__rule { background: linear-gradient(90deg, var(--sand-300), var(--cotton)); }
+
+  /* PIANO-KEY MOTIF — a progress strip whose EMPTY track is a keyboard.
+     Inherited verbatim from D: --p is the real value, and the key pattern is
+     masked away from 0 → --p so the ornament never paints over the fill. */
+  .keys {
+    position: relative;
+    display: block;
+    height: 15px;
+    border-radius: var(--r-xs);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+  }
+  .keys > i {
+    position: absolute; top: 0; bottom: 0; left: 0;
+    width: var(--p, 50%);
+    background: var(--grad-pink);
+    border-right: 1.5px solid var(--pink-600);
+  }
+  .keys--mint > i { background: var(--grad-mint); border-right-color: var(--teal-600); }
+  .keys::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(90deg,
+        transparent 0 8px, var(--ink) 8px 14px,
+        transparent 14px 20px, var(--ink) 20px 26px,
+        transparent 26px 42px, var(--ink) 42px 48px,
+        transparent 48px 54px, var(--ink) 54px 60px,
+        transparent 60px 66px, var(--ink) 66px 72px,
+        transparent 72px 84px) top left / 100% 62% no-repeat,
+      repeating-linear-gradient(90deg,
+        transparent 0 11px,
+        color-mix(in srgb, var(--ink) 20%, transparent) 11px 12px);
+    -webkit-mask: linear-gradient(90deg, transparent 0 var(--p, 50%), #000 var(--p, 50%));
+    mask: linear-gradient(90deg, transparent 0 var(--p, 50%), #000 var(--p, 50%));
+    opacity: .55;
+  }
+
+  /* SPOILER KPI — the app's real quirk: "Missed This Month" stays hidden
+     until she chooses to look. Blur + 40% opacity under a reveal overlay. */
+  .kpi--spoiler { cursor: pointer; }
+  .kpi--spoiler .kpi__val,
+  .kpi--spoiler .kpi__note,
+  .kpi--spoiler .kpi__foot {
+    filter: blur(8px);
+    opacity: .4;
+    transition: filter .45s var(--ease), opacity .45s var(--ease);
+    user-select: none;
+  }
+  .kpi__reveal {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    background: linear-gradient(160deg, rgba(255, 231, 238, .5), rgba(255, 255, 255, .35));
+    transition: opacity .35s var(--ease);
+  }
+  .kpi__reveal span {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: 600 11.5px/1 var(--font-sans);
+    color: var(--pink-700);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border: 1px solid var(--line-pink);
+    padding: 10px 14px;
+    border-radius: var(--r-pill);
+    box-shadow: var(--sh-sm);
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+      box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  /* the whole tile is the hit area, so the pill must answer the pointer */
+  .kpi--spoiler:hover .kpi__reveal span,
+  .kpi__reveal:focus-visible span {
+    background: var(--surface);
+    border-color: var(--pink-300);
+    box-shadow: var(--sh-sm);
+    transform: translateY(-1px);
+  }
+  .kpi--spoiler.is-revealed .kpi__val,
+  .kpi--spoiler.is-revealed .kpi__note,
+  .kpi--spoiler.is-revealed .kpi__foot { filter: none; opacity: 1; }
+  .kpi--spoiler.is-revealed .kpi__reveal { opacity: 0; pointer-events: none; visibility: hidden; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     TODAY'S FOCUS — C's vertical timeline, with blossom nodes.
+     The rail and the nodes bloom; the cards stay strictly sober.
+     ══════════════════════════════════════════════════════════════════════ */
+  .focus-stat {
+    display: flex; align-items: center; gap: 7px 9px; flex-wrap: wrap;
+    padding: 10px 15px;
+    border-radius: var(--r-pill);
+    background: linear-gradient(100deg, var(--teal-100), var(--pink-100));
+    border: 1px solid var(--line);
+    font: 600 12.5px/1.3 var(--font-sans);
+    color: var(--teal-700);
+  }
+  .focus-stat b {
+    font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 700;
+    font-size: 13.5px; letter-spacing: -.02em;
+  }
+  .focus-stat .sep { color: var(--ink-soft); }
+  /* the honest caption — this is what makes the pill legal */
+  .focus-caption {
+    display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap;
+    margin-top: 9px;
+    font: var(--t-small); color: var(--ink-soft);
+  }
+  .focus-caption .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-soft); flex: 0 0 auto; }
+
+  .tl { list-style: none; display: flex; flex-direction: column; gap: var(--row-gap, 16px); }
+  .tl__item {
+    display: grid;
+    grid-template-columns: 60px 26px minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: start;
+  }
+  @media (min-width: 640px) {
+    .tl__item { grid-template-columns: 78px 30px minmax(0, 1fr); column-gap: 14px; }
+  }
+
+  .tl__time {
+    text-align: right; padding-top: 17px;
+    font-family: var(--font-num); font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: clamp(11.5px, 1.2vw, 13.5px);
+    color: var(--ink); letter-spacing: -.01em; white-space: nowrap;
+  }
+  .tl__time small { display: block; font-weight: 500; font-size: 10.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  .tl__rail { position: relative; display: flex; justify-content: center; align-self: stretch; }
+  .tl__rail::before {
+    content: "";
+    position: absolute; top: 0; bottom: calc(-1 * var(--row-gap, 16px));
+    width: 2px;
+    background: linear-gradient(180deg, var(--mint), var(--cotton));
+    border-radius: var(--r-2xs);
+  }
+  .tl__item:last-child .tl__rail::before { bottom: auto; height: 28px; }
+
+  /* BLOSSOM NODE — the timeline dot is a flower in the lesson's status colour,
+     with a soft halo. Decorative: the status is always ALSO spelled out in the
+     chip, so colour is never the sole carrier of meaning. */
+  .tl__node {
+    position: relative; z-index: 1;
+    margin-top: 13px;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    flex: 0 0 auto;
+  }
+  .tl__node::before {
+    content: "";
+    position: absolute; inset: -4px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .2;
+  }
+  .tl__node::after {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: var(--surface);
+  }
+  /* the blossom must paint ABOVE the white disc — both are positioned, so
+     without an explicit z-index the ::after would cover the flower. */
+  .tl__node svg { position: relative; z-index: 1; width: 21px; height: 21px; }
+  .tl__node--complete  { color: var(--wintergreen); }
+  .tl__node--cancelled { color: var(--bubblegum); }
+  .tl__node--pending   { color: var(--sand-300); }
+
+  .lesson {
+    display: grid; gap: 12px;
+    padding: 13px;
+    border-radius: var(--r-lg);
+  }
+  @media (min-width: 640px) { .lesson { padding: 16px 18px; } }
+  .lesson--cancelled {
+    background: linear-gradient(160deg, var(--pink-50), var(--surface) 62%);
+    border-color: var(--line-pink);
+  }
+  .lesson--now {
+    border-color: color-mix(in srgb, var(--wintergreen) 45%, transparent);
+    box-shadow: var(--sh-mint);
+  }
+
+  .lesson__top { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+  .lesson__id { min-width: 0; flex: 1; }
+  .lesson__name {
+    font: 650 15px/1.25 var(--font-sans); letter-spacing: -.01em; color: var(--ink);
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  }
+  .lesson__piece {
+    margin-top: 5px;
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 14px; color: var(--ink-soft);
+  }
+  .lesson__meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px;
+    font: var(--t-small); color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .lesson__meta svg { width: 13px; height: 13px; }
+  .lesson__meta span { display: inline-flex; align-items: center; gap: 4px; }
+  /* cancelReason is a real field, never styled like a piece title */
+  .lesson__reason {
+    margin-top: 9px; padding: 8px 11px; border-radius: var(--r-xs);
+    background: var(--no-bg); color: var(--no-fg);
+    font: 500 12px/1.45 var(--font-sans);
+  }
+  .lesson__note {
+    margin-top: 9px; padding: 8px 11px; border-radius: var(--r-xs);
+    background: var(--surface-2); color: var(--ink-soft);
+    font: 400 12px/1.45 var(--font-sans);
+  }
+  .lesson__foot {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding-top: 11px; border-top: 1px dashed var(--line);
+  }
+  .lesson__money {
+    font-family: var(--font-num); font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: 15px; letter-spacing: -.02em; color: var(--ink);
+  }
+  /* CANCELLED earnings: struck through, in --no-fg. Never billed, never summed. */
+  .lesson__money--void {
+    color: var(--no-fg); font-weight: 650;
+    text-decoration: line-through; text-decoration-thickness: 1.5px;
+  }
+  .lesson__money small { font-weight: 600; font-size: .75em; color: var(--ink-soft); margin-left: 2px; }
+  .lesson__money--void small { color: var(--no-fg); }
+  .lesson__foot .btn { margin-left: auto; min-height: var(--tap); }
+
+  .focus-more {
+    margin-top: 16px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: var(--tap);
+    border-radius: var(--r-pill);
+    border: 2px dashed var(--bubblegum);
+    color: var(--pink-700);
+    font: 600 12.5px/1 var(--font-sans);
+    background: var(--pink-50);
+    text-align: center; padding: 0 14px;
+  }
+  .focus-more:hover { background: var(--pink-100); }
+  .focus-more svg { width: 15px; height: 15px; flex: 0 0 auto; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     2-UP — blossom podium + the page's ONE washi-tape sticker
+     ══════════════════════════════════════════════════════════════════════ */
+  .duo { display: grid; gap: clamp(14px, 2vw, 20px); grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 1024px) {
+    .duo { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+    /* Two columns: the ≤1023 `.a-insight` guard drops out here, so the SECTION
+       carries Mochi's clearance instead. 48px is `.sec`'s own clamp maximum —
+       not a new number — so the rhythm is continuous at ≥1333 where 3.6vw tops
+       out there anyway, and only the 1024–1333 pinch band is lifted. It clears
+       her 34px overhang + the ~4px the sticker's rotate lifts the edge + the
+       3px `peek-bob` swings her down (~10.7px static, ~7.7px worst case).
+       A card margin cannot do this job at 2-up: it would misalign column tops. */
+    .duo { margin-top: 48px; }
+  }
+
+  .podium { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(6px, 1.2vw, 14px); align-items: end; margin-top: 10px; }
+  .pod { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+  /* DOM order is rank order 1-2-3; CSS `order` builds the visual staircase. */
+  .pod--1 { order: 2; } .pod--2 { order: 1; } .pod--3 { order: 3; }
+  .pod-crown { width: 24px; height: 24px; color: var(--bubblegum); margin-bottom: 3px; }
+  .pod--2 .pod-crown, .pod--3 .pod-crown { visibility: hidden; }
+  .pod .av { border: 3px solid var(--surface); box-shadow: var(--sh); position: relative; z-index: 1; }
+  .pod--1 .av { box-shadow: 0 0 0 3px var(--bubblegum), var(--sh); }
+  .pod__col {
+    width: 100%; margin-top: -14px; padding: 20px 6px 12px;
+    border-radius: var(--r-md) var(--r-md) var(--r-xs) var(--r-xs);
+    display: flex; flex-direction: column; align-items: center; gap: 5px; justify-content: flex-end;
+    border: 1px solid var(--line); min-width: 0;
+  }
+  .pod--1 .pod__col { height: clamp(124px, 15vw, 154px); background: linear-gradient(180deg, var(--cotton), color-mix(in srgb, var(--cotton) 30%, var(--surface))); border-color: var(--line-pink); }
+  .pod--2 .pod__col { height: clamp(102px, 12.5vw, 126px); background: linear-gradient(180deg, var(--mint), color-mix(in srgb, var(--mint) 30%, var(--surface))); border-color: var(--line-strong); }
+  .pod--3 .pod__col { height: clamp(86px, 10.5vw, 106px); background: linear-gradient(180deg, var(--sand-100), var(--surface)); border-color: color-mix(in srgb, var(--sand-300) 45%, transparent); }
+  .pod__medal { font-size: 19px; line-height: 1; }
+  .pod__name { font: 650 11.5px/1.3 var(--font-sans); color: var(--ink); overflow-wrap: anywhere; }
+  .pod__pill {
+    padding: 4px 9px; border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--surface) 76%, transparent);
+    border: 1px solid var(--line);
+    color: var(--teal-700);
+    font: 700 10.5px/1 var(--font-sans); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* sparkles crowning the winner only */
+  .pod--1 .spark--a { top: 22px; left: 2px; }
+  .pod--1 .spark--b { top: 46px; right: 4px; }
+  .pod--1 .spark--c { top: 6px; right: 12px; }
+
+  .runners { list-style: none; margin-top: 16px; display: flex; flex-direction: column; gap: 2px; }
+  .runners a {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 8px; border-radius: var(--r-sm);
+    transition: background var(--dur) var(--ease);
+  }
+  .runners a:hover { background: var(--surface-2); }
+  .runners .rank {
+    width: 26px; height: 26px; flex: 0 0 auto;
+    display: grid; place-items: center; border-radius: var(--r-xs);
+    font: 700 11.5px/1 var(--font-num); font-variant-numeric: tabular-nums;
+    background: var(--pink-100); color: var(--pink-700);
+    box-shadow: inset 0 0 0 1px var(--line-pink);
+  }
+  .runners .who { flex: 1; font: 650 13px/1.3 var(--font-sans); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .runners .n {
+    flex: 0 0 auto; padding: 5px 10px; border-radius: var(--r-pill);
+    background: var(--teal-100); color: var(--teal-700);
+    font: 700 11px/1 var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+
+  /* ── WASHI-TAPE STICKER — the page's one taped card ─────────────────── */
+  .sticker {
+    position: relative;
+    transform: rotate(-0.7deg);
+    transform-origin: 50% 0;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .sticker:hover, .sticker:focus-within { transform: rotate(0deg); box-shadow: var(--sh-lg); }
+  /* the tape strip — a pseudo-element, so it is never in the a11y tree */
+  .sticker::before {
+    content: "";
+    position: absolute;
+    top: -12px; left: 50%;
+    width: 138px; height: 26px;
+    transform: translateX(-50%) rotate(1.8deg);
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--mint) 82%, transparent),
+      color-mix(in srgb, var(--cotton) 72%, transparent));
+    border-left: 2px dashed color-mix(in srgb, var(--wintergreen) 45%, transparent);
+    border-right: 2px dashed color-mix(in srgb, var(--wintergreen) 45%, transparent);
+    box-shadow: var(--sh-xs);
+    opacity: .92;
+    pointer-events: none;
+    z-index: 3;
+  }
+  /* Touch devices can't hover, so the tilt would be permanent — sit flat. */
+  @media (hover: none) { .sticker { transform: none; } }
+
+  .ins-hero {
+    position: relative;
+    padding: 15px 16px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    margin-top: 4px;
+  }
+  .ins-hero .label { color: var(--ink-soft); }
+  .ins-hero .metric { font-size: clamp(21px, 2.2vw, 26px); color: var(--teal-700); margin-top: 2px; }
+  .ins-hero p { margin-top: 3px; font: var(--t-small); color: var(--ink-soft); }
+  .ins-hero .spark--a { top: 12px; right: 14px; color: var(--wintergreen); }
+  .ins-hero .spark--b { top: 30px; right: 30px; color: var(--bubblegum); }
+
+  .ins-minis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 11px; }
+  .mini { padding: 13px; border-radius: var(--r-md); display: grid; gap: 2px; }
+  .mini b { font: 700 22px/1.1 var(--font-num); font-variant-numeric: tabular-nums; }
+  .mini span { font: 600 11px/1.3 var(--font-sans); letter-spacing: .04em; text-transform: uppercase; }
+  .mini--ok { background: var(--ok-bg); color: var(--ok-fg); }   /* COMPLETE  */
+  .mini--no { background: var(--no-bg); color: var(--no-fg); }   /* CANCELLED */
+
+  .followup {
+    display: flex; align-items: center; gap: 11px;
+    margin-top: 11px; padding: 13px;
+    border-radius: var(--r-md);
+    background: var(--pink-50);
+    border: 1px solid var(--line-pink);
+  }
+  .followup-ico {
+    width: 34px; height: 34px; flex: 0 0 auto;
+    border-radius: var(--r-xs); display: grid; place-items: center;
+    background: var(--no-bg); color: var(--no-fg);
+  }
+  .followup-ico svg { width: 17px; height: 17px; }
+  .followup-txt { min-width: 0; flex: 1; display: block; }
+  .followup-txt b { display: block; font: 650 12.5px/1.3 var(--font-sans); color: var(--ink); }
+  .followup-txt span { display: block; font: 400 11.5px/1.4 var(--font-sans); color: var(--ink-soft); margin-top: 2px; }
+  .followup .btn { flex: 0 0 auto; min-height: var(--tap); }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     EARNINGS TREND — the plot is DATA. One blossom on the peak, nothing else.
+     ══════════════════════════════════════════════════════════════════════ */
+  .chart-wrap { margin: 4px -4px 0; padding: 0 4px; }
+  /* min-width == the viewBox width: the chart never downscales below 1:1, so
+     every axis value stays at its authored size. Narrow screens scroll it. */
+  .chart-wrap svg { min-width: 880px; width: 100%; height: auto; display: block; }
+  .chart-legend {
+    display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+    font: var(--t-small); color: var(--ink-soft);
+  }
+  .chart-legend b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .lg i { width: 10px; height: 10px; border-radius: var(--r-2xs); display: block; flex: 0 0 auto; }
+
+  /* ── Toast (the app's real success toast) ──────────────────────────── */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 26px;
+    transform: translate(-50%, 14px);
+    z-index: 80;
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 18px;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    border: 1px solid var(--line-pink);
+    box-shadow: var(--sh-lg);
+    font: 650 13px/1 var(--font-sans);
+    color: var(--ink);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+  .toast svg { width: 18px; height: 18px; color: var(--pink-600); }
+
+  /* ── Off-canvas chrome ─────────────────────────────────────────────── */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur) var(--ease);
+  }
+  body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+  /* the drawer is aria-modal — the page behind it must not scroll */
+  body.nav-open { overflow: hidden; }
+  .tabbar { display: none; }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     RESPONSIVE
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* Tablet landscape 1024–1279 → 76px icon rail */
+  @media (max-width: 1279px) {
+    .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+    .sidebar { padding: 18px 10px 14px; align-items: center; overflow: visible; }
+    .brand { justify-content: center; padding: 4px 0; }
+    .nav-link { justify-content: center; padding: 0; width: var(--tap); margin: 0 auto; }
+    .side-cta { width: var(--tap); padding: 0; border-radius: 50%; }
+
+    /* Labels are CLIPPED, never display:none — they are the accessible name
+       of every icon-only control in the rail. */
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .nav-group + .nav-group { margin-top: 12px; position: relative; padding-top: 12px; }
+    .nav-group + .nav-group::before {
+      content: ""; position: absolute; top: 0; left: 14%; right: 14%;
+      height: 1px; background: var(--line);
+    }
+    .user-btn { width: var(--tap); padding: 0; justify-content: center; border-radius: 50%; }
+    .user-meta, .user-btn > svg { display: none; }
+    .user-menu { position: absolute; bottom: 0; left: calc(100% + 8px); width: 200px; margin-top: 0; z-index: 70; }
+  }
+
+  /* Below 1024 → off-canvas drawer + bottom tab bar ("More" opens the drawer,
+     which is where Pieces / Reports / Payments and the account live). */
+  @media (max-width: 1023px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 282px;
+      padding: 20px 14px 16px;
+      align-items: stretch;
+      background: var(--surface);
+      box-shadow: var(--sh-xl);
+      overflow-y: auto;
+      transform: translateX(-102%);
+      transition: transform .28s var(--ease);
+      z-index: 60;
+    }
+    body.nav-open .sidebar { transform: none; }
+
+    .brand { justify-content: flex-start; padding: 6px 8px 2px; }
+    .brand-text,
+    .nav-group > .label,
+    .nav-link span,
+    .side-cta span {
+      position: static; width: auto; height: auto; margin: 0;
+      overflow: visible; clip-path: none;
+    }
+    .nav-link { justify-content: flex-start; padding: 0 12px; width: auto; }
+    .side-cta { width: 100%; padding: 0 18px; border-radius: var(--r-pill); }
+    .nav-group + .nav-group { position: static; padding-top: 0; margin-top: 18px; }
+    .nav-group + .nav-group::before { content: none; }
+    .user-btn { width: 100%; padding: 8px 10px; justify-content: flex-start; border-radius: var(--r-md); }
+    .user-meta { display: block; }
+    .user-btn > svg { display: block; }
+    .user-menu { display: grid; position: static; width: auto; margin-top: 6px; }
+
+    .main { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px) + 20px); }
+    .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+    .hamburger { display: inline-flex; }
+
+    /* one column: guarantee clearance so Mochi's peek can never reach the
+       card above her. 40px margin + the 14px grid gap > her 34px overhang. */
+    .a-insight { margin-top: 40px; }
+
+    .tabbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px) saturate(1.4);
+      border-top: 1px solid var(--line);
+      box-shadow: var(--sh-up);
+    }
+    .tab {
+      display: grid; place-items: center; gap: 3px;
+      min-height: var(--tap);
+      padding: 5px 2px;
+      border-radius: var(--r-sm);
+      color: var(--ink-soft);
+      font: 600 10px/1.2 var(--font-sans);
+      transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+    }
+    .tab svg { width: 21px; height: 21px; }
+    .tab:hover { color: var(--ink); background: var(--surface-2); }
+    .tab[aria-current="page"],
+    .tab[aria-expanded="true"] { color: var(--pink-700); background: var(--pink-50); }
+  }
+
+  /* Phone */
+  @media (max-width: 639px) {
+    /* The fixed .variant-badge (~250px wide, top-right) floats over this row.
+       Tablets are wide enough that the left-aligned hero row never reaches it;
+       phones are not, so the row drops BELOW the badge rather than under it. */
+    .hero-top { padding-top: 30px; }
+    .hero-body { align-items: flex-start; }
+    .hero-cta { width: 100%; }
+    .hero-cta .btn { flex: 1 1 auto; }
+    .greeting { font-size: clamp(26px, 7.4vw, 32px); }
+    .hero-brand em, .hero-brand .sep { display: none; }
+    .pod__name { font-size: 11px; }
+  }
+
+  @media (max-width: 420px) {
+    /* One column: "14.800.000 ₫" cannot survive a ~150px content box. */
+    .kpis { grid-template-columns: minmax(0, 1fr); }
+    .lesson__foot .btn { width: 100%; margin-left: 0; }
+    .lesson__money { width: 100%; }
+    .mochi-peek { width: 72px; height: 53px; top: -30px; right: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ Inline SVG sprite — every ornament + the mascot in one place ═══════
+     Decorative only: every consumer is aria-hidden + pointer-events:none. ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- 5-petal blossom — the signature mark. Heading ornament, timeline node,
+         bullet, podium crown, KPI corner, the chart's peak marker. -->
+    <symbol id="i-blossom" viewBox="0 0 24 24">
+      <g fill="currentColor">
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(72 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(144 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(216 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(288 12 12)"/>
+      </g>
+      <circle cx="12" cy="12" r="2.7" fill="#ffffff" opacity=".9"/>
+    </symbol>
+
+    <!-- single petal — small accents and bullets -->
+    <symbol id="i-petal" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12 2c4 5 5.4 9.5 4.2 14.2C15.3 19.6 13.8 21.4 12 22c-1.8-.6-3.3-2.4-4.2-5.8C6.6 11.5 8 7 12 2z"/>
+    </symbol>
+
+    <!-- 4-point sparkle — celebration only -->
+    <symbol id="i-sparkle" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12 1.5c.9 5.7 3.9 8.7 9.6 9.6-5.7.9-8.7 3.9-9.6 9.6-.9-5.7-3.9-8.7-9.6-9.6C8.1 10.2 11.1 7.2 12 1.5z"/>
+    </symbol>
+
+    <!-- ribbon bow — the brand-mark ornament (inherited from Sugar Bloom) -->
+    <symbol id="i-bow" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.4 12C9.6 9.1 7.4 7.6 5.4 7.6 3.5 7.6 2.2 8.9 2.2 10.8c0 2.6 2.1 4.6 4.9 4.6 1.7 0 3.2-1.2 4.3-3.4z"/>
+      <path fill="currentColor" d="M12.6 12c1.8-2.9 4-4.4 6-4.4 1.9 0 3.2 1.3 3.2 3.2 0 2.6-2.1 4.6-4.9 4.6-1.7 0-3.2-1.2-4.3-3.4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M10.7 13.7 9.1 19.6M13.3 13.7l1.6 5.9"/>
+      <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+    </symbol>
+
+    <!-- ── MOCHI · the studio cat ────────────────────────────────────────
+         The same cat as students.html / login.html — identical geometry, so a
+         developer extracts ONE component. Two poses share every measurement:
+           #i-mochi       — full, sat at her piano (hero, empty states)
+           #i-mochi-peek  — head + paws, for hooking over a card edge
+         --ink-faint is legal here: whiskers carry no information. -->
+    <symbol id="i-mochi" viewBox="0 0 132 108">
+      <!-- piano -->
+      <rect x="16" y="72" width="100" height="26" rx="5" fill="var(--ink)"/>
+      <rect x="20" y="76" width="92" height="18" rx="3" fill="var(--surface)"/>
+      <g fill="var(--ink)">
+        <rect x="29" y="76" width="5" height="11" rx="1.4"/>
+        <rect x="42" y="76" width="5" height="11" rx="1.4"/>
+        <rect x="61" y="76" width="5" height="11" rx="1.4"/>
+        <rect x="74" y="76" width="5" height="11" rx="1.4"/>
+        <rect x="87" y="76" width="5" height="11" rx="1.4"/>
+      </g>
+      <g stroke="var(--line-strong)" stroke-width="1">
+        <line x1="36" y1="76" x2="36" y2="94"/><line x1="52" y1="76" x2="52" y2="94"/>
+        <line x1="68" y1="76" x2="68" y2="94"/><line x1="84" y1="76" x2="84" y2="94"/>
+        <line x1="100" y1="76" x2="100" y2="94"/>
+      </g>
+      <!-- cat — ears up -->
+      <path d="M46 34 L42 16 L58 26 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M86 34 L90 16 L74 26 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <ellipse cx="66" cy="46" rx="27" ry="24" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <circle cx="55" cy="44" r="3" fill="var(--ink)"/>
+      <circle cx="77" cy="44" r="3" fill="var(--ink)"/>
+      <path d="M62 53q4 4 8 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="47" cy="52" r="4" fill="var(--cotton)" opacity=".85"/>
+      <circle cx="85" cy="52" r="4" fill="var(--cotton)" opacity=".85"/>
+      <g stroke="var(--ink-faint)" stroke-width="1.5" stroke-linecap="round">
+        <line x1="38" y1="46" x2="30" y2="43"/><line x1="38" y1="51" x2="29" y2="52"/>
+        <line x1="94" y1="46" x2="102" y2="43"/><line x1="94" y1="51" x2="103" y2="52"/>
+      </g>
+      <!-- paws on the keys -->
+      <ellipse cx="52" cy="72" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <ellipse cx="80" cy="72" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <!-- bow -->
+      <path d="M88 26 l8 -6 v12 z" fill="var(--bubblegum)"/>
+      <path d="M104 26 l-8 -6 v12 z" fill="var(--bubblegum)"/>
+      <circle cx="96" cy="26" r="2.6" fill="var(--pink-600)"/>
+    </symbol>
+
+    <!-- Mochi peeking: delighted — ears perked, eyes bright, paws over an edge.
+         The card's top border runs along y≈58, so the paws hook over it. -->
+    <symbol id="i-mochi-peek" viewBox="0 0 92 62">
+      <!-- ears -->
+      <path d="M22 30 L18 10 L34 21 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M62 30 L66 10 L50 21 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+      <!-- head -->
+      <ellipse cx="42" cy="38" rx="25" ry="22" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <circle cx="32" cy="36" r="2.8" fill="var(--ink)"/>
+      <circle cx="52" cy="36" r="2.8" fill="var(--ink)"/>
+      <path d="M38 44q4 4 8 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="25" cy="43" r="3.6" fill="var(--cotton)" opacity=".85"/>
+      <circle cx="59" cy="43" r="3.6" fill="var(--cotton)" opacity=".85"/>
+      <g stroke="var(--ink-faint)" stroke-width="1.4" stroke-linecap="round">
+        <line x1="16" y1="38" x2="8" y2="35"/><line x1="16" y1="42" x2="7" y2="44"/>
+        <line x1="68" y1="38" x2="76" y2="35"/><line x1="68" y1="42" x2="77" y2="44"/>
+      </g>
+      <!-- bow -->
+      <path d="M60 20 l7 -5 v10 z" fill="var(--bubblegum)"/>
+      <path d="M74 20 l-7 -5 v10 z" fill="var(--bubblegum)"/>
+      <circle cx="67" cy="20" r="2.3" fill="var(--pink-600)"/>
+      <!-- paws hooked over the card edge -->
+      <ellipse cx="20" cy="57" rx="7.5" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+      <ellipse cx="64" cy="57" rx="7.5" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+    </symbol>
+
+    <!-- hand-drawn squiggle — underlines the greeting instead of a straight rule -->
+    <symbol id="i-squiggle" viewBox="0 0 200 12" preserveAspectRatio="none">
+      <path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"
+            d="M3 8C13 2 23 11 33 6.5S53 1.5 63 7s20 4.5 30 -.5 20 -4 30 1.5 20 3 30 -2 20 -3.5 30 1.5 12 3 14 2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="variant-badge print-hide">Dashboard · Blossom Diary <span aria-hidden="true">✿</span></div>
+<div class="backdrop print-hide" id="backdrop" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar print-hide" id="sidebar" aria-label="Main navigation" inert>
+    <a class="brand" href="dashboard-e.html" data-route="/dashboard" title="My Piano Diary">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v9M15 4v9M3 13h18"/>
+        </svg>
+        <svg class="bow-tag"><use href="#i-bow"/></svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">My Piano Diary</span>
+        <span class="brand-tag">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" title="Add lesson" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav>
+      <div class="nav-group">
+        <span class="label">Main</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="dashboard-e.html" data-route="/dashboard" aria-current="page" title="Dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/>
+                <rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="calendar-d.html" data-route="/calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>
+              </svg>
+              <span>Calendar</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <span class="label">Manage</span>
+        <ul class="nav-list">
+          <li>
+            <a class="nav-link" href="lessons-d.html" data-route="/lessons" title="Lessons">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15M9 7h6"/>
+              </svg>
+              <span>Lessons</span>
+              <span class="nav-badge">6</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="students.html" data-route="/students" title="Students">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/>
+              </svg>
+              <span>Students</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="pieces.html" data-route="/pieces" title="Pieces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/>
+              </svg>
+              <span>Pieces</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="reports-c.html" data-route="/reports" title="Reports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+              <span>Reports</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link" href="payments.html" data-route="/payments" title="Payments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>
+              </svg>
+              <span>Payments</span>
+              <span class="nav-badge">5</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user-btn" type="button" id="userBtn" aria-expanded="false" aria-controls="userMenu"
+              title="Thuy Nguyễn — account menu" aria-label="Account menu, Thuy Nguyễn">
+        <span class="av" aria-hidden="true">TN</span>
+        <span class="user-meta">
+          <span class="user-name">Thuy Nguyễn</span>
+          <span class="user-mail">thuy@pianodiary.vn</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>
+        </svg>
+      </button>
+      <ul class="user-menu" id="userMenu" hidden>
+        <li><a href="profile.html" data-route="/profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Profile</a></li>
+        <li><a href="#" data-route="/updates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>Updates</a></li>
+        <li><a href="login.html" data-route="/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Log out</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main">
+
+    <!-- ══════════ HERO BAND ══════════ -->
+    <header class="hero">
+      <!-- ORNAMENT 1 · drifting blobs -->
+      <div class="blobs" aria-hidden="true">
+        <span class="blob blob-1"></span>
+        <span class="blob blob-2"></span>
+        <span class="blob blob-3"></span>
+        <span class="blob blob-4"></span>
+      </div>
+      <!-- ORNAMENT 2 · the scalloped underside (CSS mask on .hero) -->
+
+      <div class="hero-in">
+        <div class="hero-top">
+          <button class="btn btn--ghost btn--icon hamburger print-hide" type="button" id="navToggle"
+                  aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <span class="hero-brand">
+            <span>My Piano Diary</span>
+            <span class="sep" aria-hidden="true">·</span>
+            <em>Personal teaching space</em>
+          </span>
+        </div>
+
+        <div class="hero-body">
+          <div class="hero-l">
+            <div class="hero-head">
+              <div class="hero-title">
+                <h1 class="greeting">Good afternoon, <em>Thuy</em> <span aria-hidden="true">✨</span></h1>
+                <!-- ORNAMENT 3 · hand-drawn squiggle instead of a straight rule -->
+                <svg class="squiggle" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#i-squiggle"/></svg>
+              </div>
+              <!-- MOCHI · beside the greeting, gently bobbing, ears up -->
+              <svg class="mochi-hero" viewBox="0 0 132 108" aria-hidden="true" focusable="false"><use href="#i-mochi"/></svg>
+            </div>
+
+            <p class="hero-date">Thursday, July 16th</p>
+            <p class="hero-warm">
+              <b>6 lessons</b> today · <b>1.050.000 ₫</b> billable so far ·
+              <b>220.000 ₫</b> still pending. One was cancelled this afternoon
+              <span class="void">(never billed)</span>.
+            </p>
+          </div>
+
+          <div class="hero-cta">
+            <button class="btn btn--primary" type="button">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+              </svg>
+              Add lesson
+            </button>
+            <a class="btn btn--ghost" href="#today" id="jumpToday">
+              Today's lessons
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap">
+
+      <!-- ══════════ THE 4 REAL KPIs ══════════ -->
+      <section class="kpis" aria-label="Key figures">
+
+        <article class="card card--pink kpi kpi--rev rise" style="--i:1" aria-labelledby="k1t">
+          <svg class="kpi-bloom kpi-bloom--pink" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+          <span class="label" id="k1t">This Month Revenue</span>
+          <span class="kpi__val">14.800.000<span class="kpi__cur">₫</span></span>
+          <span class="kpi__note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/></svg>
+            July 1–16 · 57 COMPLETE lessons billed
+          </span>
+          <!-- the page's one piano-key strip, along this tile's base -->
+          <span class="kpi__foot">
+            <span class="keys" style="--p:52%" role="img" aria-label="Day 16 of 31 — 52% of July elapsed"><i></i></span>
+            <span class="kpi__scale"><span>Day 16</span><span>31 days</span></span>
+          </span>
+        </article>
+
+        <article class="card card--pink kpi kpi--miss kpi--spoiler rise" style="--i:2" data-spoiler aria-labelledby="k2t">
+          <svg class="kpi-bloom kpi-bloom--pink" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+          <span class="label" id="k2t">Missed This Month</span>
+          <span class="kpi__val" style="color:var(--no-fg)">1.550.000<span class="kpi__cur">₫</span></span>
+          <span class="kpi__note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            6 CANCELLED lessons · never billed
+          </span>
+          <span class="kpi__foot"><span class="kpi__rule"></span></span>
+          <button class="kpi__reveal" type="button" aria-label="Reveal missed revenue this month">
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+              Click to reveal <span aria-hidden="true">👀</span>
+            </span>
+          </button>
+        </article>
+
+        <article class="card card--mint kpi kpi--coll rise" style="--i:3" aria-labelledby="k3t">
+          <svg class="kpi-bloom kpi-bloom--mint" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+          <span class="label" id="k3t">Collected Last Month</span>
+          <span class="kpi__val" style="color:var(--teal-700)">21.300.000<span class="kpi__cur">₫</span></span>
+          <span class="kpi__note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+            June · 13 of 17 sheets settled · 88% of expected
+          </span>
+          <span class="kpi__foot"><span class="kpi__rule"></span></span>
+        </article>
+
+        <article class="card kpi kpi--out rise" style="--i:4" aria-labelledby="k4t">
+          <svg class="kpi-bloom kpi-bloom--mint" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+          <span class="label" id="k4t">Outstanding Last Month</span>
+          <span class="kpi__val" style="color:var(--wait-fg)">2.900.000<span class="kpi__cur">₫</span></span>
+          <span class="kpi__note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            June · 4 unpaid sheets · 2 families
+          </span>
+          <span class="kpi__foot"><span class="kpi__rule"></span></span>
+        </article>
+
+      </section>
+
+      <!-- ══════════ TODAY'S FOCUS — the vertical timeline ══════════ -->
+      <section class="sec" id="today" aria-labelledby="today-h">
+        <div class="sec__head">
+          <h2 class="sec__title" id="today-h">
+            <svg class="sec-mark" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+            Today's Focus <span aria-hidden="true">🎹</span>
+          </h2>
+          <span class="sec__sub">Thu 16 Jul · 6 lessons on the diary</span>
+          <span class="sec__act">
+            <a class="btn btn--ghost btn--sm" href="calendar-d.html" data-route="/calendar">Open calendar</a>
+          </span>
+        </div>
+
+        <!-- Header stat pill. The money is COMPLETE-only and says so; the
+             caption below carries the full, honest split. -->
+        <p class="focus-stat">
+          <span>Today's Total</span>
+          <span class="sep" aria-hidden="true">·</span>
+          <b>1.050.000 ₫</b> billable
+          <span class="sep" aria-hidden="true">·</span>
+          <b>6 lessons</b> on the books
+        </p>
+        <p class="focus-caption">
+          <span>4 COMPLETE — billed</span>
+          <i class="dot" aria-hidden="true"></i>
+          <span>1 PENDING — 220.000 ₫ not counted yet</span>
+          <i class="dot" aria-hidden="true"></i>
+          <span>1 CANCELLED — 300.000 ₫ never billed</span>
+        </p>
+
+        <ol class="tl" style="margin-top:16px">
+
+          <li class="tl__item rise" style="--i:1">
+            <div class="tl__time">8:00 AM<small>60 min</small></div>
+            <div class="tl__rail">
+              <span class="tl__node tl__node--complete" aria-hidden="true"><svg><use href="#i-blossom"/></svg></span>
+            </div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">MA</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Nguyễn Minh Anh <span class="chip chip--complete">Complete</span></h3>
+                  <p class="lesson__piece">Für Elise · Beethoven</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 60 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 3/5</span>
+                  </p>
+                  <p class="lesson__note">Left hand finally steady at 88bpm — start the coda next week.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">300.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" type="button">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:2">
+            <div class="tl__time">9:30 AM<small>45 min</small></div>
+            <div class="tl__rail">
+              <span class="tl__node tl__node--complete" aria-hidden="true"><svg><use href="#i-blossom"/></svg></span>
+            </div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg av--mint" aria-hidden="true">BN</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Trần Bảo Ngọc <span class="chip chip--complete">Complete</span></h3>
+                  <p class="lesson__piece">Minuet in G · Petzold</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 45 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 2/5</span>
+                  </p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">250.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" type="button">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:3">
+            <div class="tl__time">11:00 AM<small>60 min</small></div>
+            <div class="tl__rail">
+              <span class="tl__node tl__node--complete" aria-hidden="true"><svg><use href="#i-blossom"/></svg></span>
+            </div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">TT</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Vũ Thanh Trúc <span class="chip chip--complete">Complete</span> <span class="chip chip--online">Online</span></h3>
+                  <p class="lesson__piece">Gymnopédie No.1 · Satie</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 60 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg> Online · đ 300.000 rate</span>
+                    <span>Difficulty 2/5</span>
+                  </p>
+                  <p class="lesson__note">Pedal much cleaner over the wire this week — keep the metronome off.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">300.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" type="button">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:4">
+            <div class="tl__time">1:30 PM<small>60 min</small></div>
+            <div class="tl__rail">
+              <span class="tl__node tl__node--cancelled" aria-hidden="true"><svg><use href="#i-blossom"/></svg></span>
+            </div>
+            <article class="card lesson lesson--cancelled">
+              <div class="lesson__top">
+                <span class="av av--lg av--pink" aria-hidden="true">ET</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Emma Thompson <span class="chip chip--cancelled">Cancelled</span></h3>
+                  <p class="lesson__piece">Clair de Lune · Debussy</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 60 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 5/5</span>
+                  </p>
+                  <p class="lesson__reason"><b>Reason:</b> Family away in Hội An — asked to reschedule to Saturday 10:00 AM.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money lesson__money--void">300.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" type="button">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:5">
+            <div class="tl__time">3:30 PM<small>45 min</small></div>
+            <div class="tl__rail">
+              <span class="tl__node tl__node--complete" aria-hidden="true"><svg><use href="#i-blossom"/></svg></span>
+            </div>
+            <article class="card lesson">
+              <div class="lesson__top">
+                <span class="av av--lg av--mint" aria-hidden="true">GH</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Lê Gia Hân <span class="chip chip--complete">Complete</span></h3>
+                  <p class="lesson__piece">Arabesque No.1 · Debussy</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 45 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M6 21V9l6-5 6 5v12"/></svg> In-person</span>
+                    <span>Difficulty 4/5</span>
+                  </p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">200.000 <small>₫</small></span>
+                <button class="btn btn--ghost btn--sm" type="button">Update</button>
+              </div>
+            </article>
+          </li>
+
+          <li class="tl__item rise" style="--i:6">
+            <div class="tl__time">4:30 PM<small>45 min</small></div>
+            <div class="tl__rail">
+              <span class="tl__node tl__node--pending" aria-hidden="true"><svg><use href="#i-blossom"/></svg></span>
+            </div>
+            <article class="card lesson lesson--now" data-pending>
+              <div class="lesson__top">
+                <span class="av av--lg" aria-hidden="true">QB</span>
+                <div class="lesson__id">
+                  <h3 class="lesson__name">Phạm Quốc Bảo <span class="chip chip--pending">Pending</span> <span class="chip chip--online">Online</span></h3>
+                  <p class="lesson__piece">Turkish March · Mozart</p>
+                  <p class="lesson__meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 45 min</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg> Online · đ 220.000 rate</span>
+                    <span>Difficulty 4/5</span>
+                  </p>
+                  <p class="lesson__note">Last of the day — send the July sheet to the Phạm family afterwards.</p>
+                </div>
+              </div>
+              <div class="lesson__foot">
+                <span class="lesson__money">220.000 <small>₫</small></span>
+                <button class="btn btn--mint btn--sm js-mark" type="button">Mark complete</button>
+              </div>
+            </article>
+          </li>
+
+        </ol>
+
+        <a class="focus-more" href="calendar-d.html" data-route="/calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          Open the calendar · tomorrow has 5 lessons
+        </a>
+      </section>
+
+      <!-- ══════════ 2-UP · PODIUM + WASHI STICKER ══════════ -->
+      <section class="sec duo" aria-label="Students and insights">
+
+        <article class="card rise" style="--i:1">
+          <div class="sec__head" style="margin-bottom:2px">
+            <h2 class="sec__title" style="font-size:clamp(18px,2.1vw,23px)" id="podTitle">
+              <svg class="sec-mark" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+              Top Students This Month
+            </h2>
+            <span class="sec__act"><a class="btn btn--quiet btn--sm" href="students.html" data-route="/students">All students</a></span>
+          </div>
+          <p class="sec__sub" style="padding-bottom:0">By lessons attended · July</p>
+
+          <!-- DOM order is rank order 1-2-3; CSS `order` builds the staircase. -->
+          <ol class="podium">
+            <li class="pod pod--1">
+              <!-- a blossom crowns first place; sparkles celebrate the winner -->
+              <svg class="spark spark--a" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg>
+              <svg class="spark spark--b" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg>
+              <svg class="spark spark--c" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg>
+              <svg class="pod-crown" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+              <span class="av av--lg" aria-hidden="true">MA</span>
+              <span class="pod__col">
+                <span class="pod__medal"><span aria-hidden="true">🥇</span><span class="sr-only">1st place</span></span>
+                <span class="pod__name">Nguyễn Minh Anh</span>
+                <span class="pod__pill">9 lessons</span>
+              </span>
+            </li>
+            <li class="pod pod--2">
+              <svg class="pod-crown" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+              <span class="av av--lg av--mint" aria-hidden="true">BN</span>
+              <span class="pod__col">
+                <span class="pod__medal"><span aria-hidden="true">🥈</span><span class="sr-only">2nd place</span></span>
+                <span class="pod__name">Trần Bảo Ngọc</span>
+                <span class="pod__pill">8 lessons</span>
+              </span>
+            </li>
+            <li class="pod pod--3">
+              <svg class="pod-crown" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+              <span class="av av--lg av--pink" aria-hidden="true">TT</span>
+              <span class="pod__col">
+                <span class="pod__medal"><span aria-hidden="true">🥉</span><span class="sr-only">3rd place</span></span>
+                <span class="pod__name">Vũ Thanh Trúc</span>
+                <span class="pod__pill">7 lessons</span>
+              </span>
+            </li>
+          </ol>
+
+          <ol class="runners" start="4">
+            <li>
+              <a href="students.html" data-route="/students/le-gia-han">
+                <span class="rank num">4<span class="sr-only">th place</span></span>
+                <span class="av av--sm av--mint" aria-hidden="true">GH</span>
+                <span class="who">Lê Gia Hân</span>
+                <span class="n">6 lessons</span>
+              </a>
+            </li>
+            <li>
+              <a href="students.html" data-route="/students/pham-quoc-bao">
+                <span class="rank num">5<span class="sr-only">th place</span></span>
+                <span class="av av--sm" aria-hidden="true">QB</span>
+                <span class="who">Phạm Quốc Bảo</span>
+                <span class="n">6 lessons</span>
+              </a>
+            </li>
+          </ol>
+        </article>
+
+        <!-- the page's ONE washi-tape card -->
+        <article class="card card--mint sticker a-insight rise" style="--i:2" aria-labelledby="insTitle">
+          <!-- MOCHI peeks over this card's edge — delighted, ears perked -->
+          <svg class="mochi-peek" viewBox="0 0 92 62" aria-hidden="true" focusable="false"><use href="#i-mochi-peek"/></svg>
+
+          <div class="sec__head" style="margin-bottom:2px; padding-right:96px">
+            <h2 class="sec__title" style="font-size:clamp(18px,2.1vw,23px)" id="insTitle">
+              <svg class="sec-mark" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+              Quick Insights
+            </h2>
+          </div>
+          <p class="sec__sub" style="padding-bottom:0">Patterns worth a glance</p>
+
+          <div class="ins-hero">
+            <svg class="spark spark--a" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg>
+            <svg class="spark spark--b" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg>
+            <span class="label">Best day</span>
+            <div class="metric num">Monday</div>
+            <p>Your strongest this month.</p>
+          </div>
+
+          <div class="ins-minis">
+            <div class="mini mini--ok"><b class="num">57</b><span>Taught</span></div>
+            <div class="mini mini--no"><b class="num">6</b><span>Cancelled</span></div>
+          </div>
+
+          <div class="followup">
+            <span class="followup-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </span>
+            <span class="followup-txt">
+              <b>Follow-up list</b>
+              <span>4 students have not attended in the last 14 days.</span>
+            </span>
+            <a class="btn btn--ghost btn--sm" href="students.html" data-route="/students">View</a>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- ══════════ EARNINGS TREND ══════════ -->
+      <section class="sec" aria-labelledby="trendTitle">
+        <div class="sec__head">
+          <h2 class="sec__title" id="trendTitle">
+            <svg class="sec-mark" aria-hidden="true" focusable="false"><use href="#i-blossom"/></svg>
+            Earnings Trend This Month
+          </h2>
+          <span class="sec__sub">Daily billed revenue · July 1–16 · COMPLETE lessons only</span>
+          <span class="sec__act">
+            <span class="pill-mint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+              87% completion
+            </span>
+          </span>
+        </div>
+
+        <article class="card rise" style="--i:1; padding:clamp(16px,2.2vw,26px)">
+          <!-- the plot is 880px wide and scrolls below ~900px: the scroller is
+               focusable + named so keyboard-only users can reach days 14–16. -->
+          <div class="chart-wrap scroll-x" tabindex="0" role="group" aria-label="Earnings trend, scrollable">
+            <svg viewBox="0 0 880 280" role="img" aria-label="Area chart of daily billed earnings, 1 to 16 July, in Vietnamese đồng, COMPLETE lessons only. Peak 1,65 million đồng on Monday 13 July. Sundays 5 and 12 July are closed at zero. Today, Thursday 16 July, is 1,05 million đồng billed so far. Month to date 14.800.000 đồng.">
+              <defs>
+                <linearGradient id="beArea" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stop-color="var(--bubblegum)" stop-opacity=".5"/>
+                  <stop offset="52%"  stop-color="var(--mint)" stop-opacity=".32"/>
+                  <stop offset="100%" stop-color="var(--floss)" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="beLine" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"   stop-color="var(--pink-500)"/>
+                  <stop offset="100%" stop-color="var(--teal-600)"/>
+                </linearGradient>
+              </defs>
+
+              <!-- gridlines -->
+              <g stroke="var(--line)" stroke-width="1">
+                <line x1="72" y1="24"  x2="864" y2="24"/>
+                <line x1="72" y1="72"  x2="864" y2="72"/>
+                <line x1="72" y1="120" x2="864" y2="120"/>
+                <line x1="72" y1="168" x2="864" y2="168"/>
+                <line x1="72" y1="216" x2="864" y2="216" stroke="var(--line-strong)"/>
+              </g>
+              <!-- y axis · compact VND, comma decimal, the local convention -->
+              <g fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="end">
+                <text x="62" y="28">2,0 Tr ₫</text>
+                <text x="62" y="124">1,0 Tr ₫</text>
+                <text x="62" y="220">0</text>
+              </g>
+
+              <!-- Sundays — studio closed -->
+              <rect x="264" y="24" width="32" height="192" fill="var(--floss)" rx="6"/>
+              <rect x="628" y="24" width="32" height="192" fill="var(--floss)" rx="6"/>
+
+              <!-- area + line -->
+              <path fill="url(#beArea)" d="M72,134.4 L124,115.2 L176,129.6 L228,86.4 L280,216 L332,72 L384,144 L436,124.8 L488,110.4 L540,139.2 L592,96 L644,216 L696,57.6 L748,148.8 L800,129.6 L852,115.2 L852,216 L72,216 Z"/>
+              <path fill="none" stroke="url(#beLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                    d="M72,134.4 L124,115.2 L176,129.6 L228,86.4 L280,216 L332,72 L384,144 L436,124.8 L488,110.4 L540,139.2 L592,96 L644,216 L696,57.6 L748,148.8 L800,129.6 L852,115.2"/>
+
+              <!-- data points -->
+              <g fill="var(--surface)" stroke="var(--teal-600)" stroke-width="2">
+                <circle cx="72"  cy="134.4" r="3.4"/><circle cx="124" cy="115.2" r="3.4"/>
+                <circle cx="176" cy="129.6" r="3.4"/><circle cx="228" cy="86.4"  r="3.4"/>
+                <circle cx="280" cy="216"   r="3.4" stroke="var(--line-strong)"/>
+                <circle cx="332" cy="72"    r="3.4"/><circle cx="384" cy="144"   r="3.4"/>
+                <circle cx="436" cy="124.8" r="3.4"/><circle cx="488" cy="110.4" r="3.4"/>
+                <circle cx="540" cy="139.2" r="3.4"/><circle cx="592" cy="96"    r="3.4"/>
+                <circle cx="644" cy="216"   r="3.4" stroke="var(--line-strong)"/>
+                <circle cx="748" cy="148.8" r="3.4"/><circle cx="800" cy="129.6" r="3.4"/>
+              </g>
+
+              <!-- PEAK · Monday 13 July — the plot's one ornament -->
+              <svg x="685" y="46.6" width="22" height="22" viewBox="0 0 24 24" style="color:var(--bubblegum)" overflow="visible">
+                <use href="#i-blossom"/>
+              </svg>
+              <!-- the peak label carries the SAME full form the legend prints -->
+              <text x="696" y="34" fill="var(--teal-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">1.650.000 ₫</text>
+
+              <!-- today · Thursday 16 July -->
+              <line x1="852" y1="24" x2="852" y2="216" stroke="var(--bubblegum)" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <circle cx="852" cy="115.2" r="7" fill="var(--bubblegum)" opacity=".3"/>
+              <circle cx="852" cy="115.2" r="4" fill="var(--pink-600)"/>
+              <text x="846" y="104" fill="var(--pink-700)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">Today</text>
+
+              <!-- x axis · days 1–16 -->
+              <g fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="middle">
+                <text x="72"  y="238">1</text><text x="124" y="238">2</text><text x="176" y="238">3</text>
+                <text x="228" y="238">4</text><text x="280" y="238">5</text><text x="332" y="238">6</text>
+                <text x="384" y="238">7</text><text x="436" y="238">8</text><text x="488" y="238">9</text>
+                <text x="540" y="238">10</text><text x="592" y="238">11</text><text x="644" y="238">12</text>
+                <text x="696" y="238">13</text><text x="748" y="238">14</text><text x="800" y="238">15</text>
+                <text x="852" y="238" fill="var(--pink-700)" font-weight="700">16</text>
+              </g>
+              <text x="462" y="262" fill="var(--ink-soft)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10.5" text-anchor="middle" letter-spacing="1.4">DAY OF MONTH</text>
+            </svg>
+          </div>
+
+          <p class="chart-legend">
+            <span class="lg"><i style="background:var(--pink-500)"></i> Billed (COMPLETE only)</span>
+            <span class="lg"><i style="background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--line-strong)"></i> Sunday · studio closed</span>
+            <span class="lg"><i style="background:var(--bubblegum)"></i> Today</span>
+            <span>Month to date <b>14.800.000 ₫</b></span>
+            <span>Best day <b>Mon 13 Jul — 1.650.000 ₫</b></span>
+            <span>57 complete · 6 cancelled · 2 pending of 65</span>
+          </p>
+        </article>
+      </section>
+
+    </div><!-- /.wrap -->
+  </main>
+</div>
+
+<!-- ═══════════════ BOTTOM TAB BAR (below 1024) ═══════════════
+     Five tabs; "More" opens the drawer, which carries every remaining
+     destination — Pieces, Reports, Payments — plus the account menu. -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a class="tab" href="dashboard-e.html" data-route="/dashboard" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    Dashboard
+  </a>
+  <a class="tab" href="calendar-d.html" data-route="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    Calendar
+  </a>
+  <a class="tab" href="lessons-d.html" data-route="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M4 17h15"/></svg>
+    Lessons
+  </a>
+  <a class="tab" href="students.html" data-route="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+    Students
+  </a>
+  <button class="tab" type="button" id="tabMore" aria-label="More navigation — Pieces, Reports, Payments, account" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    More
+  </button>
+</nav>
+
+<!-- the app's real success toast -->
+<div class="toast print-hide" id="toast" role="status" aria-live="polite">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.7-9.3-9.1C1.3 8.4 3.2 5 6.6 5c2 0 3.5 1.1 4.4 2.6l1 1.6 1-1.6C13.9 6.1 15.4 5 17.4 5c3.4 0 5.3 3.4 3.9 6.9C19.5 16.3 12 21 12 21z"/></svg>
+  <span>Attendance marked <span aria-hidden="true">💗</span></span>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── SPOILER KPI — "Missed This Month" stays blurred until she looks ──── */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-spoiler]'), function (card) {
+    var btn = card.querySelector('.kpi__reveal');
+    if (!btn) return;
+    function reveal() {
+      card.classList.add('is-revealed');
+      btn.hidden = true;                 /* out of the tab order once dismissed */
+    }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); reveal(); });
+    card.addEventListener('click', function () {
+      if (!card.classList.contains('is-revealed')) reveal();
+    });
+  });
+
+  /* ── MARK COMPLETE — PENDING becomes COMPLETE (the only billable status) ─
+     The timeline's blossom node re-colours with it, and the honest caption
+     is NOT recomputed here: this is a mockup, not the real mutation. */
+  var toast = document.getElementById('toast');
+  var toastTimer = null;
+  function showToast() {
+    toast.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('is-on'); }, 2600);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.js-mark'), function (btn) {
+    btn.addEventListener('click', function () {
+      var card = btn.closest('.lesson');
+      var item = btn.closest('.tl__item');
+      var chip = card.querySelector('.chip--pending');
+      if (chip) {
+        chip.classList.remove('chip--pending');
+        chip.classList.add('chip--complete');
+        chip.textContent = 'Complete';
+      }
+      var node = item && item.querySelector('.tl__node');
+      if (node) {
+        node.classList.remove('tl__node--pending');
+        node.classList.add('tl__node--complete');
+      }
+      card.removeAttribute('data-pending');
+      card.classList.remove('lesson--now');
+      btn.classList.remove('btn--mint', 'js-mark');
+      btn.classList.add('btn--ghost');
+      btn.textContent = 'Update';
+      showToast();
+    });
+  });
+
+  /* ── OFF-CANVAS NAVIGATION (below 1024) ──────────────────────────────── */
+  var body = document.body;
+  var backdrop = document.getElementById('backdrop');
+  var sidebar = document.getElementById('sidebar');
+  var userBtn = document.getElementById('userBtn');
+  var userMenu = document.getElementById('userMenu');
+  var toggles = [document.getElementById('navToggle'), document.getElementById('tabMore')];
+  var drawerMQ = window.matchMedia('(max-width: 1023px)');
+  var opener = null;
+
+  function isOpen() { return body.classList.contains('nav-open'); }
+
+  function userExpand(open) {
+    if (!userBtn || !userMenu) return;
+    userMenu.hidden = !open;
+    userBtn.setAttribute('aria-expanded', String(open));
+  }
+
+  /* The drawer is a modal only while it IS a drawer. At ≥1024 it is ordinary
+     page furniture, so role/aria-modal/inert must all come back off. */
+  function syncSidebar() {
+    if (drawerMQ.matches) {
+      sidebar.setAttribute('role', 'dialog');
+      sidebar.setAttribute('aria-modal', 'true');
+      sidebar.setAttribute('aria-label', 'Navigation');
+      if (isOpen()) sidebar.removeAttribute('inert');
+      else sidebar.setAttribute('inert', '');
+    } else {
+      sidebar.removeAttribute('role');
+      sidebar.removeAttribute('aria-modal');
+      sidebar.removeAttribute('inert');
+      sidebar.setAttribute('aria-label', 'Main navigation');
+    }
+  }
+
+  function focusables() {
+    var nodes = sidebar.querySelectorAll('a[href], button:not([disabled])');
+    return Array.prototype.filter.call(nodes, function (el) {
+      return el.offsetWidth > 0 || el.offsetHeight > 0;
+    });
+  }
+
+  function setNav(open, from) {
+    var was = isOpen();
+    body.classList.toggle('nav-open', open);
+    toggles.forEach(function (t) { if (t) t.setAttribute('aria-expanded', String(open)); });
+    if (open) {
+      opener = from || opener || toggles[0];
+      syncSidebar();                        /* drop inert BEFORE focusing */
+      var first = sidebar.querySelector('.nav-link');
+      if (first) first.focus();
+    } else {
+      userExpand(false);
+      syncSidebar();
+      if (was && drawerMQ.matches && opener) opener.focus();
+      opener = null;
+    }
+  }
+
+  toggles.forEach(function (t) {
+    if (!t) return;
+    t.addEventListener('click', function () { setNav(!isOpen(), t); });
+  });
+  backdrop.addEventListener('click', function () { setNav(false); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (isOpen()) { setNav(false); return; }
+      if (userMenu && !userMenu.hidden) { userExpand(false); userBtn.focus(); }
+      return;
+    }
+    /* focus trap — only while the sidebar is a real modal drawer */
+    if (e.key !== 'Tab' || !isOpen() || !drawerMQ.matches) return;
+    var f = focusables();
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
+  /* tapping a destination inside the drawer closes it */
+  Array.prototype.forEach.call(sidebar.querySelectorAll('a[href]'), function (a) {
+    a.addEventListener('click', function () { if (drawerMQ.matches) setNav(false); });
+  });
+
+  /* ── ACCOUNT MENU ────────────────────────────────────────────────────── */
+  if (userBtn) {
+    userBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      userExpand(userMenu.hidden);
+    });
+    document.addEventListener('click', function (e) {
+      if (userMenu.hidden) return;
+      if (!userMenu.contains(e.target) && e.target !== userBtn) userExpand(false);
+    });
+  }
+
+  /* keep the shell honest across rotation / resize */
+  if (drawerMQ.addEventListener) drawerMQ.addEventListener('change', function () { setNav(false); });
+  else if (drawerMQ.addListener) drawerMQ.addListener(function () { setNav(false); });
+  syncSidebar();
+
+  /* ── smooth-scroll the "Today's lessons ↓" jump ──────────────────────────
+     A JS scroll behavior is out of reach of the CSS prefers-reduced-motion
+     block, so gate it here: reduced-motion users get an instant jump. */
+  var jump = document.getElementById('jumpToday');
+  if (jump) {
+    var reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+    jump.addEventListener('click', function (e) {
+      e.preventDefault();
+      document.getElementById('today').scrollIntoView({
+        behavior: reduceMQ.matches ? 'auto' : 'smooth',
+        block: 'start'
+      });
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

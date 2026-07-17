@@ -1,0 +1,1739 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Diary — Reports · Blossom Diary</title>
+<link rel="stylesheet" href="_theme.css">
+<style>
+/* ==========================================================================
+   REPORTS · VARIANT E — "BLOSSOM DIARY"
+   The monthly report DETAIL screen: the printable A4 sheet handed to a parent.
+
+   THE FUSION
+     bones  ← dashboard-c "The Diary"    : editorial calm, serif headings, the
+              hero band, the vertical timeline with its mint→cotton rail,
+              generous air, the floating tab bar + "More" sheet.
+     soul   ← dashboard-d "Sugar Bloom"  : the 5-petal blossom, the scalloped
+              mask recipe, the drifting blobs, the .seg toggle.
+     paper  ← reports-c                  : .mat / .paper / .att / .day / .vi-.en
+              class names kept verbatim so a developer can diff the two sheets.
+
+   THE ONE RULE — BLOOM THE FRAME, NOT THE DATA.
+     Ornament budget for this screen, in full:
+       1. the grad-hero band + blobs + squiggle behind the page H1 (chrome)
+       2. the scalloped underside of the control bar   (screen chrome)
+       3. the timeline rail + its status dots          (screen only)
+       4. the header blossom + thin bubblegum rule     (paper — survives print)
+       5. three section-icon blossoms                  (paper — hidden in print)
+       6. ONE Mochi on the mat beside the sheet        (screen only)
+     NOTHING inside the attendance grid or the totals box. That grid is the
+     reason the page exists; it stays sober, tabular and printable.
+
+   SCOPE — the control bar carries all four real toolbar controls from
+   report-view.tsx: Print, Save changes, Pretty mode and the VI|EN toggle.
+
+   MONEY — the tuition total is stated ONCE, in .tot__fee .v. Mochi and the
+   page lead carry counts and the one actionable fact; never the figure.
+
+   Only screen-specific rules live here; every colour comes from _theme.css.
+   ========================================================================== */
+
+/* ── Variant badge (scaffolding — never occludes product chrome) ─────────── */
+.variant-badge{
+  position:fixed; top:9px; right:9px; z-index:99;
+  pointer-events:none; white-space:nowrap;
+  display:inline-flex; align-items:center; gap:7px;
+  padding:6px 12px; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:blur(8px) saturate(1.4);
+  border:1px solid var(--line-pink); box-shadow:var(--sh-sm);
+  font:700 10.5px/1 var(--font-sans); letter-spacing:.06em; text-transform:uppercase;
+  color:var(--pink-700);
+}
+
+/* ══════════ SHELL ════════════════════════════════════════════════════════
+   ≥1280 slim sidebar · 1024–1279 icon rail · <1024 tab bar + "More" sheet   */
+.shell{ display:grid; grid-template-columns:minmax(0,1fr); min-height:100dvh; }
+.main{ min-width:0; padding:clamp(14px,2.4vw,30px) clamp(14px,2.6vw,36px) 132px; }
+.wrap{ width:100%; max-width:1180px; margin-inline:auto; }
+
+.sidebar{ display:none; }
+
+@media (min-width:1024px){
+  .shell{ grid-template-columns:var(--rail) minmax(0,1fr); }
+  .main{ padding-bottom:clamp(24px,3vw,44px); }
+  .sidebar{
+    display:flex; flex-direction:column; gap:18px; align-items:center;
+    position:sticky; top:0; height:100dvh; overflow-y:auto;
+    padding:20px 10px 16px;
+    background:color-mix(in srgb, var(--surface) 76%, transparent);
+    backdrop-filter:blur(16px) saturate(1.3);
+    border-right:1px solid var(--line);
+    scrollbar-width:none;
+  }
+  .sidebar::-webkit-scrollbar{ display:none; }
+}
+@media (min-width:1280px){
+  .shell{ grid-template-columns:var(--sidebar) minmax(0,1fr); }
+  .sidebar{ padding:22px 16px 18px; align-items:stretch; }
+}
+
+.brand{ display:flex; align-items:center; gap:11px; padding:4px 8px; min-width:0; }
+.brand__mark{
+  width:40px; height:40px; border-radius:13px; flex:0 0 auto; position:relative;
+  display:grid; place-items:center; color:var(--ink-invert);
+  background:var(--grad-brand); box-shadow:var(--sh-pink);
+}
+.brand__text{ min-width:0; }
+.brand__name{ display:block; font:700 15px/1.15 var(--font-sans); white-space:nowrap; }
+.brand__sub{ display:block; font:400 11px/1.3 var(--font-sans); color:var(--ink-soft); margin-top:2px; white-space:nowrap; }
+
+.side-cta{ width:100%; }
+
+.nav-group{ width:100%; }
+.nav-group + .nav-group{ margin-top:14px; }
+/* "Main"/"Manage" are real structure, not decoration → real text ink. */
+.nav-group > .label{ display:block; padding:0 12px 8px; }
+.nav{ list-style:none; display:flex; flex-direction:column; gap:2px; }
+.nav a{
+  display:flex; align-items:center; gap:11px;
+  min-height:var(--tap); padding:0 12px; border-radius:var(--r-sm);
+  font:600 13.5px/1 var(--font-sans); color:var(--ink-soft);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nav a svg{ width:19px; height:19px; flex:0 0 auto; opacity:.85; }
+.nav a:hover{ background:var(--surface-2); color:var(--ink); }
+.nav a[aria-current="page"]{
+  background:linear-gradient(100deg,var(--pink-100),var(--teal-100));
+  color:var(--ink); box-shadow:inset 0 0 0 1px var(--line-pink);
+}
+.nav a[aria-current="page"] svg{ opacity:1; color:var(--pink-600); }
+
+.side-foot{ margin-top:auto; width:100%; padding-top:12px; }
+.user{
+  display:flex; align-items:center; gap:10px; width:100%;
+  min-height:var(--tap); padding:8px; border-radius:var(--r-md);
+  border:1px solid var(--line); background:var(--surface); box-shadow:var(--sh-xs);
+  text-align:left;
+}
+.user:hover{ background:var(--surface-2); }
+.user__meta{ min-width:0; flex:1; }
+.user__name{ display:block; font:650 12.5px/1.2 var(--font-sans); }
+.user__mail{
+  display:block; font:400 11px/1.2 var(--font-sans); color:var(--ink-soft); margin-top:3px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.user__chev{ width:16px; height:16px; color:var(--ink-soft); flex:0 0 auto; }
+
+/* ── ICON RAIL (1024–1279) ────────────────────────────────────────────────
+   Labels are CLIPPED, never display:none — each one is the accessible name of
+   an icon-only control. Same recipe as dashboard-d / lessons-d. */
+@media (min-width:1024px) and (max-width:1279px){
+  .brand{ justify-content:center; padding:4px 0; }
+  .brand__text,
+  .nav-group > .label,
+  .nav a span,
+  .side-cta span,
+  .user__meta,
+  .user__chev{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+  .nav a{ width:var(--tap); justify-content:center; padding:0; margin-inline:auto; }
+  .side-cta{ width:var(--tap); min-width:var(--tap); padding:0; border-radius:50%; }
+  .nav-group + .nav-group{ position:relative; padding-top:14px; }
+  .nav-group + .nav-group::before{
+    content:""; position:absolute; top:0; left:14%; right:14%; height:1px; background:var(--line);
+  }
+  .user{ width:var(--tap); padding:0; justify-content:center; border-radius:50%; }
+}
+
+/* ── Compact top bar (<1024) — carries brand + the "Add lesson" CTA that
+      lives in the sidebar at wider widths. The fixed badge floats top-right,
+      so this row reserves its width instead of sliding under it. */
+.topbar{ display:flex; align-items:center; gap:10px; margin-bottom:clamp(14px,2vw,20px); }
+@media (min-width:640px){ .topbar{ padding-right:180px; } }
+@media (min-width:1024px){ .topbar{ display:none; } }
+@media (max-width:639px){ .topbar{ margin-top:34px; } }
+.topbar .brand{ padding:0; min-width:0; }
+.topbar__spacer{ margin-left:auto; }
+
+/* ══════════ PAGE HEAD — the Diary's hero band ════════════════════════════
+   The one surface BOTH parents open on: dashboard-c's .hero and dashboard-d's
+   .hero are the same band, both on --grad-hero with blobs drifting inside it.
+   `overflow:hidden` + `isolation:isolate` make the band its own stacking
+   context, so the z-index:-1 blobs paint above the gradient and below the
+   text, and the rounded corners clip them. */
+.page-head{
+  position:relative; isolation:isolate; overflow:hidden;
+  background:var(--grad-hero);
+  border:1px solid var(--line-pink);
+  border-radius:var(--r-xl);
+  box-shadow:var(--sh-lg);
+  padding:clamp(28px,3.4vw,44px) clamp(18px,3vw,36px);
+  margin-bottom:clamp(16px,2.2vw,24px);
+}
+/* ORNAMENT · drifting blobs (Sugar Bloom) — inside the band, as in dashboard-d */
+.blobs{ position:absolute; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+.blob{ position:absolute; border-radius:46% 54% 40% 60% / 55% 45% 60% 40%; filter:blur(3px); will-change:transform; }
+.blob-1{
+  width:230px; height:190px; top:-60px; left:-60px;
+  background:color-mix(in srgb, var(--cotton) 62%, transparent); opacity:.5;
+  animation:drift-a 24s var(--ease) infinite alternate;
+}
+.blob-2{
+  width:190px; height:170px; top:-40px; left:30%;
+  background:color-mix(in srgb, var(--mint) 58%, transparent); opacity:.45;
+  animation:drift-b 29s var(--ease) infinite alternate;
+}
+@keyframes drift-a{
+  from{ transform:translate3d(0,0,0) rotate(0deg) scale(1); }
+  to{ transform:translate3d(24px,14px,0) rotate(11deg) scale(1.06); }
+}
+@keyframes drift-b{
+  from{ transform:translate3d(0,0,0) rotate(0deg) scale(1); }
+  to{ transform:translate3d(-20px,-12px,0) rotate(-9deg) scale(1.07); }
+}
+
+.eyebrow{
+  display:inline-flex; align-items:center; gap:7px;
+  font:var(--t-label); letter-spacing:var(--label-tracking); text-transform:uppercase;
+  color:var(--teal-700);
+  background:color-mix(in srgb, var(--surface) 70%, transparent);
+  border:1px solid var(--line); border-radius:var(--r-pill);
+  padding:6px 12px; margin-bottom:14px;
+}
+.eyebrow svg{ width:13px; height:13px; }
+
+.page-h1{
+  position:relative; display:inline-block;
+  font-family:var(--font-serif); font-weight:400;
+  font-size:clamp(28px,4.2vw,44px); line-height:1.08; letter-spacing:-.015em;
+  color:var(--ink);
+}
+.page-h1 em{ font-style:italic; color:var(--pink-700); }
+/* ORNAMENT · the hand-drawn squiggle under the H1, instead of a straight rule */
+.squiggle{
+  display:block; width:min(100%,300px); height:11px; margin-top:6px;
+  color:var(--bubblegum); pointer-events:none;
+}
+.page-lead{
+  margin-top:14px; max-width:62ch;
+  font-size:clamp(13.5px,1.3vw,15px); line-height:1.6; color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+.page-lead b{ color:var(--ink); font-weight:650; }
+
+/* ══════════ CONTROL BAR — soft rounded panel, scalloped underside ════════
+   Sugar Bloom hangs its scallops off a -webkit-mask. A mask clips EVERY
+   descendant, and this panel has a tooltip that must escape its top edge — so
+   the teeth are drawn by a repeating radial-gradient on ::after instead, which
+   is the same silhouette with nothing clipped. The ::after inherits the
+   drop-shadow, so the shadow follows the scallops rather than cutting a
+   straight line across them.
+   No border: a border would run straight through the teeth. */
+.ctrl{
+  position:sticky; top:40px; z-index:40;   /* 40px clears the fixed variant badge */
+  margin-bottom:clamp(25px,2.4vw,34px);    /* room for the 9px of teeth below */
+  padding:16px clamp(14px,1.8vw,20px);
+  background:linear-gradient(170deg, var(--teal-100) 0%, var(--pink-50) 78%);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  filter:drop-shadow(0 10px 22px rgba(60,90,92,.16));
+}
+.ctrl::after{
+  content:""; position:absolute; left:0; right:0; top:100%; height:11px;
+  pointer-events:none;
+  /* one Ø18px half-circle per tile, in the gradient's own end colour */
+  background:radial-gradient(circle 9px at 9px 0, var(--pink-50) 0 8.6px, transparent 9px)
+             0 0 / 18px 11px repeat-x;
+}
+/* A 3-row bar must not eat a phone screen. `relative`, not `static`: ::after
+   is positioned against this box at every breakpoint. */
+@media (max-width:639px){ .ctrl{ position:relative; top:auto; } }
+
+.ctrl__in{
+  display:grid; gap:12px; align-items:end;
+  grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) auto auto;
+}
+.field{ display:grid; gap:6px; min-width:0; }
+.sel{ position:relative; min-width:0; }
+.sel select{
+  appearance:none; -webkit-appearance:none;
+  width:100%; min-height:var(--tap);
+  padding:0 38px 0 14px;
+  border-radius:var(--r-pill); border:1px solid var(--line);
+  background:var(--surface); box-shadow:var(--sh-xs);
+  font:600 13.5px/1 var(--font-sans); color:var(--ink);
+  cursor:pointer; text-overflow:ellipsis;
+}
+.sel select:hover{ background:var(--surface-2); }
+.sel__chev{
+  position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  width:16px; height:16px; color:var(--ink-soft); pointer-events:none;
+}
+
+/* VI | EN — a real segmented toggle (reports-c's .seg) */
+.seg{
+  display:inline-flex; padding:4px; gap:3px;
+  border-radius:var(--r-pill); background:var(--surface-2); border:1px solid var(--line);
+}
+.seg button{
+  min-height:var(--tap); min-width:52px; padding:0 14px;
+  border-radius:var(--r-pill);
+  font:700 12px/1 var(--font-sans); color:var(--ink-soft);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.seg button:hover{ color:var(--ink); }
+.seg button[aria-pressed="true"]{
+  background:var(--surface); color:var(--pink-700); box-shadow:var(--sh-xs);
+}
+
+.ctrl__acts{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ctrl__acts .btn{ white-space:nowrap; }
+
+/* ⓘ tooltip. The bubble is never display:none — it stays in the a11y tree so
+   aria-describedby resolves; it is hidden with opacity + pointer-events. */
+.tip{ position:relative; display:inline-flex; align-items:center; gap:2px; }
+.tip__bub{
+  position:absolute; bottom:calc(100% + 9px); right:0; z-index:60;
+  width:max-content; max-width:min(268px,72vw);
+  padding:10px 13px; border-radius:var(--r-sm);
+  background:var(--ink); color:var(--ink-invert);
+  font:500 11.5px/1.45 var(--font-sans);
+  box-shadow:var(--sh-lg);
+  opacity:0; pointer-events:none;
+  transform:translateY(4px);
+  transition:opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.tip__bub::after{
+  content:""; position:absolute; top:100%; right:18px;
+  border:6px solid transparent; border-top-color:var(--ink);
+}
+.tip__btn:hover + .tip__bub,
+.tip__btn:focus-visible + .tip__bub,
+.tip[data-open="true"] .tip__bub{ opacity:1; transform:none; }
+
+/* ══════════ THE MAT ══════════════════════════════════════════════════════ */
+.mat{
+  background:linear-gradient(160deg, var(--floss), var(--pink-50) 55%, var(--pink-100));
+  border:1px solid var(--line-pink);
+  border-radius:var(--r-xl);
+  padding:clamp(14px,3vw,40px);
+  display:flex; flex-direction:column; align-items:center; gap:clamp(14px,2vw,22px);
+}
+
+/* ── Mochi on the mat, beside the sheet. Screen only, never printed. ──────
+   She sits in her own strip ABOVE the paper rather than absolutely pinned in
+   the gutter: at 768 and 390 the gutter collapses to ~14px and any pinned cat
+   would land on top of the sheet. Here she can never overlap text at any
+   width, and she is the first thing you meet when the page loads. */
+.mat__note{
+  width:100%; max-width:210mm;
+  display:flex; align-items:center; gap:clamp(10px,1.6vw,18px);
+  padding:12px 16px 12px 12px;
+  border-radius:var(--r-lg);
+  background:color-mix(in srgb, var(--surface) 78%, transparent);
+  border:1px solid var(--line-pink);
+  box-shadow:var(--sh-xs);
+}
+.mochi{ width:106px; height:87px; flex:0 0 auto; pointer-events:none; animation:bob 4.6s var(--ease) infinite; }
+@keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
+@media (max-width:479px){ .mochi{ width:84px; height:69px; } }
+.mat__say{ min-width:0; }
+.mat__say b{ display:block; font:650 13.5px/1.35 var(--font-sans); color:var(--ink); }
+.mat__say p{ margin-top:3px; font:400 12.5px/1.5 var(--font-sans); color:var(--ink-soft); }
+.mat__facts{
+  margin-top:6px !important;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink-soft) !important;
+}
+.mat__facts b{ display:inline; color:var(--pink-700); font-weight:700; }
+
+/* ══════════ THE MONTH TIMELINE — the Diary's signature bone ══════════════
+   dashboard-c's vertical rail, carried over in structure and in class names:
+   a right-aligned tabular time column, the 2px mint→cotton rail, and one dot
+   per lesson. It sits on the mat ABOVE the sheet as a screen-only preface —
+   the printed page carries these same 11 lessons in the attendance grid, so
+   the rail would only be ink on the parent's copy.
+   The DOT is the ornament host; the row text stays sober. */
+.tlwrap{
+  width:100%; max-width:210mm;
+  padding:2px 16px 14px;
+  border-radius:var(--r-lg);
+  background:color-mix(in srgb, var(--surface) 78%, transparent);
+  border:1px solid var(--line-pink);
+  box-shadow:var(--sh-xs);
+}
+.tlwrap > summary{
+  display:flex; align-items:center; gap:9px; cursor:pointer;
+  min-height:var(--tap); list-style:none;
+  font:650 13.5px/1.35 var(--font-sans); color:var(--ink);
+}
+.tlwrap > summary::-webkit-details-marker{ display:none; }
+.tlwrap > summary small{ font:400 11.5px/1.35 var(--font-sans); color:var(--ink-soft); }
+/* the chevron is the only affordance; it flips with [open] */
+.tlwrap > summary::after{
+  content:""; flex:0 0 auto; margin-left:auto;
+  width:8px; height:8px;
+  border-right:2px solid var(--ink-soft); border-bottom:2px solid var(--ink-soft);
+  transform:translateY(-2px) rotate(45deg);
+  transition:transform var(--dur) var(--ease);
+}
+.tlwrap[open] > summary::after{ transform:translateY(1px) rotate(-135deg); }
+.tlwrap > summary:focus-visible{ outline:2px solid var(--pink-600); outline-offset:2px; border-radius:var(--r-xs); }
+
+.tl{
+  --row-gap:10px;
+  list-style:none; margin-top:6px;
+  display:flex; flex-direction:column; gap:var(--row-gap);
+}
+.tl__item{
+  display:grid; grid-template-columns:62px 20px minmax(0,1fr);
+  column-gap:10px; align-items:start;
+}
+@media (min-width:640px){ .tl__item{ grid-template-columns:78px 24px minmax(0,1fr); column-gap:14px; } }
+.tl__time{
+  text-align:right; padding-top:5px;
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-weight:700; font-size:clamp(11.5px,1.2vw,13.5px); color:var(--ink);
+  letter-spacing:-.01em; white-space:nowrap;
+}
+.tl__time small{
+  display:block; margin-top:2px;
+  font-family:var(--font-sans); font-weight:500; font-size:10.5px; color:var(--ink-soft);
+}
+.tl__rail{ position:relative; display:flex; justify-content:center; align-self:stretch; }
+.tl__rail::before{
+  content:""; position:absolute; top:0; bottom:calc(-1 * var(--row-gap)); width:2px;
+  background:linear-gradient(180deg, var(--mint), var(--cotton));
+  border-radius:2px;
+}
+.tl__item:last-child .tl__rail::before{ bottom:auto; height:18px; }
+.tl__dot{
+  position:relative; z-index:1; margin-top:6px;
+  width:14px; height:14px; border-radius:50%;
+  border:3px solid var(--surface); box-shadow:0 0 0 1px var(--line);
+}
+.tl__dot--complete{ background:var(--ok-dot); }
+.tl__dot--cancelled{ background:var(--no-dot); }
+.tl__dot--pending{ background:var(--wait-dot); }
+.tl__dot--special{ background:var(--special-dot); }
+.tl__body{ min-width:0; padding-top:3px; }
+.tl__what{ font:600 13px/1.45 var(--font-sans); color:var(--ink); }
+/* inline-block, because _theme.css sets a global `svg{display:block}` — the
+   online marker must sit ON the line, not break it */
+.tl__what svg{ display:inline-block; width:11px; height:11px; margin-left:5px; vertical-align:-1px; color:var(--ink-soft); }
+/* Status reads by glyph + word, never by the dot's colour alone. */
+.tl__st{
+  display:inline-flex; align-items:center; gap:5px; margin-top:2px;
+  font:700 10.5px/1.3 var(--font-sans); letter-spacing:.07em; text-transform:uppercase;
+}
+.tl__st--complete{ color:var(--ok-fg); }
+.tl__st--cancelled{ color:var(--no-fg); }
+.tl__st--pending{ color:var(--wait-fg); }
+.tl__st--special{ color:var(--special-fg); }
+.tl__item--cancelled .tl__what{ text-decoration:line-through; text-decoration-thickness:1.5px; color:var(--ink-soft); }
+
+/* ══════════ THE PAPER — a real A4 sheet ═════════════════════════════════ */
+.paper{
+  width:100%; max-width:210mm; min-height:297mm;
+  background:var(--surface);
+  border-radius:var(--r-sm);
+  box-shadow:var(--sh-xl);
+  padding:clamp(20px,4vw,44px);
+  font-family:var(--font-serif);
+  color:var(--ink);
+}
+
+/* i18n: BOTH languages ship as real DOM text — selectable, copyable, findable
+   and reliably exposed to AT. The toggle only decides which one displays.
+   (Same contract as reports-c; .paper carries lang="vi", .en spans override.) */
+body[data-lang="en"] .vi{ display:none; }
+body:not([data-lang="en"]) .en{ display:none; }
+
+/* ── 1 · HEADER ─────────────────────────────────────────────────────────── */
+.p-head{ text-align:center; }
+/* ORNAMENT · the header blossom — the one decoration that survives print */
+.p-bloom{ width:22px; height:22px; margin:0 auto 10px; color:var(--bubblegum); }
+.p-title{
+  font-family:var(--font-serif); font-weight:700;
+  font-size:clamp(18px,2.5vw,26px); line-height:1.25;
+  letter-spacing:.05em; text-transform:uppercase;
+}
+.p-sub{
+  margin-top:7px;
+  font:400 12px/1.5 var(--font-sans); color:var(--ink-soft); letter-spacing:.05em;
+}
+.p-rule{
+  height:1px; border:0; background:var(--bubblegum);
+  margin:16px auto; max-width:340px; border-radius:var(--r-pill);
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.p-pills{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.p-pill{
+  display:inline-flex; align-items:center; gap:7px;
+  padding:8px 15px; border-radius:var(--r-pill);
+  background:var(--pink-100); color:var(--pink-700);
+  border:1px solid var(--line-pink);
+  font:700 12.5px/1 var(--font-sans);
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.p-pill--mint{ background:var(--teal-100); color:var(--teal-700); border-color:var(--line-strong); font-variant-numeric:tabular-nums; }
+
+/* ── 2–4 · THE THREE EDITABLE SECTIONS ──────────────────────────────────── */
+.p-sec{ margin-top:clamp(22px,3vw,30px); }
+.p-h{
+  display:flex; align-items:center; gap:10px;
+  font-family:var(--font-serif); font-weight:700;
+  font-size:clamp(14px,1.6vw,16.5px); letter-spacing:.07em; text-transform:uppercase;
+  color:var(--ink);
+  margin-bottom:10px;
+}
+/* ORNAMENT · the three section blossoms. Print-hidden (see @media print). */
+.p-ico{ width:27px; height:27px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center; }
+.p-ico svg{ width:14px; height:14px; }
+.p-ico--mint{ background:var(--mint); color:var(--teal-700); }
+.p-ico--pink{ background:var(--bubblegum); color:var(--pink-700); }
+.p-ico--cotton{ background:var(--cotton); color:var(--pink-700); }
+
+/* Editable in the app → borderless, ruled like a notebook so it reads as
+   writable on screen, and prints as clean prose (rules dropped in print). */
+.p-note{
+  display:block; width:100%;
+  border:0; outline-offset:3px; resize:none; overflow:hidden;
+  font-family:var(--font-serif); font-size:15px; line-height:28px;
+  color:var(--ink);
+  padding:0 2px 1px;
+  background:
+    repeating-linear-gradient(180deg,
+      transparent 0 27px,
+      color-mix(in srgb, var(--bubblegum) 46%, transparent) 27px 28px);
+  background-attachment:local;
+  transition:background-color var(--dur) var(--ease);
+}
+.p-note:hover{ background-color:color-mix(in srgb, var(--pink-50) 70%, transparent); }
+.p-note:focus{ background-color:var(--pink-50); }
+
+/* ── 5 · THE ATTENDANCE GRID — DATA. Zero ornament, ever. ───────────────── */
+.att-label{
+  font:var(--t-label); font-family:var(--font-sans);
+  letter-spacing:var(--label-tracking); text-transform:uppercase;
+  color:var(--teal-700);
+  margin:0 0 8px;
+}
+.att{
+  /* resolveWeeks() in src/lib/report/attendance.ts returns [1..5] normally and
+     [1..6] as soon as ANY student in the month has a 6th week — so the column
+     count is data, not a constant. Both the template and the intrinsic minimum
+     are driven off --att-weeks; the markup sets `style="--att-weeks:6"` on .att
+     when six come back, and nothing else has to change. */
+  --att-weeks:5;
+  --att-cols:44px minmax(128px,1.05fr) repeat(var(--att-weeks), minmax(96px,1fr));
+  /* = 44 + 128 + N×96 — the template's real intrinsic minimum */
+  min-width:calc(172px + var(--att-weeks) * 96px);
+  /* `relative` is load-bearing, not cosmetic: every status cell carries a
+     .sr-only span, and .sr-only is `position:absolute` with no offsets. With
+     no positioned ancestor its containing block is the INITIAL containing
+     block, so those spans sit at their static position (x≈650) OUTSIDE the
+     .scroll-x scrollport — overflow clipping only applies to descendants whose
+     containing block is inside the clipper. They dragged the document's
+     scrollable overflow to 641px and gave the phone a 251px phantom
+     horizontal scroll into empty canvas. This anchors them to the grid. */
+  position:relative;
+  display:grid; grid-template-columns:var(--att-cols);
+  border:1px solid var(--line-strong);
+  border-radius:var(--r-sm);
+  overflow:hidden;
+  font-family:var(--font-sans);
+}
+/* display:contents keeps the ARIA row structure valid without breaking grid */
+.att .r{ display:contents; }
+.att .h{
+  padding:10px 8px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--line-strong);
+  border-right:1px solid var(--line);
+  font:700 11px/1.3 var(--font-sans); letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-soft); text-align:center;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.att .h:last-child{ border-right:0; }
+.att .h--l{ text-align:left; }
+.att .c{
+  padding:7px; border-right:1px solid var(--line);
+  display:flex; flex-direction:column; gap:6px; justify-content:flex-start;
+  min-height:82px;
+}
+.att .c:last-child{ border-right:0; }
+.att .c--stt{
+  align-items:center; justify-content:center;
+  font:700 14px/1 var(--font-sans); font-variant-numeric:tabular-nums;
+  color:var(--ink-soft); background:var(--surface-2);
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.att .c--name{
+  justify-content:center; background:var(--surface-2);
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.att .c--name b{ font:700 13px/1.35 var(--font-sans); letter-spacing:.02em; }
+
+/* One cell = the day number (+ an optional 10px uppercase reason).
+   Status is NEVER carried by colour alone — every cell gets its OWN glyph
+   (✓ / ✕ / • / ★), and the three exceptional statuses also get a shape
+   (strike / dashed ring / dotted ring), so the sheet still reads out of a
+   black-and-white printer. --special-bg and --ok-bg relative-luminance out to
+   near-identical greys on that printer, which is exactly why ★ and the dotted
+   ring — not the wash — are what separate a special-rate cell from a plain
+   COMPLETE one. */
+.day{
+  border-radius:var(--r-xs);
+  /* the transparent border reserves the box the dashed PENDING ring uses, so
+     switching status never shifts the grid by a pixel */
+  border:1px solid transparent;
+  padding:6px 4px;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.day__n{
+  display:flex; align-items:center; gap:4px;
+  font:700 15px/1.15 var(--font-num); font-variant-numeric:tabular-nums;
+}
+.day__n svg{ width:11px; height:11px; flex:0 0 auto; opacity:.9; }
+.day .st{ font:800 10.5px/1 var(--font-sans); }
+.day .rsn{
+  font:700 10px/1.25 var(--font-sans); letter-spacing:.07em;
+  text-transform:uppercase; text-align:center;
+}
+.day--complete{ background:var(--ok-bg); color:var(--ok-fg); }
+.day--cancelled{ background:var(--no-bg); color:var(--no-fg); }
+.day--cancelled .day__n{ text-decoration:line-through; text-decoration-thickness:1.5px; }
+.day--pending{ background:var(--wait-bg); color:var(--wait-fg); border-color:currentColor; border-style:dashed; }
+/* dotted, not dashed: PENDING's ring must stay tellable from this one in B&W */
+.day--special{ background:var(--special-bg); color:var(--special-fg); border-color:currentColor; border-style:dotted; }
+
+/* ── 6 · LEGEND ─────────────────────────────────────────────────────────── */
+.legend{
+  display:flex; flex-wrap:wrap; gap:8px;
+  margin-top:14px; padding-top:14px;
+  border-top:1px dashed var(--line-strong);
+  font-family:var(--font-sans);
+}
+/* the legend carries the same glyph the grid does, so the key still reads in
+   monochrome */
+.legend .chip{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.legend .chip::before{ display:none; }
+.legend .chip .st{ font-weight:800; }
+.chip--special{ background:var(--special-bg); color:var(--special-fg); }
+
+/* ── 7 · TOTALS BOX — the money anchor, the visual weight of the page ───── */
+.tot{
+  margin-top:clamp(20px,2.6vw,26px);
+  padding:clamp(16px,2.4vw,24px);
+  border-radius:var(--r-md);
+  background:var(--pink-50);
+  border:1.5px solid var(--pink-200);
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.tot__count{
+  font:700 13px/1.2 var(--font-sans); letter-spacing:.07em; text-transform:uppercase;
+  color:var(--pink-700);
+  padding-bottom:12px; margin-bottom:12px;
+  border-bottom:1px solid var(--line-pink);
+}
+.tot__lines{ display:grid; gap:7px; font-family:var(--font-sans); }
+.tot__row{
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:baseline;
+  font:400 13px/1.45 var(--font-sans); color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.tot__row .amt{ font-weight:650; white-space:nowrap; }
+/* RATE EXCEPTION — a lesson billed off the student's standing rate. Indented
+   and inked apart so a parent can see exactly why the arithmetic differs.
+   --special-fg, NOT --no-fg: on this sheet --no-fg is the "not billed" ink
+   (.day--cancelled, .chip--cancelled "Buổi vắng"), and this line IS billed.
+   One lesson, one colour — 18/07 is --special-fg in the grid, so it is
+   --special-fg here. #6b4b95 on --pink-50 = 5.54:1, passes AA at 13px.
+   The status vocabulary stays single-meaning (see _theme.css §5b). */
+.tot__row--exc{ padding-left:18px; color:var(--special-fg); }
+.tot__row--exc .amt{ color:var(--special-fg); }
+/* keys the line to the ★ in the legend and to the 18/07 cell */
+.tot__row--exc .st{ font-weight:800; font-style:normal; }
+.tot__fee{
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:baseline;
+  margin-top:14px; padding-top:12px;
+  border-top:1.5px solid var(--pink-200);
+}
+.tot__fee .k{
+  font:700 12px/1.3 var(--font-sans); letter-spacing:var(--label-tracking); text-transform:uppercase;
+  color:var(--pink-700);
+}
+.tot__fee .v{
+  font-family:var(--font-num); font-size:clamp(21px,3vw,27px); font-weight:700;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+  color:var(--pink-700); white-space:nowrap;
+}
+.tot__notewrap{ margin-top:14px; padding-top:12px; border-top:1px dashed var(--line-pink); }
+.tot__notewrap .label{ display:block; margin-bottom:2px; color:var(--pink-700); }
+.p-note--fee{
+  font-style:italic; font-size:14px; line-height:26px;
+  background:repeating-linear-gradient(180deg,
+    transparent 0 25px,
+    color-mix(in srgb, var(--bubblegum) 42%, transparent) 25px 26px);
+  background-attachment:local;
+}
+.p-note--fee:hover, .p-note--fee:focus{ background-color:color-mix(in srgb, var(--surface) 55%, transparent); }
+
+.sign{ margin-top:clamp(22px,3vw,30px); display:flex; justify-content:flex-end; }
+.sign__in{ text-align:center; min-width:230px; }
+.sign__place{ font-family:var(--font-serif); font-style:italic; font-size:14px; color:var(--ink-soft); }
+.sign__role{
+  margin-top:4px; font-family:var(--font-serif); font-size:14px; font-weight:700;
+  letter-spacing:.07em; text-transform:uppercase;
+}
+.sign__who{ margin-top:46px; font-family:var(--font-serif); font-size:16px; font-weight:700; }
+.sign__who small{
+  display:block; margin-top:3px;
+  font:400 11px/1.4 var(--font-sans); color:var(--ink-soft); letter-spacing:.04em;
+}
+
+/* ══════════ FLOATING TAB BAR (<1024) — the Diary's ═══════════════════════ */
+.tabbar{
+  position:fixed; z-index:75;   /* above .sheet-scrim so "More" stays a real toggle */
+  left:50%; transform:translateX(-50%);
+  bottom:max(14px, env(safe-area-inset-bottom));
+  width:min(560px, calc(100% - 24px));
+  display:flex; gap:4px; padding:7px;
+  border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter:blur(20px) saturate(1.5);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-xl), 0 2px 10px -6px rgba(60,90,92,.35);
+}
+.tabbar a, .tabbar button{
+  flex:1; min-width:0; min-height:var(--tap);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  padding:5px 2px; border-radius:var(--r-pill);
+  color:var(--ink-soft);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.tabbar svg{ width:21px; height:21px; }
+.tabbar span{ font:600 11px/1 var(--font-sans); letter-spacing:.02em; }
+.tabbar a:hover, .tabbar button:hover{ color:var(--ink); background:var(--surface-2); }
+.tabbar a[aria-current="page"],
+.tabbar button[aria-expanded="true"]{
+  background:linear-gradient(135deg,var(--pink-100),var(--teal-100));
+  color:var(--pink-700);
+}
+@media (min-width:1024px){ .tabbar{ display:none; } }
+
+/* ── "More" sheet — the destinations the tab bar can't show (<1024) ─────── */
+.sheet-scrim{
+  position:fixed; inset:0; z-index:65;
+  background:color-mix(in srgb, var(--ink) 28%, transparent); backdrop-filter:blur(2px);
+}
+.sheet{
+  position:fixed; z-index:70;
+  left:50%; transform:translateX(-50%);
+  bottom:calc(max(14px, env(safe-area-inset-bottom)) + 70px);
+  width:min(560px, calc(100% - 24px));
+  display:flex; flex-direction:column; gap:2px; padding:10px;
+  border-radius:var(--r-lg);
+  background:color-mix(in srgb, var(--surface) 96%, transparent);
+  backdrop-filter:blur(20px) saturate(1.5);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-xl);
+  max-height:min(58vh, 460px); overflow-y:auto;
+}
+.sheet__grab{ width:38px; height:4px; border-radius:2px; margin:0 auto 6px; background:var(--line-strong); }
+.sheet a{
+  display:flex; align-items:center; gap:12px;
+  min-height:var(--tap); padding:0 14px; border-radius:var(--r-sm);
+  font:600 14px/1 var(--font-sans); color:var(--ink-soft);
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.sheet a svg{ width:19px; height:19px; flex:0 0 auto; }
+.sheet a:hover{ background:var(--surface-2); color:var(--ink); }
+.sheet .label{ padding:10px 14px 6px; display:block; }
+/* The real footer is avatar + name + email. `.label` would uppercase the
+   address into MAI@PIANODIARY.VN, so the account row gets its own type. */
+.sheet__user{ display:flex; align-items:center; gap:10px; padding:8px 14px 4px; }
+.sheet__uname{ min-width:0; font:650 12.5px/1.25 var(--font-sans); color:var(--ink); }
+.sheet__uname small{
+  display:block; margin-top:2px;
+  font:400 11px/1.2 var(--font-sans); color:var(--ink-soft);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+@media (min-width:1024px){ .sheet, .sheet-scrim{ display:none; } }
+
+/* ── Toast ─────────────────────────────────────────────────────────────── */
+.toast{
+  position:fixed; left:50%; bottom:96px; z-index:80;
+  transform:translate(-50%,14px);
+  display:flex; align-items:center; gap:8px;
+  padding:12px 18px; border-radius:var(--r-pill);
+  background:var(--surface); border:1px solid var(--line-pink); box-shadow:var(--sh-lg);
+  font:650 13px/1 var(--font-sans); color:var(--ink);
+  opacity:0; pointer-events:none;
+  transition:opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.toast.is-on{ opacity:1; transform:translate(-50%,0); }
+.toast svg{ width:18px; height:18px; color:var(--pink-600); flex:0 0 auto; }
+@media (min-width:1024px){ .toast{ bottom:26px; } }
+
+/* ══════════ RESPONSIVE ═══════════════════════════════════════════════════ */
+
+/* Tablet portrait and below: the 5-across control bar restacks. */
+@media (max-width:1023px){
+  .ctrl__in{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .field--stu{ grid-column:1 / -1; }
+  .ctrl__acts{ grid-column:1 / -1; justify-content:flex-end; }
+}
+@media (max-width:639px){
+  .ctrl__in{ grid-template-columns:minmax(0,1fr); }
+  .field--lang .seg{ display:grid; grid-template-columns:1fr 1fr; }
+  .ctrl__acts .tip{ flex:1; }
+  /* .btn--ghost first, .tip__btn after: equal specificity, so the later rule
+     wins and the ⓘ stays a 44px circle instead of stretching. */
+  .ctrl__acts .btn--ghost{ flex:1; }
+  .ctrl__acts .tip__btn{ flex:0 0 auto; }
+  .ctrl__acts .btn--primary{ flex:1 0 100%; }
+  .tot__row, .tot__fee{ grid-template-columns:minmax(0,1fr); gap:2px; }
+  .tot__row .amt, .tot__fee .v{ justify-self:start; }
+  .sign{ justify-content:center; }
+  .mat__note{ flex-direction:column; text-align:center; }
+}
+@media (max-width:480px){
+  /* 6 tabs need every pixel — buy width back from padding, not legibility. */
+  .tabbar{ width:calc(100% - 12px); gap:1px; padding:5px 4px; }
+  .tabbar a, .tabbar button{ padding:5px 0; }
+  .tabbar span{ font-size:10px; letter-spacing:0; }
+}
+
+/* ══════════ PRINT — a parent receives this ═══════════════════════════════
+   All chrome gone. No mat, no shadow, no radius. The ONLY ornament that
+   reaches the paper is the header blossom and the thin bubblegum rule. */
+@media print{
+  @page{ size:A4 portrait; margin:14mm; }
+  .shell{ display:block; }
+  .main{ padding:0; }
+  .wrap{ max-width:none; }
+  .mat{
+    background:var(--surface); border:0; border-radius:0; padding:0; display:block;
+  }
+  .paper{
+    max-width:none; min-height:0;
+    border-radius:0; padding:0; box-shadow:none;
+    color:#000;                       /* a printed money document reads black */
+  }
+  .scroll-x{ overflow:visible !important; }
+
+  /* ORNAMENT OFF: the three section blossoms are screen sugar. */
+  .p-ico{ display:none; }
+  .p-h{ gap:0; }
+
+  /* Editable fields print as clean prose — no rules, no focus wash.
+     The inline height autosize() wrote IS the content height, so it is left
+     alone: forcing height:auto here would drop each note back to its `rows`
+     fallback and clip the overflow a textarea cannot show. */
+  .p-note{ background:none !important; color:#000; }
+
+  /* Let the grid compress onto the sheet instead of clipping. --att-weeks is
+     inherited from the element's own style attribute, so a 6-week month
+     compresses to six tracks here too. */
+  .att{ --att-cols:30px minmax(84px,1fr) repeat(var(--att-weeks), minmax(0,1fr)); min-width:0; }
+  .att, .att .h, .att .c{ border-color:color-mix(in srgb, var(--ink) 34%, transparent); }
+  .att .c{ min-height:0; }
+  .day{ padding:4px 2px; }
+  .day__n{ font-size:12px; }
+  .day__n svg{ display:none; }
+  .att-label{ color:#000; }
+
+  .p-sec, .tot, .sign, .legend{ break-inside:avoid; }
+  .tot{ box-shadow:none; }
+}
+</style>
+</head>
+<body data-lang="vi">
+
+<!-- ═══ Inline SVG sprite — decorative + icon marks in one place ═══════════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- 5-petal blossom — the signature mark, inherited verbatim from Sugar Bloom -->
+    <symbol id="i-blossom" viewBox="0 0 24 24">
+      <g fill="currentColor">
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(72 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(144 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(216 12 12)"/>
+        <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(288 12 12)"/>
+      </g>
+      <circle cx="12" cy="12" r="2.7" fill="#ffffff" opacity=".9"/>
+    </symbol>
+    <!-- ribbon bow — the brand mark ornament. Consumer: Mochi's bow, below. -->
+    <symbol id="i-bow" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.4 12C9.6 9.1 7.4 7.6 5.4 7.6 3.5 7.6 2.2 8.9 2.2 10.8c0 2.6 2.1 4.6 4.9 4.6 1.7 0 3.2-1.2 4.3-3.4z"/>
+      <path fill="currentColor" d="M12.6 12c1.8-2.9 4-4.4 6-4.4 1.9 0 3.2 1.3 3.2 3.2 0 2.6-2.1 4.6-4.9 4.6-1.7 0-3.2-1.2-4.3-3.4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M10.7 13.7 9.1 19.6M13.3 13.7l1.6 5.9"/>
+      <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+    </symbol>
+    <!-- online marker — DATA, not ornament: it tells the parent which lessons were remote -->
+    <symbol id="i-monitor" viewBox="0 0 24 24">
+      <rect x="2" y="4" width="20" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+      <path d="M8 21h8M12 17v4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="variant-badge print-hide">Reports · Blossom Diary ✿</div>
+
+<div class="shell">
+
+  <!-- ══════════ SIDEBAR — full ≥1280 · icon rail 1024–1279 ══════════ -->
+  <aside class="sidebar print-hide" aria-label="Main navigation">
+    <a class="brand" href="dashboard-d.html" data-route="/dashboard">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <span class="brand__name">My Piano Diary</span>
+        <span class="brand__sub">Personal teaching space</span>
+      </span>
+    </a>
+
+    <button class="btn btn--primary side-cta" type="button" aria-label="Add lesson">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Add lesson</span>
+    </button>
+
+    <nav class="nav-group" aria-label="Main">
+      <span class="label">Main</span>
+      <ul class="nav">
+        <li><a href="dashboard-d.html" data-route="/dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+          <span>Dashboard</span>
+        </a></li>
+        <li><a href="calendar-d.html" data-route="/calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          <span>Calendar</span>
+        </a></li>
+      </ul>
+    </nav>
+
+    <nav class="nav-group" aria-label="Manage">
+      <span class="label">Manage</span>
+      <ul class="nav">
+        <li><a href="lessons-d.html" data-route="/lessons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span>Lessons</span>
+        </a></li>
+        <li><a href="students.html" data-route="/students">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+          <span>Students</span>
+        </a></li>
+        <li><a href="pieces.html" data-route="/pieces">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/></svg>
+          <span>Pieces</span>
+        </a></li>
+        <li><a href="reports-e.html" data-route="/reports" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          <span>Reports</span>
+        </a></li>
+        <li><a href="payments.html" data-route="/payments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>
+          <span>Payments</span>
+        </a></li>
+      </ul>
+    </nav>
+
+    <div class="side-foot">
+      <button class="user" type="button" aria-haspopup="menu" aria-expanded="false"
+              aria-label="Account menu, Trịnh Mai: Profile, Updates, Log out">
+        <span class="av" aria-hidden="true">TM</span>
+        <span class="user__meta">
+          <span class="user__name">Trịnh Mai</span>
+          <span class="user__mail">mai@pianodiary.vn</span>
+        </span>
+        <svg class="user__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="main">
+    <div class="wrap">
+
+      <!-- compact top bar, <1024 only — brand + the primary CTA -->
+      <div class="topbar print-hide">
+        <span class="brand">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+          </span>
+          <span class="brand__text">
+            <span class="brand__name">My Piano Diary</span>
+            <span class="brand__sub">Personal teaching space</span>
+          </span>
+        </span>
+        <span class="topbar__spacer"></span>
+        <button class="btn btn--primary btn--sm" type="button" style="min-height:var(--tap)">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          Add lesson
+        </button>
+      </div>
+
+      <!-- ── PAGE HEAD ─────────────────────────────────────────────────── -->
+      <header class="page-head print-hide">
+        <div class="blobs" aria-hidden="true">
+          <span class="blob blob-1"></span>
+          <span class="blob blob-2"></span>
+        </div>
+
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+          Reports · Da Nang studio
+        </span>
+
+        <!-- <em> carries a WORD in italic pink serif — the Diary's editorial
+             device (dashboard-c .hero h1 em) — not an emoji box. The sparkle
+             is aria-hidden so the H1 is named "Monthly Report". -->
+        <h1 class="page-h1">
+          Monthly <em>Report</em> <span aria-hidden="true">✨</span>
+          <svg class="squiggle" viewBox="0 0 300 11" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M3 7 Q 21 1 39 7 T 75 7 T 111 7 T 147 7 T 183 7 T 219 7 T 255 7 T 291 7"
+                  fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </h1>
+
+        <!-- Counts, never the total: the tuition figure is stated ONCE, in
+             .tot__fee .v on the sheet itself. -->
+        <p class="page-lead">
+          <b>Nguyễn Minh Anh</b> · July 2026 — <b>11</b> lessons on the sheet, <b>9</b> of them
+          COMPLETE and billable. Write the three notes, then print it for the family.
+        </p>
+      </header>
+
+      <!-- ── CONTROL BAR (print-hidden, sticky, scalloped underside) ────── -->
+      <section class="ctrl print-hide" aria-label="Report controls">
+        <div class="ctrl__in">
+
+          <div class="field field--stu">
+            <label class="label" for="f-student">Student</label>
+            <span class="sel">
+              <select id="f-student">
+                <option selected>Nguyễn Minh Anh</option>
+                <option>Trần Bảo Ngọc</option>
+                <option>Lê Gia Hân</option>
+                <option>Emma Thompson</option>
+                <option>Phạm Quốc Bảo</option>
+                <option>Olivia Nguyen</option>
+                <option>Đỗ Khánh Linh</option>
+                <option>Vũ Thanh Trúc</option>
+                <option>Hoàng Nam Phong</option>
+              </select>
+              <svg class="sel__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+
+          <div class="field">
+            <label class="label" for="f-month">Month</label>
+            <span class="sel">
+              <select id="f-month">
+                <option>Month 5</option>
+                <option>Month 6</option>
+                <option selected>Month 7</option>
+                <option>Month 8</option>
+              </select>
+              <svg class="sel__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+
+          <div class="field">
+            <label class="label" for="f-year">Year</label>
+            <span class="sel">
+              <select id="f-year">
+                <option>2025</option>
+                <option selected>2026</option>
+              </select>
+              <svg class="sel__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+
+          <div class="field field--lang">
+            <span class="label" id="lang-lbl">Sheet language</span>
+            <div class="seg" role="group" aria-labelledby="lang-lbl">
+              <button type="button" data-lang-btn="vi" aria-pressed="true">VI</button>
+              <button type="button" data-lang-btn="en" aria-pressed="false">EN</button>
+            </div>
+          </div>
+
+          <div class="ctrl__acts">
+            <span class="tip" id="printTip">
+              <button class="btn btn--ghost" type="button" id="printBtn">
+                <span aria-hidden="true">🖨</span> Print
+              </button>
+              <button class="btn btn--icon btn--ghost tip__btn" type="button" id="tipBtn"
+                      aria-label="Printing tips" aria-expanded="false" aria-describedby="tip-print">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/>
+                </svg>
+              </button>
+              <!-- report-view.tsx `printHelp`, in full and in both languages —
+                   "in the print dialog" is the clause that makes it actionable. -->
+              <span class="tip__bub" id="tip-print" role="tooltip">
+                <span class="vi">Ẩn giờ/URL khi in: tắt 'Headers and footers' trong hộp thoại in.</span>
+                <span class="en" lang="en">Hide time/URL in print: disable 'Headers and footers' in the print dialog.</span>
+              </span>
+            </span>
+
+            <!-- report-view.tsx `pretty` — the 4th real toolbar control. It
+                 swaps reportTitle ("… 7/2026") for reportTitlePretty ("… 7 · 2026"). -->
+            <button class="btn btn--ghost" type="button" id="prettyBtn" aria-pressed="true">
+              <span aria-hidden="true">✨</span> Pretty mode
+            </button>
+
+            <button class="btn btn--primary" type="button" id="saveBtn">
+              <span aria-hidden="true">💾</span> Save changes
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── THE MAT + THE PAPER ───────────────────────────────────────── -->
+      <div class="mat">
+
+        <!-- Mochi — the studio cat. Screen only, aria-hidden, never in the way. -->
+        <div class="mat__note print-hide">
+          <svg class="mochi" viewBox="0 0 132 108" aria-hidden="true" focusable="false">
+            <!-- piano -->
+            <rect x="16" y="72" width="100" height="26" rx="5" fill="var(--ink)"/>
+            <rect x="20" y="76" width="92" height="18" rx="3" fill="var(--surface)"/>
+            <g fill="var(--ink)">
+              <rect x="29" y="76" width="5" height="11" rx="1.4"/>
+              <rect x="42" y="76" width="5" height="11" rx="1.4"/>
+              <rect x="61" y="76" width="5" height="11" rx="1.4"/>
+              <rect x="74" y="76" width="5" height="11" rx="1.4"/>
+              <rect x="87" y="76" width="5" height="11" rx="1.4"/>
+            </g>
+            <g stroke="var(--line-strong)" stroke-width="1">
+              <line x1="36" y1="76" x2="36" y2="94"/><line x1="52" y1="76" x2="52" y2="94"/>
+              <line x1="68" y1="76" x2="68" y2="94"/><line x1="84" y1="76" x2="84" y2="94"/>
+              <line x1="100" y1="76" x2="100" y2="94"/>
+            </g>
+            <!-- cat -->
+            <path d="M46 34 L42 16 L58 26 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M86 34 L90 16 L74 26 Z" fill="var(--cotton)" stroke="var(--pink-500)" stroke-width="2" stroke-linejoin="round"/>
+            <ellipse cx="66" cy="46" rx="27" ry="24" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+            <circle cx="55" cy="44" r="3" fill="var(--ink)"/>
+            <circle cx="77" cy="44" r="3" fill="var(--ink)"/>
+            <path d="M62 53q4 4 8 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="47" cy="52" r="4" fill="var(--cotton)" opacity=".85"/>
+            <circle cx="85" cy="52" r="4" fill="var(--cotton)" opacity=".85"/>
+            <g stroke="var(--ink-faint)" stroke-width="1.5" stroke-linecap="round">
+              <line x1="38" y1="46" x2="30" y2="43"/><line x1="38" y1="51" x2="29" y2="52"/>
+              <line x1="94" y1="46" x2="102" y2="43"/><line x1="94" y1="51" x2="103" y2="52"/>
+            </g>
+            <!-- paws on the keys -->
+            <ellipse cx="52" cy="72" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+            <ellipse cx="80" cy="72" rx="7" ry="5" fill="var(--surface)" stroke="var(--pink-500)" stroke-width="2"/>
+            <!-- bow — the #i-bow brand mark, dropped in at 24×24 on Mochi's ear -->
+            <use href="#i-bow" x="84" y="14" width="24" height="24" style="color:var(--bubblegum)"/>
+            <!-- delighted: a single sparkle, because this month went well -->
+            <path d="M20 22 l2.4 5.6 5.6 2.4 -5.6 2.4 -2.4 5.6 -2.4 -5.6 -5.6 -2.4 5.6 -2.4 z" fill="var(--bubblegum)"/>
+          </svg>
+
+          <!-- Mochi carries the qualitative line and the COUNTS. The money
+               lives in .tot__fee .v and nowhere else — a total in a cat's
+               mouth is a total someone has to hand-maintain twice. -->
+          <div class="mat__say">
+            <b>Mochi read the sheet 🌸</b>
+            <p>
+              Minh Anh came to everything she could this month — lovely, steady work.
+              Friday 31 July is still PENDING; mark it and July is finished.
+            </p>
+            <p class="mat__facts">
+              9 COMPLETE · <b>1 PENDING</b> · 1 CANCELLED (not billed)
+            </p>
+          </div>
+        </div>
+
+        <!-- ── THE MONTH TIMELINE — the Diary's rail, screen only ─────────
+             Every lesson the sheet totals, in order, with the status carried
+             by a glyph AND a word (the dot is colour only, so it is
+             aria-hidden). Collapsible: it is a preface, not the document. -->
+        <details class="tlwrap print-hide" open>
+          <summary>
+            July, lesson by lesson
+            <small>11 lessons</small>
+          </summary>
+          <ol class="tl">
+            <li class="tl__item">
+              <p class="tl__time">02/07<small>Thu</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">04/07<small>Sat</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">Online lesson<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-monitor"/></svg></p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">08/07<small>Wed</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">10/07<small>Fri</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item tl__item--cancelled">
+              <p class="tl__time">11/07<small>Sat</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--cancelled"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--cancelled"><span aria-hidden="true">✕</span>Cancelled · sick · not billed</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">15/07<small>Wed</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">18/07<small>Sat</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--special"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--special"><span aria-hidden="true">★</span>Complete · special rate</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">22/07<small>Wed</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">25/07<small>Sat</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">Online lesson<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-monitor"/></svg></p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">29/07<small>Wed</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--complete"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--complete"><span aria-hidden="true">✓</span>Complete</p>
+              </div>
+            </li>
+            <li class="tl__item">
+              <p class="tl__time">31/07<small>Fri</small></p>
+              <span class="tl__rail" aria-hidden="true"><span class="tl__dot tl__dot--pending"></span></span>
+              <div class="tl__body">
+                <p class="tl__what">In-person lesson</p>
+                <p class="tl__st tl__st--pending"><span aria-hidden="true">•</span>Pending · not yet marked</p>
+              </div>
+            </li>
+          </ol>
+        </details>
+
+        <!-- lang="vi": the sheet's default language. .en spans override it. -->
+        <article class="paper" lang="vi" aria-label="Monthly report, Nguyễn Minh Anh, month 7 2026">
+
+          <!-- ── 1 · HEADER ─────────────────────────────────────────────── -->
+          <header class="p-head">
+            <svg class="p-bloom" aria-hidden="true"><use href="#i-blossom"/></svg>
+            <!-- Demoted to h2 so the page has exactly ONE document title
+                 (.page-h1). .paper is an <article> named by aria-label, so the
+                 sheet is announced either way. Both title forms are real
+                 strings from report-view.tsx — reportTitle /
+                 reportTitlePretty — swapped by #prettyBtn. -->
+            <h2 class="p-title">
+              <span class="vi" data-plain="TỔNG KẾT THÁNG 7/2026" data-pretty="TỔNG KẾT THÁNG 7 · 2026">TỔNG KẾT THÁNG 7 · 2026</span>
+              <span class="en" lang="en" data-plain="MONTHLY REPORT 7/2026" data-pretty="MONTHLY REPORT 7 · 2026">MONTHLY REPORT 7 · 2026</span>
+            </h2>
+            <p class="p-sub">
+              <span class="vi">Lớp dạy Piano · Cô Trịnh Mai · Đà Nẵng</span>
+              <span class="en" lang="en">Piano Studio · Ms. Trịnh Mai · Đà Nẵng</span>
+            </p>
+            <hr class="p-rule">
+            <div class="p-pills">
+              <span class="p-pill">
+                <span class="vi">Học sinh: Nguyễn Minh Anh</span>
+                <span class="en" lang="en">Student: Nguyễn Minh Anh</span>
+              </span>
+              <span class="p-pill p-pill--mint">
+                <span class="vi">Tháng 7 / 2026</span>
+                <span class="en" lang="en">Month 7 / 2026</span>
+              </span>
+            </div>
+          </header>
+
+          <!-- ── 2 · I. MONTHLY SUMMARY ─────────────────────────────────── -->
+          <section class="p-sec">
+            <!-- Title case in the DOM — the literal strings from report-view.tsx
+                 `sections`. .p-h{text-transform:uppercase} does the casing, so
+                 nothing is double-uppercased into letter-by-letter speech. -->
+            <h3 class="p-h">
+              <span class="p-ico p-ico--mint" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-blossom"/></svg></span>
+              <span class="vi">I. Tổng kết tháng</span>
+              <span class="en" lang="en">I. Monthly Summary</span>
+            </h3>
+            <textarea class="p-note" rows="3" data-autosize aria-label="Tổng kết tháng — monthly summary">Tháng 7 con đi học rất đều và chăm chỉ, 9/11 buổi có mặt đầy đủ. Gam Đô trưởng và La thứ hai tay con đã chạy được ở tốc độ 72 nhịp/phút, ngón 3 và ngón 4 tay trái đã khoẻ hơn nhiều so với tháng 6. Bài Für Elise con đã thuộc lòng đoạn A và đoạn B, hiện đang ghép hai đoạn ở tốc độ 80 nhịp/phút.</textarea>
+          </section>
+
+          <!-- ── 3 · II. FEEDBACK ───────────────────────────────────────── -->
+          <section class="p-sec">
+            <h3 class="p-h">
+              <span class="p-ico p-ico--pink" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-blossom"/></svg></span>
+              <span class="vi">II. Nhận xét</span>
+              <span class="en" lang="en">II. Feedback</span>
+            </h3>
+            <textarea class="p-note" rows="3" data-autosize aria-label="Nhận xét — feedback">Con có tai nghe tốt, cảm âm nhạy và vào lớp luôn vui vẻ, tập trung. Điểm cần sửa: con còn giữ pedal quá lâu ở ô nhịp 9–12 khiến tiếng bị đục, và tay trái hay vội nhịp khi sang đoạn nhanh. Gia đình nhắc con tập chậm với máy đập nhịp khoảng 10 phút mỗi ngày giúp cô nhé.</textarea>
+          </section>
+
+          <!-- ── 4 · III. NEXT MONTH PLAN ───────────────────────────────── -->
+          <section class="p-sec">
+            <h3 class="p-h">
+              <span class="p-ico p-ico--cotton" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-blossom"/></svg></span>
+              <span class="vi">III. Hoạt động tháng tới</span>
+              <span class="en" lang="en">III. Next Month Plan</span>
+            </h3>
+            <textarea class="p-note" rows="3" data-autosize aria-label="Hoạt động tháng tới — next month plan">Tháng 8 cô sẽ cho con hoàn thiện Für Elise và bắt đầu học Minuet in G của Petzold. Con tập thêm gam Sol trưởng hai quãng tám và luyện vỡ bài đơn giản mỗi buổi. Cuối tháng 8 lớp có một buổi biểu diễn nhỏ tại nhà, cô mong con chuẩn bị một bài để tham gia cùng các bạn.</textarea>
+          </section>
+
+          <!-- ── 5 · THE ATTENDANCE GRID — DATA. No ornament, none. ─────── -->
+          <section class="p-sec">
+            <p class="att-label">
+              <span class="vi">BẢNG ĐIỂM DANH THÁNG 7</span>
+              <span class="en" lang="en">ATTENDANCE - MONTH 7</span>
+            </p>
+
+            <!-- style="--att-weeks:5" IS the contract: resolveWeeks() returns
+                 [1..6] for a 6-week month, and this one attribute (plus the 6th
+                 header + cell) is all that changes. Never hardcode the repeat. -->
+            <div class="scroll-x">
+              <div class="att" role="table" style="--att-weeks:5" aria-label="Attendance, Nguyễn Minh Anh, month 7, 2026">
+                <div class="r" role="row">
+                  <div class="h" role="columnheader">
+                    <span class="vi">STT</span><span class="en" lang="en">No.</span>
+                  </div>
+                  <div class="h h--l" role="columnheader">
+                    <span class="vi">TÊN HS</span><span class="en" lang="en">STUDENT</span>
+                  </div>
+                  <div class="h" role="columnheader"><span class="vi">Tuần 1</span><span class="en" lang="en">Week 1</span></div>
+                  <div class="h" role="columnheader"><span class="vi">Tuần 2</span><span class="en" lang="en">Week 2</span></div>
+                  <div class="h" role="columnheader"><span class="vi">Tuần 3</span><span class="en" lang="en">Week 3</span></div>
+                  <div class="h" role="columnheader"><span class="vi">Tuần 4</span><span class="en" lang="en">Week 4</span></div>
+                  <div class="h" role="columnheader"><span class="vi">Tuần 5</span><span class="en" lang="en">Week 5</span></div>
+                </div>
+
+                <div class="r" role="row">
+                  <div class="c c--stt" role="cell">1</div>
+                  <div class="c c--name" role="cell"><b>NGUYỄN MINH ANH</b></div>
+
+                  <!-- Week 1 · Jul 1–5 -->
+                  <div class="c" role="cell">
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE</span>2</span>
+                    </span>
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE, online</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-monitor"/></svg>4</span>
+                    </span>
+                  </div>
+
+                  <!-- Week 2 · Jul 6–12 -->
+                  <div class="c" role="cell">
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE</span>8</span>
+                    </span>
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE</span>10</span>
+                    </span>
+                    <span class="day day--cancelled">
+                      <span class="day__n"><span class="st" aria-hidden="true">✕</span><span class="sr-only">CANCELLED</span>11</span>
+                      <small class="rsn">ỐM</small>
+                    </span>
+                  </div>
+
+                  <!-- Week 3 · Jul 13–19 -->
+                  <div class="c" role="cell">
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE</span>15</span>
+                    </span>
+                    <!-- ★, not ✓: the glyph must match .chip--special in the
+                         legend, and it is what tells this cell from a plain
+                         COMPLETE one on a black-and-white printer. -->
+                    <span class="day day--special">
+                      <span class="day__n"><span class="st" aria-hidden="true">★</span><span class="sr-only">COMPLETE, special rate</span>18</span>
+                      <small class="rsn">GIÁ RIÊNG</small>
+                    </span>
+                  </div>
+
+                  <!-- Week 4 · Jul 20–26 -->
+                  <div class="c" role="cell">
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE</span>22</span>
+                    </span>
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE, online</span><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-monitor"/></svg>25</span>
+                    </span>
+                  </div>
+
+                  <!-- Week 5 · Jul 27–31 -->
+                  <div class="c" role="cell">
+                    <span class="day day--complete">
+                      <span class="day__n"><span class="st" aria-hidden="true">✓</span><span class="sr-only">COMPLETE</span>29</span>
+                    </span>
+                    <span class="day day--pending">
+                      <span class="day__n"><span class="st" aria-hidden="true">•</span><span class="sr-only">PENDING</span>31</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── 6 · LEGEND ───────────────────────────────────────────── -->
+            <div class="legend" aria-label="Legend">
+              <span class="chip chip--complete">
+                <span class="st" aria-hidden="true">✓</span>
+                <span class="vi">Buổi đầy đủ</span><span class="en" lang="en">Attended</span>
+              </span>
+              <span class="chip chip--cancelled">
+                <span class="st" aria-hidden="true">✕</span>
+                <span class="vi">Buổi vắng</span><span class="en" lang="en">Missed</span>
+              </span>
+              <span class="chip chip--pending">
+                <span class="st" aria-hidden="true">•</span>
+                <span class="vi">Chưa có</span><span class="en" lang="en">Pending</span>
+              </span>
+              <span class="chip chip--special">
+                <span class="st" aria-hidden="true">★</span>
+                <span class="vi">Lý do đặc biệt</span><span class="en" lang="en">Special reason</span>
+              </span>
+            </div>
+          </section>
+
+          <!-- ── 7 · TOTALS BOX — the money anchor ──────────────────────── -->
+          <div class="tot">
+            <div class="tot__count">
+              <span class="vi">TỔNG: 9 BUỔI</span><span class="en" lang="en">TOTAL: 9 LESSONS</span>
+            </div>
+
+            <div class="tot__lines">
+              <p class="tot__row">
+                <span>
+                  <span class="vi">Tại lớp: 6 buổi × 250.000 ₫</span>
+                  <span class="en" lang="en">In-person: 6 lessons × 250.000 ₫</span>
+                </span>
+                <span class="amt">1.500.000 ₫</span>
+              </p>
+              <p class="tot__row">
+                <span>
+                  <span class="vi">Trực tuyến: 2 buổi × 200.000 ₫</span>
+                  <span class="en" lang="en">Online: 2 lessons × 200.000 ₫</span>
+                </span>
+                <span class="amt">400.000 ₫</span>
+              </p>
+              <!-- RATE EXCEPTION — buổi 18/07 was billed off the standing rate.
+                   ★ + --special-fg key this line to the 18/07 cell and to the
+                   legend chip. It is BILLED, so it is never --no-fg. -->
+              <p class="tot__row tot__row--exc">
+                <span>
+                  <span class="st" aria-hidden="true">★</span>
+                  <span class="vi">1 buổi giá riêng × 300.000 ₫ (18/07)</span>
+                  <span class="en" lang="en">1 lesson at a special rate × 300.000 ₫ (18/07)</span>
+                </span>
+                <span class="amt">300.000 ₫</span>
+              </p>
+            </div>
+
+            <div class="tot__fee">
+              <span class="k">
+                <span class="vi">Học phí</span><span class="en" lang="en">Tuition</span>
+              </span>
+              <span class="v">2.200.000 ₫</span>
+            </div>
+
+            <div class="tot__notewrap">
+              <label class="label" for="fee-note">
+                <span class="vi">Ghi chú học phí</span><span class="en" lang="en">Tuition note</span>
+              </label>
+              <textarea class="p-note p-note--fee" id="fee-note" rows="2" data-autosize>Gia đình đã gửi trước 1.000.000 ₫ ngày 08/07. Phần còn lại 1.200.000 ₫ gia đình gửi cô trước ngày 05/08 giúp cô nhé. Cảm ơn gia đình đã đồng hành cùng lớp!</textarea>
+            </div>
+          </div>
+
+          <div class="sign">
+            <div class="sign__in">
+              <p class="sign__place">
+                <span class="vi">Đà Nẵng, Ngày 16/07/2026</span>
+                <span class="en" lang="en">Đà Nẵng, July 16, 2026</span>
+              </p>
+              <p class="sign__role">
+                <span class="vi">Giáo viên</span><span class="en" lang="en">Teacher</span>
+              </p>
+              <p class="sign__who">
+                Trịnh Mai
+                <small>
+                  <span class="vi">Giáo viên Piano</span><span class="en" lang="en">Piano teacher</span>
+                </small>
+              </p>
+            </div>
+          </div>
+
+        </article>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ FLOATING TAB BAR (<1024) ══════════ -->
+<nav class="tabbar print-hide" aria-label="Primary">
+  <a href="dashboard-d.html" data-route="/dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>
+    <span>Dashboard</span>
+  </a>
+  <a href="calendar-d.html" data-route="/calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    <span>Calendar</span>
+  </a>
+  <a href="lessons-d.html" data-route="/lessons">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    <span>Lessons</span>
+  </a>
+  <a href="students.html" data-route="/students">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-2.6-4.9"/></svg>
+    <span>Students</span>
+  </a>
+  <a href="reports-e.html" data-route="/reports" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+    <span>Reports</span>
+  </a>
+  <!-- The sidebar's destinations don't fit 6 tabs; Pieces, Payments + the
+       account items live here so nothing becomes unreachable below 1024. -->
+  <button type="button" id="more-tab" aria-haspopup="menu" aria-expanded="false" aria-controls="more-sheet">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+    <span>More</span>
+  </button>
+</nav>
+
+<div class="sheet-scrim print-hide" id="more-scrim" hidden></div>
+<div class="sheet print-hide" id="more-sheet" role="menu" aria-label="More destinations" hidden>
+  <span class="sheet__grab" aria-hidden="true"></span>
+  <span class="label">Manage</span>
+  <a role="menuitem" href="pieces.html" data-route="/pieces">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="18" r="3"/><circle cx="18" cy="15" r="3"/><path d="M10 18V6l11-2v11"/></svg>
+    Pieces
+  </a>
+  <a role="menuitem" href="payments.html" data-route="/payments">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/></svg>
+    Payments
+  </a>
+  <hr class="divider" style="margin:8px 6px">
+  <div class="sheet__user">
+    <span class="av av--sm" aria-hidden="true">TM</span>
+    <span class="sheet__uname">Trịnh Mai<small>mai@pianodiary.vn</small></span>
+  </div>
+  <a role="menuitem" href="profile.html" data-route="/profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+    Profile
+  </a>
+  <a role="menuitem" href="#" data-route="/updates">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.5 20a2 2 0 0 0 3 0"/></svg>
+    Updates
+  </a>
+  <a role="menuitem" href="login.html" data-route="/logout">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    Log out
+  </a>
+</div>
+
+<div class="toast print-hide" id="toast" role="status" aria-live="polite">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+  <span id="toastMsg">Almost ready…</span>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ══ VI | EN — a real toggle. Both languages are real DOM text; the class on
+     <body> only decides which of the two pair members displays. ══════════════ */
+  var langBtns = document.querySelectorAll('[data-lang-btn]');
+  langBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var lang = btn.dataset.langBtn;
+      document.body.dataset.lang = lang;
+      langBtns.forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      /* the ruled notes may re-wrap when the headings change width */
+      autosizeAll();
+    });
+  });
+
+  /* ══ Auto-growing notes — the three sections + the tuition note are
+     textareas in the app. Autosizing keeps every line visible on screen AND
+     guarantees nothing is clipped when the sheet prints. ═════════════════════ */
+  var notes = document.querySelectorAll('[data-autosize]');
+  function autosize(el) {
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight + 2) + 'px';
+  }
+  function autosizeAll() { notes.forEach(autosize); }
+  notes.forEach(function (el) {
+    el.addEventListener('input', function () { autosize(el); });
+  });
+  autosizeAll();
+  window.addEventListener('resize', autosizeAll);
+  window.addEventListener('beforeprint', autosizeAll);
+
+  /* ══ ⓘ tooltip — hover/focus opens it on a mouse; the button makes it a real
+     toggle on touch, where there is no hover. ════════════════════════════════ */
+  (function () {
+    var tip = document.getElementById('printTip');
+    var btn = document.getElementById('tipBtn');
+    function set(open) {
+      tip.dataset.open = String(open);
+      btn.setAttribute('aria-expanded', String(open));
+    }
+    btn.addEventListener('click', function () {
+      set(tip.dataset.open !== 'true');
+    });
+    document.addEventListener('click', function (e) {
+      if (!tip.contains(e.target)) set(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && tip.dataset.open === 'true') { set(false); btn.focus(); }
+    });
+  })();
+
+  /* ══ Toast ════════════════════════════════════════════════════════════════ */
+  var toast = document.getElementById('toast');
+  var toastMsg = document.getElementById('toastMsg');
+  var toastTimer;
+  function say(msg) {
+    toastMsg.textContent = msg;
+    toast.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('is-on'); }, 2600);
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', function () {
+    say('Report saved ✨');
+  });
+  document.getElementById('printBtn').addEventListener('click', function () {
+    window.print();
+  });
+
+  /* ══ Pretty mode — the 4th real toolbar control (report-view.tsx `pretty`).
+     It swaps the sheet's reportTitle for reportTitlePretty. Both strings ship
+     as data- attributes on the title spans, so the toggle never has to
+     string-build a date. ═════════════════════════════════════════════════════ */
+  (function () {
+    var btn = document.getElementById('prettyBtn');
+    var spans = document.querySelectorAll('.p-title [data-pretty]');
+    btn.addEventListener('click', function () {
+      var on = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(on));
+      spans.forEach(function (s) {
+        s.textContent = on ? s.dataset.pretty : s.dataset.plain;
+      });
+      say(on ? 'Pretty mode on ✨' : 'Pretty mode off');
+    });
+  })();
+
+  /* Re-render the sheet header when the filters change — a mockup stands in
+     for the real query, but the pills must never disagree with the controls. */
+  var stuSel = document.getElementById('f-student');
+  var monSel = document.getElementById('f-month');
+  var yrSel = document.getElementById('f-year');
+  [stuSel, monSel, yrSel].forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      say('Almost ready…');
+    });
+  });
+
+  /* ══ "More" sheet — the destinations the tab bar cannot show ══════════════
+     It has a scrim, so it must BEHAVE modal, not just look it:
+       · `inert` on .shell removes the whole page behind the wash from the tab
+         order AND from the a11y tree — no more tabbing onto controls you
+         cannot see or click.
+       · Tab / Shift-Tab wrap between the first and last [role=menuitem], so
+         focus cannot walk out of the sheet even where inert is unsupported.
+     .tabbar is deliberately NOT inert: it sits at z-index 75, ABOVE the scrim
+     (see .tabbar), is fully visible, and hosts the "More" button that closes
+     this sheet — inerting it would break that toggle. The focus wrap already
+     keeps Tab inside the sheet, so it is unreachable by keyboard regardless. */
+  (function () {
+    var tab = document.getElementById('more-tab');
+    var sheet = document.getElementById('more-sheet');
+    var scrim = document.getElementById('more-scrim');
+    var shell = document.querySelector('.shell');
+    var items = sheet.querySelectorAll('[role="menuitem"]');
+    var first = items[0];
+    var last = items[items.length - 1];
+
+    function open() {
+      sheet.hidden = false;
+      scrim.hidden = false;
+      shell.inert = true;
+      tab.setAttribute('aria-expanded', 'true');
+      first.focus();
+    }
+    function close(refocus) {
+      sheet.hidden = true;
+      scrim.hidden = true;
+      shell.inert = false;
+      tab.setAttribute('aria-expanded', 'false');
+      if (refocus) tab.focus();
+    }
+    tab.addEventListener('click', function () {
+      if (sheet.hidden) open(); else close(false);
+    });
+    scrim.addEventListener('click', function () { close(false); });
+    document.addEventListener('keydown', function (e) {
+      if (sheet.hidden) return;
+      if (e.key === 'Escape') { close(true); return; }
+      if (e.key !== 'Tab') return;
+      /* the wrap: the sheet is a closed loop while it is open */
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    });
+  })();
+})();
+</script>
+
+</body>
+</html>
