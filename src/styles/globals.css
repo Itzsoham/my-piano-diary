@@ -327,12 +327,21 @@
   background: var(--grad-hero);
 }
 
-/* Scalloped bottom edge — the signature Blossom move. One per screen. */
+/* Scalloped bottom edge — the signature Blossom move. One per screen.
+   Two mask layers: the circle row cuts the scallop notches into the bottom
+   22px strip; the solid rect keeps everything above that strip fully
+   opaque. Without the second layer, CSS masking treats any area a mask
+   layer doesn't cover as fully transparent — which hid the entire hero
+   band above the scalloped edge. */
 .scallop-b {
-  -webkit-mask: radial-gradient(11px at 11px 100%, #0000 98%, #000) 0 100% /
-    22px 22px repeat-x;
-  mask: radial-gradient(11px at 11px 100%, #0000 98%, #000) 0 100% / 22px 22px
-    repeat-x;
+  -webkit-mask:
+    radial-gradient(11px at 11px 100%, #0000 98%, #000) 0 100% / 22px 22px
+      repeat-x,
+    linear-gradient(#000 0 0) 0 0 / 100% calc(100% - 14px) no-repeat;
+  mask:
+    radial-gradient(11px at 11px 100%, #0000 98%, #000) 0 100% / 22px 22px
+      repeat-x,
+    linear-gradient(#000 0 0) 0 0 / 100% calc(100% - 14px) no-repeat;
   padding-bottom: 14px;
 }
 
