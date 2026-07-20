@@ -80,7 +80,7 @@ export function DashboardIntelligencePanel() {
   const topFiveStudents: TopStudent[] = topStudents;
 
   return (
-    <div className="grid gap-4 px-4 lg:auto-rows-[28rem] lg:grid-cols-3 lg:px-6">
+    <div className="grid gap-4 px-4 lg:auto-rows-[minmax(28rem,auto)] lg:grid-cols-3 lg:px-6">
       <motion.div
         initial="hidden"
         animate="visible"

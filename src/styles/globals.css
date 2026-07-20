@@ -7,6 +7,12 @@
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  /* Blossom Diary: the serif is used ONLY on greetings, section headings, and
+     the printable report paper. Body and data stay sans. System stack — no
+     webfont request. */
+  --font-serif:
+    "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman",
+    serif;
 }
 
 @theme inline {
@@ -49,7 +55,83 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* ── Blossom Diary palette, as Tailwind utilities ──────────────────────
+     Exposes the Candy Floss brand + status ramps so components can write
+     e.g. text-pink-700, bg-teal-100, text-ok-fg. Names mirror the mockups'
+     _theme.css so screen CSS ports across cleanly. */
+  --font-serif: var(--font-serif);
+  --color-bubblegum: var(--bubblegum);
+  --color-cotton: var(--cotton);
+  --color-floss: var(--floss);
+  --color-mint: var(--mint);
+  --color-wintergreen: var(--wintergreen);
+  --color-pink-50: var(--pink-50);
+  --color-pink-100: var(--pink-100);
+  --color-pink-200: var(--pink-200);
+  --color-pink-300: var(--pink-300);
+  --color-pink-400: var(--pink-400);
+  --color-pink-500: var(--pink-500);
+  --color-pink-600: var(--pink-600);
+  --color-pink-700: var(--pink-700);
+  --color-pink-800: var(--pink-800);
+  --color-teal-50: var(--teal-50);
+  --color-teal-100: var(--teal-100);
+  --color-teal-200: var(--teal-200);
+  --color-teal-400: var(--teal-400);
+  --color-teal-600: var(--teal-600);
+  --color-teal-700: var(--teal-700);
+  --color-sand-100: var(--sand-100);
+  --color-sand-300: var(--sand-300);
+  --color-sand-700: var(--sand-700);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-mint-ink: var(--mint-ink);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-fg: var(--ok-fg);
+  --color-ok-dot: var(--ok-dot);
+  --color-no-bg: var(--no-bg);
+  --color-no-fg: var(--no-fg);
+  --color-no-dot: var(--no-dot);
+  --color-wait-bg: var(--wait-bg);
+  --color-wait-fg: var(--wait-fg);
+  --color-wait-dot: var(--wait-dot);
+  --color-special-bg: var(--special-bg);
+  --color-special-fg: var(--special-fg);
+
   --animate-piano: piano 1.5s ease-in-out infinite;
+  --animate-bob: bob 3.2s ease-in-out infinite;
+  --animate-drift: drift 22s ease-in-out infinite;
+  --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate(14px, -10px) rotate(6deg);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 
   @keyframes piano {
     0%,
@@ -67,86 +149,134 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  /* Soft piano diary palette - light mode */
-  --background: oklch(0.99 0.005 280);
-  --foreground: oklch(0.25 0.015 280);
+  /* Candy Floss is rounder than the old theme. */
+  --radius: 1rem;
+
+  /* ── Brand palette (Good Mood Graphics — Candy Floss) ──────────────────── */
+  --bubblegum: oklch(0.799 0.102 357.3); /* #f3a2be */
+  --cotton: oklch(0.907 0.051 2.9); /* #ffd3dd */
+  --floss: oklch(0.975 0.01 189.1); /* #f0f9f8 */
+  --mint: oklch(0.901 0.034 189.7); /* #c6e6e3 */
+  --wintergreen: oklch(0.76 0.065 185.8); /* #81bfb7 */
+
+  /* ── Derived ramps. Raw pastels are BACKGROUNDS; deep tokens carry text. ── */
+  --pink-50: oklch(0.979 0.011 357);
+  --pink-100: oklch(0.949 0.028 358);
+  --pink-200: var(--cotton);
+  --pink-300: var(--bubblegum);
+  --pink-400: oklch(0.744 0.122 357.6); /* mid accent (icons, borders) */
+  --pink-500: oklch(0.69 0.143 358.5); /* graphics / large text */
+  --pink-600: oklch(0.6 0.161 0.2); /* button fill, AA on white */
+  --pink-700: oklch(0.5 0.138 358.5); /* accessible pink text */
+  --pink-800: oklch(0.42 0.115 358); /* deepest — hover on pink fill */
+  --teal-50: var(--floss);
+  --teal-100: oklch(0.94 0.02 185.5);
+  --teal-200: var(--mint);
+  --teal-400: var(--wintergreen);
+  --teal-600: oklch(0.605 0.068 184);
+  --teal-700: oklch(0.482 0.059 179.7); /* accessible teal text */
+  --sand-100: oklch(0.96 0.032 81);
+  --sand-300: oklch(0.871 0.085 80.3);
+  --sand-700: oklch(0.532 0.094 78.1);
+
+  /* ── Ink — a deep teal-slate, never pure black ─────────────────────────── */
+  --ink: oklch(0.328 0.027 203.5); /* 12.4:1 on white */
+  --ink-soft: oklch(0.524 0.03 193.3); /* 5.1:1 on white */
+  --ink-faint: oklch(0.697 0.027 193.5); /* decorative only */
+  --mint-ink: oklch(0.296 0.038 181.7); /* the only ink on mint fills */
+
+  /* ── Surfaces & hairlines (aliases so ported mockup markup works verbatim) ─ */
+  --surface: oklch(1 0 0);
+  --surface-2: var(--floss);
+  --surface-3: oklch(0.955 0.014 187);
+  --line: oklch(0.942 0.014 180.7);
+  --line-strong: oklch(0.902 0.023 183.1);
+  --line-pink: oklch(0.936 0.03 356);
+
+  /* ── Status — bound to the real LessonStatus enum ──────────────────────── */
+  --ok-bg: oklch(0.942 0.022 179.2); /* COMPLETE */
+  --ok-fg: var(--teal-700);
+  --ok-dot: var(--wintergreen);
+  --no-bg: oklch(0.932 0.037 1); /* CANCELLED */
+  --no-fg: var(--pink-700);
+  --no-dot: var(--bubblegum);
+  --wait-bg: var(--sand-100); /* PENDING */
+  --wait-fg: var(--sand-700);
+  --wait-dot: var(--sand-300);
+  --special-bg: oklch(0.93 0.026 305.8); /* report-grid special reason */
+  --special-fg: oklch(0.481 0.119 302.1);
+
+  /* ── Gradients & the signature app-shell background ────────────────────── */
+  --grad-pink: linear-gradient(135deg, oklch(0.74 0.12 356), var(--pink-500));
+  --grad-mint: linear-gradient(135deg, var(--mint), var(--wintergreen));
+  --grad-brand: linear-gradient(135deg, var(--bubblegum), var(--wintergreen));
+  --grad-hero: linear-gradient(
+    135deg,
+    oklch(0.93 0.045 356) 0%,
+    var(--floss) 50%,
+    oklch(0.92 0.04 187) 100%
+  );
+  --app-bg: linear-gradient(
+    140deg,
+    oklch(0.94 0.04 187) 0%,
+    var(--floss) 38%,
+    oklch(0.995 0.003 300) 55%,
+    var(--pink-50) 78%,
+    oklch(0.94 0.045 356) 100%
+  );
+
+  /* ── Tinted shadows — never neutral grey ───────────────────────────────── */
+  --sh-sm: 0 2px 8px -2px oklch(0.4 0.03 200 / 0.08);
+  --sh: 0 10px 24px -14px oklch(0.45 0.05 195 / 0.35);
+  --sh-lg: 0 22px 48px -26px oklch(0.45 0.05 195 / 0.42);
+  --sh-xl: 0 40px 80px -40px oklch(0.45 0.05 195 / 0.5);
+  --sh-pink: 0 14px 30px -14px oklch(0.6 0.16 0 / 0.45);
+  --sh-mint: 0 14px 30px -14px oklch(0.6 0.07 184 / 0.4);
+
+  /* ══ shadcn tokens, mapped onto Candy Floss ══════════════════════════════ */
+  --background: var(--floss);
+  --foreground: var(--ink);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.015 280);
+  --card-foreground: var(--ink);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.015 280);
+  --popover-foreground: var(--ink);
 
-  /* Soft rose-lavender primary */
-  --primary: oklch(0.58 0.15 340);
-  --primary-foreground: oklch(0.99 0.005 340);
+  /* Primary = Bubble Gum, deepened so white text passes AA. */
+  --primary: var(--pink-600);
+  --primary-foreground: oklch(1 0 0);
+  /* Secondary = Cotton Candy wash. */
+  --secondary: var(--pink-100);
+  --secondary-foreground: var(--pink-700);
+  /* Muted = Candy Floss inset. */
+  --muted: var(--floss);
+  --muted-foreground: var(--ink-soft);
+  /* Accent = Mint (hover, active nav). */
+  --accent: var(--teal-100);
+  --accent-foreground: var(--teal-700);
+  /* Destructive = CANCELLED; this palette has no red. */
+  --destructive: var(--pink-700);
+  --destructive-foreground: oklch(1 0 0);
 
-  /* Gentle blush secondary */
-  --secondary: oklch(0.96 0.02 340);
-  --secondary-foreground: oklch(0.35 0.04 340);
+  --border: oklch(0.942 0.014 180.7);
+  --input: oklch(0.902 0.023 183.1);
+  --ring: var(--pink-600);
 
-  /* Subtle muted tones */
-  --muted: oklch(0.97 0.01 280);
-  --muted-foreground: oklch(0.5 0.015 280);
+  /* Charts: 1 money · 2 COMPLETE · 3 PENDING · 4 CANCELLED · 5 prior month. */
+  --chart-1: var(--pink-600);
+  --chart-2: var(--wintergreen);
+  --chart-3: var(--sand-300);
+  --chart-4: var(--bubblegum);
+  --chart-5: var(--teal-600);
 
-  /* Soft accent */
-  --accent: oklch(0.94 0.03 320);
-  --accent-foreground: oklch(0.35 0.04 320);
-
-  --destructive: oklch(0.58 0.2 25);
-  --destructive-foreground: oklch(0.99 0.005 25);
-
-  /* Delicate borders */
-  --border: oklch(0.92 0.01 280);
-  --input: oklch(0.92 0.01 280);
-  --ring: oklch(0.58 0.15 340);
-
-  --chart-1: oklch(0.645 0.169 6.261);
-  --chart-2: oklch(0.733 0.171 163.221);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Sidebar: white panel, mint hover, cotton-candy active pill. */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--pink-600);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: var(--pink-100);
+  --sidebar-accent-foreground: var(--pink-700);
+  --sidebar-border: oklch(0.942 0.014 180.7);
+  --sidebar-ring: var(--pink-600);
 }
 
 @layer base {
@@ -165,6 +295,57 @@
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Blossom Diary shared helpers ────────────────────────────────────────────
+   The reusable structural bits from the mockups' _theme.css, so every screen
+   speaks the same visual language. Decoration built here is always paired with
+   aria-hidden + pointer-events:none in the markup. */
+
+/* The signature app-shell wash: mint → floss → cotton. Put on the content
+   area behind the cards. */
+.bg-app {
+  background: var(--app-bg);
+  background-attachment: fixed;
+}
+
+/* Editorial hero band with a soft gradient. */
+.hero-band {
+  background: var(--grad-hero);
+}
+
+/* Scalloped bottom edge — the signature Blossom move. One per screen. */
+.scallop-b {
+  -webkit-mask:
+    radial-gradient(11px at 11px 100%, #0000 98%, #000) 0 100% / 22px 22px
+      repeat-x;
+  mask: radial-gradient(11px at 11px 100%, #0000 98%, #000) 0 100% / 22px 22px
+    repeat-x;
+  padding-bottom: 14px;
+}
+
+/* Gradient text for the serif greeting. */
+.text-grad-pink {
+  background: var(--grad-pink);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Staggered entrance — set --i on each child. */
+.rise {
+  animation: var(--animate-rise);
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ─── Birthday Mode ──────────────────────────────────────────────────────────

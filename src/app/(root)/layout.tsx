@@ -28,7 +28,7 @@ export default async function DashboardLayout({
         }
       >
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="bg-app">
           <SiteHeader />
           {children}
         </SidebarInset>

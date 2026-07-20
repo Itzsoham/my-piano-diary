@@ -191,10 +191,10 @@ export function SiteHeader() {
             className="mx-1 shrink-0 bg-pink-100 data-[orientation=vertical]:h-4 sm:mx-2"
           />
           <div className="flex min-w-0 flex-col leading-tight sm:flex-row sm:items-center sm:gap-1">
-            <span className="block truncate bg-linear-to-r from-pink-500 to-purple-500 bg-clip-text text-[13px] font-semibold text-transparent sm:text-sm">
+            <span className="block truncate bg-linear-to-r from-pink-500 to-pink-700 bg-clip-text font-serif text-[15px] font-semibold text-transparent sm:text-base">
               {greeting},
             </span>
-            <span className="block truncate bg-linear-to-r from-pink-500 to-purple-500 bg-clip-text text-[13px] font-semibold text-transparent sm:text-sm">
+            <span className="block truncate bg-linear-to-r from-pink-500 to-pink-700 bg-clip-text font-serif text-[15px] font-semibold text-transparent sm:text-base">
               {userName} ✨
             </span>
           </div>

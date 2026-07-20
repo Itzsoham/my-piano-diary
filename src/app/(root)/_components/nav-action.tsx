@@ -28,10 +28,10 @@ export function NavAction() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                className={`h-10 cursor-pointer rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
+                className={`h-10 cursor-pointer rounded-xl bg-linear-to-r from-pink-400 to-pink-600 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
                   isBirthdayMode
                     ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
-                    : "hover:from-pink-600 hover:to-purple-600 hover:shadow-md hover:shadow-pink-300/40"
+                    : "hover:from-pink-500 hover:to-pink-700 hover:shadow-md hover:shadow-pink-300/40"
                 }`}
                 style={
                   isBirthdayMode

@@ -1,6 +1,10 @@
 "use client";
 
-import { Ban, CalendarCheck2, Sparkles, Users } from "lucide-react";
+import { MessageSquare } from "lucide-react";
+import Link from "next/link";
+import { Blossom, Sparkle } from "@/components/blossom/blossom";
+import { MochiPeek } from "@/components/blossom/mochi";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -26,101 +30,141 @@ export function DashboardQuickInsightsCard({
   return (
     <Card
       className={cn(
-        "h-full gap-1 overflow-hidden rounded-[2rem] border border-pink-100/70 bg-white shadow-none backdrop-blur",
+        // washi-tape sticker: a slight tilt that straightens on hover and sits
+        // flat on touch. overflow-visible + relative let the tape strip and the
+        // Mochi peek hook over the top edge.
+        "bg-card relative flex h-full origin-top rotate-[-0.6deg] flex-col gap-2 overflow-visible rounded-[2rem] border border-(--line-strong) py-6 shadow-(--sh-sm) focus-within:rotate-0 hover:rotate-0 hover:shadow-(--sh-lg) [@media(hover:none)]:rotate-0",
         className,
       )}
     >
-      <CardHeader>
-        <CardTitle className="text-2xl text-rose-950/90 sm:text-[1.75rem]">
+      {/* washi tape strip — decorative, kept out of the a11y tree */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-3 left-1/2 z-3 h-6.5 w-34.5 -translate-x-1/2 rotate-[1.8deg] rounded-sm border-x-2 border-dashed opacity-90"
+        style={{
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--mint) 82%, transparent), color-mix(in srgb, var(--cotton) 72%, transparent))",
+          borderColor:
+            "color-mix(in srgb, var(--wintergreen) 45%, transparent)",
+          boxShadow: "var(--sh-sm)",
+        }}
+      />
+
+      {/* Mochi peeks over the top-right corner, paws hooked on the border */}
+      <MochiPeek
+        mood="delighted"
+        size={78}
+        className="absolute -top-7 right-3 z-2 motion-safe:animate-[bob_5.4s_ease-in-out_infinite]"
+      />
+
+      <CardHeader className="gap-1 pr-24">
+        <CardTitle className="text-ink flex items-center gap-2 font-serif text-[1.375rem] font-normal sm:text-2xl">
+          <Blossom className="text-bubblegum" size={17} />
           Quick Insights
         </CardTitle>
+        <p className="text-ink-soft text-xs">Patterns worth a glance</p>
       </CardHeader>
-      <CardContent className="space-y-4 pt-0 text-sm text-rose-800/90">
+
+      <CardContent className="text-ink-soft flex flex-col gap-3 pt-0 text-sm">
         {insightsLoading ? (
           <>
-            <div className="rounded-[1.6rem] border border-pink-100/80 bg-[linear-gradient(135deg,rgba(255,248,251,0.95),rgba(255,255,255,1))] p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2.5">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-8 w-36" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-                <Skeleton className="size-11 rounded-2xl" />
+            <div className="bg-card rounded-xl border border-(--line-strong) p-4">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-7 w-32" />
+                <Skeleton className="h-3 w-40" />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-[1.4rem] border border-emerald-100 bg-emerald-50/50 p-4">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="mt-3 h-8 w-14" />
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="bg-ok-bg rounded-xl p-3.5">
+                <Skeleton className="h-7 w-12" />
+                <Skeleton className="mt-2 h-3 w-16" />
               </div>
-
-              <div className="rounded-[1.4rem] border border-amber-100 bg-amber-50/60 p-4">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="mt-3 h-8 w-14" />
+              <div className="bg-no-bg rounded-xl p-3.5">
+                <Skeleton className="h-7 w-12" />
+                <Skeleton className="mt-2 h-3 w-16" />
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] border border-fuchsia-100 bg-fuchsia-50/35 p-4">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="mt-3 h-4 w-full" />
-              <Skeleton className="mt-2 h-4 w-4/5" />
+            <div className="flex items-center gap-3 rounded-xl border border-(--line-pink) bg-pink-50 p-3.5">
+              <Skeleton className="size-8.5 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-4/5" />
+              </div>
             </div>
           </>
         ) : (
           <>
-            <div className="rounded-[1.6rem] border border-pink-100/80 bg-[linear-gradient(135deg,rgba(255,248,251,0.95),rgba(255,255,255,1))] p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold tracking-[0.18em] text-rose-400 uppercase">
-                    Best day
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold tracking-tight text-rose-950">
-                    {insights.bestDay}
-                  </p>
-                  <p className="mt-1 text-sm text-rose-500">
-                    Your strongest this month.
-                  </p>
-                </div>
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-pink-100 text-pink-500">
-                  <Sparkles className="size-5" />
-                </div>
+            {/* hero stat — Best day, crowned by sparkles */}
+            <div className="bg-card relative rounded-xl border border-(--line-strong) p-4">
+              <Sparkle
+                className="text-wintergreen absolute top-3 right-3.5"
+                size={13}
+              />
+              <Sparkle
+                className="text-bubblegum absolute top-8 right-7"
+                size={9}
+              />
+              <div className="pr-9">
+                <p className="text-ink-soft text-[11px] font-semibold tracking-[0.14em] uppercase">
+                  Best day
+                </p>
+                <p className="mt-1 text-[1.375rem] leading-tight font-semibold text-teal-700">
+                  {insights.bestDay}
+                </p>
+                <p className="text-ink-soft mt-1 text-xs">
+                  Your strongest this month.
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-[1.4rem] border border-emerald-100 bg-emerald-50/50 p-4">
-                <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-emerald-600 uppercase">
-                  <CalendarCheck2 className="size-3.5" />
-                  Taught
-                </div>
-                <p className="mt-3 text-2xl font-semibold text-rose-950">
+            {/* two mini-tiles — the numbers stay sober and undecorated */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="bg-ok-bg flex flex-col gap-0.5 rounded-xl p-3.5">
+                <span className="text-ok-fg text-[1.375rem] leading-none font-bold tabular-nums">
                   {insights.completed}
-                </p>
+                </span>
+                <span className="text-ok-fg text-[11px] font-semibold tracking-[0.04em] uppercase">
+                  Taught
+                </span>
               </div>
-
-              <div className="rounded-[1.4rem] border border-amber-100 bg-amber-50/60 p-4">
-                <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-amber-600 uppercase">
-                  <Ban className="size-3.5" />
-                  Cancelled
-                </div>
-                <p className="mt-3 text-2xl font-semibold text-rose-950">
+              <div className="bg-no-bg flex flex-col gap-0.5 rounded-xl p-3.5">
+                <span className="text-no-fg text-[1.375rem] leading-none font-bold tabular-nums">
                   {insights.cancelled}
-                </p>
+                </span>
+                <span className="text-no-fg text-[11px] font-semibold tracking-[0.04em] uppercase">
+                  Cancelled
+                </span>
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] border border-fuchsia-100 bg-fuchsia-50/35 p-4">
-              <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-fuchsia-600 uppercase">
-                <Users className="size-3.5" />
-                Follow-up list
+            {/* follow-up line */}
+            <div className="flex items-center gap-3 rounded-xl border border-(--line-pink) bg-pink-50 p-3.5">
+              <span
+                aria-hidden="true"
+                className="bg-no-bg text-no-fg flex size-8.5 shrink-0 items-center justify-center rounded-lg"
+              >
+                <MessageSquare className="size-4.25" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-ink text-xs font-semibold">Follow-up list</p>
+                <p className="text-ink-soft mt-0.5 text-[11px] leading-snug">
+                  <span className="text-ink font-semibold tabular-nums">
+                    {insights.inactiveCount}
+                  </span>{" "}
+                  students have not attended in the last 14 days.
+                </p>
               </div>
-              <p className="mt-2 text-sm leading-6 text-rose-700/85">
-                <span className="font-semibold text-rose-950">
-                  {insights.inactiveCount}
-                </span>{" "}
-                students have not attended in the last 14 days.
-              </p>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-pink-700 hover:bg-pink-100 hover:text-pink-700"
+              >
+                <Link href="/students">View</Link>
+              </Button>
             </div>
           </>
         )}
