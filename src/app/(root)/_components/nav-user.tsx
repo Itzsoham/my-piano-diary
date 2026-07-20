@@ -43,9 +43,9 @@ export function NavUser() {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <div className="bg-muted/40 flex items-center gap-2 rounded-xl px-2 py-2 text-left text-sm">
-            <div className="bg-sidebar-accent h-8 w-8 animate-pulse rounded-lg" />
-            <div className="grid flex-1 gap-1 text-left text-sm leading-tight">
+          <div className="bg-muted/40 flex items-center gap-2 rounded-xl px-2 py-2 text-left text-sm group-data-[collapsible=icon]:justify-center">
+            <div className="bg-sidebar-accent h-8 w-8 shrink-0 animate-pulse rounded-lg" />
+            <div className="grid flex-1 gap-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
               <div className="bg-sidebar-accent h-3.5 w-24 animate-pulse rounded" />
               <div className="bg-sidebar-accent h-3 w-32 animate-pulse rounded" />
             </div>
@@ -101,7 +101,7 @@ export function NavUser() {
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left leading-tight">
+              <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate text-sm font-semibold text-rose-950">
                   {userDisplayName}
                 </span>

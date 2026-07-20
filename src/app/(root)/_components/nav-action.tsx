@@ -28,7 +28,7 @@ export function NavAction() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                className={`h-10 cursor-pointer rounded-xl bg-linear-to-r from-pink-400 to-pink-600 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
+                className={`h-10 cursor-pointer rounded-xl bg-linear-to-r from-pink-400 to-pink-600 font-semibold text-white shadow-sm transition-all group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full active:scale-[0.98] ${
                   isBirthdayMode
                     ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
                     : "hover:from-pink-500 hover:to-pink-700 hover:shadow-md hover:shadow-pink-300/40"
@@ -45,7 +45,9 @@ export function NavAction() {
                 tooltip="Add lesson"
               >
                 <CirclePlus className="size-4 shrink-0" />
-                <span className="font-semibold">Add lesson</span>
+                <span className="font-semibold group-data-[collapsible=icon]:hidden">
+                  Add lesson
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

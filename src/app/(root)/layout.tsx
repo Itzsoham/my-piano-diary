@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/server/auth";
 import { AppSidebar } from "./_components/app-sidebar";
 import { SiteHeader } from "./_components/site-header";
+import { BottomTabBar } from "./_components/bottom-tab-bar";
 import { BirthdayBackground } from "@/components/birthday/birthday-background";
 import { FloatingElements } from "@/components/birthday/floating-elements";
 
@@ -23,15 +24,17 @@ export default async function DashboardLayout({
         style={
           {
             "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--sidebar-width-icon": "4.75rem",
             "--header-height": "calc(var(--spacing) * 12)",
           } as React.CSSProperties
         }
       >
         <AppSidebar />
-        <SidebarInset className="bg-app">
+        <SidebarInset className="bg-app pb-20 lg:pb-0">
           <SiteHeader />
           {children}
         </SidebarInset>
+        <BottomTabBar />
       </SidebarProvider>
       {/* Ambient floating emojis — above content, pointer-events-none */}
       <FloatingElements />

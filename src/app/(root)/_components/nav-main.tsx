@@ -64,7 +64,7 @@ export function NavMain({
                 >
                   <Link
                     href={item.url}
-                    className="flex w-full items-center gap-3"
+                    className="flex w-full items-center gap-3 group-data-[collapsible=icon]:justify-center"
                     onClick={handleItemClick}
                   >
                     <div
@@ -76,7 +76,9 @@ export function NavMain({
                     >
                       {item.icon && <item.icon className="size-full" />}
                     </div>
-                    <span className="text-sm">{item.title}</span>
+                    <span className="text-sm group-data-[collapsible=icon]:hidden">
+                      {item.title}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

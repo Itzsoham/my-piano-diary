@@ -73,11 +73,23 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, setOpen } = useSidebar();
   const router = useRouter();
   const { isBirthdayMode, isBirthdayDay } = useBirthday();
   const logoClickRef = React.useRef(0);
   const logoTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Between lg (1024px) and xl (1280px) the sidebar narrows to an icon-only
+  // rail — mirrors the mockup's "sidebar ≥1280 · icon rail 1024–1279" shell.
+  // Below 1024, `isMobile` already switches Sidebar to the off-canvas sheet
+  // regardless of `collapsible`, so this only ever drives the desktop rail.
+  React.useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1280px)");
+    const applyForWidth = () => setOpen(mql.matches);
+    applyForWidth();
+    mql.addEventListener("change", applyForWidth);
+    return () => mql.removeEventListener("change", applyForWidth);
+  }, [setOpen]);
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     logoClickRef.current += 1;
@@ -101,7 +113,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       className="border-r border-pink-100 bg-white backdrop-blur print:hidden"
-      collapsible="offcanvas"
+      collapsible="icon"
       {...props}
     >
       <SidebarHeader className="border-sidebar-border border-b pb-4">
@@ -130,7 +142,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     unoptimized
                   />
                 </div>
-                <div className="grid flex-1 text-left leading-tight">
+                <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="text-primary flex items-center gap-1 truncate text-base font-semibold">
                     {APP_CONFIG.name}
                     {isBirthdayMode && (
