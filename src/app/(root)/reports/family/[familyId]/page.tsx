@@ -30,8 +30,10 @@ export default async function CombinedReportPage(props: CombinedReportProps) {
   const { month, year } = getSafeMonthYear(searchParams);
 
   return (
-    <div className="container mx-auto p-6 print:m-0 print:max-w-none print:p-0">
-      <CombinedReportView familyId={familyId} month={month} year={year} />
+    <div className="flex flex-1 flex-col print:m-0 print:max-w-none print:p-0">
+      <div className="flex flex-col gap-8 pb-6 md:gap-10 md:pb-10 print:gap-0 print:pb-0">
+        <CombinedReportView familyId={familyId} month={month} year={year} />
+      </div>
     </div>
   );
 }

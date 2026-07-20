@@ -39,8 +39,7 @@ export function DemoSeedProgress({
               <span
                 className={cn(
                   "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors",
-                  state === "done" &&
-                    "border-emerald-500 bg-emerald-500 text-white",
+                  state === "done" && "border-teal-600 bg-teal-600 text-white",
                   state === "running" && "border-primary text-primary",
                   state === "error" &&
                     "border-destructive bg-destructive text-white",

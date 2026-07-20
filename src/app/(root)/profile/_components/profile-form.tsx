@@ -96,15 +96,15 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-slate-700">Name</FormLabel>
+              <FormLabel className="text-ink">Name</FormLabel>
               <FormControl>
                 <Input
                   placeholder="Enter your name"
                   {...field}
-                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
+                  className="border-border placeholder:text-ink-soft rounded-lg focus-visible:ring-pink-500 focus-visible:ring-offset-0"
                 />
               </FormControl>
-              <FormDescription className="text-slate-500">
+              <FormDescription className="text-ink-soft">
                 Shown to your students and in lessons
               </FormDescription>
               <FormMessage />
@@ -117,16 +117,16 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-slate-700">Email</FormLabel>
+              <FormLabel className="text-ink">Email</FormLabel>
               <FormControl>
                 <Input
                   type="email"
                   placeholder="Enter your email"
                   {...field}
-                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
+                  className="border-border placeholder:text-ink-soft rounded-lg focus-visible:ring-pink-500 focus-visible:ring-offset-0"
                 />
               </FormControl>
-              <FormDescription className="text-slate-500">
+              <FormDescription className="text-ink-soft">
                 Your email address for login and notifications
               </FormDescription>
               <FormMessage />
@@ -139,15 +139,15 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           name="image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-slate-700">Profile picture</FormLabel>
+              <FormLabel className="text-ink">Profile picture</FormLabel>
               <FormControl>
                 <Input
                   placeholder="https://example.com/avatar.jpg"
                   {...field}
-                  className="rounded-lg border-slate-200 placeholder:text-slate-400 focus-visible:ring-rose-500 focus-visible:ring-offset-0"
+                  className="border-border placeholder:text-ink-soft rounded-lg focus-visible:ring-pink-500 focus-visible:ring-offset-0"
                 />
               </FormControl>
-              <FormDescription className="text-slate-500">
+              <FormDescription className="text-ink-soft">
                 Enter a URL to an image for your profile picture
               </FormDescription>
               <FormMessage />
@@ -159,7 +159,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           <Button
             type="submit"
             disabled={updateProfile.isPending}
-            className="rounded-lg bg-rose-500 px-6 text-white hover:bg-rose-600"
+            className="rounded-full [background-image:var(--grad-pink)] px-6 text-white shadow-(--sh-pink) hover:brightness-105"
           >
             {updateProfile.isPending ? (
               <>

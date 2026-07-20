@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { toast } from "sonner";
 
+import { Blossom } from "@/components/blossom/blossom";
+import { Mochi } from "@/components/blossom/mochi";
 import { AppLoader } from "@/components/ui/app-loader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +52,13 @@ interface ReportsPageProps {
   initialMonth: number;
   initialYear: number;
 }
+
+// Shared "candy pill" trigger treatment for every filter Select on this
+// screen. SelectTrigger's own height is set via a `data-[size=default]:h-9`
+// CSS variant (not a plain utility), which outranks a plain `h-11` override
+// on specificity alone — so the override has to target that same variant.
+const selectTriggerClass =
+  "h-11 w-full min-w-0 rounded-full border-pink-200 bg-card px-4 text-sm shadow-(--sh-xs) focus-visible:ring-pink-400 data-[size=default]:h-11";
 
 const getYearOptions = (baseYear: number) =>
   Array.from({ length: 5 }, (_, index) => baseYear - 2 + index);
@@ -127,23 +136,27 @@ export function ReportsPage({
     {
       id: "student",
       header: "Student",
+      headerClassName:
+        "text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase",
       cell: (report) => (
         <div className="flex items-center gap-3">
-          <Avatar className="size-8 border border-pink-100">
+          <Avatar className="border-card size-9 shrink-0 border-2 shadow-(--sh-xs)">
             <AvatarImage src={report.student.avatar ?? ""} />
-            <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
+            <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-xs font-bold">
               {report.student.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="font-medium">{report.student.name}</div>
+          <div className="text-ink font-medium">{report.student.name}</div>
         </div>
       ),
     },
     {
       id: "month",
       header: "Month",
+      headerClassName:
+        "text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase",
       cell: (report) => (
-        <Badge className="rounded-full bg-rose-100 px-3 py-1 text-rose-700 hover:bg-rose-100">
+        <Badge className="rounded-full bg-pink-100 px-3 py-1 font-semibold text-pink-700 tabular-nums hover:bg-pink-100">
           {report.month}/{report.year}
         </Badge>
       ),
@@ -151,31 +164,39 @@ export function ReportsPage({
     {
       id: "preview",
       header: "Preview",
+      headerClassName:
+        "text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase",
       cell: (report) => getSummaryPreview(report),
-      cellClassName: "max-w-md text-sm text-gray-600",
+      cellClassName: "max-w-md text-sm whitespace-normal text-ink-soft",
     },
     {
       id: "updated",
       header: "Updated",
+      headerClassName:
+        "text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase",
       cell: (report) => format(new Date(report.updatedAt), "MMM d, yyyy"),
-      cellClassName: "text-sm text-gray-600",
+      cellClassName: "text-sm tabular-nums text-ink-soft",
     },
     {
       id: "actions",
       header: "Actions",
-      headerClassName: "text-right",
+      headerClassName:
+        "text-right text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase",
       cellClassName: "text-right",
       cell: (report) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              className="text-ink-soft size-9 rounded-full p-0 hover:bg-pink-50 hover:text-pink-700"
+            >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="rounded-xl border-pink-100 bg-white shadow-lg"
+            className="rounded-xl border-pink-100 shadow-(--sh-lg)"
           >
             <DropdownMenuItem
               onSelect={() =>
@@ -183,7 +204,7 @@ export function ReportsPage({
                   buildReportHref(report.studentId, report.month, report.year),
                 )
               }
-              className="rounded-lg hover:bg-pink-50"
+              className="rounded-lg focus:bg-pink-50"
             >
               <Eye className="mr-2 h-4 w-4" />
               View report
@@ -194,7 +215,7 @@ export function ReportsPage({
                   buildReportHref(report.studentId, report.month, report.year),
                 )
               }
-              className="rounded-lg hover:bg-pink-50"
+              className="rounded-lg focus:bg-pink-50"
             >
               <Pencil className="mr-2 h-4 w-4" />
               Edit report
@@ -203,7 +224,7 @@ export function ReportsPage({
             <DropdownMenuItem
               variant="destructive"
               onSelect={() => setDeleteReport(report)}
-              className="rounded-lg text-rose-500 hover:bg-rose-50"
+              className="rounded-lg"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
@@ -266,341 +287,408 @@ export function ReportsPage({
       : (students.find((student) => student.id === studentId)?.name ?? "");
 
   return (
-    <div className="container mx-auto">
-      <BirthdayBanner
-        text="You're building something beautiful ✨"
-        icon="✨"
-        storageKey="reports"
-      />
-      <div className="mb-6">
-        <h1 className="bday-animate-title flex items-center gap-2 text-3xl font-bold tracking-tight">
-          Monthly Reports
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Generate a new report or manage archived reports for any student.
-        </p>
-      </div>
+    <>
+      {/* reports/page.tsx already supplies the flex-1 flex-col > gap-8 shell
+          and wraps this whole component in one "px-4 lg:px-6", as a sibling
+          of <ReportsHero>. This is a leaf: its own two blocks share their own
+          internal rhythm, not another page-level padding pass. */}
+      <div className="flex flex-col gap-8 md:gap-10 print:hidden">
+        {/* ── Filters + actions ────────────────────────────────────────── */}
+        <section>
+          <BirthdayBanner
+            text="You're building something beautiful ✨"
+            icon="✨"
+            storageKey="reports"
+          />
 
-      <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm md:p-6">
-        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-4 md:items-end md:gap-3">
-          <div className="space-y-1 md:space-y-1.5">
-            <label className="text-xs font-medium text-pink-700">Student</label>
-            <Select value={studentId} onValueChange={setStudentId}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
-                <SelectValue placeholder="All students" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All students</SelectItem>
-                {students.map((student) => (
-                  <SelectItem key={student.id} value={student.id}>
-                    {student.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1 md:space-y-1.5">
-            <label className="text-xs font-medium text-pink-700">Month</label>
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, index) => index + 1).map(
-                  (value) => (
-                    <SelectItem key={value} value={value.toString()}>
-                      Month {value}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1 md:space-y-1.5">
-            <label className="text-xs font-medium text-pink-700">Year</label>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent>
-                {yearOptions.map((value) => (
-                  <SelectItem key={value} value={value.toString()}>
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={resetFilters}
-            className="bday-animate-button h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10"
+          <div
+            className="relative overflow-hidden rounded-3xl border border-pink-100 p-4 shadow-(--sh) sm:p-6"
+            style={{
+              background:
+                "linear-gradient(165deg, var(--pink-50), var(--surface) 55%)",
+            }}
           >
-            Reset
-          </Button>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-pink-100 bg-linear-to-r from-rose-50 to-pink-50 p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-base font-semibold text-pink-900">
-                <FileText className="h-4 w-4" />
-                Generate Monthly Report
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:items-end">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                  Student
+                </label>
+                <Select value={studentId} onValueChange={setStudentId}>
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="All students" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All students</SelectItem>
+                    {students.map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="mt-1 text-sm text-pink-700/80">
-                Open the report editor for the selected student and month.
-              </p>
-            </div>
-            <div className="flex flex-col items-stretch gap-2 md:items-end">
-              <Button
-                disabled={studentId === "all"}
-                onClick={() => {
-                  if (studentId === "all") {
-                    return;
-                  }
 
-                  router.push(
-                    buildReportHref(studentId, filters.month, filters.year),
-                  );
-                }}
-                className="bday-animate-button min-w-44"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Generate Report
-              </Button>
-              <p className="text-xs text-pink-700/70">
-                {studentId === "all"
-                  ? "Choose a student to create or update a monthly report."
-                  : `Open ${selectedStudentName} for ${filters.month}/${filters.year}.`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-pink-100 bg-linear-to-r from-pink-50 to-rose-50 p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-base font-semibold text-pink-900">
-                <Users className="h-4 w-4" />
-                Combined Family Report
-              </div>
-              <p className="mt-1 text-sm text-pink-700/80">
-                Merge siblings or a parent + child onto one sheet for{" "}
-                {filters.month}/{filters.year}.
-              </p>
-            </div>
-            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
-              {families.length === 0 ? (
-                <p className="text-xs text-pink-700/70">
-                  No families yet — create one on the{" "}
-                  <Link href="/students" className="font-medium underline">
-                    Students
-                  </Link>{" "}
-                  page.
-                </p>
-              ) : (
-                <>
-                  <Select
-                    value={selectedFamily}
-                    onValueChange={setSelectedFamily}
-                  >
-                    <SelectTrigger className="h-11 w-full min-w-48 border-pink-200 bg-white text-sm focus:ring-pink-400 md:h-10">
-                      <SelectValue placeholder="Select a family" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {families.map((family) => (
-                        <SelectItem key={family.id} value={family.id}>
-                          {family.name}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                  Month
+                </label>
+                <Select value={month} onValueChange={setMonth}>
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, index) => index + 1).map(
+                      (value) => (
+                        <SelectItem key={value} value={value.toString()}>
+                          Month {value}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                  Year
+                </label>
+                <Select value={year} onValueChange={setYear}>
+                  <SelectTrigger className={selectTriggerClass}>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((value) => (
+                      <SelectItem key={value} value={value.toString()}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={resetFilters}
+                className="bday-animate-button h-11 w-full rounded-full border-pink-200 text-pink-700 hover:bg-pink-100"
+              >
+                Reset
+              </Button>
+            </div>
+
+            {/* ── Action tiles ──────────────────────────────────────────── */}
+            {/* xl (1280px), not lg (1024px): each tile already switches to a
+                horizontal sm:flex-row layout at 640px, so going 2-up any
+                earlier than xl leaves ~1024px tablet-landscape widths with
+                no room for both the tile's own row layout AND a second
+                column — the description text collapses to ~1 word/line. */}
+            <div className="mt-5 grid grid-cols-1 gap-4 border-t border-dashed border-pink-200 pt-5 xl:grid-cols-2">
+              {/* Generate Monthly Report */}
+              <div
+                className="rise relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-pink-200/70 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+                style={
+                  {
+                    "--i": 0,
+                    background:
+                      "linear-gradient(160deg, var(--pink-100), var(--surface) 72%)",
+                  } as CSSProperties
+                }
+              >
+                <Blossom
+                  size={56}
+                  className="text-bubblegum absolute -top-3 -right-3 z-0 opacity-50"
+                />
+                <div className="relative z-10 min-w-0">
+                  <div className="flex items-center gap-2.5">
+                    <span className="bg-card grid size-9 shrink-0 place-items-center rounded-full text-pink-600 shadow-(--sh-xs)">
+                      <FileText className="size-4" aria-hidden="true" />
+                    </span>
+                    <span className="text-ink text-[15px] font-semibold">
+                      Generate Monthly Report
+                    </span>
+                  </div>
+                  <p className="text-ink-soft mt-1.5 text-sm">
+                    Open the report editor for the selected student and month.
+                  </p>
+                </div>
+                <div className="relative z-10 flex flex-col items-stretch gap-1.5 sm:shrink-0 sm:items-end">
                   <Button
-                    disabled={!selectedFamily}
+                    disabled={studentId === "all"}
                     onClick={() => {
-                      if (!selectedFamily) return;
+                      if (studentId === "all") {
+                        return;
+                      }
+
                       router.push(
-                        `/reports/family/${selectedFamily}?month=${filters.month}&year=${filters.year}`,
+                        buildReportHref(studentId, filters.month, filters.year),
                       );
                     }}
-                    className="min-w-44"
+                    className="bday-animate-button h-11 min-w-44 rounded-full"
                   >
-                    <Users className="mr-2 h-4 w-4" />
-                    Open family report
+                    <Plus className="mr-2 h-4 w-4" />
+                    Generate Report
                   </Button>
+                  <p className="text-ink-soft text-xs">
+                    {studentId === "all"
+                      ? "Choose a student to create or update a monthly report."
+                      : `Open ${selectedStudentName} for ${filters.month}/${filters.year}.`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Combined Family Report */}
+              <div
+                className="rise relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-teal-200/70 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+                style={
+                  {
+                    "--i": 1,
+                    background:
+                      "linear-gradient(160deg, var(--teal-100), var(--surface) 72%)",
+                  } as CSSProperties
+                }
+              >
+                <Blossom
+                  size={56}
+                  className="text-wintergreen absolute -top-3 -right-3 z-0 opacity-40"
+                />
+                <div className="relative z-10 min-w-0">
+                  <div className="flex items-center gap-2.5">
+                    <span className="bg-card grid size-9 shrink-0 place-items-center rounded-full text-teal-700 shadow-(--sh-xs)">
+                      <Users className="size-4" aria-hidden="true" />
+                    </span>
+                    <span className="text-ink text-[15px] font-semibold">
+                      Combined Family Report
+                    </span>
+                  </div>
+                  <p className="text-ink-soft mt-1.5 text-sm">
+                    Merge siblings or a parent + child onto one sheet for{" "}
+                    {filters.month}/{filters.year}.
+                  </p>
+                </div>
+                <div className="relative z-10 flex flex-col items-stretch gap-2 sm:shrink-0 sm:flex-row sm:items-center">
+                  {families.length === 0 ? (
+                    <p className="text-ink-soft text-xs sm:max-w-44">
+                      No families yet — create one on the{" "}
+                      <Link
+                        href="/students"
+                        className="font-semibold text-teal-700 underline underline-offset-2"
+                      >
+                        Students
+                      </Link>{" "}
+                      page.
+                    </p>
+                  ) : (
+                    <>
+                      <Select
+                        value={selectedFamily}
+                        onValueChange={setSelectedFamily}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            selectTriggerClass,
+                            "min-w-48 border-teal-200 focus-visible:ring-teal-400",
+                          )}
+                        >
+                          <SelectValue placeholder="Select a family" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {families.map((family) => (
+                            <SelectItem key={family.id} value={family.id}>
+                              {family.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        disabled={!selectedFamily}
+                        onClick={() => {
+                          if (!selectedFamily) return;
+                          router.push(
+                            `/reports/family/${selectedFamily}?month=${filters.month}&year=${filters.year}`,
+                          );
+                        }}
+                        className="text-mint-ink hover:text-mint-ink h-11 min-w-44 rounded-full [background-image:var(--grad-mint)] shadow-(--sh-mint) hover:brightness-95"
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        Open family report
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Existing reports ─────────────────────────────────────────── */}
+        <section>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-ink flex items-center gap-2 font-serif text-xl font-normal sm:text-2xl">
+                <Blossom size={17} className="text-bubblegum" />
+                Existing Reports
+              </h2>
+              <p className="text-ink-soft mt-1 text-sm">
+                Open, update, or remove reports already saved for this month
+                filter.
+              </p>
+            </div>
+            <Badge className="rounded-full bg-pink-100 px-3 py-1 font-semibold text-pink-700 tabular-nums hover:bg-pink-100">
+              {reports.length} report{reports.length === 1 ? "" : "s"}
+            </Badge>
+          </div>
+
+          <div className="relative">
+            <RefreshOverlay active={isRefreshing} />
+            <div
+              className={cn(
+                "transition-opacity",
+                isRefreshing && "pointer-events-none opacity-60",
+              )}
+            >
+              {isLoading ? (
+                <div className="flex h-40 items-center justify-center">
+                  <AppLoader size="sm" />
+                </div>
+              ) : reports.length === 0 ? (
+                <div className="bg-card/60 flex flex-col items-center justify-center rounded-3xl border border-dashed border-pink-200 px-6 py-14 text-center">
+                  <Mochi mood="sleepy" bob size={112} />
+                  <div className="text-ink mt-4 text-lg font-medium">
+                    No reports saved for this month yet
+                  </div>
+                  <div className="text-ink-soft mt-1 max-w-sm text-sm">
+                    Generate a report above or adjust the filters to browse past
+                    months.
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <DataTable
+                    className="hidden md:block"
+                    columns={columns}
+                    data={reports}
+                    getRowKey={(report) => report.id}
+                    viewportClassName="rounded-3xl border-pink-100 shadow-(--sh)"
+                    headerClassName="bg-pink-50/70"
+                    itemRowClassName="transition-colors hover:bg-pink-50/70"
+                  />
+
+                  <div className="grid grid-cols-1 gap-4 md:hidden">
+                    {reports.map((report, index) => (
+                      <div
+                        key={report.id}
+                        className="rise bg-card rounded-3xl border border-pink-100 p-4 shadow-(--sh-sm)"
+                        style={{ "--i": index } as CSSProperties}
+                      >
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="border-card size-10 shrink-0 border-2 shadow-(--sh-xs)">
+                              <AvatarImage src={report.student.avatar ?? ""} />
+                              <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-xs font-bold">
+                                {report.student.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="text-ink font-semibold">
+                                {report.student.name}
+                              </div>
+                              <div className="text-ink-soft text-xs">
+                                Updated{" "}
+                                {format(
+                                  new Date(report.updatedAt),
+                                  "MMM d, yyyy",
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <Badge className="rounded-full bg-pink-100 px-3 py-1 font-semibold text-pink-700 tabular-nums hover:bg-pink-100">
+                            {report.month}/{report.year}
+                          </Badge>
+                        </div>
+
+                        <p className="text-ink-soft text-sm leading-6">
+                          {getSummaryPreview(report)}
+                        </p>
+
+                        <div className="mt-4 flex gap-3">
+                          <Button
+                            onClick={() =>
+                              router.push(
+                                buildReportHref(
+                                  report.studentId,
+                                  report.month,
+                                  report.year,
+                                ),
+                              )
+                            }
+                            className="h-11 flex-1 rounded-full"
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View / Edit
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="size-11 rounded-full border-pink-200 text-pink-600 hover:bg-pink-50"
+                              >
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="rounded-xl border-pink-100 shadow-(--sh-lg)"
+                            >
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  router.push(
+                                    buildReportHref(
+                                      report.studentId,
+                                      report.month,
+                                      report.year,
+                                    ),
+                                  )
+                                }
+                                className="rounded-lg focus:bg-pink-50"
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View report
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  router.push(
+                                    buildReportHref(
+                                      report.studentId,
+                                      report.month,
+                                      report.year,
+                                    ),
+                                  )
+                                }
+                                className="rounded-lg focus:bg-pink-50"
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit report
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setDeleteReport(report)}
+                                className="rounded-lg"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="mt-6 border-t pt-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-pink-900">
-              Existing Reports
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Open, update, or remove reports already saved for this month
-              filter.
-            </p>
-          </div>
-          <Badge className="rounded-full bg-pink-100 px-3 py-1 text-pink-700 hover:bg-pink-100">
-            {reports.length} report{reports.length === 1 ? "" : "s"}
-          </Badge>
-        </div>
-
-        <div className="relative">
-          <RefreshOverlay active={isRefreshing} />
-          <div
-            className={cn(
-              "transition-opacity",
-              isRefreshing && "pointer-events-none opacity-60",
-            )}
-          >
-            {isLoading ? (
-              <div className="flex h-32 items-center justify-center">
-                <AppLoader size="sm" />
-              </div>
-            ) : reports.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-3 text-4xl">🎼</div>
-                <div className="text-lg font-medium text-pink-700">
-                  No reports saved for this month yet
-                </div>
-                <div className="mt-1 text-sm text-pink-600/70">
-                  Generate a report above or adjust the filters to browse past
-                  months.
-                </div>
-              </div>
-            ) : (
-              <>
-                <DataTable
-                  className="hidden md:block"
-                  columns={columns}
-                  data={reports}
-                  getRowKey={(report) => report.id}
-                  itemRowClassName="transition-colors hover:bg-pink-50"
-                />
-
-                <div className="grid grid-cols-1 gap-4 md:hidden">
-                  {reports.map((report) => (
-                    <div
-                      key={report.id}
-                      className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
-                    >
-                      <div className="mb-4 flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="size-10 border border-pink-100">
-                            <AvatarImage src={report.student.avatar ?? ""} />
-                            <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
-                              {report.student.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-semibold text-gray-900">
-                              {report.student.name}
-                            </div>
-                            <div className="text-muted-foreground text-xs">
-                              Updated{" "}
-                              {format(
-                                new Date(report.updatedAt),
-                                "MMM d, yyyy",
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <Badge className="rounded-full bg-rose-100 px-3 py-1 text-rose-700 hover:bg-rose-100">
-                          {report.month}/{report.year}
-                        </Badge>
-                      </div>
-
-                      <p className="text-sm leading-6 text-gray-600">
-                        {getSummaryPreview(report)}
-                      </p>
-
-                      <div className="mt-4 flex gap-3">
-                        <Button
-                          onClick={() =>
-                            router.push(
-                              buildReportHref(
-                                report.studentId,
-                                report.month,
-                                report.year,
-                              ),
-                            )
-                          }
-                          className="flex-1 rounded-xl bg-pink-500 text-white hover:bg-pink-600"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View / Edit
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="size-10 rounded-xl border border-pink-100 text-pink-600 hover:bg-pink-50"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="rounded-xl border-pink-100 bg-white shadow-lg"
-                          >
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                router.push(
-                                  buildReportHref(
-                                    report.studentId,
-                                    report.month,
-                                    report.year,
-                                  ),
-                                )
-                              }
-                              className="rounded-lg hover:bg-pink-50"
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View report
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={() =>
-                                router.push(
-                                  buildReportHref(
-                                    report.studentId,
-                                    report.month,
-                                    report.year,
-                                  ),
-                                )
-                              }
-                              className="rounded-lg hover:bg-pink-50"
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit report
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onSelect={() => setDeleteReport(report)}
-                              className="rounded-lg text-rose-500 hover:bg-rose-50"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        </section>
       </div>
 
       <ConfirmDialog
@@ -624,6 +712,6 @@ export function ReportsPage({
           });
         }}
       />
-    </div>
+    </>
   );
 }

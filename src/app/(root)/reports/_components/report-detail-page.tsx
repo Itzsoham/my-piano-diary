@@ -28,16 +28,10 @@ export function ReportDetailPage({
   const router = useRouter();
 
   return (
-    <div className="flex flex-1 flex-col gap-4 sm:gap-6">
-      <div className="print:hidden">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Reports
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:mt-2 sm:text-base">
-          Generate, print, and update monthly reports for each student.
-        </p>
-      </div>
-
+    <div className="flex flex-1 flex-col px-4 lg:px-6 print:px-0">
+      {/* The page's one h1 lives in ReportDetailHero (a sibling above this
+          component, rendered by reports/[studentId]/page.tsx) — this stays a
+          plain body wrapper around the control bar + printable paper. */}
       <ReportView
         studentId={studentId}
         month={month}

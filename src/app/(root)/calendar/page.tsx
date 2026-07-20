@@ -1,18 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { keepPreviousData } from "@tanstack/react-query";
-import { Plus, CalendarX, List } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { format } from "date-fns";
+import { CalendarX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FullCalendarView } from "./_components/full-calendar-view";
+import { CalendarHero } from "./_components/calendar-hero";
+import { CalendarDayPanel } from "./_components/calendar-day-panel";
+import { CalendarMonthSticker } from "./_components/calendar-month-sticker";
 import { LessonDialog } from "@/components/lessons/lesson-dialog";
 import { AttendanceDialog } from "./_components/attendance-dialog";
 import { api } from "@/trpc/react";
 import { useBirthday } from "@/components/birthday/birthday-provider";
 import { BirthdayBanner } from "@/components/birthday/birthday-banner";
+import { getBrowserTimezone } from "@/lib/timezone";
 
 interface Lesson {
   id: string;
@@ -31,14 +36,23 @@ interface Lesson {
   note: string | null;
 }
 
+type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay";
+
 export default function CalendarPage() {
+  const { data: session } = useSession();
+  const timezone = session?.user?.timezone ?? getBrowserTimezone();
+
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
   });
+  const [currentView, setCurrentView] = useState<CalendarView>("dayGridMonth");
+  // The day the panel below/beside the grid is showing. Also doubles as the
+  // default date for a brand-new lesson opened from the hero/panel buttons.
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [newLessonDate, setNewLessonDate] = useState<Date | null>(null);
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const { isBirthdayMode } = useBirthday();
 
@@ -57,12 +71,27 @@ export default function CalendarPage() {
 
   const { data: students = [] } = api.student.getAll.useQuery();
 
+  const handleDateRangeChange = (start: Date, end: Date, view: string) => {
+    setDateRange({ start, end });
+    setCurrentView(view as CalendarView);
+    // Keep the current selection if it's still inside the newly loaded range
+    // (e.g. flipping Month/Week/Day on a range that still contains it);
+    // otherwise jump to the new range's first day so the panel never shows a
+    // day with no data behind it.
+    setSelectedDate((prev) => (prev >= start && prev < end ? prev : start));
+  };
+
   const handleAddLesson = (date: Date) => {
     // Check if the click is on a specific time slot or just a day
     // FullCalendar passes date with time if clicked on timeGrid
-    setSelectedDate(date);
+    setNewLessonDate(date);
     setSelectedLesson(null);
+    setSelectedDate(date);
     setLessonDialogOpen(true);
+  };
+
+  const handleDaySelect = (date: Date) => {
+    setSelectedDate(date);
   };
 
   const handleLessonClick = (lesson: Lesson) => {
@@ -75,83 +104,125 @@ export default function CalendarPage() {
     void utils.lesson.invalidate();
   };
 
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
-      <BirthdayBanner
-        text="Every lesson is a little celebration 🎹"
-        icon="🎉"
-        storageKey="calendar"
-        leftEmojis={["🎵", "✨", "🎹"]}
-      />
+  const rangeLabel =
+    currentView === "dayGridMonth"
+      ? "month"
+      : currentView === "timeGridWeek"
+        ? "week"
+        : "day";
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="bday-animate-title text-3xl font-bold tracking-tight">
-            Calendar
-          </h1>
-          <p className="text-muted-foreground">
-            {isBirthdayMode
-              ? "Every lesson is a gift. Yours especially 🎹✨"
-              : "Manage lessons and track attendance"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Link href="/lessons">
-              <List className="mr-2 h-4 w-4" />
-              List view
-            </Link>
-          </Button>
-          <Button
-            onClick={() => handleAddLesson(new Date())}
-            className={`bday-animate-button rounded-xl bg-linear-to-r from-pink-500 to-purple-500 font-semibold text-white shadow-sm transition-all active:scale-[0.98] ${
-              isBirthdayMode
-                ? "duration-300 hover:scale-105 hover:shadow-[0_4px_20px_-4px_rgba(251,207,232,0.7)]"
-                : "hover:from-pink-600 hover:to-purple-600 hover:shadow-md hover:shadow-pink-300/40"
-            }`}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Lesson
-          </Button>
+  const stickerLabel =
+    currentView === "dayGridMonth"
+      ? format(dateRange.start, "MMMM")
+      : currentView === "timeGridWeek"
+        ? "This week"
+        : "Today";
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="flex flex-col gap-5 pb-6 md:gap-6 md:pb-10">
+        <CalendarHero
+          lessonCount={lessons.length}
+          rangeLabel={rangeLabel}
+          onAddLesson={() => handleAddLesson(selectedDate)}
+        />
+
+        <div className="flex flex-col gap-4 px-4 lg:px-6">
+          <BirthdayBanner
+            text="Every lesson is a little celebration 🎹"
+            icon="🎉"
+            storageKey="calendar"
+            leftEmojis={["🎵", "✨", "🎹"]}
+          />
+
+          {/* Legend — the real app has none elsewhere; the swatches are the
+              literal marks used in the day panel (a 4px rail), on the deep
+              -fg ramp so they stay legible as swatches. */}
+          <div className="border-border bg-card/70 text-ink-soft flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-full border px-4 py-2.5 text-xs font-semibold shadow-(--sh-xs) backdrop-blur-sm">
+            <span className="text-ok-fg inline-flex items-center gap-1.5">
+              <i
+                aria-hidden="true"
+                className="h-3.5 w-1 rounded-full bg-teal-600"
+              />
+              Complete
+            </span>
+            <span className="text-no-fg inline-flex items-center gap-1.5">
+              <i
+                aria-hidden="true"
+                className="h-3.5 w-1 rounded-full bg-pink-600"
+              />
+              Cancelled
+            </span>
+            <span className="text-wait-fg inline-flex items-center gap-1.5">
+              <i
+                aria-hidden="true"
+                className="bg-sand-700 h-3.5 w-1 rounded-full"
+              />
+              Pending
+            </span>
+            <span aria-hidden="true" className="bg-border h-3.5 w-px" />
+            <span className="inline-flex items-center gap-1.5 text-teal-700">
+              <i
+                aria-hidden="true"
+                className="h-3.5 w-1 rounded-full bg-teal-400"
+              />
+              Online
+            </span>
+            <span className="text-ink-soft ml-auto hidden font-medium sm:inline">
+              Key to the <b className="text-ink">day panel</b>
+            </span>
+          </div>
+
+          {isError ? (
+            <ErrorState
+              icon={CalendarX}
+              title="Couldn't load your calendar"
+              description="Something went wrong fetching lessons for this range. Check your connection and try again."
+              action={
+                <Button variant="outline" onClick={() => void refetch()}>
+                  Retry
+                </Button>
+              }
+            />
+          ) : isPending ? (
+            <CalendarSkeleton />
+          ) : (
+            // keepPreviousData keeps the current month on screen while the next
+            // one loads, so there's no empty-grid flash and nothing to disable.
+            <div className="grid grid-cols-1 items-start gap-4.5 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="min-w-0">
+                <FullCalendarView
+                  lessons={lessons as Lesson[]}
+                  selectedDate={selectedDate}
+                  onDateRangeChange={handleDateRangeChange}
+                  onAddLesson={handleAddLesson}
+                  onLessonClick={handleLessonClick}
+                  onDaySelect={handleDaySelect}
+                />
+                <CalendarMonthSticker
+                  label={stickerLabel}
+                  lessons={lessons as Lesson[]}
+                />
+              </div>
+
+              <CalendarDayPanel
+                className="lg:sticky lg:top-20"
+                selectedDate={selectedDate}
+                lessons={lessons as Lesson[]}
+                timezone={timezone}
+                onAddLesson={handleAddLesson}
+                onLessonClick={handleLessonClick}
+              />
+            </div>
+          )}
         </div>
       </div>
-
-      {isError ? (
-        <ErrorState
-          icon={CalendarX}
-          title="Couldn't load your calendar"
-          description="Something went wrong fetching lessons for this range. Check your connection and try again."
-          action={
-            <Button variant="outline" onClick={() => void refetch()}>
-              Retry
-            </Button>
-          }
-        />
-      ) : isPending ? (
-        <CalendarSkeleton />
-      ) : (
-        // keepPreviousData keeps the current month on screen while the next
-        // one loads, so there's no empty-grid flash and nothing to disable.
-        <FullCalendarView
-          lessons={lessons as Lesson[]}
-          onDateRangeChange={(start: Date, end: Date) =>
-            setDateRange({ start, end })
-          }
-          onAddLesson={handleAddLesson}
-          onLessonClick={handleLessonClick}
-        />
-      )}
 
       <LessonDialog
         open={lessonDialogOpen}
         onOpenChange={setLessonDialogOpen}
         students={students.map((s) => ({ id: s.id, name: s.name }))}
-        initialDate={selectedDate}
+        initialDate={newLessonDate}
         onSuccess={handleSuccess}
       />
 
@@ -182,7 +253,7 @@ export default function CalendarPage() {
 function CalendarSkeleton() {
   return (
     <div
-      className="bg-card w-full overflow-hidden rounded-xl border border-pink-100/60 p-4 shadow-sm"
+      className="border-border bg-card w-full overflow-hidden rounded-[calc(var(--radius)+8px)] border p-4 shadow-(--sh)"
       aria-busy="true"
       aria-label="Loading calendar"
     >

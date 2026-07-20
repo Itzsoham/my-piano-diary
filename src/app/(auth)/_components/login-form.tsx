@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,6 +41,7 @@ const initialStepStates = () =>
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const setUser = useUserStore((state) => state.setUser);
 
   const [isSeeding, setIsSeeding] = useState(false);
@@ -173,13 +175,14 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel className="text-ink">Email Address</FormLabel>
               <FormControl>
                 <Input
                   id="email"
                   type="email"
                   placeholder="thuyisbest@luv.com"
                   autoComplete="email"
+                  className="h-12 rounded-full border-(--line-pink) px-4 focus-visible:ring-pink-500"
                   {...field}
                 />
               </FormControl>
@@ -192,15 +195,41 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel className="text-ink">Password</FormLabel>
+                <a
+                  href="#forgot"
+                  className="text-xs font-semibold text-pink-700 hover:underline"
+                >
+                  Forgot password?
+                </a>
+              </div>
               <FormControl>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  {...field}
-                />
+                <div className="relative flex">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    className="h-12 rounded-full border-(--line-pink) px-4 pr-12 focus-visible:ring-pink-500"
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-pressed={showPassword}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    className="text-ink-soft hover:text-ink absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-full hover:bg-(--surface-2)"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4.5" aria-hidden="true" />
+                    ) : (
+                      <Eye className="size-4.5" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -221,25 +250,31 @@ export function LoginForm() {
               </FormControl>
               <FormLabel
                 htmlFor="login-remember"
-                className="text-muted-foreground ml-1 text-sm font-medium"
+                className="text-ink-soft ml-1 text-sm font-medium"
               >
                 Remember me for 30 days
               </FormLabel>
             </FormItem>
           )}
         />
-        <Button className="w-full" type="submit" disabled={isLoading}>
+        <Button
+          className="h-12 w-full rounded-full [background-image:var(--grad-pink)] text-white shadow-(--sh-pink) hover:brightness-105"
+          type="submit"
+          disabled={isLoading}
+        >
           {isLoading ? "Logging in..." : "Login"}
         </Button>
 
         <div className="flex items-center gap-3">
           <span className="bg-border h-px flex-1" />
-          <span className="text-muted-foreground text-xs">or</span>
+          <span className="text-ink-soft text-xs font-semibold tracking-wide uppercase">
+            or
+          </span>
           <span className="bg-border h-px flex-1" />
         </div>
 
         {isSeeding || seedError ? (
-          <div className="rounded-lg border p-4">
+          <div className="rounded-2xl border border-(--line-pink) bg-(--surface-2) p-4">
             <DemoSeedProgress
               states={stepStates}
               results={stepResults}
@@ -250,7 +285,7 @@ export function LoginForm() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="mt-3 w-full"
+                className="mt-3 w-full rounded-full"
                 onClick={handleDemoLogin}
               >
                 Try again
@@ -262,13 +297,13 @@ export function LoginForm() {
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="h-12 w-full rounded-full border-(--line-pink)"
               disabled={isLoading}
               onClick={handleDemoLogin}
             >
               🎹 Try the demo
             </Button>
-            <p className="text-muted-foreground text-center text-xs">
+            <p className="text-ink-soft text-center text-xs">
               Builds a sample studio on the spot — no sign-up needed.
             </p>
           </>

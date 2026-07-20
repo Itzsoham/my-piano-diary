@@ -12,6 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Blossom, Squiggle } from "@/components/blossom/blossom";
 import { StudentForm } from "./student-form";
 
 interface StudentSheetProps {
@@ -38,7 +39,7 @@ export function StudentSheet({
     ? controlledOnOpenChange
     : setUncontrolledOpen;
 
-  const title = mode === "create" ? "Add a new student 🎹" : "Edit Student";
+  const title = mode === "create" ? "Add a new student" : "Edit Student";
   const description =
     mode === "create"
       ? "This will add them to your teaching roster"
@@ -59,12 +60,20 @@ export function StudentSheet({
           </SheetTrigger>
         )
       )}
-      <SheetContent className="overflow-y-auto sm:max-w-150">
-        <SheetHeader className="border-b pb-4">
-          <SheetTitle>{title}</SheetTitle>
+      <SheetContent className="overflow-x-hidden overflow-y-auto rounded-l-3xl border-(--line-pink) sm:max-w-150">
+        {/* Header band: the only place on this Sheet that gets to bloom —
+            everything below (the Form) stays ornament-free. */}
+        <SheetHeader className="border-b border-(--line-pink) bg-[linear-gradient(160deg,var(--pink-50),var(--surface)_78%)] px-6 pt-6 pb-5">
+          <div className="inline-block">
+            <SheetTitle className="text-ink flex items-center gap-2 font-serif text-xl leading-tight font-normal sm:text-2xl">
+              <Blossom className="text-bubblegum" size={19} />
+              {title}
+            </SheetTitle>
+            <Squiggle className="text-bubblegum mt-1 h-2 w-full" />
+          </div>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
-        <div className="m-6">
+        <div className="px-6 pb-8">
           <StudentForm
             studentId={studentId}
             onSuccess={() => onOpenChange?.(false)}

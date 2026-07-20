@@ -1,15 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { format, parse, startOfDay, endOfDay } from "date-fns";
-import { CheckCircle2, Edit, MoreHorizontal, Trash2 } from "lucide-react";
+import { useMemo, useState, type CSSProperties } from "react";
+import { format, parse, startOfDay, endOfDay, isSameDay } from "date-fns";
+import {
+  CheckCircle2,
+  Edit,
+  ListFilter,
+  MoreHorizontal,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 
 import { api, type RouterOutputs } from "@/trpc/react";
 import { BirthdayBanner } from "@/components/birthday/birthday-banner";
+import { Blossom } from "@/components/blossom/blossom";
+import { Mochi } from "@/components/blossom/mochi";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
@@ -33,29 +41,75 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useFilterParams } from "@/lib/use-filter-params";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { useCurrency } from "@/lib/currency";
+import { formatCurrency } from "@/lib/format";
 
-const statusLabels: Record<LessonStatus, string> = {
+type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
+
+const STATUS_LABELS: Record<LessonStatus, string> = {
   COMPLETE: "Complete",
   CANCELLED: "Cancelled",
   PENDING: "Pending",
 };
 
-const statusClasses: Record<LessonStatus, string> = {
-  COMPLETE:
-    "bg-emerald-100 text-emerald-700 rounded-full px-3 py-1.5 text-xs md:text-sm font-medium",
-  CANCELLED:
-    "bg-rose-100 text-rose-700 rounded-full px-3 py-1.5 text-xs md:text-sm font-medium",
-  PENDING:
-    "bg-amber-100 text-amber-700 rounded-full px-3 py-1.5 text-xs md:text-sm font-medium",
+// Sober status chip — background/foreground bound to the real LessonStatus
+// enum. No ornament: the rail node blooms, the data chip stays plain.
+const CHIP_STYLES: Record<LessonStatus, string> = {
+  COMPLETE: "bg-ok-bg text-ok-fg",
+  CANCELLED: "bg-no-bg text-no-fg",
+  PENDING: "bg-wait-bg text-wait-fg",
 };
 
-type LessonStatus = "PENDING" | "COMPLETE" | "CANCELLED";
+// The rail's blossom node colour per status (COMPLETE→ok, CANCELLED→no,
+// PENDING→wait) — matches today-lessons-table.tsx's NODE_COLORS exactly.
+const NODE_COLORS: Record<LessonStatus, string> = {
+  COMPLETE: "text-ok-dot",
+  CANCELLED: "text-no-dot",
+  PENDING: "text-wait-dot",
+};
+
+// Only COMPLETE is billable. Every lesson card says so next to its amount so
+// the figure is never mistaken for revenue.
+const BILL_CAPTION: Record<LessonStatus, string> = {
+  COMPLETE: "billable",
+  PENDING: "not billed yet",
+  CANCELLED: "not billed",
+};
+
+const BILL_CAPTION_CLASS: Record<LessonStatus, string> = {
+  COMPLETE: "text-ok-fg",
+  PENDING: "text-wait-fg",
+  CANCELLED: "text-no-fg",
+};
+
+const getStatusChip = (status: LessonStatus) => (
+  <span
+    className={cn(
+      "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap",
+      CHIP_STYLES[status],
+    )}
+  >
+    {STATUS_LABELS[status]}
+  </span>
+);
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
 const INITIAL_FROM = startOfDay(new Date());
 const INITIAL_TO = endOfDay(new Date());
 
 type Lesson = RouterOutputs["lesson"]["getAll"][number];
+
+type DayGroup = {
+  date: Date;
+  lessons: Lesson[];
+};
 
 type StudentOption = {
   id: string;
@@ -71,6 +125,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const utils = api.useUtils();
   const queryClient = useQueryClient();
   const { searchParams, setParams } = useFilterParams();
+  const { currency } = useCurrency();
   const [editLesson, setEditLesson] = useState<Lesson | null>(null);
   const [attendanceLesson, setAttendanceLesson] = useState<Lesson | null>(null);
   const [deleteLesson, setDeleteLesson] = useState<Lesson | null>(null);
@@ -138,91 +193,21 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   // surface the in-flight fetch so the swap isn't silent.
   const isRefreshing = isFetching && !isLoading;
 
-  const columns: DataTableColumn<Lesson>[] = [
-    {
-      id: "date",
-      header: "Date",
-      cell: (lesson) => format(new Date(lesson.date), "MMM d, yyyy"),
-    },
-    {
-      id: "time",
-      header: "Time",
-      cell: (lesson) => format(new Date(lesson.date), "h:mm a"),
-    },
-    {
-      id: "student",
-      header: "Student",
-      cell: (lesson) => lesson.student.name,
-      cellClassName: "font-medium",
-    },
-    {
-      id: "piece",
-      header: "Piece",
-      cell: (lesson) => (
-        <div className="max-w-37.5 truncate" title={lesson.piece?.title ?? ""}>
-          {lesson.piece?.title ?? "None"}
-        </div>
-      ),
-    },
-    {
-      id: "duration",
-      header: "Duration",
-      cell: (lesson) => `${lesson.duration} min`,
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: (lesson) => (
-        <Badge className={statusClasses[lesson.status as LessonStatus]}>
-          {statusLabels[lesson.status as LessonStatus]}
-        </Badge>
-      ),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      headerClassName: "text-right",
-      cellClassName: "text-right",
-      cell: (lesson) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="rounded-xl border-pink-100 bg-white shadow-lg"
-          >
-            <DropdownMenuItem
-              onSelect={() => setEditLesson(lesson)}
-              className="rounded-lg hover:bg-pink-50"
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => setAttendanceLesson(lesson)}
-              className="rounded-lg hover:bg-pink-50"
-            >
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Mark attendance
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => setDeleteLesson(lesson)}
-              className="rounded-lg text-rose-500 hover:bg-rose-50"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
-  ];
+  // Group the already-sorted lessons (API returns date desc) by calendar day,
+  // under a serif day-divider heading — the "blossom timeline" river.
+  const dayGroups = useMemo<DayGroup[]>(() => {
+    const groups: DayGroup[] = [];
+    for (const lesson of lessons) {
+      const lessonDate = new Date(lesson.date);
+      const current = groups[groups.length - 1];
+      if (current && isSameDay(current.date, lessonDate)) {
+        current.lessons.push(lesson);
+      } else {
+        groups.push({ date: lessonDate, lessons: [lesson] });
+      }
+    }
+    return groups;
+  }, [lessons]);
 
   const deleteMutation = api.lesson.delete.useMutation({
     mutationKey: ["lesson-write"],
@@ -276,212 +261,393 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
     setParams({ student: null, status: null, from: null, to: null });
 
   return (
-    <div className="container mx-auto">
-      <BirthdayBanner
-        text="Each lesson you give echoes forever 🎵"
-        icon="🎵"
-        storageKey="lessons"
-        leftEmojis={["🎵", "🎹", "🎵"]}
-      />
-      <div className="mb-6">
-        <h1 className="bday-animate-title flex items-center gap-2 text-3xl font-bold tracking-tight">
-          Lessons & Attendance
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Track every beautiful session
-        </p>
-      </div>
+    <>
+      {/* ═══════════ FILTERS ═══════════ */}
+      <section
+        className="px-4 lg:px-6"
+        aria-labelledby="lessons-filters-heading"
+      >
+        <BirthdayBanner
+          text="Each lesson you give echoes forever 🎵"
+          icon="🎵"
+          storageKey="lessons"
+          leftEmojis={["🎵", "🎹", "🎵"]}
+        />
 
-      <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm md:p-6">
-        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-5 md:items-end md:gap-3">
-          <div className="space-y-1 md:space-y-1.5">
-            <label className="text-xs font-medium text-pink-700">Student</label>
-            <Select value={studentId} onValueChange={setStudentId}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
-                <SelectValue placeholder="All students" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All students</SelectItem>
-                {students.map((student) => (
-                  <SelectItem key={student.id} value={student.id}>
-                    {student.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <h2 id="lessons-filters-heading" className="sr-only">
+          Filter lessons
+        </h2>
 
-          <div className="space-y-1 md:space-y-1.5">
-            <label className="text-xs font-medium text-pink-700">Status</label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="COMPLETE">Complete</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1 md:space-y-1.5">
-            <label className="text-xs font-medium text-pink-700">From</label>
-            <DatePicker
-              date={fromDate}
-              onDateChange={setFromDate}
-              placeholder="Start date"
-              className="h-11 w-full text-sm md:h-10"
-            />
-          </div>
-
-          <div className="space-y-1 md:space-y-1.5">
-            <label className="text-xs font-medium text-pink-700">To</label>
-            <DatePicker
-              date={toDate}
-              onDateChange={setToDate}
-              placeholder="End date"
-              className="h-11 w-full text-sm md:h-10"
-            />
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={resetFilters}
-            className="bday-animate-button h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10 md:w-full"
-          >
-            Reset
-          </Button>
-        </div>
-      </div>
-
-      <div className="relative mt-6 border-t pt-6">
-        <RefreshOverlay active={isRefreshing} />
-        <div
-          className={cn(
-            "transition-opacity",
-            isRefreshing && "pointer-events-none opacity-60",
-          )}
-        >
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center">
-              <AppLoader size="sm" />
+        <div className="bg-card/90 rounded-[calc(var(--radius)+8px)] border border-pink-100 p-3.5 shadow-[var(--sh-sm)] backdrop-blur-sm md:p-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-5 md:items-end md:gap-3.5">
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                <Users className="size-3.5" aria-hidden="true" />
+                Student
+              </label>
+              <Select value={studentId} onValueChange={setStudentId}>
+                <SelectTrigger
+                  aria-label="Filter by student"
+                  className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10"
+                >
+                  <SelectValue placeholder="All students" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All students</SelectItem>
+                  {students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ) : lessons.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-3 text-4xl">🎹</div>
-              <div className="text-lg font-medium text-pink-700">
-                No lessons scheduled yet
-              </div>
-              <div className="mt-1 text-sm text-pink-600/70">
-                Your piano week is waiting for music.
-              </div>
+
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                <ListFilter className="size-3.5" aria-hidden="true" />
+                Status
+              </label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger
+                  aria-label="Filter by status"
+                  className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10"
+                >
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="COMPLETE">Complete</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <>
-              {/* Desktop Table View */}
-              <DataTable
-                className="hidden md:block"
-                columns={columns}
-                data={lessons}
-                getRowKey={(lesson) => lesson.id}
-                itemRowClassName="transition-colors hover:bg-pink-50"
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                From
+              </label>
+              <DatePicker
+                date={fromDate}
+                onDateChange={setFromDate}
+                placeholder="Start date"
+                className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm hover:bg-pink-100 md:h-10"
               />
+            </div>
 
-              {/* Mobile Card View */}
-              <div className="grid grid-cols-1 gap-4 md:hidden">
-                {lessons.map((lesson) => (
-                  <div
-                    key={lesson.id}
-                    className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
-                  >
-                    <div className="mb-4 flex items-start justify-between">
-                      <span className="rounded-full bg-pink-100 px-3 py-1 text-[11px] font-medium text-pink-600">
-                        {format(new Date(lesson.date), "MMM d • h:mm a")}
-                      </span>
-                      <Badge
-                        className={cn(
-                          statusClasses[lesson.status as LessonStatus],
-                          "px-2 py-0.5 text-[10px] md:text-[10px]",
-                        )}
-                      >
-                        {statusLabels[lesson.status as LessonStatus]}
-                      </Badge>
-                    </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                To
+              </label>
+              <DatePicker
+                date={toDate}
+                onDateChange={setToDate}
+                placeholder="End date"
+                className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm hover:bg-pink-100 md:h-10"
+              />
+            </div>
 
-                    <div className="mb-4 flex items-center gap-3">
-                      <Avatar className="size-7 border border-pink-100">
-                        <AvatarImage src={lesson.student.avatar ?? ""} />
-                        <AvatarFallback className="bg-pink-50 text-[10px] font-bold text-pink-600">
-                          {lesson.student.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-[15px] font-semibold text-gray-900">
-                          {lesson.student.name}
-                        </span>
-                        <span className="text-muted-foreground text-xs">
-                          {lesson.piece?.title ?? "No piece"} •{" "}
-                          {lesson.duration} min
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex gap-3">
-                      <Button
-                        className="flex-1 rounded-xl bg-pink-500 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-pink-600 active:scale-[0.98]"
-                        onClick={() => setAttendanceLesson(lesson)}
-                      >
-                        Mark Attendance
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="size-10 rounded-xl border border-pink-100 text-pink-600 hover:bg-pink-50"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="rounded-xl border-pink-100 bg-white shadow-lg"
-                        >
-                          <DropdownMenuItem
-                            onSelect={() => setEditLesson(lesson)}
-                            className="rounded-lg hover:bg-pink-50"
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem
-                            onSelect={() => setAttendanceLesson(lesson)}
-                            className="rounded-lg hover:bg-pink-50"
-                          >
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Mark attendance
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => setDeleteLesson(lesson)}
-                            className="rounded-lg text-rose-500 hover:bg-rose-50"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+            <Button
+              variant="outline"
+              onClick={resetFilters}
+              className="bday-animate-button h-11 w-full rounded-full border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10 md:w-full"
+            >
+              Reset
+            </Button>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* ═══════════ THE RIVER — the day-grouped blossom timeline ═══════════ */}
+      <section className="px-4 lg:px-6" aria-labelledby="lessons-river-heading">
+        <div className="mb-4 flex items-center gap-2 md:mb-5">
+          <Blossom size={17} className="text-bubblegum" />
+          <h2
+            id="lessons-river-heading"
+            className="text-ink font-serif text-xl font-normal sm:text-2xl"
+          >
+            Every lesson, newest first
+          </h2>
+        </div>
+
+        <div className="relative">
+          <RefreshOverlay active={isRefreshing} />
+          <div
+            className={cn(
+              "transition-opacity",
+              isRefreshing && "pointer-events-none opacity-60",
+            )}
+          >
+            {isLoading ? (
+              <div className="flex h-32 items-center justify-center">
+                <AppLoader size="sm" />
+              </div>
+            ) : lessons.length === 0 ? (
+              <div className="bg-card/70 relative isolate flex flex-col items-center overflow-hidden rounded-[calc(var(--radius)+8px)] border border-pink-100 px-6 py-14 text-center">
+                <Blossom
+                  size={84}
+                  className="text-bubblegum absolute -top-5 -right-5 -z-10 opacity-30"
+                />
+                <Mochi mood="sleepy" bob size={128} />
+                <h3 className="text-ink mt-4 text-lg font-semibold">
+                  No lessons scheduled yet
+                </h3>
+                <p className="text-ink-soft mt-1 text-sm">
+                  Your piano week is waiting for music.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-8 md:gap-10">
+                {dayGroups.map((group) => {
+                  const isToday = isSameDay(group.date, new Date());
+
+                  return (
+                    <div key={group.lessons[0]!.id}>
+                      {/* The screen's one budgeted scalloped edge lives here
+                          (not the hero — see lessons-hero.tsx's docblock): a
+                          --floss wash "sticky note" head, per the mockup's
+                          `.day__head` recipe, translated to the shared
+                          scallop-b utility. */}
+                      {/* scallop-b's bottom ~11px is a repeating scalloped
+                          cutout (see globals.css), not a flat edge — its
+                          forced 14px padding-bottom is only just enough
+                          clearance for content sitting flush against it, so
+                          this row needs real breathing room (a margin, which
+                          the mask rule doesn't override) between the text and
+                          that cutout, not just the mask's own padding. */}
+                      <div className="scallop-b bg-floss relative mb-4 rounded-t-2xl px-4 pt-4 md:mb-5 md:px-4.5 md:pt-4.5">
+                        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <h3 className="text-ink font-serif text-lg font-normal sm:text-xl">
+                            {format(group.date, "EEEE, MMMM d")}
+                          </h3>
+                          {isToday && (
+                            <span className="rounded-full border border-pink-100 bg-pink-100 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-pink-700 uppercase">
+                              Today
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <ol className="flex flex-col gap-4">
+                        {group.lessons.map((lesson, idx) => {
+                          const lessonStatus = lesson.status as LessonStatus;
+                          const isCancelled = lessonStatus === "CANCELLED";
+                          const isLessonPending = lessonStatus === "PENDING";
+                          const isLastInGroup =
+                            idx === group.lessons.length - 1;
+
+                          return (
+                            <li
+                              key={lesson.id}
+                              className="rise grid grid-cols-[24px_minmax(0,1fr)] gap-x-2 gap-y-1 sm:grid-cols-[78px_30px_minmax(0,1fr)] sm:gap-x-3.5 sm:gap-y-0"
+                              style={{ "--i": idx } as CSSProperties}
+                            >
+                              {/* Time + duration — a fixed column on the left
+                                  at ≥sm, stacked above the card on phone. */}
+                              <div className="col-start-2 row-start-1 flex items-baseline gap-1.5 sm:col-start-1 sm:flex-col sm:items-end sm:gap-0 sm:pt-4 sm:text-right">
+                                <span className="text-ink text-[13px] font-bold tracking-tight tabular-nums">
+                                  {format(new Date(lesson.date), "h:mm a")}
+                                </span>
+                                <span
+                                  aria-hidden="true"
+                                  className="text-ink-soft sm:hidden"
+                                >
+                                  ·
+                                </span>
+                                <span className="text-ink-soft text-[11px] font-medium">
+                                  {lesson.duration} min
+                                </span>
+                              </div>
+
+                              {/* The soft rail + the status-coloured blossom node. */}
+                              <div className="relative col-start-1 row-span-2 row-start-1 flex justify-center sm:col-start-2 sm:row-span-1">
+                                <span
+                                  aria-hidden="true"
+                                  className={cn(
+                                    "absolute top-0 w-0.5 rounded-full",
+                                    isLastInGroup ? "h-7" : "-bottom-4",
+                                  )}
+                                  style={{
+                                    backgroundImage:
+                                      "linear-gradient(180deg, var(--mint), var(--cotton))",
+                                  }}
+                                />
+                                <div
+                                  className={cn(
+                                    "relative z-[1] mt-2 grid size-[22px] shrink-0 place-items-center sm:mt-3",
+                                    NODE_COLORS[lessonStatus],
+                                  )}
+                                >
+                                  <span
+                                    aria-hidden="true"
+                                    className="absolute -inset-1 rounded-full bg-current opacity-20"
+                                  />
+                                  <span
+                                    aria-hidden="true"
+                                    className="bg-card absolute inset-0 rounded-full"
+                                  />
+                                  <Blossom
+                                    size={21}
+                                    className="relative z-[1]"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* The lesson card — sober data layer, no ornament. */}
+                              <article
+                                className={cn(
+                                  "col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-[var(--sh-sm)] sm:col-start-3 sm:row-start-1 sm:p-4",
+                                  isCancelled
+                                    ? "border-[var(--line-pink)] [background-image:linear-gradient(160deg,var(--pink-50),var(--card)_62%)]"
+                                    : "border-border bg-card",
+                                )}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <Avatar className="border-card size-10 shrink-0 border-2 shadow-[var(--sh-sm)]">
+                                    <AvatarImage
+                                      src={lesson.student.avatar ?? undefined}
+                                    />
+                                    <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-xs font-bold">
+                                      {getInitials(lesson.student.name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0 flex-1">
+                                    <div
+                                      className={cn(
+                                        "text-ink truncate text-[15px] font-semibold tracking-tight",
+                                        isCancelled &&
+                                          "text-ink-soft line-through decoration-[1.5px]",
+                                      )}
+                                    >
+                                      {lesson.student.name}
+                                    </div>
+                                    {lesson.piece && (
+                                      <p className="text-ink-soft mt-1 truncate font-serif text-sm italic">
+                                        {lesson.piece.title}
+                                      </p>
+                                    )}
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                      {getStatusChip(lessonStatus)}
+                                      {lesson.isOnline && (
+                                        <span className="inline-flex items-center rounded-full bg-teal-100 px-2 py-1 text-[11px] font-semibold whitespace-nowrap text-teal-700">
+                                          Online
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {isCancelled && lesson.cancelReason && (
+                                  <p className="bg-no-bg text-no-fg rounded-lg px-2.5 py-2 text-xs font-medium">
+                                    <span className="font-semibold">
+                                      Reason:{" "}
+                                    </span>
+                                    {lesson.cancelReason}
+                                  </p>
+                                )}
+
+                                <div className="border-border flex flex-wrap items-center gap-3 border-t border-dashed pt-3">
+                                  <div className="flex flex-col">
+                                    <span
+                                      className={cn(
+                                        "text-[15px] font-bold tracking-tight tabular-nums",
+                                        isCancelled
+                                          ? "text-no-fg line-through decoration-[1.5px]"
+                                          : "text-ink",
+                                      )}
+                                    >
+                                      {formatCurrency(lesson.rate, currency)}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "text-[10px] font-semibold",
+                                        BILL_CAPTION_CLASS[lessonStatus],
+                                      )}
+                                    >
+                                      {BILL_CAPTION[lessonStatus]}
+                                    </span>
+                                  </div>
+
+                                  <div className="ml-auto flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      onClick={() =>
+                                        setAttendanceLesson(lesson)
+                                      }
+                                      className={cn(
+                                        "h-9 rounded-full px-4 text-xs font-semibold sm:h-10 sm:px-5 sm:text-sm",
+                                        isLessonPending
+                                          ? "text-mint-ink hover:text-mint-ink [background-image:var(--grad-mint)] shadow-[var(--sh-mint)] hover:brightness-95"
+                                          : "border-border bg-card text-ink hover:bg-muted border shadow-[var(--sh-sm)]",
+                                      )}
+                                    >
+                                      Mark attendance
+                                    </Button>
+
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          className="border-border bg-card text-ink hover:bg-muted size-9 shrink-0 rounded-full border p-0 shadow-[var(--sh-sm)] sm:size-10"
+                                        >
+                                          <span className="sr-only">
+                                            More actions for{" "}
+                                            {lesson.student.name}
+                                          </span>
+                                          <MoreHorizontal className="size-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="end"
+                                        className="w-48 rounded-xl border-pink-100"
+                                      >
+                                        <DropdownMenuItem
+                                          onSelect={() => setEditLesson(lesson)}
+                                          className="rounded-lg hover:bg-pink-50 focus:bg-pink-50"
+                                        >
+                                          <Edit className="mr-2 size-4" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onSelect={() =>
+                                            setAttendanceLesson(lesson)
+                                          }
+                                          className="rounded-lg hover:bg-pink-50 focus:bg-pink-50"
+                                        >
+                                          <CheckCircle2 className="mr-2 size-4" />
+                                          Mark attendance
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          variant="destructive"
+                                          onSelect={() =>
+                                            setDeleteLesson(lesson)
+                                          }
+                                          className="rounded-lg"
+                                        >
+                                          <Trash2 className="mr-2 size-4" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+                              </article>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       {editLesson && (
         <LessonEditDialog
@@ -530,6 +696,6 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
           deleteLesson && deleteMutation.mutate({ id: deleteLesson.id })
         }
       />
-    </div>
+    </>
   );
 }

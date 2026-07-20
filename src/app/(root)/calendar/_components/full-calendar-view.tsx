@@ -12,7 +12,7 @@ import {
   type EventMountArg,
 } from "@fullcalendar/core";
 import { type EventResizeDoneArg } from "@fullcalendar/interaction";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, isToday as isTodayDate } from "date-fns";
 import { useSession } from "next-auth/react";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
@@ -41,16 +41,26 @@ interface Lesson {
 
 interface FullCalendarViewProps {
   lessons: Lesson[];
-  onDateRangeChange: (start: Date, end: Date) => void;
+  /** The day currently shown in the companion day panel — used to ring the
+   * matching cell in month view. */
+  selectedDate: Date;
+  onDateRangeChange: (start: Date, end: Date, view: string) => void;
   onAddLesson: (date: Date) => void;
   onLessonClick: (lesson: Lesson) => void;
+  /** Month view has no event chips (eventDisplay:"none", see below) — clicking
+   * a day cell selects it for the day panel instead of jumping straight into
+   * "add a lesson". Week/day view keep the old direct-add behaviour, since a
+   * click there already carries a specific time slot. */
+  onDaySelect: (date: Date) => void;
 }
 
 export function FullCalendarView({
   lessons,
+  selectedDate,
   onDateRangeChange,
   onAddLesson,
   onLessonClick,
+  onDaySelect,
 }: FullCalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const { data: session } = useSession();
@@ -78,15 +88,24 @@ export function FullCalendarView({
     end: Date;
     view: { type: string };
   }) => {
-    onDateRangeChange(arg.start, arg.end);
+    onDateRangeChange(arg.start, arg.end, arg.view.type);
   };
 
   const handleEventClick = (info: EventClickArg) => {
     const lesson = info.event.extendedProps.lesson as Lesson;
+    if (info.event.start) {
+      onDaySelect(info.event.start);
+    }
     onLessonClick(lesson);
   };
 
   const handleDateClick = (arg: { date: Date; view: { type: string } }) => {
+    // Month view carries no event chips, so a day cell click selects the day
+    // for the panel below/beside the grid instead of assuming "add lesson".
+    if (arg.view.type === "dayGridMonth") {
+      onDaySelect(arg.date);
+      return;
+    }
     onAddLesson(arg.date);
   };
 
@@ -164,29 +183,71 @@ export function FullCalendarView({
     });
   };
 
-  // Custom render for day cell content (Month View) — upgraded badge
+  // Custom render for day cell content (Month View) — sober by design: the
+  // only marks are the count pill (a blossom bullet, never encoding the
+  // number itself) and, on today, a low-opacity blossom watermark.
   const renderDayCellContent = (arg: DayCellContentArg) => {
     const count = lessons.filter((l) =>
       isSameDay(fromUTC(new Date(l.date), timezone), arg.date),
     ).length;
 
     const isBirthday = isBirthdayMode && isSameDay(arg.date, BIRTHDAY_DATE);
+    const isTodayCell = isTodayDate(arg.date);
 
     return (
-      <div className="flex h-full w-full flex-col justify-between p-1">
+      <div className="relative flex h-full w-full flex-col justify-between overflow-hidden p-1">
+        {isTodayCell && (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="text-bubblegum pointer-events-none absolute -top-2 -left-2 z-0 size-11 opacity-20"
+          >
+            <g fill="currentColor">
+              <ellipse cx="12" cy="6" rx="3.2" ry="4.5" />
+              <ellipse
+                cx="12"
+                cy="6"
+                rx="3.2"
+                ry="4.5"
+                transform="rotate(72 12 12)"
+              />
+              <ellipse
+                cx="12"
+                cy="6"
+                rx="3.2"
+                ry="4.5"
+                transform="rotate(144 12 12)"
+              />
+              <ellipse
+                cx="12"
+                cy="6"
+                rx="3.2"
+                ry="4.5"
+                transform="rotate(216 12 12)"
+              />
+              <ellipse
+                cx="12"
+                cy="6"
+                rx="3.2"
+                ry="4.5"
+                transform="rotate(288 12 12)"
+              />
+            </g>
+          </svg>
+        )}
         <span
           className={
             isBirthday
-              ? "inline-flex items-center gap-0.5 text-sm font-bold text-amber-600"
-              : "text-foreground/80 text-sm font-medium"
+              ? "relative z-1 inline-flex items-center gap-0.5 rounded px-1 text-sm font-bold text-amber-600"
+              : isTodayCell
+                ? "relative z-1 grid size-6 place-items-center rounded-full [background-image:var(--grad-pink)] text-[13px] font-bold text-white shadow-(--sh-pink)"
+                : "text-ink/80 relative z-1 text-sm font-medium"
           }
           style={
             isBirthday
               ? {
                   outline: "2px solid #fde68a",
                   outlineOffset: "2px",
-                  borderRadius: "4px",
-                  padding: "0 2px",
                   background:
                     "linear-gradient(135deg, rgba(253,230,138,0.3), rgba(251,207,232,0.3))",
                 }
@@ -194,20 +255,62 @@ export function FullCalendarView({
           }
           title={isBirthday ? "Special Day! 🎂" : undefined}
         >
-          {arg.dayNumberText}
+          {arg.dayNumberText.replace(".", "")}
           {isBirthday && <span className="ml-0.5 text-xs">🎂</span>}
         </span>
         {count > 0 && (
-          <div className="mt-auto self-start">
-            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-600 shadow-sm backdrop-blur-sm transition-all hover:bg-pink-200">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-pink-400" />
-              {count} {count === 1 ? "lesson" : "lessons"}
+          <div className="relative z-1 mt-auto self-start">
+            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 py-0.5 pr-2 pl-1.5 text-[11px] font-bold text-pink-700 tabular-nums shadow-(--sh-xs)">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="size-2 shrink-0 text-pink-500"
+              >
+                <g fill="currentColor">
+                  <ellipse cx="12" cy="6" rx="3.2" ry="4.5" />
+                  <ellipse
+                    cx="12"
+                    cy="6"
+                    rx="3.2"
+                    ry="4.5"
+                    transform="rotate(72 12 12)"
+                  />
+                  <ellipse
+                    cx="12"
+                    cy="6"
+                    rx="3.2"
+                    ry="4.5"
+                    transform="rotate(144 12 12)"
+                  />
+                  <ellipse
+                    cx="12"
+                    cy="6"
+                    rx="3.2"
+                    ry="4.5"
+                    transform="rotate(216 12 12)"
+                  />
+                  <ellipse
+                    cx="12"
+                    cy="6"
+                    rx="3.2"
+                    ry="4.5"
+                    transform="rotate(288 12 12)"
+                  />
+                </g>
+              </svg>
+              {count}
+              <span className="sr-only">
+                {count === 1 ? "lesson" : "lessons"}
+              </span>
             </span>
           </div>
         )}
       </div>
     );
   };
+
+  const dayCellClassNames = (arg: { date: Date }) =>
+    isSameDay(arg.date, selectedDate) ? ["fc-day-selected"] : [];
 
   const events = lessons.map((lesson) => {
     // FullCalendar runs in the browser's local zone. Shift each lesson's UTC
@@ -220,21 +323,28 @@ export function FullCalendarView({
       timezone,
     );
 
+    // Sober status colours (week/day views only — month view hides event
+    // chips entirely). Pastel fill + deep text, same convention as every
+    // status chip elsewhere in the app — never a solid saturated block.
     let backgroundColor = "";
     let borderColor = "";
+    let textColor = "";
 
     switch (lesson.status) {
       case "COMPLETE":
-        backgroundColor = "#10b981"; // Emerald-500
-        borderColor = "#059669";
+        backgroundColor = "var(--ok-bg)";
+        borderColor = "var(--teal-600)";
+        textColor = "var(--ok-fg)";
         break;
       case "CANCELLED":
-        backgroundColor = "var(--destructive)";
-        borderColor = "var(--destructive)";
+        backgroundColor = "var(--no-bg)";
+        borderColor = "var(--pink-600)";
+        textColor = "var(--no-fg)";
         break;
       default:
-        backgroundColor = "var(--primary)";
-        borderColor = "var(--primary)";
+        backgroundColor = "var(--wait-bg)";
+        borderColor = "var(--sand-700)";
+        textColor = "var(--wait-fg)";
     }
 
     return {
@@ -244,24 +354,24 @@ export function FullCalendarView({
       end: endDate,
       backgroundColor,
       borderColor,
+      textColor,
       extendedProps: {
         lesson,
       },
       classNames: [
         "cursor-pointer",
-        "hover:opacity-90",
-        "transition-opacity",
+        "hover:brightness-95",
+        "transition-[filter]",
         "rounded-md",
         "border",
         "px-1",
-        "shadow-sm",
-        "font-medium",
+        "font-semibold",
       ],
     };
   });
 
   return (
-    <div className="bg-card text-card-foreground w-full overflow-hidden rounded-xl border border-pink-100/60 shadow-sm">
+    <div className="border-border bg-card text-card-foreground w-full overflow-hidden rounded-[calc(var(--radius)+8px)] border shadow-(--sh)">
       <style jsx global>{`
         .fc {
           --fc-border-color: var(--border);
@@ -316,15 +426,13 @@ export function FullCalendarView({
           gap: 0.5rem;
         }
 
-        /* 🎵 Month Title — Gradient + Music Icon effect via pseudo */
+        /* Month title — serif, ink, no emoji hack. */
         .fc-toolbar-title {
-          font-size: 1.125rem !important;
-          font-weight: 700 !important;
-          letter-spacing: -0.025em;
-          background: linear-gradient(135deg, #ec4899, #a855f7);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          font-family: var(--font-serif);
+          font-size: 1.15rem !important;
+          font-weight: 400 !important;
+          letter-spacing: -0.01em;
+          color: var(--ink);
         }
 
         @media (min-width: 640px) {
@@ -333,24 +441,17 @@ export function FullCalendarView({
           }
         }
 
-        /* Add a music emoji before the title using CSS */
-        .fc-toolbar-title::before {
-          content: "🎵 ";
-          -webkit-text-fill-color: initial;
-          font-size: 0.9em;
-        }
-
         /* Buttons */
         .fc-button {
           background-color: transparent !important;
           border: 1px solid var(--border) !important;
-          color: var(--foreground) !important;
-          font-weight: 500 !important;
+          color: var(--ink) !important;
+          font-weight: 600 !important;
           text-transform: capitalize !important;
           border-radius: var(--radius-md) !important;
           padding: 0.375rem 0.75rem !important;
           transition: all 0.2s ease !important;
-          box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+          box-shadow: var(--sh-xs);
           font-size: 0.875rem !important;
         }
 
@@ -369,34 +470,37 @@ export function FullCalendarView({
         }
 
         .fc-button:hover {
-          background-color: #fdf2f8 !important;
-          border-color: #fce7f3 !important;
-          color: #ec4899 !important;
+          background-color: var(--pink-50) !important;
+          border-color: var(--line-pink) !important;
+          color: var(--pink-700) !important;
         }
 
         .fc-button:focus,
         .fc-button:focus-visible {
           outline: none !important;
-          border-color: #ec4899 !important;
-          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3) !important;
+          border-color: var(--pink-600) !important;
+          box-shadow: 0 0 0 2px
+            color-mix(in srgb, var(--pink-600) 30%, transparent) !important;
         }
 
         .fc-button:active {
-          border-color: #db2777 !important;
-          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.2) !important;
+          border-color: var(--pink-700) !important;
+          box-shadow: 0 0 0 2px
+            color-mix(in srgb, var(--pink-600) 20%, transparent) !important;
         }
 
         .fc-button-active,
         .fc-button-primary:not(:disabled).fc-button-active {
-          background: linear-gradient(135deg, #ec4899, #a855f7) !important;
+          background-image: var(--grad-pink) !important;
           border-color: transparent !important;
-          color: white !important;
-          box-shadow: 0 2px 8px 0 rgb(236 72 153 / 0.3) !important;
+          color: #fff !important;
+          box-shadow: var(--sh-pink) !important;
         }
 
         .fc-button-primary:not(:disabled).fc-button-active:focus,
         .fc-button-primary:not(:disabled):active:focus {
-          box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3) !important;
+          box-shadow: 0 0 0 2px
+            color-mix(in srgb, var(--pink-600) 30%, transparent) !important;
         }
 
         /* Grid & Cells */
@@ -410,28 +514,43 @@ export function FullCalendarView({
         }
 
         .fc-col-header-cell-cushion {
-          color: var(--muted-foreground);
-          font-weight: 600;
+          color: var(--ink-soft);
+          font-weight: 700;
           text-transform: uppercase;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           padding: 0.75rem 0 !important;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.08em;
         }
 
-        /* 💎 Calendar Cell Hover — life & warmth */
+        /* Weekend columns — a barely-there wash, matching the mockup's
+           sober weekend treatment (never a status colour). */
+        .fc-day-sat .fc-col-header-cell-cushion,
+        .fc-day-sun .fc-col-header-cell-cushion {
+          color: var(--teal-700);
+        }
+        .fc-daygrid-day.fc-day-sat,
+        .fc-daygrid-day.fc-day-sun {
+          background: color-mix(in srgb, var(--floss) 55%, transparent);
+        }
+
+        /* Day cell hover — pink wash, no scale jump (keeps the grid calm). */
         .fc-daygrid-day-frame {
           padding: 4px;
           transition:
             background-color 0.18s ease,
-            transform 0.18s ease,
             box-shadow 0.18s ease;
-          border-radius: 6px;
+          border-radius: 10px;
         }
 
         .fc-daygrid-day:hover .fc-daygrid-day-frame {
-          background-color: #fdf2f8 !important;
-          box-shadow: 0 1px 8px 0 rgb(236 72 153 / 0.08);
-          transform: scale(1.01);
+          background-color: var(--pink-50) !important;
+          box-shadow: var(--sh-sm);
+        }
+
+        /* Selected day (drives the day panel) — a teal ring, never fights
+           "today"'s filled pink circle. */
+        .fc-day-selected .fc-daygrid-day-frame {
+          box-shadow: inset 0 0 0 2px var(--teal-600);
         }
 
         /* Hide events in month view */
@@ -447,12 +566,10 @@ export function FullCalendarView({
           scrollbar-width: thin;
         }
 
-        /* Day View & Week View Events */
+        /* Day View & Week View Events — sober pastel blocks. */
         .fc-timegrid-event {
-          border-radius: 6px !important;
-          box-shadow:
-            0 2px 4px -1px rgb(0 0 0 / 0.1),
-            0 1px 2px -1px rgb(0 0 0 / 0.06);
+          border-radius: 8px !important;
+          box-shadow: var(--sh-xs);
           border: none !important;
           padding: 1px;
         }
@@ -465,18 +582,18 @@ export function FullCalendarView({
 
         /* Time slots */
         .fc-timegrid-slot-label-cushion {
-          color: var(--muted-foreground);
+          color: var(--ink-soft);
           font-size: 0.75rem;
           font-weight: 500;
         }
 
         .fc-timegrid-now-indicator-line {
-          border-color: #ec4899;
+          border-color: var(--pink-600);
           border-width: 2px;
         }
 
         .fc-timegrid-now-indicator-arrow {
-          border-color: #ec4899;
+          border-color: var(--pink-600);
           border-width: 6px;
         }
 
@@ -559,6 +676,7 @@ export function FullCalendarView({
               eventResize={handleEventResize}
               eventDidMount={handleEventDidMount}
               dayCellContent={renderDayCellContent}
+              dayCellClassNames={dayCellClassNames}
               navLinks={true}
               height="100%"
               slotMinTime="00:00:00"

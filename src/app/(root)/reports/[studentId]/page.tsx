@@ -1,5 +1,6 @@
 import { api } from "@/trpc/server";
 import { ReportDetailPage } from "../_components/report-detail-page";
+import { ReportDetailHero } from "../_components/report-detail-hero";
 
 type ReportDetailProps = {
   params: Promise<{ studentId: string }>;
@@ -30,18 +31,31 @@ export default async function ReportDetail(props: ReportDetailProps) {
   ]);
   const students = await api.student.getAll();
   const { month, year } = getSafeMonthYear(searchParams);
+  const studentName =
+    students.find((student) => student.id === studentId)?.name ?? "";
 
   return (
-    <div className="container mx-auto p-6 print:m-0 print:max-w-none print:p-0">
-      <ReportDetailPage
-        studentId={studentId}
-        month={month}
-        year={year}
-        students={students.map((student) => ({
-          id: student.id,
-          name: student.name,
-        }))}
-      />
+    <div className="flex flex-1 flex-col print:m-0 print:max-w-none print:p-0">
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-8 pb-6 md:gap-10 md:pb-10 print:pb-0">
+          <ReportDetailHero
+            studentId={studentId}
+            month={month}
+            year={year}
+            studentName={studentName}
+          />
+
+          <ReportDetailPage
+            studentId={studentId}
+            month={month}
+            year={year}
+            students={students.map((student) => ({
+              id: student.id,
+              name: student.name,
+            }))}
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { Blossom } from "@/components/blossom/blossom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,20 @@ interface FamilySheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+// Vietnamese names carry the family name first, so "Nguyễn Minh Anh" reads as
+// "MA" (the given name) rather than "NM". This matters more here than
+// anywhere else in the app: a family groups siblings who usually SHARE a
+// surname, so leading with the first name keeps them visually distinct
+// instead of every avatar in the stack starting with the same letter.
+const getInitials = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts
+    .slice(-2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+};
 
 export function FamilySheet({
   students,
@@ -108,8 +123,9 @@ export function FamilySheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col overflow-y-auto sm:max-w-125">
         <SheetHeader className="border-b pb-4">
-          <SheetTitle>
-            {isEdit ? "Edit family 👪" : "Create a family 👪"}
+          <SheetTitle className="text-ink flex items-center gap-2 font-serif text-xl font-semibold">
+            <Blossom size={18} className="text-bubblegum" />
+            {isEdit ? "Edit family" : "Create a family"}
           </SheetTitle>
           <SheetDescription>
             Bundle siblings or a parent + child so their monthly attendance and
@@ -126,6 +142,7 @@ export function FamilySheet({
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Nguyen family"
               maxLength={100}
+              className="h-11 rounded-2xl focus-visible:ring-pink-400"
             />
           </div>
 
@@ -136,7 +153,7 @@ export function FamilySheet({
               onValueChange={addMember}
               disabled={availableStudents.length === 0}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 w-full rounded-2xl focus-visible:ring-pink-400">
                 <SelectValue
                   placeholder={
                     availableStudents.length === 0
@@ -156,20 +173,20 @@ export function FamilySheet({
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <Label>
                 Members{" "}
                 <span className="text-muted-foreground font-normal">
                   ({memberIds.length})
                 </span>
               </Label>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-ink-soft text-xs">
                 Order = row order on the sheet
               </span>
             </div>
 
             {memberIds.length === 0 ? (
-              <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
+              <p className="text-ink-soft rounded-2xl border border-dashed border-pink-200 bg-pink-50/50 p-4 text-center text-sm">
                 No students yet. Add at least 2 above.
               </p>
             ) : (
@@ -179,25 +196,25 @@ export function FamilySheet({
                   return (
                     <li
                       key={id}
-                      className="flex items-center gap-2 rounded-lg border border-pink-100 bg-white p-2"
+                      className="bg-card flex items-center gap-2 rounded-2xl border border-pink-100 p-2 shadow-xs"
                     >
-                      <span className="text-muted-foreground w-5 text-center text-sm font-medium">
+                      <span className="text-ink-soft w-5 shrink-0 text-center text-sm font-bold tabular-nums">
                         {index + 1}
                       </span>
                       <Avatar className="size-8 border border-pink-100">
                         <AvatarImage src={student?.avatar ?? ""} />
-                        <AvatarFallback className="bg-pink-50 text-xs font-bold text-pink-600">
-                          {(student?.name ?? "?").charAt(0).toUpperCase()}
+                        <AvatarFallback className="bg-pink-100 text-xs font-bold text-pink-700">
+                          {getInitials(student?.name ?? "?")}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="flex-1 truncate text-sm font-medium">
+                      <span className="text-ink flex-1 truncate text-sm font-medium">
                         {student?.name ?? "Unknown student"}
                       </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-8"
+                        className="text-ink-soft size-8 rounded-full hover:bg-pink-50 hover:text-pink-700"
                         onClick={() => move(index, -1)}
                         disabled={index === 0}
                         aria-label="Move up"
@@ -208,7 +225,7 @@ export function FamilySheet({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-8"
+                        className="text-ink-soft size-8 rounded-full hover:bg-pink-50 hover:text-pink-700"
                         onClick={() => move(index, 1)}
                         disabled={index === memberIds.length - 1}
                         aria-label="Move down"
@@ -219,7 +236,7 @@ export function FamilySheet({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-rose-500 size-8 hover:text-rose-600"
+                        className="hover:bg-no-bg hover:text-no-fg size-8 rounded-full text-pink-700"
                         onClick={() => removeMember(id)}
                         aria-label="Remove"
                       >
@@ -234,10 +251,18 @@ export function FamilySheet({
         </div>
 
         <div className="flex justify-end gap-2 border-t p-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!canSave || isPending}>
+          <Button
+            className="rounded-full"
+            onClick={handleSave}
+            disabled={!canSave || isPending}
+          >
             {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             {isEdit ? "Save changes" : "Create family"}
           </Button>

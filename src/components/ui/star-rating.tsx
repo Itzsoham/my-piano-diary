@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Star } from "lucide-react";
 
+import { Blossom } from "@/components/blossom/blossom";
 import { cn } from "@/lib/utils";
 
 type StarRatingProps = {
@@ -16,10 +16,10 @@ type StarRatingProps = {
   className?: string;
 };
 
-const sizeClasses: Record<NonNullable<StarRatingProps["size"]>, string> = {
-  sm: "h-5 w-5",
-  md: "h-6 w-6",
-  lg: "h-8 w-8",
+const sizePx: Record<NonNullable<StarRatingProps["size"]>, number> = {
+  sm: 18,
+  md: 21,
+  lg: 27,
 };
 
 export const difficultyScale: Record<
@@ -90,28 +90,22 @@ export function StarRating({
               type="button"
               role="radio"
               aria-checked={starValue === (value ?? 0)}
-              aria-label={`${starValue} star${starValue === 1 ? "" : "s"}`}
+              aria-label={`${starValue} blossom${starValue === 1 ? "" : "s"}`}
               className={cn(
-                "transition-colors duration-200",
-                readOnly
-                  ? "cursor-default"
-                  : "cursor-pointer transition-transform hover:scale-110 hover:text-pink-500",
+                "grid place-items-center rounded-full transition-transform duration-200",
+                readOnly ? "cursor-default" : "cursor-pointer hover:scale-110",
                 isActive
                   ? isMax
-                    ? "text-fuchsia-500 drop-shadow-[0_0_6px_rgba(217,70,239,0.35)]"
-                    : "text-pink-500"
-                  : "text-muted-foreground/40",
+                    ? "text-pink-700 drop-shadow-[0_0_6px_rgba(201,79,124,0.35)]"
+                    : "text-pink-600"
+                  : "text-pink-400",
               )}
               onClick={() => !readOnly && onChange?.(starValue)}
               onMouseEnter={() => !readOnly && setHovered(starValue)}
               onMouseLeave={() => !readOnly && setHovered(null)}
               disabled={readOnly}
             >
-              <Star
-                className={sizeClasses[size]}
-                fill={isActive ? "currentColor" : "none"}
-                strokeWidth={1.5}
-              />
+              <Blossom size={sizePx[size]} />
             </button>
           );
         })}

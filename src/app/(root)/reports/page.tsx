@@ -1,5 +1,6 @@
 import { api } from "@/trpc/server";
 import { redirect } from "next/navigation";
+import { ReportsHero } from "./_components/reports-hero";
 import { ReportsPage } from "./_components/reports-page";
 
 export default async function Reports(props: {
@@ -31,16 +32,22 @@ export default async function Reports(props: {
   });
 
   return (
-    <div className="container mx-auto p-6 print:m-0 print:max-w-none print:p-0">
-      <ReportsPage
-        students={students.map((student) => ({
-          id: student.id,
-          name: student.name,
-        }))}
-        initialReports={initialReports}
-        initialMonth={safeMonth}
-        initialYear={safeYear}
-      />
+    <div className="flex flex-1 flex-col print:m-0 print:max-w-none print:p-0">
+      <div className="flex flex-col gap-8 pb-6 md:gap-10 md:pb-10 print:pb-0">
+        <ReportsHero />
+
+        <div className="px-4 lg:px-6 print:px-0">
+          <ReportsPage
+            students={students.map((student) => ({
+              id: student.id,
+              name: student.name,
+            }))}
+            initialReports={initialReports}
+            initialMonth={safeMonth}
+            initialYear={safeYear}
+          />
+        </div>
+      </div>
     </div>
   );
 }

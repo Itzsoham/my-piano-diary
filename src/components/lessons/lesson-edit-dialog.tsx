@@ -162,10 +162,10 @@ export function LessonEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-115">
         <DialogHeader className="space-y-2">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-600 sm:h-12 sm:w-12">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-pink-600 sm:h-12 sm:w-12">
             <PencilLine className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <DialogTitle className="text-center text-xl sm:text-2xl">
+          <DialogTitle className="text-ink text-center text-xl sm:text-2xl">
             Edit lesson
           </DialogTitle>
           <DialogDescription className="text-center text-sm sm:text-base">

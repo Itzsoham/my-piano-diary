@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { BookOpen, CalendarDays, MapPin, User, Wifi } from "lucide-react";
 
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
@@ -22,7 +23,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { formatNumberWithSeparators } from "@/lib/format";
+import { useCurrency } from "@/lib/currency";
+import { formatCurrency, formatNumberWithSeparators } from "@/lib/format";
 
 const studentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -51,6 +53,14 @@ export function StudentForm({
 }) {
   const utils = api.useUtils();
   const router = useRouter();
+  const { currency } = useCurrency();
+
+  // The bare currency symbol (no digits), derived from the teacher's chosen
+  // currency so the rate fields never hardcode one — VND, IDR, USD and INR
+  // all format differently (e.g. "₫" trails the number in vi-VN).
+  const currencySymbol = formatCurrency(0, currency)
+    .replace(/[\d.,\s ]/g, "")
+    .trim();
 
   // Fetch student data only if we have an ID (edit mode)
   const { data: student, isLoading } = api.student.getByGuid.useQuery(
@@ -164,34 +174,31 @@ export function StudentForm({
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-6 sm:space-y-10"
+          className="space-y-6 sm:space-y-8"
         >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="flex flex-col items-center gap-4 text-center md:col-span-1 md:items-start md:text-left">
-              <div className="flex w-full items-center justify-center gap-4">
-                <Avatar className="size-24 rounded-full shadow-md ring-4 ring-pink-200">
-                  <AvatarImage src={avatarUrl} alt={nameValue || "Avatar"} />
-                  <AvatarFallback>{getInitials(nameValue)}</AvatarFallback>
-                </Avatar>
-                {/* <div>
-                  <p className="text-muted-foreground text-sm">Preview</p>
-                </div> */}
-              </div>
+              <Avatar className="size-24 rounded-full shadow-(--sh-sm) ring-4 ring-pink-200">
+                <AvatarImage src={avatarUrl} alt={nameValue || "Avatar"} />
+                <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-3xl font-bold">
+                  {getInitials(nameValue)}
+                </AvatarFallback>
+              </Avatar>
 
               <FormField
                 control={form.control}
                 name="avatar"
                 render={({ field }) => (
                   <FormItem className="w-full">
-                    <FormLabel className="mx-auto">Avatar URL</FormLabel>
+                    <FormLabel className="text-pink-700">Avatar URL</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="https://example.com/avatar.jpg"
-                        className="h-11 rounded-2xl focus-visible:ring-pink-400"
+                        className="h-11 rounded-2xl border-(--line-pink) focus-visible:ring-pink-400"
                         {...field}
                       />
                     </FormControl>
@@ -202,17 +209,17 @@ export function StudentForm({
               />
             </div>
 
-            <div className="space-y-4 md:col-span-2">
+            <div className="space-y-5 md:col-span-2">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel className="text-pink-700">Name</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter student name"
-                        className="h-11 rounded-2xl focus-visible:ring-pink-400"
+                        className="h-11 rounded-2xl border-(--line-pink) focus-visible:ring-pink-400"
                         {...field}
                       />
                     </FormControl>
@@ -221,99 +228,121 @@ export function StudentForm({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="lessonRate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rate Per Lesson</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2">
-                          đ
-                        </span>
-                        <Input
-                          placeholder="0"
-                          type="text"
-                          inputMode="numeric"
-                          className="h-11 rounded-2xl bg-pink-50 pl-8 text-base font-semibold focus-visible:ring-pink-400"
-                          {...field}
-                          onChange={(e) => {
-                            const numValue =
-                              parseInt(
-                                e.target.value.replace(/\./g, "") || "0",
-                              ) || 0;
-                            field.onChange(numValue);
-                          }}
-                          value={
-                            field.value
-                              ? formatNumberWithSeparators(field.value)
-                              : ""
-                          }
+              {/* The two real rates, side by side and colour-coded so they
+                  never get mistaken for one another: pink = in-person (this
+                  form's default identity), teal = online (matches the
+                  "Online" tag used elsewhere in the app). */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="lessonRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                        <MapPin
+                          className="size-3.5"
+                          aria-hidden="true"
+                          focusable="false"
                         />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Charge amount per completed in-person lesson
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        In-Person Rate
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-semibold">
+                            {currencySymbol}
+                          </span>
+                          <Input
+                            placeholder="0"
+                            type="text"
+                            inputMode="numeric"
+                            className="text-ink h-11 rounded-2xl border-(--line-pink) bg-pink-50 pl-10 text-base font-semibold tabular-nums focus-visible:ring-pink-400"
+                            {...field}
+                            onChange={(e) => {
+                              const numValue =
+                                parseInt(
+                                  e.target.value.replace(/\./g, "") || "0",
+                                ) || 0;
+                              field.onChange(numValue);
+                            }}
+                            value={
+                              field.value
+                                ? formatNumberWithSeparators(field.value)
+                                : ""
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Charge amount per completed in-person lesson
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="onlineLessonRate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Online Rate Per Lesson</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2">
-                          đ
-                        </span>
-                        <Input
-                          placeholder="0"
-                          type="text"
-                          inputMode="numeric"
-                          className="h-11 rounded-2xl bg-pink-50 pl-8 text-base font-semibold focus-visible:ring-pink-400"
-                          {...field}
-                          onChange={(e) => {
-                            const numValue =
-                              parseInt(
-                                e.target.value.replace(/\./g, "") || "0",
-                              ) || 0;
-                            field.onChange(numValue);
-                          }}
-                          value={
-                            field.value
-                              ? formatNumberWithSeparators(field.value)
-                              : ""
-                          }
+                <FormField
+                  control={form.control}
+                  name="onlineLessonRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-teal-700 uppercase">
+                        <Wifi
+                          className="size-3.5"
+                          aria-hidden="true"
+                          focusable="false"
                         />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Charge amount per completed online lesson
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        Online Rate
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-semibold">
+                            {currencySymbol}
+                          </span>
+                          <Input
+                            placeholder="0"
+                            type="text"
+                            inputMode="numeric"
+                            className="text-ink h-11 rounded-2xl border-teal-200 bg-teal-50 pl-10 text-base font-semibold tabular-nums focus-visible:ring-teal-400"
+                            {...field}
+                            onChange={(e) => {
+                              const numValue =
+                                parseInt(
+                                  e.target.value.replace(/\./g, "") || "0",
+                                ) || 0;
+                              field.onChange(numValue);
+                            }}
+                            value={
+                              field.value
+                                ? formatNumberWithSeparators(field.value)
+                                : ""
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Charge amount per completed online lesson
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-4 rounded-xl bg-pink-50/50 p-4 shadow-sm sm:space-y-6">
+          <div className="space-y-4 rounded-2xl border border-(--line-pink) bg-pink-50/40 p-4 shadow-(--sh-sm) sm:space-y-5 sm:p-5">
             <FormField
               control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Additional Notes</FormLabel>
+                  <FormLabel className="text-pink-700">
+                    Additional Notes
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Add any notes about the student..."
-                      className="min-h-32 resize-none rounded-2xl focus-visible:ring-pink-400"
+                      className="bg-card min-h-32 resize-none rounded-2xl focus-visible:ring-pink-400"
                       {...field}
                     />
                   </FormControl>
@@ -326,11 +355,11 @@ export function StudentForm({
             />
           </div>
 
-          <div className="flex flex-col justify-end gap-2 pt-4 sm:flex-row sm:gap-3 sm:pt-6">
+          <div className="flex flex-col justify-end gap-2 pt-2 sm:flex-row sm:gap-3">
             <Button
               type="button"
               variant="ghost"
-              className="h-10 rounded-full sm:h-auto"
+              className="h-11 rounded-full sm:h-auto"
               onClick={() => onSuccess?.()}
             >
               Cancel
@@ -338,7 +367,7 @@ export function StudentForm({
             <Button
               type="submit"
               disabled={isPending}
-              className="h-11 rounded-full bg-pink-500 px-6 font-medium text-white shadow-sm transition hover:scale-[1.02] hover:bg-pink-600 hover:shadow-lg sm:h-auto"
+              className="h-11 rounded-full [background-image:var(--grad-pink)] px-6 font-semibold text-white shadow-(--sh-pink) transition hover:scale-[1.02] hover:shadow-lg hover:brightness-110 sm:h-auto"
             >
               {isPending
                 ? studentId
@@ -353,29 +382,61 @@ export function StudentForm({
       </Form>
 
       {student && (
-        <div className="space-y-3 rounded-lg border p-3 sm:space-y-4 sm:p-4">
-          <h4 className="font-semibold">Student Information</h4>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <div className="text-sm font-medium">Teacher</div>
-              <div className="text-muted-foreground text-sm">
-                {student.teacher.user.name ?? student.teacher.user.email}
+        <div className="space-y-4 rounded-2xl border border-(--line-strong) p-4 sm:p-5">
+          <h4 className="text-ink font-serif text-base font-normal">
+            Student Information
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-pink-100 text-pink-700"
+              >
+                <User className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-ink-soft text-xs font-semibold">
+                  Teacher
+                </div>
+                <div className="text-ink truncate text-sm">
+                  {student.teacher.user.name ?? student.teacher.user.email}
+                </div>
               </div>
             </div>
-            <div className="grid gap-2">
-              <div className="text-sm font-medium">Total Lessons</div>
-              <div className="text-muted-foreground text-sm">
-                {student.lessons.length} lessons recorded
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-teal-100 text-teal-700"
+              >
+                <BookOpen className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-ink-soft text-xs font-semibold">
+                  Total Lessons
+                </div>
+                <div className="text-ink text-sm">
+                  {student.lessons.length} lessons recorded
+                </div>
               </div>
             </div>
-            <div className="grid gap-2">
-              <div className="text-sm font-medium">Joined</div>
-              <div className="text-muted-foreground text-sm">
-                {new Date(student.createdAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="bg-sand-100 text-sand-700 flex size-8 shrink-0 items-center justify-center rounded-lg"
+              >
+                <CalendarDays className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-ink-soft text-xs font-semibold">
+                  Joined
+                </div>
+                <div className="text-ink text-sm">
+                  {new Date(student.createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </div>
               </div>
             </div>
           </div>

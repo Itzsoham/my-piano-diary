@@ -254,31 +254,28 @@ export function AttendanceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-106.25">
         <DialogHeader className="space-y-2 sm:space-y-3">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">
-            <Music2 className="h-5 w-5 text-pink-600 sm:h-6 sm:w-6" />
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full [background-image:var(--grad-pink)] shadow-(--sh-pink) sm:h-12 sm:w-12">
+            <Music2 className="h-5 w-5 text-white sm:h-6 sm:w-6" />
           </div>
-          <DialogTitle className="text-center text-xl font-bold text-pink-950 sm:text-2xl">
+          <DialogTitle className="text-ink text-center text-xl font-bold sm:text-2xl">
             Lesson with {session?.user?.name ?? "you"} 🎹
           </DialogTitle>
-          <DialogDescription className="text-center text-sm font-medium text-pink-800/60 sm:text-base">
+          <DialogDescription className="text-ink-soft text-center text-sm font-medium sm:text-base">
             {format(lesson.date, "EEEE · h:mm a")} · {lesson.duration} min
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* Compact top bar — rate (shown as text since it rarely changes)
                 + online toggle, kept slim so the modal stays short */}
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl border border-pink-100 bg-white/70 px-3 py-2.5">
+            <div className="border-border bg-card flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-2xl border px-3 py-2.5">
               <FormField
                 control={form.control}
                 name="rate"
                 render={({ field }) => (
                   <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormLabel className="text-xs font-semibold whitespace-nowrap text-pink-900/70">
+                    <FormLabel className="text-ink-soft text-xs font-semibold whitespace-nowrap">
                       {lesson.studentName}&apos;s rate
                     </FormLabel>
                     {isEditingRate ? (
@@ -312,9 +309,9 @@ export function AttendanceDialog({
                       <button
                         type="button"
                         onClick={() => setIsEditingRate(true)}
-                        className="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-sm font-bold text-pink-900 transition hover:bg-pink-50"
+                        className="text-ink flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-sm font-bold transition hover:bg-pink-50"
                       >
-                        <span>
+                        <span className="tabular-nums">
                           đ {formatNumberWithSeparators(rateValue ?? 0)}
                         </span>
                         <Pencil className="h-3.5 w-3.5 text-pink-400" />
@@ -329,7 +326,7 @@ export function AttendanceDialog({
                 name="isOnline"
                 render={({ field }) => (
                   <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormLabel className="text-xs font-semibold whitespace-nowrap text-pink-900/70">
+                    <FormLabel className="text-ink-soft text-xs font-semibold whitespace-nowrap">
                       Online 💻
                     </FormLabel>
                     <FormControl>
@@ -343,19 +340,19 @@ export function AttendanceDialog({
               />
 
               {rateEdited && (
-                <p className="w-full text-xs text-pink-500">
+                <p className="w-full text-xs text-pink-600">
                   Custom rate for this lesson only — totals update accordingly.
                 </p>
               )}
             </div>
 
-            <div className="space-y-3 rounded-xl bg-linear-to-br from-pink-50/50 to-purple-50/50 p-3 sm:space-y-4 sm:p-4">
+            <div className="space-y-3 rounded-2xl bg-[linear-gradient(160deg,var(--pink-50),var(--surface)_70%)] p-3 sm:space-y-4 sm:p-4">
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel className="text-xs font-semibold text-pink-900/70 sm:text-sm">
+                    <FormLabel className="text-ink-soft text-xs font-semibold sm:text-sm">
                       Attendance Status
                     </FormLabel>
                     <FormControl>
@@ -366,16 +363,16 @@ export function AttendanceDialog({
                           className={cn(
                             "group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "COMPLETE"
-                              ? "border-green-500 bg-green-50 shadow-sm ring-2 shadow-green-100 ring-green-500/10"
-                              : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
+                              ? "bg-ok-bg border-teal-600 shadow-sm ring-2 ring-teal-600/15"
+                              : "border-border bg-card/50 opacity-60 hover:border-(--line-pink) hover:opacity-100",
                           )}
                         >
                           <div
                             className={cn(
                               "flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95 sm:h-10 sm:w-10",
                               field.value === "COMPLETE"
-                                ? "scale-110 bg-green-100 text-green-600"
-                                : "bg-gray-100 text-gray-400",
+                                ? "bg-card text-ok-fg scale-110"
+                                : "bg-muted text-ink-soft",
                             )}
                           >
                             <Check className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -384,8 +381,8 @@ export function AttendanceDialog({
                             className={cn(
                               "text-[10px] font-bold sm:text-xs",
                               field.value === "COMPLETE"
-                                ? "text-green-700"
-                                : "text-gray-500",
+                                ? "text-ok-fg"
+                                : "text-ink-soft",
                             )}
                           >
                             Present
@@ -398,16 +395,16 @@ export function AttendanceDialog({
                           className={cn(
                             "group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "CANCELLED"
-                              ? "border-rose-500 bg-rose-50 shadow-sm ring-2 shadow-rose-100 ring-rose-500/10"
-                              : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
+                              ? "bg-no-bg border-pink-600 shadow-sm ring-2 ring-pink-600/15"
+                              : "border-border bg-card/50 opacity-60 hover:border-(--line-pink) hover:opacity-100",
                           )}
                         >
                           <div
                             className={cn(
                               "flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95 sm:h-10 sm:w-10",
                               field.value === "CANCELLED"
-                                ? "scale-110 bg-rose-100 text-rose-600"
-                                : "bg-gray-100 text-gray-400",
+                                ? "bg-card text-no-fg scale-110"
+                                : "bg-muted text-ink-soft",
                             )}
                           >
                             <X className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -416,8 +413,8 @@ export function AttendanceDialog({
                             className={cn(
                               "text-[10px] font-bold sm:text-xs",
                               field.value === "CANCELLED"
-                                ? "text-rose-700"
-                                : "text-gray-500",
+                                ? "text-no-fg"
+                                : "text-ink-soft",
                             )}
                           >
                             Cancelled
@@ -430,16 +427,16 @@ export function AttendanceDialog({
                           className={cn(
                             "group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 transition-all duration-200 sm:min-h-0 sm:gap-2 sm:p-3",
                             field.value === "PENDING"
-                              ? "border-amber-500 bg-amber-50 shadow-sm ring-2 shadow-amber-100 ring-amber-500/10"
-                              : "border-pink-100 bg-white/50 opacity-60 hover:border-pink-200 hover:opacity-100",
+                              ? "border-sand-700 bg-wait-bg ring-sand-700/15 shadow-sm ring-2"
+                              : "border-border bg-card/50 opacity-60 hover:border-(--line-pink) hover:opacity-100",
                           )}
                         >
                           <div
                             className={cn(
                               "flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 group-active:scale-95 sm:h-10 sm:w-10",
                               field.value === "PENDING"
-                                ? "scale-110 bg-amber-100 text-amber-600"
-                                : "bg-gray-100 text-gray-400",
+                                ? "bg-card text-wait-fg scale-110"
+                                : "bg-muted text-ink-soft",
                             )}
                           >
                             <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -448,8 +445,8 @@ export function AttendanceDialog({
                             className={cn(
                               "text-[10px] font-bold sm:text-xs",
                               field.value === "PENDING"
-                                ? "text-amber-700"
-                                : "text-gray-500",
+                                ? "text-wait-fg"
+                                : "text-ink-soft",
                             )}
                           >
                             Pending
@@ -469,7 +466,7 @@ export function AttendanceDialog({
                     name="cancelReason"
                     render={({ field }) => (
                       <FormItem className="animate-in fade-in slide-in-from-top-2 duration-300">
-                        <FormLabel className="text-sm font-semibold text-pink-900/70">
+                        <FormLabel className="text-ink-soft text-sm font-semibold">
                           Reason for Absence
                         </FormLabel>
                         <FormControl>
@@ -489,13 +486,13 @@ export function AttendanceDialog({
                     name="note"
                     render={({ field }) => (
                       <FormItem className="animate-in fade-in slide-in-from-top-2 duration-300">
-                        <FormLabel className="text-sm font-semibold text-pink-900/70">
+                        <FormLabel className="text-ink-soft text-sm font-semibold">
                           Additional Note 💭
                         </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Optional note for yourself..."
-                            className="min-h-20 rounded-xl border-pink-100 bg-white focus:border-pink-300 focus:ring-pink-200"
+                            className="bg-card min-h-20 rounded-xl border-pink-100 focus:border-pink-300 focus:ring-pink-200"
                             {...field}
                           />
                         </FormControl>
@@ -518,7 +515,8 @@ export function AttendanceDialog({
               </Button>
               <Button
                 type="submit"
-                className="h-10 flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 text-white shadow-md shadow-pink-200 transition-all hover:from-pink-600 hover:to-purple-600 hover:shadow-lg active:scale-[0.98] sm:h-auto"
+                disabled={markAttendance.isPending}
+                className="h-10 flex-1 rounded-xl [background-image:var(--grad-pink)] text-white shadow-(--sh-pink) transition-[filter] hover:brightness-105 sm:h-auto"
               >
                 {selectedStatus === "COMPLETE"
                   ? "Mark Present"

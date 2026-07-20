@@ -2,13 +2,7 @@
 
 import { keepPreviousData } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Clock,
-  TrendingUp,
-  Wallet,
-  WalletCards,
-  type LucideIcon,
-} from "lucide-react";
+import { WalletCards } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Blossom } from "@/components/blossom/blossom";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useFilterParams } from "@/lib/use-filter-params";
@@ -139,17 +134,24 @@ export function PaymentsPageContent({
   const animatedReceived = useCountUp(isBirthdayMode ? totalReceived : 0);
   const animatedOutstanding = useCountUp(isBirthdayMode ? totalOutstanding : 0);
 
+  // A candy tile per KPI — mirrors dashboard's SectionCards pattern exactly: the
+  // frame blooms (corner blossom, wash background), the figure itself stays
+  // sober — undecorated, tabular, in its family ink. Old rose/emerald/amber wash
+  // maps onto pink / ok(teal) / wait(sand) token families respectively. Note this
+  // is a DIFFERENT mapping than the per-row derived status pill below (which maps
+  // UNPAID→no): these three tiles are all-time rollups, not individual dues, so
+  // "Outstanding" here reads as a softer wait/sand tone rather than an alarm.
   const summaryCards: Array<{
     title: string;
     rawValue: number;
     animatedValue: number;
     subtitle: string;
-    shell: string;
-    hoverShadow: string;
+    washBg: string;
     borderClass: string;
-    titleClass: string;
+    labelClass: string;
     valueClass: string;
-    icon: LucideIcon;
+    bloomClass: string;
+    ruleStyle: React.CSSProperties;
     glowDelay: string;
     bdaySubtitle: string;
   }> = [
@@ -158,13 +160,12 @@ export function PaymentsPageContent({
       rawValue: totalExpected,
       animatedValue: animatedExpected,
       subtitle: "All completed lessons till now",
-      shell:
-        "bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,238,243,0.94),rgba(255,247,251,0.98))]",
-      hoverShadow: "hover:shadow-[0_15px_30px_-12px_rgba(225,29,72,0.15)]",
-      borderClass: "border-rose-200/80",
-      titleClass: "text-rose-500",
-      valueClass: "text-rose-600",
-      icon: Wallet,
+      washBg: "linear-gradient(160deg, var(--pink-100), var(--surface) 70%)",
+      borderClass: "border-pink-200/70",
+      labelClass: "text-pink-700",
+      valueClass: "text-ink",
+      bloomClass: "text-bubblegum opacity-50",
+      ruleStyle: { background: "var(--grad-pink)" },
       glowDelay: "0s",
       bdaySubtitle: "Your hard work is blooming 🌸",
     },
@@ -173,13 +174,14 @@ export function PaymentsPageContent({
       rawValue: totalReceived,
       animatedValue: animatedReceived,
       subtitle: "All payment transactions till now",
-      shell:
-        "bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(236,253,245,0.95),rgba(248,255,252,0.98))]",
-      hoverShadow: "hover:shadow-[0_15px_30px_-12px_rgba(5,150,105,0.15)]",
-      borderClass: "border-emerald-200/80",
-      titleClass: "text-emerald-600",
-      valueClass: "text-emerald-600",
-      icon: TrendingUp,
+      washBg: "linear-gradient(160deg, var(--teal-100), var(--surface) 70%)",
+      borderClass: "border-teal-200/70",
+      labelClass: "text-ok-fg",
+      valueClass: "text-ok-fg",
+      bloomClass: "text-ok-dot opacity-60",
+      ruleStyle: {
+        background: "linear-gradient(90deg, var(--wintergreen), var(--mint))",
+      },
       glowDelay: "0.75s",
       bdaySubtitle: "Every penny counts 💚",
     },
@@ -188,13 +190,14 @@ export function PaymentsPageContent({
       rawValue: totalOutstanding,
       animatedValue: animatedOutstanding,
       subtitle: "Remaining due across all students",
-      shell:
-        "bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,251,235,0.96),rgba(255,247,237,0.98))]",
-      hoverShadow: "hover:shadow-[0_15px_30px_-12px_rgba(217,119,6,0.15)]",
-      borderClass: "border-amber-200/80",
-      titleClass: "text-amber-600",
-      valueClass: "text-amber-500",
-      icon: Clock,
+      washBg: "linear-gradient(160deg, var(--sand-100), var(--surface) 70%)",
+      borderClass: "border-sand-300/60",
+      labelClass: "text-wait-fg",
+      valueClass: "text-wait-fg",
+      bloomClass: "text-wait-dot opacity-70",
+      ruleStyle: {
+        background: "linear-gradient(90deg, var(--sand-300), var(--cotton))",
+      },
       glowDelay: "1.5s",
       bdaySubtitle: "Almost there, keep going 🎹",
     },
@@ -208,88 +211,132 @@ export function PaymentsPageContent({
   const selectedHistoryStudent =
     students.find((student) => student.id === historyStudentId) ?? null;
 
+  // Status-count badges below the filter bar — derived the same way the table's
+  // own status pills are, just tallied across the current month's rows.
+  const unpaidCount = payments.filter(
+    (payment) => payment.status === "UNPAID",
+  ).length;
+  const partialCount = payments.filter(
+    (payment) => payment.status === "PARTIAL",
+  ).length;
+  const paidCount = payments.filter(
+    (payment) => payment.status === "PAID",
+  ).length;
+
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <BirthdayBanner
-        text="Your hard work deserves every penny 🌸"
-        icon="🌸"
-        storageKey="payments"
-      />
+    <div className="flex flex-1 flex-col gap-6 md:gap-8">
+      {/* Summary — the h1/subtitle header now lives in payments-hero.tsx; this
+          screen starts straight at the three candy tiles. page.tsx already
+          supplies the px-4 lg:px-6 gutter AND the pb-6/md:pb-10 bottom
+          padding around this whole component (see the page-shell pattern in
+          dashboard/page.tsx, where sibling sections like SectionCards carry
+          no bottom padding of their own) — so nothing below re-applies its
+          own horizontal padding or bottom padding. */}
       <div>
-        <h1 className="bday-animate-title text-3xl font-bold tracking-tight">
-          Payments
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Track expected dues, partial payments, and full monthly settlements.
+        <BirthdayBanner
+          text="Your hard work deserves every penny 🌸"
+          icon="🌸"
+          storageKey="payments"
+        />
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {summaryCards.map((card, index) => {
+            const displayValue = isOverallSummaryPending
+              ? "Calculating..."
+              : formatCurrency(
+                  isBirthdayMode ? card.animatedValue : card.rawValue,
+                  currency,
+                );
+
+            const cardStyle = {
+              "--i": index,
+              background: card.washBg,
+              ...(isBirthdayMode
+                ? {
+                    animation: "bday-glow-pulse 3s ease-in-out infinite",
+                    animationDelay: card.glowDelay,
+                  }
+                : {}),
+            } as React.CSSProperties;
+
+            return (
+              <Card
+                key={card.title}
+                style={cardStyle}
+                className={cn(
+                  "rise relative flex min-h-42 flex-col overflow-hidden rounded-[calc(var(--radius)+8px)] border p-5 shadow-(--sh)",
+                  card.borderClass,
+                )}
+              >
+                {/* Corner blossom — the tile's single family ornament (decorative). */}
+                <Blossom
+                  size={58}
+                  className={cn(
+                    "absolute -top-2.5 -right-2.5 z-0",
+                    card.bloomClass,
+                  )}
+                />
+
+                <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+                  <span
+                    className={cn(
+                      "pr-11 text-[11px] font-semibold tracking-[0.08em] uppercase",
+                      card.labelClass,
+                    )}
+                  >
+                    {card.title}
+                  </span>
+
+                  {/* The data layer — sober, tabular, never ornamented. */}
+                  <div className="mt-2.5 flex flex-1 flex-col">
+                    <span
+                      className={cn(
+                        "text-[1.5rem] leading-tight font-semibold tracking-tight break-words tabular-nums",
+                        card.valueClass,
+                      )}
+                    >
+                      {displayValue}
+                    </span>
+
+                    <span className="text-ink-soft mt-1 text-xs">
+                      {card.subtitle}
+                    </span>
+
+                    {isBirthdayMode && (
+                      <span className="text-muted-foreground mt-1.5 text-[11px] italic">
+                        {card.bdaySubtitle}
+                      </span>
+                    )}
+
+                    <div className="mt-auto pt-4" aria-hidden="true">
+                      <span
+                        className="block h-0.75 rounded-full"
+                        style={card.ruleStyle}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        <p className="text-ink-soft mt-4 text-xs">
+          Top cards show all-time totals. Filters below apply to the monthly
+          table.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        {summaryCards.map((card) => {
-          const Icon = card.icon;
-          const displayValue = isOverallSummaryPending
-            ? "Calculating..."
-            : formatCurrency(
-                isBirthdayMode ? card.animatedValue : card.rawValue,
-                currency,
-              );
-
-          return (
-            <Card
-              key={card.title}
-              className={`overflow-hidden rounded-[2rem] border ${card.borderClass} backdrop-blur-xl transition-all duration-300 ease-out hover:shadow-xs ${card.hoverShadow} ${card.shell}`}
-              style={
-                isBirthdayMode
-                  ? {
-                      animation: `bday-glow-pulse 3s ease-in-out infinite`,
-                      animationDelay: card.glowDelay,
-                    }
-                  : undefined
-              }
-            >
-              <div className="flex h-full flex-col items-start justify-start p-8">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`flex size-5 shrink-0 items-center justify-center ${card.titleClass}`}
-                  >
-                    <Icon className="size-5" />
-                  </div>
-                  <p
-                    className={`text-xs font-medium tracking-wide uppercase opacity-70 ${card.titleClass}`}
-                  >
-                    {card.title}
-                  </p>
-                </div>
-                <p
-                  className={`mt-3 text-[2rem] font-semibold tracking-tight tabular-nums ${card.valueClass}`}
-                >
-                  {displayValue}
-                </p>
-                <p className={`mt-1 text-xs opacity-60 ${card.titleClass}`}>
-                  {card.subtitle}
-                </p>
-                {isBirthdayMode && (
-                  <p className="text-muted-foreground/70 mt-1.5 text-[11px] italic">
-                    {card.bdaySubtitle}
-                  </p>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      <p className="text-muted-foreground -mt-1 text-xs">
-        Top cards show all-time totals. Filters below apply to the monthly
-        table.
-      </p>
-
-      <div className="rounded-2xl border border-pink-100 bg-white/80 p-3 shadow-sm md:p-6">
+      {/* Filter bar */}
+      <div
+        className="rise rounded-2xl border border-pink-100 bg-[linear-gradient(160deg,var(--pink-50),var(--surface)_75%)] p-3 shadow-(--sh-sm) md:p-6"
+        style={{ "--i": 3 } as React.CSSProperties}
+      >
         <div className="grid grid-cols-1 gap-2.5 md:grid-cols-5 md:items-end md:gap-3">
           <div className="space-y-1 md:space-y-1.5">
             <label className="text-xs font-medium text-pink-700">Month</label>
             <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
+              <SelectTrigger className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm hover:bg-pink-100 focus:ring-pink-400 md:h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -307,7 +354,7 @@ export function PaymentsPageContent({
           <div className="space-y-1 md:space-y-1.5">
             <label className="text-xs font-medium text-pink-700">Year</label>
             <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
+              <SelectTrigger className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm hover:bg-pink-100 focus:ring-pink-400 md:h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -323,7 +370,7 @@ export function PaymentsPageContent({
           <div className="space-y-1 md:space-y-1.5">
             <label className="text-xs font-medium text-pink-700">Student</label>
             <Select value={studentId} onValueChange={setStudentId}>
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
+              <SelectTrigger className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm hover:bg-pink-100 focus:ring-pink-400 md:h-10">
                 <SelectValue placeholder="All students" />
               </SelectTrigger>
               <SelectContent>
@@ -345,7 +392,7 @@ export function PaymentsPageContent({
                 setStatus(value)
               }
             >
-              <SelectTrigger className="h-11 w-full border-pink-200 bg-pink-50 text-sm focus:ring-pink-400 md:h-10">
+              <SelectTrigger className="h-11 w-full rounded-full border-pink-200 bg-pink-50 text-sm hover:bg-pink-100 focus:ring-pink-400 md:h-10">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -358,8 +405,7 @@ export function PaymentsPageContent({
           </div>
 
           <Button
-            variant="outline"
-            className="bday-animate-button h-11 w-full rounded-xl border-pink-200 text-pink-600 hover:bg-pink-100 md:h-10 md:w-full"
+            className="bday-animate-button h-11 w-full rounded-full shadow-(--sh-pink) md:h-10"
             onClick={() => {
               if (studentId === "all") {
                 setAddStudentId(undefined);
@@ -369,28 +415,45 @@ export function PaymentsPageContent({
               setShowAddDialog(true);
             }}
           >
-            <WalletCards className="mr-2 h-4 w-4" />
+            <WalletCards className="mr-2 h-4 w-4" aria-hidden="true" />
             Add Payment
           </Button>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">
-            {payments.filter((payment) => payment.status === "UNPAID").length}{" "}
-            unpaid
+        {/* Status counts — informational tallies, not filter controls (the
+              Status select above drives the actual filter). Mapped onto the
+              same visual vocabulary as the table's derived status pills:
+              UNPAID→no, PARTIAL→wait, PAID→ok. */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Badge className="bg-no-bg text-no-fg hover:bg-no-bg gap-1.5 px-3 py-1.5 text-[11.5px] font-semibold">
+            <span
+              aria-hidden="true"
+              className="bg-no-dot size-2 rounded-full"
+            />
+            <span className="tabular-nums">{unpaidCount}</span> unpaid
           </Badge>
-          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-            {payments.filter((payment) => payment.status === "PARTIAL").length}{" "}
-            partial
+          <Badge className="bg-wait-bg text-wait-fg hover:bg-wait-bg gap-1.5 px-3 py-1.5 text-[11.5px] font-semibold">
+            <span
+              aria-hidden="true"
+              className="bg-wait-dot size-2 rounded-full"
+            />
+            <span className="tabular-nums">{partialCount}</span> partial
           </Badge>
-          <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-            {payments.filter((payment) => payment.status === "PAID").length}{" "}
-            paid
+          <Badge className="bg-ok-bg text-ok-fg hover:bg-ok-bg gap-1.5 px-3 py-1.5 text-[11.5px] font-semibold">
+            <span
+              aria-hidden="true"
+              className="bg-ok-dot size-2 rounded-full"
+            />
+            <span className="tabular-nums">{paidCount}</span> paid
           </Badge>
         </div>
       </div>
 
-      <div className="relative">
+      {/* Table — untouched beyond its wiring; strictly sober data layer. */}
+      <div
+        className="rise relative"
+        style={{ "--i": 4 } as React.CSSProperties}
+      >
         <RefreshOverlay active={isRefreshing} />
         <div
           className={cn(

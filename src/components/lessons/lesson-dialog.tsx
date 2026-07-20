@@ -228,10 +228,10 @@ export function LessonDialog({
       <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] sm:max-w-md md:max-w-lg">
         {/* Header with icon */}
         <DialogHeader className="space-y-2 sm:space-y-3">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-pink-100 to-purple-100 shadow-lg shadow-pink-100/40 sm:h-12 sm:w-12">
-            <Music2 className="h-5 w-5 text-pink-600 sm:h-6 sm:w-6" />
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full [background-image:var(--grad-pink)] shadow-(--sh-pink) sm:h-12 sm:w-12">
+            <Music2 className="h-5 w-5 text-white sm:h-6 sm:w-6" />
           </div>
-          <DialogTitle className="text-center text-xl sm:text-2xl">
+          <DialogTitle className="text-ink text-center text-xl sm:text-2xl">
             Schedule a lesson 💗
           </DialogTitle>
         </DialogHeader>
@@ -244,7 +244,7 @@ export function LessonDialog({
               className="space-y-4 sm:space-y-5"
             >
               {/* Basic lesson details section */}
-              <div className="space-y-3 rounded-xl bg-linear-to-br from-pink-50/50 to-purple-50/50 p-3 sm:space-y-4 sm:p-4">
+              <div className="space-y-3 rounded-2xl bg-[linear-gradient(160deg,var(--pink-50),var(--surface)_70%)] p-3 sm:space-y-4 sm:p-4">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -391,7 +391,7 @@ export function LessonDialog({
                 control={form.control}
                 name="isRecurring"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-xl border border-pink-200/60 bg-white p-4 shadow-sm">
+                  <FormItem className="border-border bg-card flex flex-row items-center justify-between rounded-2xl border p-4 shadow-(--sh-xs)">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base font-medium">
                         Recurring lesson
@@ -416,8 +416,8 @@ export function LessonDialog({
                   isRecurring ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                 }`}
               >
-                <div className="space-y-4 rounded-xl bg-linear-to-br from-purple-50/50 to-pink-50/50 p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-purple-700">
+                <div className="space-y-4 rounded-2xl bg-[linear-gradient(160deg,var(--teal-100),var(--surface)_70%)] p-4">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-teal-700">
                     <Sparkles className="h-4 w-4" />
                     <span>Recurring schedule</span>
                   </div>
@@ -499,7 +499,7 @@ export function LessonDialog({
                 <Button
                   type="submit"
                   disabled={createLesson.isPending || createRecurring.isPending}
-                  className="h-10 flex-1 rounded-xl bg-linear-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 sm:h-auto"
+                  className="h-10 flex-1 rounded-xl [background-image:var(--grad-pink)] text-white shadow-(--sh-pink) hover:brightness-105 sm:h-auto"
                 >
                   {createLesson.isPending || createRecurring.isPending
                     ? "Creating..."
