@@ -199,9 +199,9 @@ export function TodayLessonsTable({
             index === 3 ? "h-7" : "-bottom-4",
           )}
         />
-        <Skeleton className="relative z-[1] mt-2 size-[22px] rounded-full sm:mt-3" />
+        <Skeleton className="relative z-1 mt-2 size-5.5 rounded-full sm:mt-3" />
       </div>
-      <div className="border-border bg-card col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-[var(--sh-sm)] sm:col-start-3 sm:row-start-1 sm:p-4">
+      <div className="border-border bg-card col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-(--sh-sm) sm:col-start-3 sm:row-start-1 sm:p-4">
         <div className="flex items-center gap-3">
           <Skeleton className="size-10 shrink-0 rounded-full" />
           <div className="flex-1 space-y-2">
@@ -226,7 +226,7 @@ export function TodayLessonsTable({
     >
       <CardHeader className="gap-3 bg-transparent">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2.5">
+          <div className="min-w-0 space-y-2.5">
             <CardTitle className="text-ink flex items-center gap-2 font-serif text-2xl font-normal sm:text-[1.75rem]">
               <Blossom size={18} className="text-bubblegum" />
               <span>
@@ -238,7 +238,7 @@ export function TodayLessonsTable({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="border-border bg-card text-ink-soft inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full border px-3.5 text-left text-sm font-medium shadow-[var(--sh-sm)] transition-colors hover:border-[var(--line-pink)] hover:text-pink-700"
+                  className="border-border bg-card text-ink-soft inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-left text-sm font-medium shadow-(--sh-sm) transition-colors hover:border-(--line-pink) hover:text-pink-700"
                 >
                   <CalendarDays
                     className="size-4 text-pink-400"
@@ -270,8 +270,8 @@ export function TodayLessonsTable({
             </Popover>
           </div>
 
-          <div className="flex flex-col items-start gap-[9px] self-start">
-            <p className="border-border flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border [background-image:linear-gradient(100deg,var(--teal-100),var(--pink-100))] px-4 py-2.5 text-[12.5px] font-semibold text-teal-700">
+          <div className="flex w-full min-w-0 flex-col items-start gap-2.25 lg:w-auto lg:self-start">
+            <p className="border-border flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border bg-[linear-gradient(100deg,var(--teal-100),var(--pink-100))] px-4 py-2.5 text-[12.5px] font-semibold text-teal-700">
               <span>{isToday ? "Today's Total" : "Day Total"}</span>
               <span aria-hidden="true" className="text-ink-soft">
                 ·
@@ -299,7 +299,7 @@ export function TodayLessonsTable({
                     {index > 0 && (
                       <i
                         aria-hidden="true"
-                        className="bg-ink-soft size-[3px] flex-none rounded-full"
+                        className="bg-ink-soft size-0.75 flex-none rounded-full"
                       />
                     )}
                     <span>{part}</span>
@@ -365,7 +365,7 @@ export function TodayLessonsTable({
                     />
                     <div
                       className={cn(
-                        "relative z-[1] mt-2 grid size-[22px] shrink-0 place-items-center sm:mt-3",
+                        "relative z-1 mt-2 grid size-5.5 shrink-0 place-items-center sm:mt-3",
                         NODE_COLORS[status],
                       )}
                     >
@@ -377,21 +377,21 @@ export function TodayLessonsTable({
                         aria-hidden="true"
                         className="bg-card absolute inset-0 rounded-full"
                       />
-                      <Blossom size={21} className="relative z-[1]" />
+                      <Blossom size={21} className="relative z-1" />
                     </div>
                   </div>
 
                   {/* The lesson card — strictly sober: no ornament inside. */}
                   <article
                     className={cn(
-                      "col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-[var(--sh-sm)] sm:col-start-3 sm:row-start-1 sm:p-4",
+                      "col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-(--sh-sm) sm:col-start-3 sm:row-start-1 sm:p-4",
                       isCancelled
-                        ? "border-[var(--line-pink)] [background-image:linear-gradient(160deg,var(--pink-50),var(--card)_62%)]"
+                        ? "border-(--line-pink) bg-[linear-gradient(160deg,var(--pink-50),var(--card)_62%)]"
                         : "border-border bg-card",
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      <Avatar className="border-card size-10 shrink-0 border-2 shadow-[var(--sh-sm)]">
+                      <Avatar className="border-card size-10 shrink-0 border-2 shadow-(--sh-sm)">
                         <AvatarImage src={lesson.student.avatar ?? undefined} />
                         <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-xs font-bold">
                           {getInitials(lesson.student.name)}
@@ -430,8 +430,8 @@ export function TodayLessonsTable({
                         className={cn(
                           "h-11 w-full rounded-full px-5 text-sm font-semibold sm:ml-auto sm:w-auto",
                           isPending
-                            ? "text-mint-ink hover:text-mint-ink [background-image:var(--grad-mint)] shadow-[var(--sh-mint)] hover:brightness-95"
-                            : "border-border bg-card text-ink hover:bg-muted hover:text-ink border shadow-[var(--sh-sm)]",
+                            ? "text-mint-ink hover:text-mint-ink [background-image:var(--grad-mint)] shadow-(--sh-mint) hover:brightness-95"
+                            : "border-border bg-card text-ink hover:bg-muted hover:text-ink border shadow-(--sh-sm)",
                         )}
                       >
                         {isPending ? "Mark" : "Update"}

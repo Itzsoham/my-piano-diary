@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { playMeow } from "@/lib/meow-sound";
 
 /**
  * Mochi — the studio cat, ported verbatim from the mockups so the geometry is
@@ -7,9 +10,9 @@ import { cn } from "@/lib/utils";
  *   <Mochi>       full, sat at her piano — heroes and empty states
  *   <MochiPeek>   head + paws, to hook over a card's top edge
  *
- * She is always decorative: aria-hidden, no pointer events. `mood` nudges her
- * expression; whiskers use --ink-faint, which is legal here because they carry
- * no information.
+ * She is visually decorative (aria-hidden — nothing informational is lost to
+ * assistive tech) but she does purr back on click: a tiny synthesized meow,
+ * everywhere she appears in the app.
  */
 
 type Mood = "content" | "delighted" | "sleepy";
@@ -45,6 +48,7 @@ export function Mochi({
   size = 132,
   className,
   bob = false,
+  onClick,
   ...props
 }: React.SVGProps<SVGSVGElement> & {
   mood?: Mood;
@@ -58,9 +62,13 @@ export function Mochi({
       height={(size * 108) / 132}
       aria-hidden="true"
       focusable="false"
+      onClick={(event) => {
+        playMeow();
+        onClick?.(event);
+      }}
       className={cn(
-        "pointer-events-none shrink-0",
-        bob && "motion-safe:animate-[bob_3.2s_ease-in-out_infinite]",
+        "shrink-0 cursor-pointer transition-transform active:scale-90",
+        bob && "motion-safe:animate-bob",
         className,
       )}
       {...props}
@@ -151,6 +159,7 @@ export function MochiPeek({
   mood = "delighted",
   size = 92,
   className,
+  onClick,
   ...props
 }: React.SVGProps<SVGSVGElement> & {
   mood?: Mood;
@@ -163,7 +172,14 @@ export function MochiPeek({
       height={(size * 62) / 92}
       aria-hidden="true"
       focusable="false"
-      className={cn("pointer-events-none", className)}
+      onClick={(event) => {
+        playMeow();
+        onClick?.(event);
+      }}
+      className={cn(
+        "cursor-pointer transition-transform active:scale-90",
+        className,
+      )}
       {...props}
     >
       {/* ears */}

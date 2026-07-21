@@ -59,30 +59,30 @@ export function DashboardHero() {
 
   return (
     <section className="px-4 pt-4 lg:px-6">
-      <div className="hero-band scallop-b relative isolate overflow-hidden rounded-[calc(var(--radius)+12px)] px-6 py-7 shadow-[var(--sh)] sm:px-9 sm:py-9">
+      <div className="hero-band scallop-b relative isolate overflow-hidden rounded-[calc(var(--radius)+12px)] px-6 py-7 shadow-(--sh) sm:px-9 sm:py-9">
         {/* drifting blobs — decorative */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-10 -right-6 -z-10 size-40 rounded-[46%_54%_40%_60%/55%_45%_60%_40%] bg-cotton/50 motion-safe:animate-[drift_22s_ease-in-out_infinite]"
+          className="bg-cotton/50 motion-safe:animate-drift pointer-events-none absolute -top-10 -right-6 -z-10 size-40 rounded-[46%_54%_40%_60%/55%_45%_60%_40%]"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -bottom-16 left-1/3 -z-10 size-44 rounded-[46%_54%_40%_60%/55%_45%_60%_40%] bg-mint/40 motion-safe:animate-[drift_26s_ease-in-out_infinite]"
+          className="bg-mint/40 pointer-events-none absolute -bottom-16 left-1/3 -z-10 size-44 rounded-[46%_54%_40%_60%/55%_45%_60%_40%] motion-safe:animate-[drift_26s_ease-in-out_infinite]"
         />
 
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="inline-block">
-              <h1 className="flex items-center gap-2 font-serif text-[clamp(1.6rem,3.4vw,2.3rem)] leading-tight font-bold text-ink">
+              <h1 className="text-ink flex items-center gap-2 font-serif text-[clamp(1.6rem,3.4vw,2.3rem)] leading-tight font-bold">
                 {getGreeting()}, {firstName}
                 <span aria-hidden="true">✨</span>
               </h1>
-              <Squiggle className="mt-0.5 h-2.5 w-full text-bubblegum" />
+              <Squiggle className="text-bubblegum mt-0.5 h-2.5 w-full" />
             </div>
             <p className="mt-2 text-sm font-medium text-pink-700 italic sm:text-base">
               {dateLine}
             </p>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-soft sm:text-[15px]">
+            <p className="text-ink-soft mt-1 flex items-center gap-1.5 text-sm sm:text-[15px]">
               <Blossom className="text-bubblegum" size={14} />
               {narrative}
             </p>
