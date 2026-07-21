@@ -29,7 +29,7 @@ export function AuthArtPanel({ heading, copy, valueProps }: AuthArtPanelProps) {
       {/* the signature scalloped seam — one per screen */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[15px]"
+        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-3.75"
         style={{
           backgroundImage:
             "radial-gradient(circle at 100% 50%, var(--floss) 15px, transparent 15.5px)",
