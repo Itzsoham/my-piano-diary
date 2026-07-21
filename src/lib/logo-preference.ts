@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
-export type LogoVariant = "blossom" | "mochi";
+export type LogoVariant =
+  | "blossom"
+  | "mochi"
+  | "kitty"
+  | "sakura-keys"
+  | "diary-keys";
 
 type LogoOption = {
   variant: LogoVariant;
@@ -21,10 +26,30 @@ export const logoOptions: LogoOption[] = [
     label: "Mochi Badge",
     description: "The studio cat's face, on the brand gradient",
   },
+  {
+    variant: "kitty",
+    label: "Kitty Bow",
+    description: "A sleepy cat face with a bow, outlined kawaii style",
+  },
+  {
+    variant: "sakura-keys",
+    label: "Sakura Keys",
+    description: "A blossom resting on piano keys",
+  },
+  {
+    variant: "diary-keys",
+    label: "Diary Keys",
+    description: "A diary with piano keys along the bottom edge",
+  },
 ];
 
+const LOGO_VARIANTS: readonly LogoVariant[] = logoOptions.map(
+  (o) => o.variant,
+);
+
 const isLogoVariant = (value: unknown): value is LogoVariant =>
-  value === "blossom" || value === "mochi";
+  typeof value === "string" &&
+  LOGO_VARIANTS.includes(value as LogoVariant);
 
 export const getStoredLogoVariant = (): LogoVariant => {
   if (typeof window === "undefined") return "blossom";

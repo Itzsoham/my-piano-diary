@@ -20,7 +20,7 @@ export function LogoPicker() {
       <p className="text-ink-soft mt-0.5 text-xs">
         Pick the mark that shows in your sidebar and on the sign-in screen.
       </p>
-      <div className="mt-3 grid max-w-sm grid-cols-2 gap-3">
+      <div className="mt-3 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3">
         {logoOptions.map((option) => {
           const selected = variant === option.variant;
           return (
