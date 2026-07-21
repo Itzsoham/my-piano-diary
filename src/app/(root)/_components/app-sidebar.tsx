@@ -24,7 +24,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import Image from "next/image";
+import { LogoMark } from "@/components/blossom/logo-mark";
+import { useLogoVariant } from "@/lib/logo-preference";
 import { APP_CONFIG } from "@/config/app-config";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -76,6 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isMobile, setOpenMobile, setOpen } = useSidebar();
   const router = useRouter();
   const { isBirthdayMode, isBirthdayDay } = useBirthday();
+  const { variant: logoVariant } = useLogoVariant();
   const logoClickRef = React.useRef(0);
   const logoTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -131,17 +133,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   if (isMobile) setOpenMobile(false);
                 }}
               >
-                <div className="bg-primary/10 text-primary flex aspect-square size-10 items-center justify-center rounded-lg">
-                  <Image
-                    src="/logo.png"
-                    alt="App Logo"
-                    width={40}
-                    height={40}
-                    className="size-8 object-contain"
-                    priority
-                    unoptimized
-                  />
-                </div>
+                <LogoMark variant={logoVariant} size={40} />
+                <span className="sr-only">{APP_CONFIG.name}</span>
                 <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="text-primary flex items-center gap-1 truncate text-base font-semibold">
                     {APP_CONFIG.name}

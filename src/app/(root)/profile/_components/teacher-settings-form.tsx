@@ -30,6 +30,7 @@ import {
 import { COMMON_TIMEZONES, getBrowserTimezone } from "@/lib/timezone";
 import { api } from "@/trpc/react";
 import { Loader2 } from "lucide-react";
+import { LogoPicker } from "./logo-picker";
 
 const teacherSettingsSchema = z.object({
   currency: z.string(),
@@ -210,6 +211,10 @@ export function TeacherSettingsForm({
           </div>
         </form>
       </Form>
+
+      <div className="border-border border-t pt-6">
+        <LogoPicker />
+      </div>
     </div>
   );
 }

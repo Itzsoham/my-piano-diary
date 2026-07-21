@@ -1,3 +1,8 @@
+"use client";
+
+import { LogoMark } from "@/components/blossom/logo-mark";
+import { useLogoVariant } from "@/lib/logo-preference";
+
 const PIANO_FACE = "color-mix(in srgb, var(--ink) 84%, var(--surface))";
 const PIANO_FELT = "color-mix(in srgb, var(--bubblegum) 70%, var(--ink) 8%)";
 const FUR_LINE = "color-mix(in srgb, var(--ink) 28%, var(--surface))";
@@ -17,6 +22,8 @@ type AuthArtPanelProps = {
  * used, rather than the mockup's clipped-banner responsive treatment.
  */
 export function AuthArtPanel({ heading, copy, valueProps }: AuthArtPanelProps) {
+  const { variant: logoVariant } = useLogoVariant();
+
   return (
     <div className="relative isolate hidden overflow-hidden [background:linear-gradient(150deg,color-mix(in_srgb,var(--mint)_62%,var(--surface))_0%,var(--floss)_32%,var(--pink-50)_62%,color-mix(in_srgb,var(--cotton)_78%,var(--surface))_100%)] lg:flex lg:w-[46%] lg:flex-col lg:justify-center lg:gap-7 lg:p-14 xl:p-18">
       {/* the signature scalloped seam — one per screen */}
@@ -366,22 +373,11 @@ export function AuthArtPanel({ heading, copy, valueProps }: AuthArtPanelProps) {
 
       <div className="relative z-1 mx-auto w-full max-w-115">
         <div className="flex items-center gap-3">
-          <span className="flex size-11.5 shrink-0 items-center justify-center rounded-xl [background-image:var(--grad-brand)] text-white shadow-(--sh-pink)">
-            <svg
-              viewBox="0 0 24 24"
-              width="23"
-              height="23"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="18" height="16" rx="3" />
-              <path d="M9 4v9M15 4v9M3 13h18" />
-            </svg>
-          </span>
+          <LogoMark
+            variant={logoVariant}
+            size={46}
+            className="shrink-0 shadow-(--sh-pink)"
+          />
           <span>
             <span className="text-ink block text-lg font-bold">
               My Piano Diary
