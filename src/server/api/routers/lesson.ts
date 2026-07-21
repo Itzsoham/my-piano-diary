@@ -368,6 +368,16 @@ export const lessonRouter = createTRPCRouter({
         }
       }
 
+      // Score only makes sense on a COMPLETE lesson — clear it whenever the
+      // status moves away from COMPLETE, otherwise apply whatever the
+      // teacher sent (a number to rate it, null to leave it unrated).
+      const scorePatch: { score?: number | null } =
+        input.status !== "COMPLETE"
+          ? { score: null }
+          : input.score !== undefined
+            ? { score: input.score }
+            : {};
+
       // Update lesson with attendance information
       return ctx.db.lesson.update({
         where: {
@@ -379,6 +389,7 @@ export const lessonRouter = createTRPCRouter({
           cancelReason: input.cancelReason,
           note: input.note,
           ...ratePatch,
+          ...scorePatch,
         },
         include: {
           student: true,

@@ -13,8 +13,8 @@ import { TodayLessonsTable } from "./today-lessons-table";
 type TopStudent = {
   studentId: string | number;
   studentName: string;
-  lessonCount: number;
-  earnings: number;
+  avgScore: number;
+  ratedCount: number;
   avatar: string | null;
 };
 

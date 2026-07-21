@@ -34,6 +34,7 @@ interface Lesson {
   actualMin: number | null;
   cancelReason: string | null;
   note: string | null;
+  score: number | null;
 }
 
 type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay";
@@ -240,6 +241,7 @@ export default function CalendarPage() {
             actualMin: selectedLesson.actualMin,
             cancelReason: selectedLesson.cancelReason,
             note: selectedLesson.note,
+            score: selectedLesson.score,
             date: selectedLesson.date,
           }}
           dateRange={dateRange}

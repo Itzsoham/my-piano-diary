@@ -204,6 +204,15 @@ export const markAttendanceSchema = z.object({
     .string()
     .max(1000, "Note must be less than 1000 characters")
     .optional(),
+  // How well the lesson went, 1-5. Nullable so the teacher can explicitly
+  // clear a rating (e.g. a parent who doesn't want lessons scored).
+  score: z
+    .number()
+    .int("Score must be an integer")
+    .min(1, "Score must be between 1 and 5")
+    .max(5, "Score must be between 1 and 5")
+    .nullable()
+    .optional(),
 });
 
 /**

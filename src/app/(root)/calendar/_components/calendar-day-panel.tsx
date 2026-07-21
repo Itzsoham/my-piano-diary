@@ -26,6 +26,7 @@ interface PanelLesson {
   actualMin: number | null;
   cancelReason: string | null;
   note: string | null;
+  score: number | null;
 }
 
 interface CalendarDayPanelProps {

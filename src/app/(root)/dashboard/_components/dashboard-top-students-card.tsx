@@ -7,12 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-// Ranking is by lessonCount by design (matches the mockup podium pills at
-// dashboard-e.html:1641/1650/1659); no earnings are displayed here.
+// Ranking is by average lesson score (podium pills adapted from the mockup
+// at dashboard-e.html:1641/1650/1659). Only RATED lessons count toward the
+// average — a student with no rated lessons this month simply doesn't
+// appear, so this never penalises a family who opts out of scoring.
 type TopStudent = {
   studentId: string | number;
   studentName: string;
-  lessonCount: number;
+  avgScore: number;
+  ratedCount: number;
   avatar: string | null;
 };
 
@@ -63,7 +66,7 @@ export function DashboardTopStudentsCard({
   return (
     <Card
       className={cn(
-        "border-border bg-card flex h-full flex-col gap-3 overflow-hidden rounded-[2rem] py-5 shadow-[var(--sh)]",
+        "border-border bg-card flex h-full flex-col gap-3 overflow-hidden rounded-[2rem] py-5 shadow-(--sh)",
         className,
       )}
     >
@@ -72,7 +75,7 @@ export function DashboardTopStudentsCard({
           <Blossom className="text-bubblegum" size={17} />
           Top Students This Month
         </CardTitle>
-        <p className="text-ink-soft text-xs">By lessons attended</p>
+        <p className="text-ink-soft text-xs">By lesson score</p>
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col overflow-y-auto pt-2">
@@ -86,7 +89,7 @@ export function DashboardTopStudentsCard({
               ].map((height) => (
                 <div
                   key={height}
-                  className="flex w-full max-w-[7.5rem] flex-col items-center gap-2"
+                  className="flex w-full max-w-30 flex-col items-center gap-2"
                 >
                   <Skeleton className="size-11 rounded-full" />
                   <Skeleton
@@ -106,10 +109,10 @@ export function DashboardTopStudentsCard({
             <Mochi mood="sleepy" size={104} />
             <div>
               <p className="text-ink font-serif text-base">
-                No activity yet this month
+                No rated lessons yet this month
               </p>
               <p className="text-ink-soft mt-1 text-xs">
-                Completed lessons will crown your top students here.
+                Rate a completed lesson to crown your star performers here.
               </p>
             </div>
           </div>
@@ -120,7 +123,7 @@ export function DashboardTopStudentsCard({
                 <li
                   key={student.studentId}
                   className={cn(
-                    "relative flex max-w-[7.5rem] min-w-0 flex-1 flex-col items-center text-center",
+                    "relative flex max-w-30 min-w-0 flex-1 flex-col items-center text-center",
                     showStaircase && PODIUM_ORDER[index],
                   )}
                 >
@@ -172,11 +175,17 @@ export function DashboardTopStudentsCard({
                       {MEDALS[index]}
                     </span>
                     <span className="sr-only">{PLACES[index]} place</span>
-                    <span className="text-ink text-[11px] leading-tight font-semibold [overflow-wrap:anywhere]">
+                    <span className="text-ink text-[11px] leading-tight font-semibold wrap-anywhere">
                       {student.studentName}
                     </span>
-                    <span className="border-border rounded-full border bg-white/70 px-2 py-1 text-[10px] font-bold whitespace-nowrap text-teal-700 tabular-nums">
-                      {student.lessonCount} lessons
+                    <span className="border-border flex items-center gap-1 rounded-full border bg-white/70 px-2 py-1 text-[10px] font-bold whitespace-nowrap text-pink-700 tabular-nums">
+                      <Blossom size={10} className="text-bubblegum" />
+                      {student.avgScore.toFixed(1)}
+                      <span className="sr-only">
+                        {" "}
+                        average, from {student.ratedCount} rated{" "}
+                        {student.ratedCount === 1 ? "lesson" : "lessons"}
+                      </span>
                     </span>
                   </div>
                 </li>
@@ -203,8 +212,12 @@ export function DashboardTopStudentsCard({
                       <span className="text-ink min-w-0 flex-1 truncate text-[13px] font-semibold">
                         {student.studentName}
                       </span>
-                      <span className="flex-none rounded-full bg-teal-100 px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-teal-700 tabular-nums">
-                        {student.lessonCount} lessons
+                      <span className="flex flex-none items-center gap-1 rounded-full bg-pink-100 px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-pink-700 tabular-nums">
+                        <Blossom size={11} className="text-bubblegum" />
+                        {student.avgScore.toFixed(1)}
+                        <span className="text-pink-400">
+                          · {student.ratedCount} rated
+                        </span>
                       </span>
                     </div>
                   </li>

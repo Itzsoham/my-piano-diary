@@ -115,6 +115,10 @@ model Lesson {
   actualMin    Int?
   cancelReason String?
   note         String?
+  // How well the lesson went, 1-5. Set only when the teacher chooses to rate
+  // a COMPLETE lesson — null means "not rated" and is excluded from any
+  // score-based ranking (some lessons/parents are deliberately left unrated).
+  score        Int?
   pieceId      String?
   createdAt    DateTime     @default(now()) @db.Timestamptz
   piece        Piece?       @relation(fields: [pieceId], references: [id], onDelete: SetNull)

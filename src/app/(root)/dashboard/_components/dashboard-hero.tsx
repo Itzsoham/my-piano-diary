@@ -30,7 +30,7 @@ export function DashboardHero() {
   const { currency } = useCurrency();
 
   const user = storeUser ?? session?.user ?? null;
-  const firstName = (user?.name ?? "there").trim().split(/\s+/)[0];
+  const fullName = (user?.name ?? "there").trim();
   const timezone = session?.user?.timezone ?? getBrowserTimezone();
 
   const now = new Date();
@@ -74,7 +74,7 @@ export function DashboardHero() {
           <div className="min-w-0">
             <div className="inline-block">
               <h1 className="text-ink flex items-center gap-2 font-serif text-[clamp(1.6rem,3.4vw,2.3rem)] leading-tight font-bold">
-                {getGreeting()}, {firstName}
+                {getGreeting()}, {fullName}
                 <span aria-hidden="true">✨</span>
               </h1>
               <Squiggle className="text-bubblegum mt-0.5 h-2.5 w-full" />

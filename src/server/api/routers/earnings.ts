@@ -27,6 +27,14 @@ interface StudentEarningsData {
   lessonRate: number;
 }
 
+interface StudentScoreData {
+  studentId: string;
+  studentName: string;
+  avatar: string | null;
+  avgScore: number;
+  ratedCount: number;
+}
+
 interface TrendPoint {
   day: number;
   label: string;
@@ -56,6 +64,7 @@ interface TodayLesson {
   earnings: number;
   actualMin: number | null;
   note: string | null;
+  score: number | null;
   piece: {
     title: string;
   } | null;
@@ -408,14 +417,17 @@ export const earningsRouter = createTRPCRouter({
     },
   ),
 
-  // Get top students for the current month
+  // Get top students for the current month, ranked by average lesson score.
+  // Only RATED lessons count — unrated ones (old data, or a lesson the
+  // teacher deliberately left unscored) never factor into the average, and a
+  // student with zero rated lessons doesn't appear on the board at all.
   getTopStudentsThisMonth: protectedProcedure
     .input(
       z
         .object({ limit: z.number().int().min(1).max(10).optional() })
         .optional(),
     )
-    .query(async ({ ctx, input }): Promise<StudentEarningsData[]> => {
+    .query(async ({ ctx, input }): Promise<StudentScoreData[]> => {
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
       });
@@ -448,49 +460,75 @@ export const earningsRouter = createTRPCRouter({
             lte: currentMonthEnd,
           },
           status: "COMPLETE",
+          score: { not: null },
         },
-        include: {
+        select: {
+          score: true,
           student: {
             select: {
               id: true,
               name: true,
               avatar: true,
-              lessonRate: true,
             },
           },
         },
       });
 
-      const studentEarnings = lessons.reduce(
+      const studentScores = lessons.reduce(
         (acc, lesson) => {
+          if (lesson.score == null) {
+            return acc;
+          }
+
           const studentId = lesson.student.id;
 
           acc[studentId] ??= {
             studentId,
             studentName: lesson.student.name,
             avatar: lesson.student.avatar,
-            lessonCount: 0,
-            earnings: 0,
-            lessonRate: lesson.student.lessonRate,
+            scoreSum: 0,
+            ratedCount: 0,
           };
 
-          acc[studentId].earnings += lesson.rate;
-          acc[studentId].lessonCount += 1;
+          acc[studentId].scoreSum += lesson.score;
+          acc[studentId].ratedCount += 1;
 
           return acc;
         },
-        {} as Record<string, StudentEarningsData>,
+        {} as Record<
+          string,
+          {
+            studentId: string;
+            studentName: string;
+            avatar: string | null;
+            scoreSum: number;
+            ratedCount: number;
+          }
+        >,
       );
 
-      const sorted = Object.values(studentEarnings).sort((a, b) => {
-        // Primary rank: most completed classes this month.
-        if (b.lessonCount !== a.lessonCount) {
-          return b.lessonCount - a.lessonCount;
-        }
+      const sorted = Object.values(studentScores)
+        .map((entry) => ({
+          studentId: entry.studentId,
+          studentName: entry.studentName,
+          avatar: entry.avatar,
+          avgScore: Math.round((entry.scoreSum / entry.ratedCount) * 10) / 10,
+          ratedCount: entry.ratedCount,
+        }))
+        .sort((a, b) => {
+          // Primary rank: highest average lesson score this month.
+          if (b.avgScore !== a.avgScore) {
+            return b.avgScore - a.avgScore;
+          }
 
-        // Tie-breaker: alphabetical for stable order.
-        return a.studentName.localeCompare(b.studentName);
-      });
+          // Tie-breaker: more rated lessons behind that average wins.
+          if (b.ratedCount !== a.ratedCount) {
+            return b.ratedCount - a.ratedCount;
+          }
+
+          // Final tie-breaker: alphabetical for stable order.
+          return a.studentName.localeCompare(b.studentName);
+        });
 
       return sorted.slice(0, input?.limit ?? 5);
     }),

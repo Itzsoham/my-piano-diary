@@ -679,6 +679,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
             actualMin: attendanceLesson.actualMin,
             cancelReason: attendanceLesson.cancelReason,
             note: attendanceLesson.note,
+            score: attendanceLesson.score,
             date: new Date(attendanceLesson.date),
           }}
         />

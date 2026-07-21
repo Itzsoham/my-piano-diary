@@ -37,6 +37,7 @@ interface Lesson {
   actualMin: number | null;
   cancelReason: string | null;
   note: string | null;
+  score: number | null;
 }
 
 interface FullCalendarViewProps {

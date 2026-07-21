@@ -53,6 +53,7 @@ type SelectedLesson = {
   actualMin: number | null;
   cancelReason: string | null;
   note: string | null;
+  score: number | null;
   date: Date;
 };
 
@@ -176,6 +177,7 @@ export function TodayLessonsTable({
       actualMin: lesson.actualMin,
       cancelReason: lesson.cancelReason,
       note: lesson.note,
+      score: lesson.score,
       date: lesson.date,
     });
     setOpen(true);

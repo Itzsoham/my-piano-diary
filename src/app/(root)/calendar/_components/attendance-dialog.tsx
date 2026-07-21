@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/trpc/react";
 import { format } from "date-fns";
 import { Check, X, Clock, Music2, Pencil } from "lucide-react";
+import { Blossom } from "@/components/blossom/blossom";
 import { cn } from "@/lib/utils";
 import { formatNumberWithSeparators } from "@/lib/format";
 import { useSession } from "next-auth/react";
@@ -43,6 +44,9 @@ const AttendanceFormSchema = z
       .max(10000000, "Rate seems unreasonably high"),
     cancelReason: z.string().optional(),
     note: z.string().optional(),
+    // How well the lesson went, 1-5. Nullable so the teacher can leave a
+    // lesson unrated (or explicitly clear a previous rating).
+    score: z.number().int().min(1).max(5).nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.status === "CANCELLED" && !data.cancelReason?.trim()) {
@@ -55,6 +59,17 @@ const AttendanceFormSchema = z
   });
 
 type AttendanceFormValues = z.infer<typeof AttendanceFormSchema>;
+
+const SCORE_VALUES = [1, 2, 3, 4, 5] as const;
+// Index 0 is the "not rated yet" caption for a null/0 field value.
+const SCORE_LABELS = [
+  "Tap a blossom to rate",
+  "Needs practice",
+  "Okay",
+  "Good",
+  "Great",
+  "Brilliant! 🌸",
+] as const;
 
 interface AttendanceDialogProps {
   open: boolean;
@@ -69,6 +84,7 @@ interface AttendanceDialogProps {
     actualMin: number | null;
     cancelReason: string | null;
     note: string | null;
+    score: number | null;
     date: Date;
   };
   /** The exact { start, end } range the Calendar is currently viewing.
@@ -104,6 +120,7 @@ export function AttendanceDialog({
           actualMin: number | null;
           cancelReason: string | null;
           note: string | null;
+          score?: number | null;
         },
       >(
         list: T[] | undefined,
@@ -117,6 +134,7 @@ export function AttendanceDialog({
                 actualMin: input.actualMin ?? l.actualMin,
                 cancelReason: input.cancelReason ?? l.cancelReason,
                 note: input.note ?? l.note,
+                score: input.score === undefined ? l.score : input.score,
               }
             : l,
         );
@@ -207,6 +225,7 @@ export function AttendanceDialog({
       rate: lesson.rate,
       cancelReason: lesson.cancelReason ?? "",
       note: lesson.note ?? "",
+      score: lesson.score,
     },
   });
 
@@ -226,6 +245,7 @@ export function AttendanceDialog({
       rate: lesson.rate,
       cancelReason: lesson.cancelReason ?? "",
       note: lesson.note ?? "",
+      score: lesson.score,
     });
     setIsEditingRate(false);
     setRateEdited(false);
@@ -247,6 +267,7 @@ export function AttendanceDialog({
       rate: rateEdited ? data.rate : undefined,
       cancelReason: cancelReason === "" ? undefined : cancelReason,
       note: note === "" ? undefined : note,
+      score: data.status === "COMPLETE" ? data.score : null,
     });
   };
 
@@ -458,6 +479,56 @@ export function AttendanceDialog({
                   </FormItem>
                 )}
               />
+
+              {selectedStatus === "COMPLETE" && (
+                <FormField
+                  control={form.control}
+                  name="score"
+                  render={({ field }) => (
+                    <FormItem className="animate-in fade-in slide-in-from-top-2 space-y-2 duration-300">
+                      <FormLabel className="text-ink-soft text-xs font-semibold sm:text-sm">
+                        How did it go? (optional)
+                      </FormLabel>
+                      <FormControl>
+                        <div className="border-border bg-card flex items-center justify-between gap-3 rounded-2xl border px-3 py-2.5">
+                          <div className="flex items-center gap-1">
+                            {SCORE_VALUES.map((value) => {
+                              const filled = (field.value ?? 0) >= value;
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  aria-label={`Rate ${value} out of 5`}
+                                  aria-pressed={field.value === value}
+                                  onClick={() =>
+                                    field.onChange(
+                                      field.value === value ? null : value,
+                                    )
+                                  }
+                                  className="rounded-full p-0.5 transition-transform active:scale-90"
+                                >
+                                  <Blossom
+                                    size={22}
+                                    className={cn(
+                                      "transition-colors",
+                                      filled
+                                        ? "text-bubblegum"
+                                        : "text-pink-100",
+                                    )}
+                                  />
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <span className="text-ink-soft text-xs font-semibold whitespace-nowrap">
+                            {SCORE_LABELS[field.value ?? 0]}
+                          </span>
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {selectedStatus === "CANCELLED" && (
                 <>
