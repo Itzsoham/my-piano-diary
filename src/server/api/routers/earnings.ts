@@ -33,6 +33,7 @@ interface StudentScoreData {
   avatar: string | null;
   avgScore: number;
   ratedCount: number;
+  rank: number;
 }
 
 interface TrendPoint {
@@ -530,7 +531,21 @@ export const earningsRouter = createTRPCRouter({
           return a.studentName.localeCompare(b.studentName);
         });
 
-      return sorted.slice(0, input?.limit ?? 5);
+      // Standard competition ranking (1, 1, 3, ...): students with the same
+      // avgScore share the same rank, and the next distinct score picks up
+      // at its 1-indexed position — so two students both averaging 5.0 both
+      // read as rank 1 instead of one arbitrarily outranking the other.
+      let rank = 0;
+      let previousScore: number | null = null;
+      const ranked = sorted.map((entry, index) => {
+        if (previousScore === null || entry.avgScore !== previousScore) {
+          rank = index + 1;
+        }
+        previousScore = entry.avgScore;
+        return { ...entry, rank };
+      });
+
+      return ranked.slice(0, input?.limit ?? 5);
     }),
 
   // Get quick insights for the dashboard panel

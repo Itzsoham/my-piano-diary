@@ -16,6 +16,7 @@ type TopStudent = {
   studentName: string;
   avgScore: number;
   ratedCount: number;
+  rank: number;
   avatar: string | null;
 };
 
@@ -26,7 +27,24 @@ type DashboardTopStudentsCardProps = {
 };
 
 const MEDALS = ["🥇", "🥈", "🥉"] as const;
-const PLACES = ["1st", "2nd", "3rd", "4th", "5th"] as const;
+
+// Ties share a rank (server sends standard competition ranking: 1, 1, 3, ...)
+// — spell that out in words instead of assuming a fixed 1st/2nd/3rd/4th/5th
+// ladder, since two students can legitimately both be "1st".
+const ordinal = (rank: number) => {
+  const mod100 = rank % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${rank}th`;
+  switch (rank % 10) {
+    case 1:
+      return `${rank}st`;
+    case 2:
+      return `${rank}nd`;
+    case 3:
+      return `${rank}rd`;
+    default:
+      return `${rank}th`;
+  }
+};
 
 // DOM order stays rank order (1, 2, 3); flex `order` builds the visual
 // staircase — 1st centre, 2nd to its left, 3rd to its right.
@@ -127,7 +145,7 @@ export function DashboardTopStudentsCard({
                     showStaircase && PODIUM_ORDER[index],
                   )}
                 >
-                  {index === 0 && (
+                  {student.rank === 1 && (
                     <>
                       <Sparkle
                         className="text-bubblegum absolute top-5 left-0.5"
@@ -148,14 +166,14 @@ export function DashboardTopStudentsCard({
                     size={20}
                     className={cn(
                       "text-bubblegum mb-0.5",
-                      index !== 0 && "invisible",
+                      student.rank !== 1 && "invisible",
                     )}
                   />
 
                   <Avatar
                     className={cn(
                       "relative z-10 size-11 border-[3px] border-white shadow-sm",
-                      index === 0 && "ring-bubblegum ring-2",
+                      student.rank === 1 && "ring-bubblegum ring-2",
                     )}
                   >
                     <AvatarImage src={student.avatar ?? undefined} />
@@ -172,9 +190,11 @@ export function DashboardTopStudentsCard({
                     )}
                   >
                     <span className="text-lg leading-none" aria-hidden="true">
-                      {MEDALS[index]}
+                      {MEDALS[student.rank - 1]}
                     </span>
-                    <span className="sr-only">{PLACES[index]} place</span>
+                    <span className="sr-only">
+                      {ordinal(student.rank)} place
+                    </span>
                     <span className="text-ink text-[11px] leading-tight font-semibold wrap-anywhere">
                       {student.studentName}
                     </span>
@@ -194,13 +214,13 @@ export function DashboardTopStudentsCard({
 
             {runners.length > 0 && (
               <ol start={4} className="mt-4 flex flex-col gap-0.5">
-                {runners.map((student, index) => (
+                {runners.map((student) => (
                   <li key={student.studentId}>
                     <div className="flex min-h-11 items-center gap-2.5 rounded-xl px-1.5">
                       <span className="grid size-6 flex-none place-items-center rounded-md bg-pink-100 text-[11px] font-bold text-pink-700 tabular-nums">
-                        <span aria-hidden="true">{index + 4}</span>
+                        <span aria-hidden="true">{student.rank}</span>
                         <span className="sr-only">
-                          {PLACES[index + 3]} place
+                          {ordinal(student.rank)} place
                         </span>
                       </span>
                       <Avatar className="size-7">

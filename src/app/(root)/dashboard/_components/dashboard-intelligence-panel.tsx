@@ -15,6 +15,7 @@ type TopStudent = {
   studentName: string;
   avgScore: number;
   ratedCount: number;
+  rank: number;
   avatar: string | null;
 };
 
