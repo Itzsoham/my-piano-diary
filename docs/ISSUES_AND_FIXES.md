@@ -2,7 +2,7 @@
 
 > Current problems in the app, what needs fixing, and how to fix each one.
 
-**Last Updated**: July 6, 2026 — every entry below was re-verified against the current codebase. The previous revision (Feb 27, 2026) predated the payments/earnings/reports modules and the shared `DataTable`; several of its items are now resolved and are listed under [Resolved Since Last Audit](#resolved-since-last-audit). New bugs surfaced by this audit are marked **NEW**.
+**Last Updated**: July 27, 2026 — re-audited against the current codebase after the Family/FamilyMember + combined reports, demo-seeding flow, Lesson quality scoring, and Blossom Diary v2 redesign work (commits through `d3d148b`). All 2026-07-06 fixes were re-confirmed still in place (`npm run test`: 42/42 pass; `tsc --noEmit`: clean). Two existing entries had stale or self-contradictory detail text corrected to match the code (**#24**, **#25** — no new fix, just accurate wording), the Backlog test count was updated, and four new issues found in this pass were added (**#27–#30**). The July 6, 2026 revision is preserved below for history. New bugs surfaced by either audit are marked **NEW**.
 
 ---
 
@@ -11,10 +11,10 @@
 | Priority     | Open items                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------ |
 | 🔴 High      | — none (all fixed 2026-07-06)                                                                            |
-| 🟠 Medium    | — none (all fixed 2026-07-06)                                                                            |
-| 🟡 Low       | — none (all fixed 2026-07-06)                                                                            |
-| 🔒 Security  | No auth rate-limiting / brute-force protection · weak password policy · account enumeration            |
-| 🧱 Backlog   | Client-only pagination (deferred — fine at single-user scale) · _#22 tests, #24 monitoring, #25 calendar a11y/loading, #26 table DRY: done 2026-07-06_ |
+| 🟠 Medium    | **#29** Attendance-marking optimistic update never rolls back on failure (new, 2026-07-27)               |
+| 🟡 Low       | **#30** Report / family-report attendance grids bucket lessons by the browser's timezone, not the teacher's configured one (new, 2026-07-27) |
+| 🔒 Security  | No auth rate-limiting / brute-force protection · weak password policy · account enumeration · **#27** demo reseeding can hijack/wipe an account · **#28** demo endpoints unthrottled & non-idempotent (both new, 2026-07-27) |
+| 🧱 Backlog   | Client-only pagination (deferred — fine at single-user scale; now also covers `family.getAll`) · _#22 tests, #24 monitoring, #25 calendar a11y/loading, #26 table DRY: done 2026-07-06_ |
 
 ---
 
@@ -41,7 +41,7 @@ All correctness & cleanup bugs #1–#18 are resolved (timezone bugs #6, #7, #11 
 
 ## 🔴 High-Priority Bugs (confirmed, user-facing)
 
-> ✅ **All resolved 2026-07-06** — entries kept below for history.
+> ✅ **All resolved 2026-07-06** — entries kept below for history. A new high-impact issue surfaced in the 2026-07-27 audit, but it's security-classed (demo-seeding data integrity) — tracked as **#27** under [Security](#-security-open) instead of here.
 
 ### 1. Deleting a student with any lesson crashes (foreign-key violation) — **NEW**
 
@@ -91,7 +91,19 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 ## 🟠 Medium-Priority Bugs (confirmed)
 
-> ✅ **All resolved 2026-07-06** — entries kept below for history.
+> **#4–#10 resolved 2026-07-06** — kept below for history. **#29 is newly open**, found in the 2026-07-27 audit.
+
+### 29. Attendance-marking optimistic update never rolls back on failure — **NEW (2026-07-27)**
+
+**Impact**: When the `lesson.markAttendance` mutation fails (network blip, expired session, server error), the calendar / lessons table / dashboard keep showing the optimistically-applied status, rate, and score indefinitely — there's no visible sign the save failed short of noticing money or a rating is now wrong. Reopening the dialog re-hydrates its form from that same wrong cached data, so retrying looks like a no-op to the teacher.
+
+**Where**: `src/app/(root)/calendar/_components/attendance-dialog.tsx:106-218` (`onMutate` 109-186, `onError` 193-200, `onSettled` 203-217).
+
+**Cause**: `onMutate` patches the `lesson.getAll`, `lesson.getInRange`, and `earnings.getTodayLessons` caches with the new status/rate/score, closes the dialog, and shows a success toast — all before the server confirms — without ever snapshotting the previous cache values. `onError` only toasts an error and reopens the dialog; it never restores the pre-mutation cache (no `context`/rollback). `onSettled` only invalidates when `isMutating({mutationKey:["lesson-write"]})` is exactly `1` at that instant, which for a single already-failed mutation is typically `0` by then, so invalidation is skipped too. This now also silently corrupts the new lesson-quality `score` field, since it's part of the un-rolled-back patch — though the missing-rollback pattern itself predates that feature.
+
+**Fix**: Snapshot the previous query data for all three caches in `onMutate`, return it as `context`, restore it in `onError` (the standard TanStack Query optimistic-update pattern), and invalidate unconditionally in `onSettled` instead of gating on the in-flight mutation count.
+
+---
 
 ### 4. Payment-history dialog shows stale expected amount & wrong status — **NEW**
 
@@ -169,7 +181,7 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 ## 🟡 Low-Priority Bugs & Cleanups
 
-> ✅ **All resolved 2026-07-06** (except the `trpc.ts` timing log, now dev-gated) — entries kept below for history.
+> ✅ **#11–#18 resolved 2026-07-06** (except the `trpc.ts` timing log, now dev-gated) — entries kept below for history. **#30 is newly open**, found in the 2026-07-27 audit.
 
 | #   | Issue                                                                  | Where                                                                 | Fix                                                                                             |
 | --- | --------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -181,6 +193,7 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 | 16  | ✅ **RESOLVED by removal** — `MAKEUP` is a retired, unused status (0 DB rows), so instead of adding it, it was dropped from the Prisma enum **and** every Zod schema | `schema.prisma`, `common-schemas.ts`, `api-schemas.ts` | Consistency restored by removing `MAKEUP` everywhere (enum + validation) |
 | 17  | Leftover `console.log("[SERVER DEBUG]…")` in production — **partly fixed** (the `createRecurring` logs were removed with #7; `trpc.ts:99` still open) | `trpc.ts:99`                                    | Remove the remaining debug logging                                                              |
 | 18  | **NEW** No `@@index` on `Student.teacherId` / `Piece.teacherId`; no index on `Lesson.pieceId` | `prisma/schema.prisma` (Student, Piece, Lesson)                     | Add the indexes for consistency (`prisma db push`). Minor — per-teacher tables are small        |
+| 30  | **NEW (2026-07-27)** Report & family-report attendance grids bucket lessons by the browser's local timezone, not the teacher's configured one — the same bug class already fixed for the calendar (old #6), never applied here | `src/lib/report/attendance.ts:29-42` (`buildWeeksData` calls `date-fns`'s `getWeekOfMonth`/`getDate` directly on raw `lesson.date`); consumed unconverted by `report-view.tsx:557,575` and the new `combined-report-view.tsx:259,264` | Convert each lesson's `date` via `fromUTC(date, teacherTimezone)` before bucketing, using `session.user.timezone`/`teacher.user.timezone` (mirroring the calendar's #6 fix), in both the single-student and family report views |
 
 ---
 
@@ -216,9 +229,33 @@ image: z.string().url("Invalid image URL").optional().or(z.literal("")),
 
 ---
 
+### 27. Demo reseeding can silently hijack or wipe a real account that registers with the demo email — **NEW (2026-07-27)**
+
+**Impact**: If a real visitor ever self-registers using the exact email `demo@pianodiary.dev`, the next time *anyone* — logged in or not — clicks "Try the demo" on the login page, that account's password is silently overwritten and its entire studio (students, lessons, payments, families, pieces, reports) is wiped and replaced with seed data, with no warning, confirmation, or recovery path.
+
+**Where**: `src/server/demo/seed-steps.ts:80-118` (`seedSetup`); `src/server/demo/demo-data.ts:10,19` (`DEMO_EMAIL` vs. `PROTECTED_EMAILS`); `src/server/actions/auth-actions.ts:78-140` (`registerAction`/`registerSchema` — no denylist); `src/server/api/routers/demo.ts:20-28` (all 7 steps are `publicProcedure`, unauthenticated).
+
+**Cause**: `demo.setup` upserts the `User` row at `DEMO_EMAIL = "demo@pianodiary.dev"` (overwriting name/password/timezone), then wipes and recreates that user's lessons/payments/families/students/pieces on every call — reachable by anyone via the login page's "Try the demo" button or a direct API call, since all demo procedures are `publicProcedure` with no session check. `PROTECTED_EMAILS` only shields one hardcoded developer address; it does not include `DEMO_EMAIL` itself, and nothing in registration blocks a real visitor from self-registering with `demo@pianodiary.dev`.
+
+**Fix**: Add `DEMO_EMAIL` to a reserved/blocked-emails check in `registerSchema`/`registerAction`, and/or gate the demo mutations behind a short-lived token issued only by the login page rather than leaving them fully public.
+
+---
+
+### 28. Demo endpoints have no concurrency guard or rate limiting — **NEW (2026-07-27)**
+
+**Impact**: Two overlapping demo-seed runs (a double-click, or two visitors hitting "Try the demo" at the same time) can throw an unhandled server error partway through seeding. More broadly, since the whole 7-step flow is public and unthrottled, it can be looped to repeatedly wipe/rebuild the shared demo account.
+
+**Where**: `src/server/api/routers/demo.ts:20-28`; `src/server/demo/seed-steps.ts:381-390` (`seedPayments` uses plain `db.paymentMonth.create`, not `upsert`); `prisma/schema.prisma:172` (`PaymentMonth` `@@unique([studentId, month, year])`).
+
+**Cause**: `seedPayments`'s final step calls `create()` against a table with a unique `(studentId, month, year)` constraint; two concurrent seed runs against the single shared demo teacher collide on that `create()` and throw an unhandled Prisma P2002. More generally, since all 7 steps are `publicProcedure` with no throttling, this is the same class of gap as **#19** (no rate limiting) — just applied to a larger, unauthenticated data-churn/DoS surface instead of login brute-force.
+
+**Fix**: Make `seedPayments` idempotent (`upsert` instead of `create`), and/or add a lightweight lock on the demo teacher row for the duration of a run; fold the demo endpoints into whatever rate limiter eventually lands for #19.
+
+---
+
 ## 🧱 Backlog (real, but improvements not bugs)
 
-> ✅ **Mostly implemented 2026-07-06**: **#22** Vitest suite (27 tests over timezone / payment / rate / schemas, incl. the money-netting & stale-snapshot fixes), **#24** error tracking wired through `env.js` + `logError` at the query/tRPC/boundary seams, **#25** calendar loading skeleton + `keepPreviousData` + event aria-labels/keyboard + list-view link, **#26** shared `useTableViewPersistence` / `DataTablePagination` / `DataTableViewToggle`. Only **#23** (server-side pagination) remains — intentionally deferred for single-user scale.
+> ✅ **Mostly implemented 2026-07-06, re-verified 2026-07-27**: **#22** Vitest suite (now **42 tests across 6 files** — `payment.test.ts` 9, `rate.test.ts` 3, `timezone.test.ts` 6, `report/attendance.test.ts` 6, `report/tuition.test.ts` 9, `validations/validations.test.ts` 9 — incl. the money-netting & stale-snapshot fixes; `.github/workflows/ci.yml` runs `npm run check` + `npm run test` on every push/PR to `main`, confirmed green), **#24** error tracking wired through `env.js` + `logError` at the query/tRPC/boundary seams (see the corrected entry below — the env var IS validated; no real service is installed yet), **#25** calendar loading skeleton + `keepPreviousData` + event aria-labels/keyboard + list-view link are all confirmed done (see the corrected entry below — one drag/resize gap remains), **#26** shared `useTableViewPersistence` / `DataTablePagination` / `DataTableViewToggle`. Only **#23** (server-side pagination) remains — intentionally deferred for single-user scale, and now also applies to the new `family.getAll`.
 
 ### 22. No Unit Tests — **(#1, still open)**
 
@@ -228,27 +265,27 @@ Zero test files and no test tooling. `npm run check` runs only lint + `tsc` (not
 
 ---
 
-### 23. Client-Side Only Pagination — **(#2, still open)**
+### 23. Client-Side Only Pagination — **(#2, still open; scope widened 2026-07-27)**
 
-`student.getAll`, `piece.getAll`, and `lesson.getAll` fetch **all** rows (no `skip/take/count/cursor`); the students/pieces tables paginate purely client-side (`getPaginationRowModel`, pageSize 10) over the full dataset. Payments' list is bounded by student count per month, not true pagination. Fine at current scale; won't hold past a few hundred rows. A `paginationSchema` already exists in `common-schemas.ts` but is unused.
+`student.getAll`, `piece.getAll`, `lesson.getAll`, and (new since 2026-07-06) **`family.getAll`** (`src/server/api/routers/family.ts:40-54`) all fetch **all** rows (no `skip/take/count/cursor`); the students/pieces tables paginate purely client-side (`getPaginationRowModel`, pageSize 10) over the full dataset. Payments' list is bounded by student count per month, not true pagination. Fine at current scale; won't hold past a few hundred rows, and families are a low-volume list per teacher so `family.getAll` is lowest priority of the four. A `paginationSchema` already exists in `common-schemas.ts` but is unused.
 
 **Fix**: Add cursor/offset pagination (`skip`/`take` + `count`) to the `getAll` procedures and switch tables to `manualPagination`.
 
 ---
 
-### 24. No Production Monitoring — **(#10, partially addressed)**
+### 24. No Production Monitoring — **(#10, partially addressed; corrected 2026-07-27)**
 
-`src/lib/error-handler.ts` now has an opt-in webhook (`sendErrorToTrackingService` → `NEXT_PUBLIC_ERROR_TRACKING_URL`), but no real service is installed, the env var isn't in the validated `src/env.js` schema (so it's effectively never enabled), production errors are held only in a 100-entry in-memory array (lost on cold start), and console logging is dev-only.
+`src/lib/error-handler.ts` has an opt-in webhook (`sendErrorToTrackingService` → `NEXT_PUBLIC_ERROR_TRACKING_URL`). **Correction to the previous revision of this entry**: the env var *is* validated — `src/env.js:29` (client schema) and `:41` (`runtimeEnv`) both declare/pass through `NEXT_PUBLIC_ERROR_TRACKING_URL`, and `error-handler.ts:65,79` reads it via the validated `env` object. What's still genuinely missing: no real tracking *service* is installed behind that webhook, production errors are held only in a 100-entry in-memory ring buffer (lost on cold start/serverless recycle), and console logging stays dev-only.
 
-**Fix**: Integrate Sentry (`instrumentation.ts`) and add the tracking URL to `env.js` if the webhook is kept.
+**Fix**: Integrate Sentry (`instrumentation.ts`) or point `NEXT_PUBLIC_ERROR_TRACKING_URL` at a real ingestion endpoint.
 
 ---
 
-### 25. Calendar accessibility & loading state — **(#9 narrowed, + Q4)**
+### 25. Calendar drag/resize has no keyboard alternative — **(#9 narrowed further; corrected 2026-07-27)**
 
-Most of the app is now accessible (icon buttons have `sr-only` labels, custom controls have roles/keyboard handlers, the rest inherit from Radix). The remaining gap is the **FullCalendar** view: no keyboard navigation and no keyboard alternative to click/drag/resize, and events carry no `aria` labels. Separately (**Q4**), `calendar/page.tsx:42` only reads `data` from `api.lesson.getInRange.useQuery` and never surfaces `isPending`, so the grid renders empty during fetch instead of a loading skeleton.
+**Correction to the previous revision of this entry**: it still described loading-state and `aria`-label gaps as open even though the Backlog intro above already (correctly) claimed both were done — the two parts of the doc contradicted each other. Verified current code sides with the "done" claim: `calendar/page.tsx:61-64,177-189` reads `isPending`/`isError` and renders a real `CalendarSkeleton` / `ErrorState` with retry; `full-calendar-view.tsx:167-185` (`handleEventDidMount`) sets `aria-label`, `role="button"`, `tabIndex=0`, and an Enter/Space keydown handler on every calendar event; `calendar-hero.tsx:79` links to `/lessons` as a list-view alternative. The one gap that's genuinely still open: `full-calendar-view.tsx:676-677` (`eventDrop`/`eventResize`) has no keyboard equivalent, so rescheduling a lesson by drag or resizing its duration is mouse/touch-only.
 
-**Fix**: Add keyboard handlers / `aria` to calendar events; read `isPending`/`isFetching` and render a calendar-shaped `Skeleton` while loading.
+**Fix**: Add a keyboard-operable path for rescheduling/resizing (the lesson edit dialog's date/time fields already cover typed input — confirm that path is reachable without ever needing the drag interaction, and consider surfacing it via an `aria-describedby` hint on focused events).
 
 ---
 
@@ -280,7 +317,9 @@ Verified fixed in the current codebase — kept here for history:
 
 ## Recommended Fix Order
 
-All correctness & cleanup bugs (#1–#18) are fixed as of 2026-07-06. Remaining work:
+All correctness & cleanup bugs (#1–#18) are fixed as of 2026-07-06. Remaining work, in order:
 
-1. **Security (#19–#21)** — add auth rate limiting, stronger passwords, and reduce account enumeration before wider use.
-2. **Backlog** — #22 tests, #24 monitoring, #25 calendar a11y/loading, and #26 table DRY are done (2026-07-06). Only **#23** server-side pagination remains, deferred until a `getAll` regularly returns hundreds of rows.
+1. **#29 Attendance-marking rollback** — the highest-impact open item found in the 2026-07-27 audit: a failed `markAttendance` save currently leaves the wrong status/rate/score on screen indefinitely with no visible failure or recovery path, and it now also affects the lesson-scoring feature. Fix before wider rollout.
+2. **Security (#19–#21, #27–#28)** — add auth rate limiting, stronger passwords, reduce account enumeration, block `demo@pianodiary.dev` from self-registration, and make demo seeding idempotent/throttled — before wider use.
+3. **#30 Report timezone bucketing** — low severity but a quick fix: apply the same `fromUTC` conversion already used by the calendar (old #6) to the single-student and family-report attendance grids.
+4. **Backlog** — #22 tests, #24 monitoring, #25 calendar loading/aria, and #26 table DRY are done (2026-07-06, re-verified 2026-07-27). What's left: #25's one remaining gap (drag/resize keyboard alternative) and **#23** server-side pagination (now also covering `family.getAll`), both deferred as low-impact at current scale.

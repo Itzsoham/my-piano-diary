@@ -4,7 +4,7 @@
 >
 > **Scope**: this is a personal, single-user teaching diary. There is **one** user — you, the teacher. Students are records you manage, **not** logins. No multi-tenant / multiple-teacher setup, and no student/parent accounts. Features are planned with that in mind.
 
-**Last Updated**: July 6, 2026
+**Last Updated**: July 27, 2026
 
 ---
 
@@ -17,6 +17,10 @@ These were on the old roadmap and are now live, so they've been removed from the
 - **Recurring lessons** — `lesson.createRecurring` generates weekly/biweekly occurrences across a date range in the configured timezone.
 - **Monthly reports** — `report` router + `MonthlyReport` model, `/reports` per student per month (summary, comments, next-month plan, tuition note).
 - **Frozen per-lesson rates** — every lesson snapshots its own rate (online vs. in-person); past months never re-price.
+- **Family management & combined reports** — `family` tRPC router + `Family`/`FamilyMember` models, a Families manager on `/students`, and a printable `/reports/family/[familyId]` combined report for siblings billed together.
+- **One-click demo studio** — `demo` tRPC router + `src/server/demo/` seed a fully-populated demo teacher (students, families, lessons, attendance, reports, payments) from a "Try the demo" button on `/login`.
+- **Lesson quality scoring & Top Students leaderboard** — attendance-marking dialog rates each completed lesson 1–5 (`Lesson.score`); the dashboard "Top Students" card ranks by average score among rated lessons, with tied averages sharing a rank.
+- **Blossom Diary v2 redesign** — full visual redesign across every screen (`src/components/blossom/` ornaments + Mochi mascot, responsive icon-rail/bottom-tab-bar sidebar shell) and a per-browser logo picker (5 mark variants) on the Profile page.
 
 > Known bugs in these shipped modules are tracked in `ISSUES_AND_FIXES.md`.
 
@@ -50,12 +54,11 @@ The `/notifications` route already exists (currently a "coming soon" placeholder
 
 ### Student Progress Tracking
 
-Enrich student profiles with:
+Per-lesson performance rating (1–5) shipped as the "blossom" score in the attendance-marking dialog, feeding the dashboard's Top Students leaderboard (see Already Shipped). Still missing, to further enrich student profiles:
 
 - Piece progression per student (started → in progress → completed)
-- Performance rating (1–5) per lesson
-- Notes history timeline per student
-- Visual progress chart on the profile page
+- Notes history timeline per student (a scored/rated feed of past lessons, not just the freeform per-lesson `note` field)
+- Visual progress chart on the profile page (e.g. score trend over time, using the now-existing `Lesson.score` data)
 
 ---
 
@@ -195,20 +198,20 @@ model LessonAttachment {
 
 ## Implementation Priority Matrix
 
-| Feature                     | Impact | Effort | Priority |
-| --------------------------- | ------ | ------ | -------- |
-| Advanced Analytics          | High   | Medium | **P1**   |
-| Notifications & Reminders   | Medium | Medium | **P1**   |
-| Student Progress Tracking   | Medium | Medium | **P1**   |
-| Printable Invoices/Receipts | Medium | Low    | **P2**   |
-| Bulk Operations             | Medium | Low    | **P2**   |
-| Image & File Uploads        | Medium | Medium | **P2**   |
-| Google Calendar Sync        | Medium | High   | **P3**   |
-| Mobile / PWA                | Medium | Low    | **P3**   |
-| Dark Mode Polish            | Low    | Low    | **P3**   |
-| Advanced Piece Management   | Low    | Medium | **P3**   |
-| Two-Factor Authentication   | Low    | Medium | **P3**   |
-| Student Groups              | Low    | Medium | **P4**   |
+| Feature                                | Impact | Effort | Priority |
+| --------------------------------------- | ------ | ------ | -------- |
+| Advanced Analytics                     | High   | Medium | **P1**   |
+| Notifications & Reminders              | Medium | Medium | **P1**   |
+| Student Progress Tracking (remaining)  | Medium | Medium | **P1**   |
+| Printable Invoices/Receipts            | Medium | Low    | **P2**   |
+| Bulk Operations                        | Medium | Low    | **P2**   |
+| Image & File Uploads                   | Medium | Medium | **P2**   |
+| Google Calendar Sync                   | Medium | High   | **P3**   |
+| Mobile / PWA                           | Medium | Low    | **P3**   |
+| Dark Mode Polish                       | Low    | Low    | **P3**   |
+| Advanced Piece Management              | Low    | Medium | **P3**   |
+| Two-Factor Authentication              | Low    | Medium | **P3**   |
+| Student Groups                         | Low    | Medium | **P4**   |
 
 ---
 
@@ -223,4 +226,4 @@ Quick reference for building any new feature:
 5. **Page** — Create `src/app/(root)/feature/page.tsx` (Server Component, fetch data).
 6. **Components** — Create `src/app/(root)/feature/_components/` (Client Components).
 7. **Navigation** — Add a link to the `data.main` or `data.manage` array in `src/app/(root)/_components/app-sidebar.tsx`.
-8. **Tests** — There is no test tooling yet (see `ISSUES_AND_FIXES.md` backlog #22); add coverage as it lands.
+8. **Tests** — Vitest is set up (`npm run test`, CI runs it on every push/PR to `main`); coverage is currently scoped to `src/lib/**` (pure calc/schema helpers), so add a `*.test.ts` alongside any new `src/lib/` logic the feature needs.
