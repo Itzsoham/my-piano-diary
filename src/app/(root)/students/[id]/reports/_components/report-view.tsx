@@ -603,7 +603,7 @@ export function ReportView({
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-6 sm:space-y-8 print:max-w-none print:space-y-4">
+    <div className="mx-auto w-full max-w-295 space-y-6 sm:space-y-8 print:max-w-none print:space-y-4">
       {/* Controls - Hidden on Print */}
       <div className="rounded-3xl border border-(--line-pink) bg-linear-to-br from-teal-100 via-teal-50 to-pink-50 p-3 shadow-(--sh-sm) sm:p-4 print:hidden">
         <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
