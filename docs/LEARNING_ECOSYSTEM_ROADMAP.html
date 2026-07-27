@@ -1,0 +1,974 @@
+<title>Learning Ecosystem — Technical Roadmap</title>
+<meta name="description" content="Phase-by-phase technical plan for My Piano Diary's Homework, Motivation, Parent Portal, AI, and Analytics expansion, with an architecture review." />
+<style>
+  @font-face {
+    font-family: "ui-serif-stack";
+    src: local("Iowan Old Style"), local("Palatino Linotype"), local("Georgia");
+  }
+
+  :root {
+    --paper: #f6efef;
+    --paper-raised: #fbf7f6;
+    --paper-sunken: #ede2e2;
+    --ink: #241d22;
+    --ink-soft: #5b4f55;
+    --ink-faint: #8a7c81;
+    --line: #e2d3d6;
+    --line-strong: #cbb6ba;
+    --accent: #a23b58;
+    --accent-ink: #ffffff;
+    --accent-soft: #f0dce1;
+    --accent-soft-line: #e2b9c3;
+
+    --good: #2f6b46;
+    --good-bg: #e3efe5;
+    --good-line: #bcd8c2;
+    --info: #2a5f82;
+    --info-bg: #dceaf1;
+    --info-line: #b6d3e2;
+    --warn: #92590f;
+    --warn-bg: #f3e7d2;
+    --warn-line: #e2c793;
+    --critical: #a1362e;
+    --critical-bg: #f5dddb;
+    --critical-line: #e2b4b0;
+
+    --shadow: 0 1px 2px rgba(36, 29, 34, 0.06), 0 8px 24px -12px rgba(36, 29, 34, 0.18);
+    --radius: 10px;
+
+    --font-display: "ui-serif-stack", "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, "Roboto Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1b171a;
+      --paper-raised: #221d21;
+      --paper-sunken: #141113;
+      --ink: #f1e9ea;
+      --ink-soft: #b8a9ae;
+      --ink-faint: #8a7b80;
+      --line: #362e32;
+      --line-strong: #4a3f43;
+      --accent: #e58ea2;
+      --accent-ink: #221016;
+      --accent-soft: #3a222a;
+      --accent-soft-line: #5c3540;
+
+      --good: #74c093;
+      --good-bg: #1c2c22;
+      --good-line: #2f4a38;
+      --info: #82bcdd;
+      --info-bg: #1a2833;
+      --info-line: #2c4356;
+      --warn: #dcac5c;
+      --warn-bg: #332811;
+      --warn-line: #4d3d1c;
+      --critical: #e6897d;
+      --critical-bg: #3a201d;
+      --critical-line: #57312c;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px -14px rgba(0, 0, 0, 0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1b171a; --paper-raised: #221d21; --paper-sunken: #141113;
+    --ink: #f1e9ea; --ink-soft: #b8a9ae; --ink-faint: #8a7b80;
+    --line: #362e32; --line-strong: #4a3f43;
+    --accent: #e58ea2; --accent-ink: #221016; --accent-soft: #3a222a; --accent-soft-line: #5c3540;
+    --good: #74c093; --good-bg: #1c2c22; --good-line: #2f4a38;
+    --info: #82bcdd; --info-bg: #1a2833; --info-line: #2c4356;
+    --warn: #dcac5c; --warn-bg: #332811; --warn-line: #4d3d1c;
+    --critical: #e6897d; --critical-bg: #3a201d; --critical-line: #57312c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px -14px rgba(0, 0, 0, 0.55);
+  }
+  :root[data-theme="light"] {
+    --paper: #f6efef; --paper-raised: #fbf7f6; --paper-sunken: #ede2e2;
+    --ink: #241d22; --ink-soft: #5b4f55; --ink-faint: #8a7c81;
+    --line: #e2d3d6; --line-strong: #cbb6ba;
+    --accent: #a23b58; --accent-ink: #ffffff; --accent-soft: #f0dce1; --accent-soft-line: #e2b9c3;
+    --good: #2f6b46; --good-bg: #e3efe5; --good-line: #bcd8c2;
+    --info: #2a5f82; --info-bg: #dceaf1; --info-line: #b6d3e2;
+    --warn: #92590f; --warn-bg: #f3e7d2; --warn-line: #e2c793;
+    --critical: #a1362e; --critical-bg: #f5dddb; --critical-line: #e2b4b0;
+    --shadow: 0 1px 2px rgba(36, 29, 34, 0.06), 0 8px 24px -12px rgba(36, 29, 34, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16.5px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-soft); color: var(--ink); }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px;
+  }
+
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.15; text-wrap: balance; color: var(--ink); }
+  p { text-wrap: pretty; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ---------- shell layout ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+  @media (max-width: 980px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px 28px 28px;
+    border-right: 1px solid var(--line);
+    scrollbar-width: thin;
+  }
+  @media (max-width: 980px) {
+    .rail { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); padding: 20px; }
+  }
+  .rail-brand { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .rail-brand .mark { font-size: 20px; }
+  .rail-brand .name { font-family: var(--font-display); font-weight: 600; font-size: 15px; }
+  .rail-sub { font-size: 12.5px; color: var(--ink-faint); margin: 0 0 22px; }
+
+  .rail nav { display: flex; flex-direction: column; gap: 1px; }
+  .rail-group-label {
+    font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 16px 0 6px; font-weight: 600;
+  }
+  .rail-group-label:first-child { margin-top: 0; }
+  .rail a.navlink {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 6px 8px; border-radius: 6px; color: var(--ink-soft);
+    text-decoration: none; font-size: 13.6px;
+  }
+  .rail a.navlink:hover { background: var(--paper-raised); color: var(--ink); }
+  .rail a.navlink.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .rail a.navlink .chip { flex-shrink: 0; }
+
+  main { min-width: 0; padding: 40px clamp(20px, 4vw, 64px) 120px; }
+  .measure { max-width: 760px; }
+
+  /* ---------- hero ---------- */
+  .hero { max-width: 820px; margin-bottom: 8px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 14px;
+  }
+  .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--accent); }
+  .hero h1 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 14px; }
+  .hero .lede { font-size: 17.5px; color: var(--ink-soft); max-width: 62ch; margin: 0 0 22px; }
+
+  .stat-strip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1px; background: var(--line); border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden; margin: 26px 0 36px; max-width: 720px;
+  }
+  .stat-cell { background: var(--paper-raised); padding: 14px 16px; }
+  .stat-cell .num { font-family: var(--font-display); font-size: 22px; font-weight: 600; display: block; }
+  .stat-cell .label { font-size: 11.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ---------- chips / pills ---------- */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+    padding: 2.5px 8px; border-radius: 999px; border: 1px solid transparent;
+    white-space: nowrap; line-height: 1.5;
+  }
+  .chip-good { background: var(--good-bg); color: var(--good); border-color: var(--good-line); }
+  .chip-info { background: var(--info-bg); color: var(--info); border-color: var(--info-line); }
+  .chip-warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-line); }
+  .chip-critical { background: var(--critical-bg); color: var(--critical); border-color: var(--critical-line); }
+  .chip-neutral { background: var(--paper-sunken); color: var(--ink-soft); border-color: var(--line-strong); }
+  .chip-accent { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft-line); }
+
+  /* ---------- sections ---------- */
+  section.phase { padding-top: 70px; scroll-margin-top: 20px; border-top: 1px solid var(--line); margin-top: 6px; }
+  section.phase:first-of-type { border-top: none; }
+  .phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; margin-bottom: 6px; }
+  .phase-head .kicker { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-faint); letter-spacing: 0.03em; }
+  section.phase h2 { font-size: clamp(22px, 3vw, 28px); margin: 4px 0 10px; }
+  .phase-dek { color: var(--ink-soft); max-width: 68ch; font-size: 15.5px; margin: 0 0 22px; }
+  .phase-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+
+  h3.subhead { font-size: 17px; margin: 34px 0 10px; display: flex; align-items: center; gap: 8px; }
+  h3.subhead .n { color: var(--ink-faint); font-family: var(--font-mono); font-weight: 400; font-size: 13px; }
+  h4.minihead { font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); margin: 22px 0 8px; font-family: var(--font-body); font-weight: 700; }
+
+  ul.tight, ol.tight { padding-left: 1.15em; margin: 8px 0; }
+  ul.tight li, ol.tight li { margin: 5px 0; }
+  ul.plain { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 7px; }
+  ul.plain li { padding-left: 1.2em; position: relative; }
+  ul.plain li::before { content: "—"; position: absolute; left: 0; color: var(--ink-faint); }
+
+  /* ---------- notes / callouts ---------- */
+  .note {
+    border: 1px solid var(--line); border-left: 3px solid var(--ink-faint);
+    background: var(--paper-raised); border-radius: 0 8px 8px 0;
+    padding: 12px 16px; margin: 16px 0; font-size: 14.5px;
+  }
+  .note p:first-child { margin-top: 0; } .note p:last-child { margin-bottom: 0; }
+  .note .note-label {
+    display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 5px;
+  }
+  .note-fixed { border-left-color: var(--good); }
+  .note-fixed .note-label { color: var(--good); }
+  .note-critical { border-left-color: var(--critical); background: var(--critical-bg); }
+  .note-critical .note-label { color: var(--critical); }
+  .note-open { border-left-color: var(--warn); }
+  .note-open .note-label { color: var(--warn); }
+  .note-reuse { border-left-color: var(--info); }
+  .note-reuse .note-label { color: var(--info); }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 14px 0 22px; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.8px; min-width: 480px; }
+  thead th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ink-faint); padding: 9px 12px; background: var(--paper-sunken);
+    border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td code { color: var(--accent); }
+
+  /* ---------- schema / code blocks ---------- */
+  .schema {
+    background: var(--paper-sunken); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 16px; margin: 10px 0 18px; overflow-x: auto;
+  }
+  .schema pre { margin: 0; font-family: var(--font-mono); font-size: 12.8px; line-height: 1.55; white-space: pre; }
+  .schema .kw { color: var(--info); } .schema .ty { color: var(--accent); } .schema .cm { color: var(--ink-faint); font-style: italic; }
+
+  /* ---------- details / disclosure ---------- */
+  details.dis {
+    border: 1px solid var(--line); border-radius: 8px; margin: 10px 0 20px; background: var(--paper-raised);
+  }
+  details.dis summary {
+    cursor: pointer; padding: 10px 14px; font-size: 13.5px; font-weight: 600;
+    list-style: none; display: flex; align-items: center; gap: 8px; color: var(--ink);
+  }
+  details.dis summary::-webkit-details-marker { display: none; }
+  details.dis summary::before { content: "▸"; color: var(--ink-faint); transition: transform 0.15s ease; font-size: 11px; }
+  details.dis[open] summary::before { transform: rotate(90deg); }
+  details.dis .dis-body { padding: 2px 16px 14px; border-top: 1px solid var(--line); font-size: 14px; }
+  details.dis .dis-body p:first-child { margin-top: 12px; }
+
+  /* ---------- files reused pills ---------- */
+  .filepills { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .filepills code {
+    background: var(--paper-sunken); border: 1px solid var(--line); border-radius: 5px;
+    padding: 2px 6px; font-size: 12px; color: var(--ink-soft);
+  }
+
+  /* ---------- effort grid ---------- */
+  .effort-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 18px; flex-wrap: wrap; }
+  .size-badge {
+    font-family: var(--font-display); font-weight: 700; font-size: 15px;
+    width: 30px; height: 30px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-soft-line);
+  }
+
+  /* ---------- roadmap timeline ---------- */
+  .timeline { position: relative; margin: 28px 0; padding-left: 34px; }
+  .timeline::before { content: ""; position: absolute; left: 12px; top: 6px; bottom: 6px; width: 1.5px; background: var(--line-strong); }
+  .tl-step { position: relative; padding-bottom: 26px; }
+  .tl-step:last-child { padding-bottom: 0; }
+  .tl-step .dot {
+    position: absolute; left: -34px; top: 2px; width: 25px; height: 25px; border-radius: 50%;
+    background: var(--paper-raised); border: 1.5px solid var(--accent); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+  }
+  .tl-step h4 { margin: 0 0 4px; font-size: 15px; font-family: var(--font-body); font-weight: 700; }
+  .tl-step p { margin: 0 0 6px; font-size: 14px; color: var(--ink-soft); }
+  .tl-step .why { font-size: 13px; color: var(--ink-faint); }
+
+  /* ---------- verdict banner ---------- */
+  .verdict {
+    display: flex; gap: 16px; align-items: flex-start; padding: 18px 20px; margin: 20px 0 30px;
+    border-radius: 10px; border: 1px solid var(--critical-line); background: var(--critical-bg);
+  }
+  .verdict .vmark { font-size: 22px; line-height: 1; }
+  .verdict h3 { margin: 0 0 6px; font-size: 16px; color: var(--critical); font-family: var(--font-body); }
+  .verdict p { margin: 0; font-size: 14.5px; color: var(--ink); }
+
+  .checklist { list-style: none; padding: 0; margin: 14px 0; display: flex; flex-direction: column; gap: 10px; }
+  .checklist li {
+    display: flex; gap: 10px; padding: 10px 14px; background: var(--paper-raised);
+    border: 1px solid var(--line); border-radius: 8px; font-size: 14px;
+  }
+  .checklist .num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+  hr.rule { border: none; border-top: 1px solid var(--line); margin: 44px 0; }
+
+  footer.doc-footer { max-width: 760px; margin-top: 70px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 12.5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="rail-brand"><span class="mark">🎹</span><span class="name">Learning Ecosystem</span></div>
+    <p class="rail-sub">Technical roadmap · My Piano Diary</p>
+    <nav id="railnav">
+      <div class="rail-group-label">Overview</div>
+      <a class="navlink" href="#top">Vision &amp; principles</a>
+      <a class="navlink" href="#foundations">Architecture foundations</a>
+
+      <div class="rail-group-label">Phases</div>
+      <a class="navlink" href="#phase-1">01 · Homework System <span class="chip chip-neutral">L</span></a>
+      <a class="navlink" href="#phase-2">02 · Motivation <span class="chip chip-neutral">L</span></a>
+      <a class="navlink" href="#phase-3">03 · Parent Portal <span class="chip chip-neutral">L</span></a>
+      <a class="navlink" href="#phase-4">04 · AI <span class="chip chip-neutral">M</span></a>
+      <a class="navlink" href="#phase-5">05 · Analytics &amp; Reminders <span class="chip chip-neutral">M–L</span></a>
+      <a class="navlink" href="#wellbeing">Teacher wellbeing <span class="chip chip-neutral">M–L</span></a>
+
+      <div class="rail-group-label">Getting there</div>
+      <a class="navlink" href="#review">Architecture review</a>
+      <a class="navlink" href="#roadmap">Build sequence</a>
+      <a class="navlink" href="#questions">Open questions</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div id="top" class="hero">
+      <span class="eyebrow">My Piano Diary · Roadmap v1 · 2026-07-27</span>
+      <h1>From lesson diary to learning ecosystem</h1>
+      <p class="lede">A phase-by-phase plan for the biggest expansion this app has taken on: homework that survives the walk home, a motivation loop built on a mascot that already exists, a parent who can watch without a login, and a dashboard that tells you who needs you before the lesson does.</p>
+
+      <div class="stat-strip">
+        <div class="stat-cell"><span class="num tabular">5</span><span class="label">Phases + wellbeing</span></div>
+        <div class="stat-cell"><span class="num tabular">14</span><span class="label">New Prisma models</span></div>
+        <div class="stat-cell"><span class="num tabular">9</span><span class="label">New routers</span></div>
+        <div class="stat-cell"><span class="num tabular">1</span><span class="label">New auth surface</span></div>
+        <div class="stat-cell"><span class="num tabular">~35–45d</span><span class="label">Solo-dev effort</span></div>
+      </div>
+
+      <h3 class="subhead">Why teachers reteach</h3>
+      <p class="phase-dek" style="margin-bottom:14px">Students forget what they practiced too little between lessons — school exams, phones, unclear homework, and zero accountability all work against the studio. The app currently ends at the lesson. This roadmap is about extending it past the door.</p>
+
+      <h3 class="subhead">Five principles this whole plan is checked against</h3>
+      <ol class="tight">
+        <li><strong>Every lesson continues after the student goes home.</strong> Nothing here is worth building if it doesn't create a reason to open the app between Tuesday and Tuesday.</li>
+        <li><strong>Homework is actionable, not vague.</strong> "Bars 1–8, left hand, tempo 60, 10 minutes" — never "practice piece X."</li>
+        <li><strong>Motivate, don't pressure.</strong> No XP penalties, no shaming streak-breaks, no raw scores shown where they'd read as judgment.</li>
+        <li><strong>Parents are helpers, not inspectors.</strong> Read-only, curated, never a surveillance panel.</li>
+        <li><strong>Teachers teach more, repeat less.</strong> Every feature should remove reteaching time, not add admin time.</li>
+      </ol>
+    </div>
+
+    <hr class="rule" />
+
+    <section id="foundations" style="scroll-margin-top:20px;">
+      <div class="phase-head"><span class="kicker">CROSS-CUTTING</span></div>
+      <h2>Architecture foundations</h2>
+      <p class="phase-dek">Five designs were drafted in parallel against the live codebase, then adversarially reviewed. Two of them collided — the decisions below are the reconciled result, made once so every phase builds against the same ground truth instead of five slightly different ones. See <a href="#review">the review</a> for how each was found.</p>
+
+      <h3 class="subhead">1. One access model: signed tokens, not accounts</h3>
+      <p>Today only the teacher has a login — <code>protectedProcedure</code> everywhere, one <code>User</code> 1:1 one <code>Teacher</code>, no role concept anywhere in <code>src/server/api/trpc.ts</code>. Giving students and parents a real second-class NextAuth account would mean auditing and role-gating every one of the app's routers (none of them centralize authorization — each hand-rolls its own <code>teacherId</code> scoping), rebuilding <code>proxy.ts</code> into a role-aware router, and standing up account provisioning that doesn't exist even for a second teacher. Call it 3–4× the cost of the alternative, plus a permanent tax on every future procedure.</p>
+      <p>Instead: a single <strong>hashed, opaque access token</strong> per student, resolved by a new tRPC middleware — not a session, not a role, just a scoped capability. A bug here can leak at most one student's practice/report data; it can never touch the teacher's login, billing, or any other family's records.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Model</th><th>Field</th><th>Decision</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="6"><code>StudentAccessToken</code></td><td><code>tokenHash</code></td><td>SHA-256 of a 256-bit random token. The raw token is <strong>never</strong> persisted — same posture this codebase already gives <code>User.password</code> via bcrypt, just correctly matched to a random-secret threat model instead of a human-chosen one.</td></tr>
+            <tr><td><code>kind</code></td><td><code>enum AccessTokenKind { STUDENT PARENT }</code> — one enum, one table, shared by Phase 1's practice check-in and Phase 3's parent view.</td></tr>
+            <tr><td><code>label</code></td><td>Teacher's own name for it, e.g. "Mom's phone" — useful once a student has 2+ links.</td></tr>
+            <tr><td><code>expiresAt</code> / <code>revokedAt</code></td><td>Nullable; no forced expiry. Revoke-and-reissue is the model, not rotation.</td></tr>
+            <tr><td><code>lastUsedAt</code></td><td>Bumped on every resolved request — the teacher's entire leak-detection signal, and it's enough at this scale.</td></tr>
+            <tr><td>header</td><td>Single <code>x-access-token</code> header, read via a dedicated tRPC client mounted only on the non-teacher route trees. <code>protectedProcedure</code> and every existing router are untouched.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note note-fixed"><span class="note-label">Reconciled</span>Phase 1's design specified a <em>plaintext</em> token and Phase 3's specified a <em>hashed</em> one, under two different enum/header names — a direct collision. This page adopts the hashed version everywhere and treats the token table as its own tiny shared deliverable, built once before either phase claims it. See §"Build sequence" for why Parent Portal builds it first.</div>
+      <p>One guardrail neither original design fully committed to: a small in-memory sliding-window throttle on the token-resolution middleware itself. Brute-forcing a 256-bit token is not a realistic threat, but this is the app's <em>first-ever</em> unauthenticated write surface, and volumetric abuse of the lookup path is a distinct, cheap-to-close risk — about twenty lines, shipped on day one, not deferred.</p>
+
+      <h3 class="subhead">2. One canonical hub per student</h3>
+      <p>Today <code>students/[id]/page.tsx</code> doesn't exist — the students list is a table plus an edit sheet, and the only per-student route is the separate top-level <code>/reports/[studentId]</code>. Three of the five phase designs each assumed a different per-student destination (a <code>/homework</code> query param, a <code>students/[id]/motivation</code> route, a <code>students/[id]</code> route). Building all three literally would scatter "everything about Priya" across five disconnected screens.</p>
+      <p><strong>Decision:</strong> <code>students/[id]/page.tsx</code> is the one new canonical hub — hero, then tabs for Profile, Homework, Motivation, Competitions, with a link out to the existing <code>/reports/[studentId]</code> for the monthly report rather than duplicating it. Every phase below builds a tab on this page, not a new route.</p>
+
+      <h3 class="subhead">3. Ledgers, not mutable balances</h3>
+      <p>This app already has a rule it just hasn't named: <code>Lesson.rate</code> is frozen at write time, <code>PaymentTransaction</code> is an immutable row against a <code>PaymentMonth</code>, never a single balance field. Every new "score that goes up over time" in this plan — XP, AI usage, notification history — follows the same shape: an append-only table of dated events, with the running total computed live (<code>SUM()</code>/<code>aggregate</code>) rather than cached and drifted. At this app's scale (one teacher, tens of students) that costs nothing and can never go stale.</p>
+
+      <h3 class="subhead">4. What already exists and must be reused, not rebuilt</h3>
+      <div class="filepills">
+        <code>src/components/blossom/mochi.tsx</code>
+        <code>src/lib/meow-sound.ts</code>
+        <code>src/components/ui/star-rating.tsx</code>
+        <code>Piece.difficulty</code>
+        <code>Lesson.score</code>
+        <code>src/lib/timezone.ts</code>
+        <code>src/server/api/routers/family.ts</code>
+        <code>earnings.ts:538–546</code>
+        <code>dashboard-intelligence-panel.tsx</code>
+      </div>
+      <ul class="plain">
+        <li><strong>Mochi is not hypothetical.</strong> She already renders three moods (<code>content</code> / <code>delighted</code> / <code>sleepy</code>), already meows on click via a real audio file, and appears in 24 files today as a decorative empty-state mascot. Phase 2's "pet" mechanic is a mood-computation function, not a new asset.</li>
+        <li><strong><code>&lt;StarRating&gt;</code> + <code>Piece.difficulty</code></strong> already implement the 1–5 difficulty picker the vision spec asks for — imported verbatim into homework forms.</li>
+        <li><strong>The ranking-with-ties loop</strong> in <code>earnings.getTopStudentsThisMonth</code> is the template every new leaderboard/ranking query in this plan copies — standard competition ranking, tied students share a place.</li>
+        <li><strong><code>Family</code>/<code>FamilyMember</code></strong> (shipped 2026-07-10) is the literal wiring template for every new relational feature below: schema → inline Zod in the router file → <code>root.ts</code> registration → <code>_components/</code> sheet + table.</li>
+        <li><strong>Day-boundary math</strong> goes through <code>src/lib/timezone.ts</code>'s <code>getStartOfDayUTC</code>/<code>isSameDayInTimezone</code> family, full stop — this codebase has already paid twice (calendar bug #6, report-grid bug #30) for hand-rolled date math that ignored the teacher's configured timezone.</li>
+      </ul>
+
+      <h3 class="subhead">5. New shared helper needed before anything else</h3>
+      <p><code>src/lib/timezone.ts</code> has no "N days from now, in this timezone" helper. Streaks (Phase 2), homework due-dates (Phase 1), and spaced-repetition checkpoints (Phase 5) all need one. Add <code>addDaysInTimezone(date, days, timezone)</code> to that file, composed from the existing <code>fromUTC</code>/<code>toUTC</code> primitives, with its own Vitest cases — once, before the three phases that need it are built, not three times.</p>
+    </section>
+
+    <!-- ============ PHASE 1 ============ -->
+    <section id="phase-1" class="phase">
+      <div class="phase-head">
+        <span class="kicker">PHASE 1 · HIGHEST PRIORITY</span>
+        <span class="chip chip-info">2 slices</span>
+      </div>
+      <h2>Homework System</h2>
+      <p class="phase-dek">Actionable assignments, a five-item daily checklist, a practice timer, and a green/red practice calendar. This is the phase the entire vision depends on — it's also the one most gated by "how does a student interact with the app at all," since today nobody but the teacher has a way in.</p>
+      <div class="phase-meta">
+        <span class="chip chip-neutral">Effort: L (not XL)</span>
+        <span class="chip chip-accent">3 new models</span>
+        <span class="chip chip-accent">2 new routers</span>
+        <span class="chip chip-warn">Blocks Phase 2 practice-XP, all of Phase 5</span>
+      </div>
+
+      <h3 class="subhead">Ships in two slices, not one PR</h3>
+      <p>Core Principle #1 and the token-auth question are separable, with very different risk profiles — splitting them means real value lands fast without waiting on the app's first new auth primitive.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Slice</th><th>What it delivers</th><th>Auth</th><th>Effort</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>1A — Teacher bootstrap</strong></td>
+              <td>Assign homework, log a day's practice on the student's behalf, mark status. Already delivers "actionable homework." Zero new attack surface — same <code>protectedProcedure</code> pattern as every other router.</td>
+              <td><span class="chip chip-good">existing</span></td>
+              <td><span class="size-badge">M</span></td>
+            </tr>
+            <tr>
+              <td><strong>1B — Student self-serve</strong></td>
+              <td>A student taps a bookmarked link, ticks the checklist, runs the timer — no teacher required, no login. The part of the vision Slice 1A structurally cannot deliver.</td>
+              <td><span class="chip chip-critical">new</span></td>
+              <td><span class="size-badge">L</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Both slices write to the <em>same</em> <code>Homework</code>/<code>HomeworkLog</code> rows — 1B is a second, narrowly-scoped write path into data 1A already created, distinguished by a <code>loggedBy</code> audit column.</p>
+
+      <h3 class="subhead">Schema</h3>
+      <div class="schema"><pre><span class="kw">model</span> <span class="ty">Homework</span> {
+  id                    String   @id @default(cuid())
+  teacherId             String                      <span class="cm">// denormalized, matches Lesson</span>
+  studentId             String
+  pieceId               String?                     <span class="cm">// → Piece, onDelete: SetNull</span>
+  lessonId              String?                     <span class="cm">// "assigned during this lesson"</span>
+  title                 String                      <span class="cm">// always present — not every assignment has a Piece</span>
+  bars                  String?                     <span class="cm">// free text: "Intro + 12-20, repeat 3x"</span>
+  tempoBpm              Int?
+  difficulty            Int?                        <span class="cm">// 1-5, &lt;StarRating&gt; — defaults from Piece.difficulty</span>
+  notes                 String?                     <span class="cm">// teacher's focus note, e.g. "Relax wrist"</span>
+  dailyGoalMin          Int                         <span class="cm">// required — this is Core Principle #2</span>
+  estimatedDurationMin  Int?
+  dueDate               DateTime @db.Timestamptz
+  status                HomeworkStatus @default(NOT_STARTED)
+  createdAt / updatedAt DateTime
+}
+<span class="kw">enum</span> HomeworkStatus { NOT_STARTED STARTED COMPLETED SKIPPED }  <span class="cm">// LATE is derived, not stored — see below</span>
+
+<span class="kw">model</span> <span class="ty">HomeworkLog</span> {                        <span class="cm">// one row per (homeworkId, date)</span>
+  id, homeworkId, studentId, teacherId
+  date          DateTime  <span class="cm">// ALWAYS getStartOfDayUTC(raw, teacherTimezone) — never a raw client timestamp</span>
+  warmup, leftHand, rightHand, bothHands, performance   Boolean @default(false)
+  durationMin   Int @default(0)          <span class="cm">// incremented, not overwritten — a student may run the timer twice a day</span>
+  loggedBy      HomeworkLogSource @default(TEACHER)     <span class="cm">// TEACHER | STUDENT_TOKEN, audit trail</span>
+  @@unique([homeworkId, date])
+}
+
+<span class="kw">model</span> <span class="ty">StudentAccessToken</span> { <span class="cm">/* shared model — see Architecture Foundations §1 */</span> }</pre></div>
+
+      <div class="note note-open"><span class="note-label">Deliberate simplification</span><strong>LATE</strong> is computed on read (<code>status ∈ {NOT_STARTED, STARTED} AND dueDate &lt; now</code>), not stored — this app has no cron/background-job infrastructure today, and a stored flag would need one to flip at the due-date instant, plus a way to un-flip it if the teacher extends the date. Revisit only if a "was late <em>at the time</em>" audit trail becomes an actual requirement.</div>
+
+      <h3 class="subhead">Routers</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Procedure</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>homework.getAll / getById</code></td><td>query</td><td>Teacher-facing list + detail, effective status computed via a pure <code>getEffectiveStatus()</code> helper.</td></tr>
+            <tr><td><code>homework.create / update / delete</code></td><td>mutation</td><td>Ownership-verified exactly like <code>family.create/update/delete</code>. Cascades to <code>HomeworkLog</code>.</td></tr>
+            <tr><td><code>homework.markStatus</code></td><td>mutation</td><td>Same conditional-patch shape as <code>lesson.markAttendance</code>. <strong>Must call stubbed <code>onHomeworkCompleted()</code> and a spaced-repetition-seed hook on the → COMPLETED transition</strong> — see the review's required-fix #3.</td></tr>
+            <tr><td><code>homework.upsertLog</code></td><td>mutation</td><td>Slice 1A's core write — teacher logs a day on the student's behalf. Must call stubbed <code>onPracticeLogged()</code>.</td></tr>
+            <tr><td><code>homework.getCalendar</code></td><td>query</td><td>Month-bucketed via <code>getStartOfMonthUTC</code>/<code>getEndOfMonthUTC</code>, same call shape as <code>family.getCombinedReport</code>.</td></tr>
+            <tr><td><code>homework.issueAccessToken / listAccessTokens / revokeAccessToken</code></td><td>mutation / query</td><td>Raw token returned exactly once, on creation. <code>listAccessTokens</code> never returns the hash.</td></tr>
+            <tr><td><code>practice.getMyHomework / getMyCalendar</code></td><td>query <span class="chip chip-critical" style="margin-left:4px">token</span></td><td>New <code>studentProcedure</code>-gated router. Never accepts a client-supplied <code>studentId</code> — always <code>ctx.studentAccess.studentId</code>.</td></tr>
+            <tr><td><code>practice.logPractice / markComplete</code></td><td>mutation <span class="chip chip-critical" style="margin-left:4px">token</span></td><td>Rejects writes to a log whose day has already rolled over — same-day-only mutability, enforced structurally, not by UI convention.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="subhead">UI</h3>
+      <ul class="plain">
+        <li><strong>Teacher:</strong> new <code>/homework</code> list route (assign/filter/table, reusing <code>DataTablePagination</code>), a "Homework" tab on the student hub with the practice-history calendar, and — the literal integration point for Core Principle #1 — a new "+ Assign homework" link inside <code>AttendanceDialog</code> that appears only when a lesson is marked COMPLETE, right next to the existing score picker.</li>
+        <li><strong>Student (outside the authenticated app):</strong> a new route tree at <code>/practice/[token]</code>, sibling to <code>(root)</code>/<code>(auth)</code> — the same shape <code>birthday-room</code> already proves works unauthenticated. Today's homework card, the checklist, a timer backed by a new Zustand store (mirroring the already-proven <code>use-user-store.ts</code> pattern so a refresh never silently loses progress), and a read-only calendar.</li>
+        <li>Token issuance reuses the "generate a code, reveal once, copy-to-clipboard" interaction already built for the birthday-room passcode — same shape, new content.</li>
+      </ul>
+
+      <details class="dis">
+        <summary>Open risks &amp; product questions (4)</summary>
+        <div class="dis-body">
+          <ul class="tight">
+            <li><strong>Retroactive-edit integrity</strong> is enforced structurally (same-day-only writes), because Phase 2's eventual XP ledger needs to trust this data as immutable history — a rule only enforced client-side isn't a rule.</li>
+            <li><strong>Who holds the device?</strong> With no email/SMS infra, sharing a link is manual copy-paste. Is the target device the student's own, or a shared family device near the piano? Changes UI tone and whether "revoke on leak" is realistic for dozens of tokens. <em>Needs Soham's call.</em></li>
+            <li><strong>The timer is a self-report, not telemetry.</strong> No anti-cheat, by design (Principle #3) — the UI copy should say so rather than implying it's ground truth.</li>
+            <li><strong>One token per student</strong>, not per household, even for siblings sharing a tablet — simpler, safer default; keeps <code>Family</code> (explicitly documented as <em>not</em> an auth graph) out of the auth path entirely.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ PHASE 2 ============ -->
+    <section id="phase-2" class="phase">
+      <div class="phase-head"><span class="kicker">PHASE 2</span></div>
+      <h2>Motivation</h2>
+      <p class="phase-dek">Streaks, XP, 30 levels, badges, and a pet that's already sitting in the codebase waiting for a reason to have moods.</p>
+      <div class="phase-meta">
+        <span class="chip chip-neutral">Effort: L (~7–10 days)</span>
+        <span class="chip chip-accent">2 new models</span>
+        <span class="chip chip-good">Mochi: 0 new component work</span>
+        <span class="chip chip-warn">Touches one existing file: lesson.ts</span>
+      </div>
+
+      <h3 class="subhead">How this coexists with the existing lesson-score leaderboard</h3>
+      <p><code>Lesson.score</code> already powers a "Top Students This Month" podium on the dashboard — a teacher's subjective read of <em>lesson quality</em>. XP answers a different question: <em>how consistently is this student showing up and working, over time?</em> They're separate signals, shown as two honest, parallel leaderboards. The only coupling is one-directional: completing a scored lesson adds a small XP bonus. Nothing about the existing query, card, or <code>score</code> field changes.</p>
+
+      <h4 class="minihead">XP ledger (mirrors PaymentTransaction, never a mutable balance)</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Reason</th><th>Amount</th><th>Idempotency key</th></tr></thead>
+          <tbody>
+            <tr><td><code>PRACTICE_DAY</code></td><td class="tabular">+10, once/day</td><td><code>PRACTICE_DAY:studentId:yyyy-MM-dd</code></td></tr>
+            <tr><td><code>PRACTICE_DURATION_BONUS</code></td><td class="tabular">+1 / 5 min, capped +20/day</td><td>same date key</td></tr>
+            <tr><td><code>HOMEWORK_COMPLETED</code></td><td class="tabular">+25</td><td><code>HOMEWORK:homeworkId</code></td></tr>
+            <tr><td><code>HOMEWORK_ON_TIME_BONUS</code></td><td class="tabular">+10</td><td><code>HOMEWORK:homeworkId</code></td></tr>
+            <tr><td><code>LESSON_ATTENDANCE</code></td><td class="tabular">+15</td><td><code>LESSON:lessonId</code></td></tr>
+            <tr><td><code>LESSON_SCORE_BONUS</code></td><td class="tabular">+0 to +10 by score</td><td><code>LESSON:lessonId</code></td></tr>
+            <tr><td><code>STREAK_MILESTONE</code></td><td class="tabular">3d +15 · 7d +40 · 10d +60 · 30d +200</td><td><code>STREAK:n:studentId</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:14px;color:var(--ink-soft)">No penalty branch exists anywhere — a <code>SKIPPED</code> homework earns nothing but loses nothing, per Principle #3. <code>totalXp</code> is never stored, only summed on read, same posture as the existing <code>avgScore</code> computation.</p>
+
+      <h4 class="minihead">30 levels, six named tiers</h4>
+      <p>Cumulative curve <code>50 × L × (L+1)</code>, precomputed into a static array. Sanity-checked against a moderately engaged student (~150–200 XP/week): Level 5 in ~2 months, Level 10 in ~7–8 months, Level 30 in 5+ years — a multi-year arc for a system meant to span a student's whole time in the studio.</p>
+      <div class="filepills">
+        <code>1–5 Sprout: Tiny Pianist → Blossom Player</code>
+        <code>11–15 Bronze</code>
+        <code>16–20 Silver</code>
+        <code>21–25 Gold</code>
+        <code>26–30 Legend: … → Grand Performer</code>
+      </div>
+
+      <h4 class="minihead">Badges</h4>
+      <p><strong>Automatic</strong> (Perfect Week, Streak 3/7/10/30, 30 Practices, 100 Hours) — checked synchronously the moment a practice day is logged, since there's no cron infrastructure to check them on a schedule. <strong>Manual</strong> (First Recital, Competition Ready) — awarded by the teacher via a dedicated mutation, because no phase in this plan owns a Recital/Competition event model to trigger them from automatically. That's a real gap, not a shortcut disguised as one.</p>
+
+      <h4 class="minihead">Mochi's mood — zero new component work</h4>
+      <p>Mochi already accepts a <code>mood</code> prop with three values and already meows on click. Phase 2's entire "pet" mechanic is one function: <code>mood = daysSinceLastPractice === 0 ? "delighted" : ≤2 ? "content" : "sleepy"</code>, computed server-side and passed in. No new SVG, no new state model.</p>
+
+      <div class="note note-critical"><span class="note-label">Required fix before implementation</span>The original design wired the XP-on-lesson-attendance hook into <code>lesson.markAttendance</code> as "fire-and-forget." That mutation has a documented, still-open bug (<code>ISSUES_AND_FIXES.md</code> #29): a failed save leaves the wrong status/rate/score on screen with no rollback. Layering an unawaited side-effect onto a mutation with no reliable failure path risks drifting the XP ledger out of sync silently. <strong>Fix #29 first, or make the XP write part of the same transaction as the attendance update</strong> — not a detached fire-and-forget call.</div>
+
+      <details class="dis">
+        <summary>Reuse map &amp; dependencies</summary>
+        <div class="dis-body">
+          <ul class="tight">
+            <li>Ranking-with-ties loop copied from <code>earnings.ts:538–546</code> for the new "Streak &amp; XP Leaders" dashboard card.</li>
+            <li><code>&lt;StarRating&gt;</code>'s "small typed lookup keyed 1–5" shape is the template for the 30-entry level array and the badge catalog — static content, not a fetched resource.</li>
+            <li><strong>Hard dependency on Phase 1</strong> for practice-driven XP/streaks/most badges (needs <code>HomeworkLog</code> to exist). <strong>Zero dependency</strong> for the lesson-attendance XP slice — it hooks into an already-shipped mutation and can ship standalone, first.</li>
+            <li>Open product question: streak semantics during a legitimate absence (school exams, a planned trip) are undefined here. A streak breaking during a week the family gave notice for is exactly the "pressure, not motivation" anti-pattern Principle #3 warns against — ships simple (streaks just break) with the gap flagged, not guessed at.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ PHASE 3 ============ -->
+    <section id="phase-3" class="phase">
+      <div class="phase-head"><span class="kicker">PHASE 3</span></div>
+      <h2>Parent Portal <span style="color:var(--ink-faint); font-weight:400">+ Student Profile</span></h2>
+      <p class="phase-dek">A curated door, not a mirror. Everything a parent sees is either an existing field already framed as family-facing, or a brand-new field created specifically to be shown — nothing becomes parent-visible by proximity.</p>
+      <div class="phase-meta">
+        <span class="chip chip-neutral">Effort: L (~8–10 days)</span>
+        <span class="chip chip-accent">4 new models</span>
+        <span class="chip chip-good">Zero mutations exposed to parents</span>
+      </div>
+
+      <div class="note note-fixed"><span class="note-label">Reconciled — split into two increments</span>The original design bundled Parent Portal and Student Profile enrichment into one 8–10 day deliverable, four new models deep, before a parent could see anything. The review recommends splitting them: <strong>Parent Portal MVP</strong> (token infra + upcoming lessons + the existing <code>MonthlyReport</code>, read-only) ships first and small. <strong>Student Profile enrichment</strong> (goals, strengths, confidence log, competitions) ships as its own later increment on its own merits — it doesn't gate parents seeing anything.</div>
+
+      <h3 class="subhead">What a parent can see — and how "no editing" is actually enforced</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Visible?</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td>Name, avatar, level, goals, favourite songs, strengths</td><td><span class="chip chip-good">yes</span></td><td><code>StudentProfile</code> (new)</td></tr>
+            <tr><td>Monthly report narrative</td><td><span class="chip chip-good">yes</span></td><td><code>MonthlyReport</code> — reused verbatim, zero schema change, already family-facing</td></tr>
+            <tr><td>Upcoming lessons, attendance summary</td><td><span class="chip chip-good">yes</span></td><td><code>Lesson</code>, narrow <code>select</code></td></tr>
+            <tr><td>Competition history, pieces in progress</td><td><span class="chip chip-good">yes</span></td><td><code>StudentCompetition</code> (new), <code>Piece</code></td></tr>
+            <tr><td>Practice days / homework</td><td><span class="chip chip-warn">placeholder</span></td><td>Depends on Phase 1 — ships as a real "coming soon," not faked data</td></tr>
+            <tr><td><code>Student.notes</code>, <code>Lesson.note</code>, <code>tuitionNote</code>, rates</td><td><span class="chip chip-critical">never</span></td><td>Pre-existing private fields — exactly why <code>parentNote</code> was created as its own new field</td></tr>
+            <tr><td><code>StudentProfile.weaknesses</code>, confidence/motivation scores</td><td><span class="chip chip-critical">never</span></td><td>A raw "confidence: 2/5" about a child is a liability, not a helper tool, read cold</td></tr>
+            <tr><td><code>Lesson.score</code></td><td><span class="chip chip-warn">open question</span></td><td>Defaulted to hidden — cheap to add later, awkward to walk back once shown</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Enforcement is structural, in this order: (1) a parent never holds a NextAuth session, so all 9 existing teacher routers are unreachable by construction — not by any check this phase adds; (2) the parent router exposes <strong>zero mutations</strong>; (3) every query resolves its own scope from the token — a parent can never pass a different student's ID; (4) every parent-facing query uses an explicit Prisma <code>select</code> allow-list, never <code>include</code> — excluded fields never leave the database.</p>
+
+      <h3 class="subhead">Student Profile — the enrichment layer</h3>
+      <div class="schema"><pre><span class="kw">model</span> <span class="ty">StudentProfile</span> {           <span class="cm">// 1:1 with Student, its own table so hot paths (lessons,</span>
+  studentId String @unique       <span class="cm">// dashboard, payments) never gain payload from an unrelated select</span>
+  goals, favouriteSongs, currentLevel, strengths   String?
+  weaknesses    String?          <span class="cm">// teacher-only, labeled "Private — never shown to parents" in the UI itself</span>
+  parentNote    String?          <span class="cm">// the ONE field that's "what should the parent see from me right now"</span>
+}
+<span class="kw">model</span> <span class="ty">StudentCompetition</span> { studentId, teacherId, name, date, result String?, notes String? }
+<span class="kw">model</span> <span class="ty">StudentAssessment</span> {         <span class="cm">// append-only ledger, no update procedure exposed</span>
+  studentId, teacherId, date, confidenceLevel Int?(1-5), motivationScore Int?(1-5), note
+}</pre></div>
+      <div class="note note-fixed"><span class="note-label">Reconciled — Competition model</span>Two designs independently built a field-for-field-identical competition table under different names (<code>Competition</code> in the Wellbeing design, <code>StudentCompetition</code> here). This page assigns ownership to Student Profile — <code>StudentCompetition</code> is the one model; the Wellbeing "Upcoming Competitions" dashboard card reads from it rather than inventing its own.</div>
+
+      <h3 class="subhead">Report rendering — the one place this phase touches shipped, working code</h3>
+      <p><code>ReportView</code> (1,322 lines) is already pixel-perfect and print-ready, but tightly coupled to editing state. <strong>Recommended for v1:</strong> a new, simpler, purpose-built read-only summary component for the parent's report page — not the full print grid. Half a day, zero risk to the teacher's existing print flow. Extracting a shared, presentation-only <code>ReportSheet</code> for full pixel parity is a real one-day refactor of already-working, print-sensitive code — worth deferring to v1.1, once it's clear parents are actually using the portal.</p>
+
+      <details class="dis">
+        <summary>Security posture, distribution, and open questions</summary>
+        <div class="dis-body">
+          <ul class="tight">
+            <li>No distribution channel exists for the link itself yet (no email/SMS infra) — manual copy-paste for the foreseeable future. Fine for a handful of families, a real chore past ~15–20.</li>
+            <li>No active leak-detection beyond passive <code>lastUsedAt</code> — a reasonable bar given a leaked link's worst case is bounded to one student's non-sensitive data.</li>
+            <li><strong>Recommendation, not yet a decision:</strong> build the shared token mechanism as part of <em>this</em> phase, since a read-only surface is the lower-risk place to retire "first public endpoint in an app with zero rate limiting" — Phase 1's write-capable student token then builds second, against an already-hardened mechanism. See <a href="#roadmap">Build sequence</a>.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ PHASE 4 ============ -->
+    <section id="phase-4" class="phase">
+      <div class="phase-head"><span class="kicker">PHASE 4</span></div>
+      <h2>AI</h2>
+      <p class="phase-dek">One bounded structured-generation call for homework drafts, and a firm rule that the model never gets to decide who's at risk — only to describe a decision that deterministic code already made.</p>
+      <div class="phase-meta">
+        <span class="chip chip-neutral">Effort: M (5–8 days, not 3–5)</span>
+        <span class="chip chip-accent">1 new model — AiUsageLog</span>
+        <span class="chip chip-info">New dependency: @anthropic-ai/sdk</span>
+      </div>
+
+      <h3 class="subhead">"Generate Homework" — a single call, not an agent</h3>
+      <p>The teacher already has everything the model needs sitting in Postgres — nothing to autonomously fetch or browse. This is squarely a single bounded structured-generation task: <code>claude-sonnet-5</code> at <code>medium</code> effort, <code>messages.parse()</code> against a Zod schema for guaranteed-valid JSON, matching the app's existing all-Zod convention.</p>
+      <div class="schema"><pre>Input:  { studentId, pieceId, lessonId?, teacherHint? }
+Context assembled server-side: piece title/description/difficulty,
+  last 3 COMPLETE lessons' notes + scores, any open spaced-review
+  history for this piece (so the model knows if it's been forgotten before)
+Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
+          focusNote, difficulty, motivationalNote, dueInDays }</pre></div>
+      <p><strong>AI drafts, teacher commits — always.</strong> The result pre-fills the homework form; it never writes to <code>Homework</code> directly. A hallucinated tempo or an inappropriately hard passage assigned to a beginner is a real pedagogical risk this design treats as non-negotiable to guard against, not a nice-to-have.</p>
+
+      <h3 class="subhead">Pattern detection — deterministic first, language second</h3>
+      <p>All five signals (losing streak, forgetting quickly, improving, at risk of quitting, teacher burnout) are <strong>pure functions over already-fetched data</strong>, unit-tested like every other <code>src/lib/</code> module. The LLM's only job — optional, on-demand — is turning a batch of already-computed flags into one warm sentence a busy teacher can skim ("Summarize for me," not auto-run on every load). A rule like <code>daysSinceLastPractice ≥ 3 AND previousStreak ≥ 5</code> is something a teacher can verify and trust; an LLM classification of the same data is a black box that can flap between visits on identical input. At this scale (tens of students), that trade is not close.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Signal</th><th>Rule</th></tr></thead>
+          <tbody>
+            <tr><td>Losing streak</td><td class="tabular">≥3 days quiet after a streak ≥5 days higher than current</td></tr>
+            <tr><td>Forgetting quickly</td><td class="tabular">&gt;50% "needed review" outcomes over the last 5 spaced-review checkpoints</td></tr>
+            <tr><td>Improving</td><td>Rolling month-over-month avg score / completion delta, minimum sample both windows</td></tr>
+            <tr><td>Likely to quit</td><td class="tabular">≥2 of 3 signals trending down, AND ≥6 weeks of history (explicit minimum-data gate)</td></tr>
+            <tr><td>Teacher burnout</td><td>Note-completion rate, hours/week trend, cancellation-rate trend — private, supportive framing only</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="subhead">Cost &amp; abuse guard</h3>
+      <p>An immutable <code>AiUsageLog</code> ledger (same ledger discipline as everywhere else in this plan) backs a soft daily cap — 100 homework generations/day, 20 attention summaries/day per teacher. At realistic volume (a few dozen calls a week, single-digit cents each), this is an <strong>abuse/blast-radius cap</strong>, not real cost control — the actual dollar cost here is negligible and shouldn't be the reason this ships slowly.</p>
+
+      <details class="dis">
+        <summary>Named risks (4)</summary>
+        <div class="dis-body">
+          <ul class="tight">
+            <li><strong>Hallucination is the real liability</strong> — mitigated by grounding every prompt in recent lesson notes/scores, never piece-title-alone.</li>
+            <li><strong>Failure modes beyond a missing API key are unspecified</strong> — timeout policy, retry policy, and the "generation failed" UX all need to be written down, not implied. Blast radius stays low regardless, since nothing auto-writes.</li>
+            <li><strong>Prompt injection</strong> — considered and currently low-risk, since every piece of free text reaching the prompt today is teacher-authored about their own studio. Re-check this the moment any student- or parent-typed free text field is added anywhere in the app.</li>
+            <li><strong>Effort was under-scoped at 3–5 days</strong> — real prompt-quality iteration is open-ended; a flat first draft means the teacher never opens the button again. Budget 5–8.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ PHASE 5 ============ -->
+    <section id="phase-5" class="phase">
+      <div class="phase-head"><span class="kicker">PHASE 5</span></div>
+      <h2>Analytics, Reminders &amp; Spaced Repetition</h2>
+      <p class="phase-dek">The studio-wide view, the nudge that actually arrives on time, and a forgetting curve the app remembers so the teacher doesn't have to.</p>
+      <div class="phase-meta">
+        <span class="chip chip-neutral">Effort: M–L (full ~8–10d, MVP ~4–5d)</span>
+        <span class="chip chip-accent">3 new models</span>
+        <span class="chip chip-warn">1 new page: /analytics</span>
+      </div>
+
+      <h3 class="subhead">Spaced repetition — the exact trigger</h3>
+      <p>A review chain starts the moment a <code>Homework</code> row's status transitions to <strong>COMPLETED</strong> — not when assigned, not when merely started. "Assigned" carries no signal anything was learned; "completed" is the one unambiguous event in Phase 1's own workflow that means the student demonstrably practiced the material to the teacher's satisfaction. This rides Phase 1's existing status change — no new UI trigger of its own.</p>
+      <div class="schema"><pre><span class="kw">model</span> <span class="ty">SpacedReviewItem</span> {            <span class="cm">// one chain per completed homework</span>
+  homeworkId  String @unique
+  label       String            <span class="cm">// frozen snapshot at creation — a later edit never rewrites what the reminder says</span>
+  learnedAt   DateTime          <span class="cm">// = the moment Homework became COMPLETED</span>
+  checkpoints SpacedReviewCheckpoint[]
+}
+<span class="kw">model</span> <span class="ty">SpacedReviewCheckpoint</span> {      <span class="cm">// child table, not 3 flat columns — same HomeworkLog precedent</span>
+  intervalDays Int               <span class="cm">// 2, 5, or 10 — exactly per the vision</span>
+  dueAt        DateTime
+  outcome      ReviewOutcome?    <span class="cm">// RECALLED_WELL | NEEDED_REVIEW | SKIPPED</span>
+  @@unique([spacedReviewItemId, intervalDays])
+}</pre></div>
+      <p>Until a student-facing surface exists, the <em>teacher</em> marks the outcome from a reminder feed item — same interaction shape as the existing lesson score-picker. The field is forward-compatible by construction: once Phase 1's token surface ships, it becomes writable by a second path with zero schema change.</p>
+
+      <div class="note note-critical"><span class="note-label">Required fix before implementation</span>Two independent designs (this one and Phase 2's) assumed Phase 1's <code>markStatus</code> mutation would call an integration hook on completion — <code>onHomeworkCompleted</code>, a spaced-repetition-seed call. Phase 1's own router spec, written before either of those, doesn't contain them. If this hook is silently omitted when Phase 1 ships, spaced repetition and Phase 2's homework-driven XP don't crash — they just permanently produce nothing. <strong>These stub calls must be an explicit line item in Phase 1's implementation checklist, wired in from day one, even as no-ops.</strong></div>
+
+      <h3 class="subhead">Analytics</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Procedure</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td><code>getStudioOverview</code></td><td>Practice rate, homework-completion rate, avg practice minutes, attendance rate</td></tr>
+            <tr><td><code>getMostForgottenPieces</code></td><td>Grouped spaced-review outcomes by piece, min. 3 reviews before inclusion</td></tr>
+            <tr><td><code>getMostDifficultPieces</code></td><td>Rated (<code>Piece.difficulty</code>) vs. observed re-teach rate — the <em>gap</em> is the real insight</td></tr>
+            <tr><td><code>getStudentRankingTable</code></td><td>Full sortable table — a private teacher view, distinct from the gamified public leaderboard</td></tr>
+            <tr><td><code>getRetentionSnapshot</code></td><td>Active / at-risk / churned-last-90-days / avg tenure</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="subhead">Reminders — lazy generation, one cron for the clock-sensitive part</h3>
+      <p>Notifications are recomputed and <strong>upserted</strong> (idempotent by construction) every time the teacher opens the dashboard — zero new job infrastructure, matching this app's existing effort-realism bar. Named limitation, not glossed over: this cannot deliver the vision's <em>evening</em> nudge ("Your lesson is tomorrow") unless someone happens to open a tab around then. <strong>Recommendation:</strong> one small Vercel Cron job, nightly, for exactly the clock-sensitive types (spaced-repetition-due, homework-due-soon, lesson-tomorrow) — genuinely small (no new service, no new hosting), and should ship as core Phase 5 scope, not be deferred indefinitely.</p>
+      <p>Reminder copy is templated strings, not LLM-generated — the vision's own examples ("Only 7 minutes today," "Mochi is waiting") are simple parameterized text; an LLM call would add latency and tone risk for zero benefit here.</p>
+
+      <div class="note note-critical"><span class="note-label">Required fix — Postgres NULL uniqueness</span>The original <code>Notification</code> model made <code>studentId</code> nullable for teacher-level notifications and relied on a compound unique constraint including it for de-dup. <strong>Postgres never treats two NULLs as equal</strong>, so every teacher-level notification run would insert a fresh row instead of deduplicating — the opposite of "idempotent." Fix: a non-null sentinel value (e.g. <code>studentId: "TEACHER"</code>) in the unique key, exactly the pattern Phase 2's <code>StudentBadge.periodKey</code> already uses for the identical problem.</p></div>
+    </section>
+
+    <!-- ============ WELLBEING ============ -->
+    <section id="wellbeing" class="phase">
+      <div class="phase-head"><span class="kicker">CROSS-CUTTING</span></div>
+      <h2>Teacher Wellbeing</h2>
+      <p class="phase-dek">"Most piano software ignores this." Surfacing problems before the lesson, not during it — and the headline card costs almost nothing, because the data already exists.</p>
+      <div class="phase-meta">
+        <span class="chip chip-good">Zero dependencies for the first card</span>
+        <span class="chip chip-neutral">Full deliverable: M–L</span>
+      </div>
+
+      <div class="note note-fixed"><span class="note-label">Key finding</span><code>earnings.getQuickInsights</code> already computes "who's falling behind" today — it builds the exact set of recently-active students and collapses it to a single <code>inactiveCount</code>. <strong>"Students Needing Attention" isn't a new query, it's an un-collapse of an existing one</strong> into a real per-student list. No new model, no new auth, ships this week.</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Card</th><th>Depends on</th><th>Effort</th></tr></thead>
+          <tbody>
+            <tr><td>Students Needing Attention (v0)</td><td>Nothing — existing query</td><td><span class="chip chip-good">S</span></td></tr>
+            <tr><td>Upcoming Competitions</td><td><code>StudentCompetition</code> (Phase 3, shared)</td><td><span class="chip chip-good">S</span></td></tr>
+            <tr><td>Homework Completion</td><td>Phase 1's assignment shell only</td><td><span class="chip chip-good">S</span></td></tr>
+            <tr><td>Who Hasn't Practiced</td><td>Phase 1's daily-checklist sub-feature</td><td><span class="chip chip-good">S</span></td></tr>
+            <tr><td>Students Likely to Forget</td><td>Phase 5's spaced-repetition scheduler — no shortcut</td><td><span class="chip chip-neutral">M</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Rendered as a second panel below the existing <code>DashboardIntelligencePanel</code> (not crammed into it — that would grow it from 4 cards to 9 and bury the financial ones it already does well), same grid/motion/card-contract pattern throughout.</p>
+
+      <div class="note note-open"><span class="note-label">Open question — card fatigue</span>"Needs Attention," "Who Hasn't Practiced," and eventually "Likely to Forget" all answer overlapping "who's falling behind" questions from three different angles. Shipping all three as separate cards risks the exact noisy-dashboard outcome the vision wants to avoid. <strong>Recommendation:</strong> ship "Needs Attention" as the one umbrella card with expandable reason-tags; treat the others as reason-sources feeding it, not standalone cards. Needs a product call before final UI.</div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- ============ REVIEW ============ -->
+    <section id="review" style="scroll-margin-top:20px;">
+      <div class="phase-head"><span class="kicker">THE CODE REVIEW</span></div>
+      <h2>Architecture &amp; feasibility review</h2>
+      <p class="phase-dek">Five designs were produced in parallel, each grounded independently against the live code. That's deliberate — independent design surfaces more real patterns than one linear pass would. It also predictably produces seam conflicts where two designs solve the same problem differently. This is the review that found them, standing in for a code review since nothing has been built yet.</p>
+
+      <div class="verdict">
+        <span class="vmark">▲</span>
+        <div>
+          <h3>Not buildable as five parallel drafts. Buildable once reconciled.</h3>
+          <p>Every individual design reuses this codebase's real patterns correctly and invents nothing gratuitous. But two designs define the same <code>StudentAccessToken</code> table with incompatible security postures, and two independently invent an identical <code>Competition</code> model — implemented literally as written, either produces a broken schema push or a silently duplicated feature. Both are reconciled throughout this document (see the "Reconciled" notes above). What follows is the fuller list.</p>
+        </div>
+      </div>
+
+      <h3 class="subhead">Required fixes before implementation starts</h3>
+      <ol class="checklist">
+        <li><span class="num">1</span><div><strong>Unify <code>StudentAccessToken</code></strong> — one hashed schema, one <code>kind</code> enum, one header. Adopted throughout this doc. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
+        <li><span class="num">2</span><div><strong>Unify <code>Competition</code>/<code>StudentCompetition</code></strong> — one model, owned by Student Profile. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
+        <li><span class="num">3</span><div><strong>Designate <code>students/[id]/page.tsx</code> as the single per-student hub</strong> — Homework, Motivation, Competitions land as tabs there, not three more routes. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
+        <li><span class="num">4</span><div><strong>Fix the <code>Notification</code> nullable-uniqueness bug</strong> — non-null sentinel, mirroring <code>StudentBadge.periodKey</code>. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
+        <li><span class="num">5</span><div><strong>Don't wire Phase 2's XP award into <code>markAttendance</code> as fire-and-forget</strong> — fix issue #29 first, or make it transactional. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
+        <li><span class="num">6</span><div><strong>Wire Phase 1's integration-hook stubs from day one</strong> (<code>onHomeworkCompleted</code>, <code>onPracticeLogged</code>, spaced-repetition-seed) — cheapest possible insurance against a permanently-empty downstream feature. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
+        <li><span class="num">7</span><div><strong>Add an explicit sensitive-field-exclusion test</strong> for every non-teacher-facing router. This app's 42-test suite covers pure <code>src/lib/</code> math only — zero router/integration tests exist today, and none of the five designs proposed adding any for the one genuinely new privacy-sensitive surface this plan introduces. A regression here doesn't produce a wrong number, it leaks one family's private data to another. <span class="chip chip-warn" style="margin-left:4px">not yet resolved — see below</span></div></li>
+      </ol>
+
+      <details class="dis" open>
+        <summary>Security posture — minimum viable, not gold-plated</summary>
+        <div class="dis-body">
+          <p>Zero rate limiting exists anywhere in the app today, and the only precedent for unauthenticated access (<code>demo.ts</code>) is itself flagged as unguarded (<code>ISSUES_AND_FIXES.md</code> #19). Phase 1B and Phase 3 add the app's second and third public-facing surfaces, ever.</p>
+          <p><strong>Ship these (cheap, and mostly already specified above):</strong> hashed tokens at rest · field-level <code>select</code> allow-listing, never <code>include</code>-then-strip · zero mutations on the parent router · revocation + <code>lastUsedAt</code> surfaced to the teacher · a trivial in-memory sliding-window throttle on the token-resolution middleware (the one guardrail neither original design fully committed to — closes a volumetric-abuse gap for about twenty lines).</p>
+          <p><strong>Skip as genuine gold-plating</strong> for a single-teacher, dozens-of-families app: distributed rate-limiting infra, IP-anomaly alerting, CAPTCHA, mandatory token expiry.</p>
+        </div>
+      </details>
+
+      <details class="dis">
+        <summary>Other conventions worth naming once, for every future PR</summary>
+        <div class="dis-body">
+          <ul class="tight">
+            <li><strong><code>Teacher.timezone</code> is a live, populated, unused trap field</strong> — a separate column from <code>User.timezone</code> that every existing router correctly ignores in favor of <code>ctx.session.user.timezone</code> / <code>teacher.user.timezone</code>. Only one of the five phase designs called this out explicitly; worth a standing style-guide note so nobody reaches for the obvious-looking wrong field.</li>
+            <li>"Did this student practice today" is implicitly a multi-row aggregate (a student can have 2+ active homeworks logged the same day) — <code>groupBy</code>/<code>EXISTS</code>, never a naive <code>findFirst</code>.</li>
+            <li>Every model in this plan ships via <code>prisma db push</code> — never <code>migrate dev</code>/<code>deploy</code> — with the dev server stopped before <code>prisma generate</code>, using the local <code>prisma.cmd</code> binary, per this repo's standing rule.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- ============ ROADMAP ============ -->
+    <section id="roadmap" style="scroll-margin-top:20px;">
+      <div class="phase-head"><span class="kicker">HOW WE'RE ACTUALLY GOING TO DO IT</span></div>
+      <h2>Recommended build sequence</h2>
+      <p class="phase-dek">The vision's phase order (1→5) is the right <em>priority</em> order — homework is still the first and biggest thing built. It is not the right <em>literal sequencing</em>. The real dependency graph shows Phase 1's schema and status-transition semantics are the true root almost everything waits on — not Phase 1's full UI. Meanwhile a meaningful slice of Phase 2, the Wellbeing panel's first card, and most of Phase 3 can ship in parallel with, or ahead of, Phase 1's student-facing half.</p>
+
+      <div class="timeline">
+        <div class="tl-step">
+          <div class="dot">0</div>
+          <h4>Shared prerequisite — land it before anyone needs it</h4>
+          <p>Add <code>addDaysInTimezone()</code> to <code>src/lib/timezone.ts</code> now. Three later steps each independently assume it exists; none of them owns building it.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">1</div>
+          <h4>Students Needing Attention v0 — this week</h4>
+          <p>An un-collapse of the already-shipped <code>getQuickInsights</code> query into a real list, plus one new dashboard card. Zero new models, zero new auth.</p>
+          <p class="why">Why first: validates the "new card in the dashboard panel" pattern every other phase depends on, and delivers the vision's single most differentiated pillar — proactive teacher wellbeing — in under two days.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">2</div>
+          <h4>Build the shared token mechanism, once</h4>
+          <p>Hashed <code>StudentAccessToken</code>, single <code>kind</code> enum, the resolution middleware, the sliding-window throttle. Owned by neither Phase 1 nor Phase 3 exclusively.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">3</div>
+          <h4>Phase 3 — Parent Portal MVP</h4>
+          <p>Read-only, against the now-built token infra: upcoming lessons + the existing <code>MonthlyReport</code>, nothing else yet.</p>
+          <p class="why">Why before Phase 1B: lower blast radius — the safer place to retire "first public endpoint with zero rate limiting" — and most of its data already exists, so real value reaches a real parent fastest.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">4</div>
+          <h4>Phase 1 Slice 1A — teacher-side homework</h4>
+          <p>Schema, teacher-only router, <code>/homework</code> page, the <code>AttendanceDialog</code> hook — <strong>with the stubbed integration hooks wired in from day one</strong>, even as no-ops.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">5</div>
+          <h4>In parallel with step 4 — Phase 2's lesson-score XP slice</h4>
+          <p>Hooks into the already-shipped <code>markAttendance</code> (once #29 is fixed). No Phase 1 dependency — independently shippable, early visible motivation value.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">6</div>
+          <h4>Phase 1 Slice 1B — student self-serve</h4>
+          <p>Against the token mechanism, now already hardened by Phase 3's real-world use.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">7</div>
+          <h4>Phase 5's homework-dependent pieces</h4>
+          <p>Spaced repetition, homework-completion wellbeing card, forgetting-signal analytics — unblocked as soon as step 4 lands, doesn't wait for step 6.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">8</div>
+          <h4>The rest of Phase 2</h4>
+          <p>Practice-driven streaks, badges, Mochi's mood — unblocked once step 4 lands.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">9</div>
+          <h4>Phase 4 — AI, last</h4>
+          <p>Deliberately last: prompt grounding quality depends on steps 4–5 having produced real homework and lesson-note data to draw on.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">10</div>
+          <h4>Student Profile enrichment</h4>
+          <p>Goals, strengths, confidence log, competitions — separable, ships on its own timeline, gates nothing else in this plan.</p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <!-- ============ OPEN QUESTIONS ============ -->
+    <section id="questions" style="scroll-margin-top:20px;">
+      <div class="phase-head"><span class="kicker">FOR SOHAM</span></div>
+      <h2>Open questions this document doesn't answer for you</h2>
+      <p class="phase-dek">Every one of these is a product decision, not an engineering default — flagged rather than guessed at, because walking one back after parents or students have seen the result is worse than deciding it once, up front.</p>
+      <ul class="checklist">
+        <li><span class="num">?</span><div><strong>Target device for the student practice link</strong> — the student's own phone/tablet, or a shared family device by the piano? Changes UI tone and whether token revocation is operationally realistic.</div></li>
+        <li><span class="num">?</span><div><strong>Streak behavior during a legitimate absence</strong> — exam week, a family trip the teacher knew about — full break, or a manual "excused day" the teacher can set?</div></li>
+        <li><span class="num">?</span><div><strong>Is <code>Lesson.score</code> visible to parents?</strong> Currently defaulted to hidden in the "progress" view.</div></li>
+        <li><span class="num">?</span><div><strong>Does the parent's report need to be pixel-identical</strong> to the teacher's existing print sheet, or is a simpler summary acceptable for v1?</div></li>
+        <li><span class="num">?</span><div><strong>Is "Upcoming Competitions" worth the extra admin task</strong> it asks of the teacher (nothing else in Wellbeing requires new data entry), or does it wait for the full Student Profile phase?</div></li>
+        <li><span class="num">?</span><div><strong>Card layout for the Wellbeing panel</strong> — one umbrella "Needs Attention" card with reason-tags, or separate cards per signal, accepting the dashboard-noise trade-off?</div></li>
+        <li><span class="num">?</span><div><strong>30 level names and 8 badge titles</strong> are a real copywriting pass, not just engineering — a starter set is proposed in Phase 2, but it's content to iterate on, not locked.</div></li>
+      </ul>
+    </section>
+
+    <footer class="doc-footer">
+      <p>Drafted 2026-07-27 from a grounded, adversarially-reviewed multi-agent pass over the live <code>my-piano-diary</code> codebase — every schema field, file path, and reuse claim above was verified against source, not assumed. Companion reading: <code>docs/PROJECT_STATE.md</code> for current architecture, <code>docs/FUTURE_FEATURES.md</code> for the pre-existing roadmap this extends, <code>docs/ISSUES_AND_FIXES.md</code> for issue #29 referenced above.</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll(".rail a.navlink"));
+    var targets = links
+      .map(function (a) {
+        var id = a.getAttribute("href").slice(1);
+        return { link: a, el: document.getElementById(id) };
+      })
+      .filter(function (t) { return t.el; });
+
+    if (!("IntersectionObserver" in window) || targets.length === 0) return;
+
+    var current = null;
+    function setActive(link) {
+      if (current === link) return;
+      if (current) current.classList.remove("active");
+      link.classList.add("active");
+      current = link;
+    }
+
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var match = targets.find(function (t) { return t.el === entry.target; });
+          if (match) setActive(match.link);
+        });
+      },
+      { rootMargin: "-10% 0px -75% 0px", threshold: 0 }
+    );
+
+    targets.forEach(function (t) { io.observe(t.el); });
+    setActive(targets[0].link);
+  })();
+</script>
