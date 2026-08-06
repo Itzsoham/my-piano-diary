@@ -24,7 +24,7 @@ const tabs = [
  * The Blossom Diary bottom tab bar — below lg (1024px), mirrors the
  * sidebar's off-canvas drawer breakpoint. Five tabs: the four most-used
  * destinations plus "More", which opens the same mobile sidebar sheet that
- * carries Pieces / Reports / Payments / the account menu.
+ * carries Ranking / Pieces / Reports / Payments / the account menu.
  */
 export function BottomTabBar() {
   const pathname = usePathname();
@@ -53,14 +53,14 @@ export function BottomTabBar() {
                 : "text-ink-soft hover:bg-pink-50/60 hover:text-pink-600",
             )}
           >
-            <tab.icon className="size-[21px]" aria-hidden="true" />
+            <tab.icon className="size-5.25" aria-hidden="true" />
             <span className="truncate">{tab.title}</span>
           </Link>
         );
       })}
       <button
         type="button"
-        aria-label="More navigation — Pieces, Reports, Payments, account"
+        aria-label="More navigation — Ranking, Pieces, Reports, Payments, account"
         aria-expanded={openMobile}
         onClick={() => setOpenMobile(true)}
         className={cn(
@@ -70,7 +70,7 @@ export function BottomTabBar() {
             : "text-ink-soft hover:bg-pink-50/60 hover:text-pink-600",
         )}
       >
-        <Menu className="size-[21px]" aria-hidden="true" />
+        <Menu className="size-5.25" aria-hidden="true" />
         <span>More</span>
       </button>
     </nav>

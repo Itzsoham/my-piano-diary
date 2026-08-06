@@ -10,15 +10,6 @@ import { DashboardQuickInsightsCard } from "./dashboard-quick-insights-card";
 import { DashboardTopStudentsCard } from "./dashboard-top-students-card";
 import { TodayLessonsTable } from "./today-lessons-table";
 
-type TopStudent = {
-  studentId: string | number;
-  studentName: string;
-  avgScore: number;
-  ratedCount: number;
-  rank: number;
-  avatar: string | null;
-};
-
 const containerAnimation = {
   hidden: { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0 },
@@ -78,8 +69,6 @@ export function DashboardIntelligencePanel() {
 
   const quickInsights = insights ?? defaultInsights;
 
-  const topFiveStudents: TopStudent[] = topStudents;
-
   return (
     <div className="grid gap-4 px-4 lg:auto-rows-[minmax(28rem,auto)] lg:grid-cols-3 lg:px-6">
       <motion.div
@@ -124,7 +113,7 @@ export function DashboardIntelligencePanel() {
       >
         <DashboardTopStudentsCard
           studentsLoading={studentsLoading}
-          topFiveStudents={topFiveStudents}
+          topFiveStudents={topStudents}
           className={cn(
             "h-full transition-all duration-300 ease-out",
             isBirthdayMode &&

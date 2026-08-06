@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   LayoutDashboard,
   ListOrdered,
+  Trophy,
   Users,
   Music,
   CalendarDays,
@@ -42,6 +43,11 @@ const data = {
       title: "Calendar",
       url: "/calendar",
       icon: ListOrdered,
+    },
+    {
+      title: "Ranking",
+      url: "/leaderboard",
+      icon: Trophy,
     },
   ],
   manage: [

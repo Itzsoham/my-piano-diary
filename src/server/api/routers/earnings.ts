@@ -7,6 +7,7 @@ import {
   getEndOfMonthUTC,
   fromUTC,
 } from "@/lib/timezone";
+import { rankByAverage, takeWithTies } from "@/lib/ranking";
 
 // Type definitions for return values
 interface DashboardData {
@@ -34,6 +35,42 @@ interface StudentScoreData {
   avgScore: number;
   ratedCount: number;
   rank: number;
+}
+
+interface LeaderboardEntry extends StudentScoreData {
+  /** Every COMPLETE lesson, rated or not — the denominator for `ratedShare`. */
+  completedCount: number;
+  /** Percentage of completed lessons that carry a score, 0-100. */
+  ratedShare: number;
+  bestScore: number;
+  /** How many 1s / 2s / 3s / 4s / 5s — index 0 is score 1. */
+  scoreCounts: number[];
+  lastRatedAt: Date | null;
+  thisMonthAvg: number | null;
+  thisMonthRatedCount: number;
+  /** `thisMonthAvg - avgScore`, or null when nothing was rated this month. */
+  trend: number | null;
+}
+
+interface UnratedStudent {
+  studentId: string;
+  studentName: string;
+  avatar: string | null;
+  completedCount: number;
+}
+
+interface LeaderboardData {
+  ranked: LeaderboardEntry[];
+  /** Students with zero rated lessons — listed, never ranked at 0. */
+  unrated: UnratedStudent[];
+  summary: {
+    studioAverage: number | null;
+    ratedLessons: number;
+    completedLessons: number;
+    rankedStudents: number;
+    totalStudents: number;
+    firstRatedAt: Date | null;
+  };
 }
 
 interface TrendPoint {
@@ -422,6 +459,8 @@ export const earningsRouter = createTRPCRouter({
   // Only RATED lessons count — unrated ones (old data, or a lesson the
   // teacher deliberately left unscored) never factor into the average, and a
   // student with zero rated lessons doesn't appear on the board at all.
+  // `limit` is a floor, not a ceiling: takeWithTies may return more so the
+  // cut never separates two students with the same average.
   getTopStudentsThisMonth: protectedProcedure
     .input(
       z
@@ -508,45 +547,214 @@ export const earningsRouter = createTRPCRouter({
         >,
       );
 
-      const sorted = Object.values(studentScores)
-        .map((entry) => ({
+      // Rank rules live in @/lib/ranking so this board and the all-time
+      // /leaderboard can never drift apart: exact-average comparison, ties
+      // share a rank, and the cut never lands inside a tie group.
+      const ranked = rankByAverage(Object.values(studentScores)).map(
+        (entry): StudentScoreData => ({
           studentId: entry.studentId,
           studentName: entry.studentName,
           avatar: entry.avatar,
-          avgScore: Math.round((entry.scoreSum / entry.ratedCount) * 10) / 10,
+          avgScore: entry.avgScore,
           ratedCount: entry.ratedCount,
-        }))
-        .sort((a, b) => {
-          // Primary rank: highest average lesson score this month.
-          if (b.avgScore !== a.avgScore) {
-            return b.avgScore - a.avgScore;
-          }
+          rank: entry.rank,
+        }),
+      );
 
-          // Tie-breaker: more rated lessons behind that average wins.
-          if (b.ratedCount !== a.ratedCount) {
-            return b.ratedCount - a.ratedCount;
-          }
+      return takeWithTies(ranked, input?.limit ?? 5);
+    }),
 
-          // Final tie-breaker: alphabetical for stable order.
-          return a.studentName.localeCompare(b.studentName);
-        });
+  // All-time board behind the dashboard card: every student the teacher has
+  // ever rated, plus the context that makes an average readable (how many
+  // lessons it rests on, the score spread, how this month compares).
+  getStudentLeaderboard: protectedProcedure.query(
+    async ({ ctx }): Promise<LeaderboardData> => {
+      const emptyResult: LeaderboardData = {
+        ranked: [],
+        unrated: [],
+        summary: {
+          studioAverage: null,
+          ratedLessons: 0,
+          completedLessons: 0,
+          rankedStudents: 0,
+          totalStudents: 0,
+          firstRatedAt: null,
+        },
+      };
 
-      // Standard competition ranking (1, 1, 3, ...): students with the same
-      // avgScore share the same rank, and the next distinct score picks up
-      // at its 1-indexed position — so two students both averaging 5.0 both
-      // read as rank 1 instead of one arbitrarily outranking the other.
-      let rank = 0;
-      let previousScore: number | null = null;
-      const ranked = sorted.map((entry, index) => {
-        if (previousScore === null || entry.avgScore !== previousScore) {
-          rank = index + 1;
-        }
-        previousScore = entry.avgScore;
-        return { ...entry, rank };
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
       });
 
-      return ranked.slice(0, input?.limit ?? 5);
-    }),
+      if (!teacher) {
+        return emptyResult;
+      }
+
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const nowInUserTz = fromUTC(new Date(), timezone);
+      const currentMonth = nowInUserTz.getMonth() + 1;
+      const currentYear = nowInUserTz.getFullYear();
+
+      const monthStart = getStartOfMonthUTC(
+        currentMonth,
+        currentYear,
+        timezone,
+      );
+      const monthEnd = getEndOfMonthUTC(currentMonth, currentYear, timezone);
+
+      const [students, lessons] = await Promise.all([
+        ctx.db.student.findMany({
+          where: { teacherId: teacher.id },
+          select: { id: true, name: true, avatar: true },
+        }),
+        ctx.db.lesson.findMany({
+          where: { teacherId: teacher.id, status: "COMPLETE" },
+          select: { score: true, date: true, studentId: true },
+          // Ascending so the last rated lesson we visit per student is also
+          // the most recent one — no extra max() pass for `lastRatedAt`.
+          orderBy: { date: "asc" },
+        }),
+      ]);
+
+      type Bucket = {
+        studentId: string;
+        studentName: string;
+        avatar: string | null;
+        scoreSum: number;
+        ratedCount: number;
+        completedCount: number;
+        bestScore: number;
+        scoreCounts: number[];
+        lastRatedAt: Date | null;
+        monthScoreSum: number;
+        monthRatedCount: number;
+      };
+
+      const buckets = new Map<string, Bucket>(
+        students.map((student) => [
+          student.id,
+          {
+            studentId: student.id,
+            studentName: student.name,
+            avatar: student.avatar,
+            scoreSum: 0,
+            ratedCount: 0,
+            completedCount: 0,
+            bestScore: 0,
+            scoreCounts: [0, 0, 0, 0, 0],
+            lastRatedAt: null,
+            monthScoreSum: 0,
+            monthRatedCount: 0,
+          },
+        ]),
+      );
+
+      let ratedLessons = 0;
+      let ratedScoreSum = 0;
+      let firstRatedAt: Date | null = null;
+
+      for (const lesson of lessons) {
+        const bucket = buckets.get(lesson.studentId);
+        if (!bucket) {
+          continue;
+        }
+
+        bucket.completedCount += 1;
+
+        const score = lesson.score;
+        if (score == null) {
+          continue;
+        }
+
+        bucket.scoreSum += score;
+        bucket.ratedCount += 1;
+        bucket.bestScore = Math.max(bucket.bestScore, score);
+        bucket.lastRatedAt = lesson.date;
+
+        const slot = score - 1;
+        if (slot >= 0 && slot < bucket.scoreCounts.length) {
+          bucket.scoreCounts[slot] = (bucket.scoreCounts[slot] ?? 0) + 1;
+        }
+
+        if (lesson.date >= monthStart && lesson.date <= monthEnd) {
+          bucket.monthScoreSum += score;
+          bucket.monthRatedCount += 1;
+        }
+
+        ratedLessons += 1;
+        ratedScoreSum += score;
+        firstRatedAt ??= lesson.date;
+      }
+
+      const allBuckets = [...buckets.values()];
+
+      const ranked = rankByAverage(allBuckets).map(
+        (entry): LeaderboardEntry => {
+          const thisMonthAvg =
+            entry.monthRatedCount > 0
+              ? Math.round(
+                  (entry.monthScoreSum / entry.monthRatedCount) * 100,
+                ) / 100
+              : null;
+
+          return {
+            studentId: entry.studentId,
+            studentName: entry.studentName,
+            avatar: entry.avatar,
+            avgScore: entry.avgScore,
+            ratedCount: entry.ratedCount,
+            rank: entry.rank,
+            completedCount: entry.completedCount,
+            ratedShare:
+              entry.completedCount > 0
+                ? Math.round((entry.ratedCount / entry.completedCount) * 100)
+                : 0,
+            bestScore: entry.bestScore,
+            scoreCounts: entry.scoreCounts,
+            lastRatedAt: entry.lastRatedAt,
+            thisMonthAvg,
+            thisMonthRatedCount: entry.monthRatedCount,
+            trend:
+              thisMonthAvg === null
+                ? null
+                : Math.round((thisMonthAvg - entry.avgScore) * 100) / 100,
+          };
+        },
+      );
+
+      const unrated = allBuckets
+        .filter((bucket) => bucket.ratedCount === 0)
+        .sort(
+          (a, b) =>
+            b.completedCount - a.completedCount ||
+            a.studentName.localeCompare(b.studentName),
+        )
+        .map(
+          (bucket): UnratedStudent => ({
+            studentId: bucket.studentId,
+            studentName: bucket.studentName,
+            avatar: bucket.avatar,
+            completedCount: bucket.completedCount,
+          }),
+        );
+
+      return {
+        ranked,
+        unrated,
+        summary: {
+          studioAverage:
+            ratedLessons > 0
+              ? Math.round((ratedScoreSum / ratedLessons) * 100) / 100
+              : null,
+          ratedLessons,
+          completedLessons: lessons.length,
+          rankedStudents: ranked.length,
+          totalStudents: students.length,
+          firstRatedAt,
+        },
+      };
+    },
+  ),
 
   // Get quick insights for the dashboard panel
   getQuickInsights: protectedProcedure.query(
