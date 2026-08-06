@@ -338,7 +338,7 @@
       <div class="rail-group-label">Phases</div>
       <a class="navlink" href="#phase-1">01 · Homework System <span class="chip chip-neutral">L</span></a>
       <a class="navlink" href="#phase-2">02 · Motivation <span class="chip chip-neutral">L</span></a>
-      <a class="navlink" href="#phase-3">03 · Parent Portal <span class="chip chip-neutral">L</span></a>
+      <a class="navlink" href="#phase-3">03 · Parent Portal <span class="chip chip-neutral">S/M</span></a>
       <a class="navlink" href="#phase-4">04 · AI <span class="chip chip-neutral">M</span></a>
       <a class="navlink" href="#phase-5">05 · Analytics &amp; Reminders <span class="chip chip-neutral">M–L</span></a>
       <a class="navlink" href="#wellbeing">Teacher wellbeing <span class="chip chip-neutral">M–L</span></a>
@@ -352,16 +352,21 @@
 
   <main>
     <div id="top" class="hero">
-      <span class="eyebrow">My Piano Diary · Roadmap v1 · 2026-07-27</span>
+      <span class="eyebrow">My Piano Diary · Roadmap v1.1 · revised 2026-07-28</span>
       <h1>From lesson diary to learning ecosystem</h1>
       <p class="lede">A phase-by-phase plan for the biggest expansion this app has taken on: homework that survives the walk home, a motivation loop built on a mascot that already exists, a parent who can watch without a login, and a dashboard that tells you who needs you before the lesson does.</p>
 
       <div class="stat-strip">
         <div class="stat-cell"><span class="num tabular">5</span><span class="label">Phases + wellbeing</span></div>
-        <div class="stat-cell"><span class="num tabular">14</span><span class="label">New Prisma models</span></div>
-        <div class="stat-cell"><span class="num tabular">9</span><span class="label">New routers</span></div>
+        <div class="stat-cell"><span class="num tabular">11</span><span class="label">New Prisma models</span></div>
+        <div class="stat-cell"><span class="num tabular">8</span><span class="label">New routers</span></div>
         <div class="stat-cell"><span class="num tabular">1</span><span class="label">New auth surface</span></div>
-        <div class="stat-cell"><span class="num tabular">~35–45d</span><span class="label">Solo-dev effort</span></div>
+        <div class="stat-cell"><span class="num tabular">~30–40d</span><span class="label">Solo-dev effort</span></div>
+      </div>
+
+      <div class="note note-fixed">
+        <span class="note-label">Revised 2026-07-28 — direct feedback from the app's actual teacher</span>
+        <p>"I like the reminders to practice and level up." · "Pets are also a good idea." · "I'll have to take notes on what I need to remember after each lesson." · "I've already filled out the assessment forms and written instructions [for parents], but they don't seem to care much." Reminders, leveling, and Mochi are now validated priorities — see the <span class="chip chip-good" style="vertical-align:1px">Validated</span> marks below. Spaced repetition is redesigned around her own post-lesson notes instead of an auto-derived label (<a href="#phase-5">Phase 5</a>). Parent Portal is re-scoped hard, from an 8–10 day multi-tab hub down to a 2–3 day single page (<a href="#phase-3">Phase 3</a>), and the build sequence is reordered around what's actually validated (<a href="#roadmap">Build sequence</a>).</p>
       </div>
 
       <h3 class="subhead">Why teachers reteach</h3>
@@ -400,7 +405,7 @@
           </tbody>
         </table>
       </div>
-      <div class="note note-fixed"><span class="note-label">Reconciled</span>Phase 1's design specified a <em>plaintext</em> token and Phase 3's specified a <em>hashed</em> one, under two different enum/header names — a direct collision. This page adopts the hashed version everywhere and treats the token table as its own tiny shared deliverable, built once before either phase claims it. See §"Build sequence" for why Parent Portal builds it first.</div>
+      <div class="note note-fixed"><span class="note-label">Reconciled</span>Phase 1's design specified a <em>plaintext</em> token and Phase 3's specified a <em>hashed</em> one, under two different enum/header names — a direct collision. This page adopts the hashed version everywhere and treats the token table as its own tiny shared deliverable, built once before either phase claims it. <em>Updated 2026-07-28: Phase 1 Slice 1B — not Parent Portal — now builds against it first, see <a href="#roadmap">Build sequence</a>.</em></div>
       <p>One guardrail neither original design fully committed to: a small in-memory sliding-window throttle on the token-resolution middleware itself. Brute-forcing a 256-bit token is not a realistic threat, but this is the app's <em>first-ever</em> unauthenticated write surface, and volumetric abuse of the lookup path is a distinct, cheap-to-close risk — about twenty lines, shipped on day one, not deferred.</p>
 
       <h3 class="subhead">2. One canonical hub per student</h3>
@@ -446,7 +451,7 @@
         <span class="chip chip-neutral">Effort: L (not XL)</span>
         <span class="chip chip-accent">3 new models</span>
         <span class="chip chip-accent">2 new routers</span>
-        <span class="chip chip-warn">Blocks Phase 2 practice-XP, all of Phase 5</span>
+        <span class="chip chip-warn">Blocks Phase 2 practice-XP, most of Phase 5</span>
       </div>
 
       <h3 class="subhead">Ships in two slices, not one PR</h3>
@@ -529,6 +534,8 @@
         <li>Token issuance reuses the "generate a code, reveal once, copy-to-clipboard" interaction already built for the birthday-room passcode — same shape, new content.</li>
       </ul>
 
+      <div class="note note-open"><span class="note-label">Open — resolve while building this, added 2026-07-28</span>Phase 5's redesigned "+ Add a note to remember" link (see <a href="#phase-5">Phase 5</a>) sits in this exact same <code>AttendanceDialog</code> COMPLETE-status row. Whether "+ Assign homework" and "+ Add a note to remember" fire through the dialog's single <code>markAttendance</code> submit together, or need independent submit affordances inside one form, is undecided — settle it here, not after both ship separately.</div>
+
       <details class="dis">
         <summary>Open risks &amp; product questions (4)</summary>
         <div class="dis-body">
@@ -548,6 +555,7 @@
       <h2>Motivation</h2>
       <p class="phase-dek">Streaks, XP, 30 levels, badges, and a pet that's already sitting in the codebase waiting for a reason to have moods.</p>
       <div class="phase-meta">
+        <span class="chip chip-good">Validated 2026-07-28 — "level up" &amp; pets both explicitly liked</span>
         <span class="chip chip-neutral">Effort: L (~7–10 days)</span>
         <span class="chip chip-accent">2 new models</span>
         <span class="chip chip-good">Mochi: 0 new component work</span>
@@ -590,7 +598,7 @@
       <h4 class="minihead">Mochi's mood — zero new component work</h4>
       <p>Mochi already accepts a <code>mood</code> prop with three values and already meows on click. Phase 2's entire "pet" mechanic is one function: <code>mood = daysSinceLastPractice === 0 ? "delighted" : ≤2 ? "content" : "sleepy"</code>, computed server-side and passed in. No new SVG, no new state model.</p>
 
-      <div class="note note-critical"><span class="note-label">Required fix before implementation</span>The original design wired the XP-on-lesson-attendance hook into <code>lesson.markAttendance</code> as "fire-and-forget." That mutation has a documented, still-open bug (<code>ISSUES_AND_FIXES.md</code> #29): a failed save leaves the wrong status/rate/score on screen with no rollback. Layering an unawaited side-effect onto a mutation with no reliable failure path risks drifting the XP ledger out of sync silently. <strong>Fix #29 first, or make the XP write part of the same transaction as the attendance update</strong> — not a detached fire-and-forget call.</div>
+      <div class="note note-critical"><span class="note-label">Required fix before implementation</span>The original design wired the XP-on-lesson-attendance hook into <code>lesson.markAttendance</code> as "fire-and-forget." That mutation has a documented, still-open bug (<code>ISSUES_AND_FIXES.md</code> #29): a failed save leaves the wrong status/rate/score on screen with no rollback. Layering an unawaited side-effect onto a mutation with no reliable failure path risks drifting the XP ledger out of sync silently. <strong>Fix #29 first, or make the XP write part of the same transaction as the attendance update</strong> — not a detached fire-and-forget call. <strong>Updated 2026-07-28: this now also covers Phase 5's spaced-review note upsert</strong> (see <a href="#phase-5">Phase 5</a>) — it rides the same mutation and inherits the same risk.</div>
 
       <details class="dis">
         <summary>Reuse map &amp; dependencies</summary>
@@ -607,59 +615,76 @@
 
     <!-- ============ PHASE 3 ============ -->
     <section id="phase-3" class="phase">
-      <div class="phase-head"><span class="kicker">PHASE 3</span></div>
-      <h2>Parent Portal <span style="color:var(--ink-faint); font-weight:400">+ Student Profile</span></h2>
-      <p class="phase-dek">A curated door, not a mirror. Everything a parent sees is either an existing field already framed as family-facing, or a brand-new field created specifically to be shown — nothing becomes parent-visible by proximity.</p>
+      <div class="phase-head"><span class="kicker">PHASE 3</span><span class="chip chip-warn">Re-scoped 2026-07-28</span></div>
+      <h2>Parent Portal <span style="color:var(--ink-faint); font-weight:400">— re-scoped</span></h2>
+      <p class="phase-dek">A single flat page, not a mirror of anything. Re-cut hard after direct feedback: the teacher already runs the manual version of this feature — assessment forms and written instructions handed straight to parents — and reports they don't engage with it. This phase now ships only the two things that are already free and already working (an upcoming lesson, the monthly report she already writes), and treats everything else as unproven until there's evidence otherwise.</p>
       <div class="phase-meta">
-        <span class="chip chip-neutral">Effort: L (~8–10 days)</span>
-        <span class="chip chip-accent">4 new models</span>
+        <span class="chip chip-neutral">Effort: S/M (~2–3 days)</span>
+        <span class="chip chip-accent">0 new models for the MVP surface</span>
         <span class="chip chip-good">Zero mutations exposed to parents</span>
+        <span class="chip chip-critical">Was L / 8–10d before feedback</span>
       </div>
 
-      <div class="note note-fixed"><span class="note-label">Reconciled — split into two increments</span>The original design bundled Parent Portal and Student Profile enrichment into one 8–10 day deliverable, four new models deep, before a parent could see anything. The review recommends splitting them: <strong>Parent Portal MVP</strong> (token infra + upcoming lessons + the existing <code>MonthlyReport</code>, read-only) ships first and small. <strong>Student Profile enrichment</strong> (goals, strengths, confidence log, competitions) ships as its own later increment on its own merits — it doesn't gate parents seeing anything.</div>
+      <div class="note note-critical">
+        <span class="note-label">Cut per direct user feedback — 2026-07-28</span>
+        <p>The teacher already runs this exact workflow on paper — assessment forms and written instructions for parents — and reports parents don't engage with it: <em>"I've already filled out the assessment forms and written instructions on them, but they don't seem to care much."</em> Digitizing a manual process that has already failed its real-world trial isn't worth building on the strength of a nicer UI alone.</p>
+        <p><strong><code>StudentAssessment</code> (the confidence/motivation ledger) is cut from the near-term plan entirely</strong> — if she wants a place to record lesson-level judgment, that need is already served by Phase 5's reworked "note after each lesson" capture (see <a href="#phase-5">Phase 5</a>), one place for teacher judgment, not two parallel systems. <code>StudentProfile.parentNote</code> — a digital version of "written instructions" — is cut from the MVP for the same reason.</p>
+      </div>
 
-      <h3 class="subhead">What a parent can see — and how "no editing" is actually enforced</h3>
+      <h3 class="subhead">The re-scoped MVP — one page, nothing to click through</h3>
+      <p>The original design was a multi-tab hub (Profile / Homework / Motivation / Competitions) — structurally the same "here's a folder of stuff, go engage with it" shape as the paper packet that didn't land. The re-scoped version is a single scroll, reached the same manual-link-share way as a birthday-room passcode:</p>
+      <ul class="plain">
+        <li>Student name + avatar</li>
+        <li>Next upcoming lesson — date/time only, a narrow <code>Lesson</code> <code>select</code></li>
+        <li>The latest <code>MonthlyReport</code> narrative — reused verbatim, zero schema change, and the one piece of this phase digitizing a workflow that <em>already works</em>, rather than one that's already failed</li>
+      </ul>
+      <p>Nothing else. No goals, favourite songs, strengths, competitions, or confidence data — none of that content has an evidenced parent audience yet, and shipping it now would repeat the exact pattern the feedback flagged. <strong>Ship this, then ask directly: are parents actually opening the link?</strong> Only extend it once there's a real answer.</p>
+
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Data</th><th>Visible?</th><th>Source</th></tr></thead>
+          <thead><tr><th>Data</th><th>In the MVP?</th><th>Source</th></tr></thead>
           <tbody>
-            <tr><td>Name, avatar, level, goals, favourite songs, strengths</td><td><span class="chip chip-good">yes</span></td><td><code>StudentProfile</code> (new)</td></tr>
-            <tr><td>Monthly report narrative</td><td><span class="chip chip-good">yes</span></td><td><code>MonthlyReport</code> — reused verbatim, zero schema change, already family-facing</td></tr>
-            <tr><td>Upcoming lessons, attendance summary</td><td><span class="chip chip-good">yes</span></td><td><code>Lesson</code>, narrow <code>select</code></td></tr>
-            <tr><td>Competition history, pieces in progress</td><td><span class="chip chip-good">yes</span></td><td><code>StudentCompetition</code> (new), <code>Piece</code></td></tr>
+            <tr><td>Name, avatar</td><td><span class="chip chip-good">yes</span></td><td><code>Student</code>, existing</td></tr>
+            <tr><td>Monthly report narrative</td><td><span class="chip chip-good">yes</span></td><td><code>MonthlyReport</code> — reused verbatim, already family-facing</td></tr>
+            <tr><td>Next upcoming lesson</td><td><span class="chip chip-good">yes</span></td><td><code>Lesson</code>, narrow <code>select</code></td></tr>
+            <tr><td>Goals, favourite songs, level, strengths</td><td><span class="chip chip-warn">not yet — teacher-only track</span></td><td>Real value as <em>her own</em> organizational memory regardless of parent visibility — see below</td></tr>
+            <tr><td>Competition history</td><td><span class="chip chip-warn">not yet — teacher-only track</span></td><td><code>StudentCompetition</code> — kept for Wellbeing's dashboard card, shelved as a parent draw</td></tr>
+            <tr><td>Confidence / motivation, <code>parentNote</code></td><td><span class="chip chip-critical">cut</span></td><td>Mirrors the paper forms that didn't work — see the callout above</td></tr>
             <tr><td>Practice days / homework</td><td><span class="chip chip-warn">placeholder</span></td><td>Depends on Phase 1 — ships as a real "coming soon," not faked data</td></tr>
-            <tr><td><code>Student.notes</code>, <code>Lesson.note</code>, <code>tuitionNote</code>, rates</td><td><span class="chip chip-critical">never</span></td><td>Pre-existing private fields — exactly why <code>parentNote</code> was created as its own new field</td></tr>
-            <tr><td><code>StudentProfile.weaknesses</code>, confidence/motivation scores</td><td><span class="chip chip-critical">never</span></td><td>A raw "confidence: 2/5" about a child is a liability, not a helper tool, read cold</td></tr>
+            <tr><td><code>Student.notes</code>, <code>Lesson.note</code>, <code>SpacedReviewItem.note</code>, <code>tuitionNote</code>, rates</td><td><span class="chip chip-critical">never</span></td><td>Pre-existing private fields, plus the new raw teacher-judgment note from Phase 5 — same never-parent-visible category</td></tr>
             <tr><td><code>Lesson.score</code></td><td><span class="chip chip-warn">open question</span></td><td>Defaulted to hidden — cheap to add later, awkward to walk back once shown</td></tr>
           </tbody>
         </table>
       </div>
-      <p>Enforcement is structural, in this order: (1) a parent never holds a NextAuth session, so all 9 existing teacher routers are unreachable by construction — not by any check this phase adds; (2) the parent router exposes <strong>zero mutations</strong>; (3) every query resolves its own scope from the token — a parent can never pass a different student's ID; (4) every parent-facing query uses an explicit Prisma <code>select</code> allow-list, never <code>include</code> — excluded fields never leave the database.</p>
+      <p>Enforcement stays structural, unchanged in principle even as the surface shrinks: (1) a parent never holds a NextAuth session, so every existing teacher router is unreachable by construction; (2) the parent router exposes <strong>zero mutations</strong>; (3) every query resolves its own scope from the token, never a client-supplied ID; (4) every parent-facing query uses an explicit <code>select</code> allow-list, never <code>include</code>.</p>
 
-      <h3 class="subhead">Student Profile — the enrichment layer</h3>
-      <div class="schema"><pre><span class="kw">model</span> <span class="ty">StudentProfile</span> {           <span class="cm">// 1:1 with Student, its own table so hot paths (lessons,</span>
-  studentId String @unique       <span class="cm">// dashboard, payments) never gain payload from an unrelated select</span>
-  goals, favouriteSongs, currentLevel, strengths   String?
-  weaknesses    String?          <span class="cm">// teacher-only, labeled "Private — never shown to parents" in the UI itself</span>
-  parentNote    String?          <span class="cm">// the ONE field that's "what should the parent see from me right now"</span>
+      <div class="note note-open"><span class="note-label">Open — is a portal the right delivery model at all</span>The teacher's own feedback on the paper-form equivalent of this feature suggests pull-based engagement (a page parents must remember to visit) is unproven — while she independently volunteered enthusiasm for push-style mechanics (practice reminders, leveling up). The likely better end-state is Phase 5's reminder infrastructure occasionally notifying parents directly, once email/SMS infra exists — not a page waiting to be found. Not buildable now (no distribution channel exists yet), so this MVP is architected as the eventual push <em>payload</em> — one URL, no internal navigation — so it isn't wasted effort under a future push model, it's the landing page a notification would open.</div>
+
+      <h3 class="subhead">Student Profile — split into three independent tracks</h3>
+      <p>Her feedback is specifically about parent engagement with assessment/instruction artifacts — it says nothing about whether <em>she</em> benefits from keeping her own notes. That utility is untouched and shouldn't be entangled with the now-doubtful parent case.</p>
+      <div class="schema"><pre><span class="kw">model</span> <span class="ty">StudentProfile</span> {           <span class="cm">// TEACHER-ONLY TRACK (11a) — her own organizational memory,</span>
+  studentId String @unique       <span class="cm">// no obligation to ever expose it to a parent</span>
+  goals, favouriteSongs, currentLevel, strengths, weaknesses   String?
+}                                 <span class="cm">// parentNote field cut — see the callout above</span>
+<span class="kw">model</span> <span class="ty">StudentCompetition</span> {      <span class="cm">// TEACHER-ONLY TRACK (11b) — feeds Wellbeing's "Upcoming</span>
+  studentId, teacherId, name, date, result String?, notes String?   <span class="cm">// Competitions" card; that need is orthogonal to parent visibility</span>
 }
-<span class="kw">model</span> <span class="ty">StudentCompetition</span> { studentId, teacherId, name, date, result String?, notes String? }
-<span class="kw">model</span> <span class="ty">StudentAssessment</span> {         <span class="cm">// append-only ledger, no update procedure exposed</span>
-  studentId, teacherId, date, confidenceLevel Int?(1-5), motivationScore Int?(1-5), note
-}</pre></div>
-      <div class="note note-fixed"><span class="note-label">Reconciled — Competition model</span>Two designs independently built a field-for-field-identical competition table under different names (<code>Competition</code> in the Wellbeing design, <code>StudentCompetition</code> here). This page assigns ownership to Student Profile — <code>StudentCompetition</code> is the one model; the Wellbeing "Upcoming Competitions" dashboard card reads from it rather than inventing its own.</div>
+<span class="cm">// StudentAssessment — CUT. See the callout above.</span></pre></div>
+      <ul class="tight">
+        <li><strong>11a — Teacher-only profile notes</strong> (goals/favourites/level/strengths/weaknesses): small, low-risk, ships whenever convenient on the <code>students/[id]</code> hub, justified purely by her own workflow value.</li>
+        <li><strong>11b — <code>StudentCompetition</code></strong>: same track. Two designs independently invented this model under different names before reconciliation; it's assigned here, to the teacher-only side, specifically because Wellbeing's dashboard card need for it is unrelated to whether a parent ever sees it.</li>
+        <li><strong>11c — Parent-facing profile enrichment</strong> (the same fields shown to a parent, <code>parentNote</code>, <code>StudentAssessment</code>, competitions as a parent draw): shelved, pending evidence the MVP above is actually opened, and pending push/notification infra that doesn't exist yet.</li>
+      </ul>
 
-      <h3 class="subhead">Report rendering — the one place this phase touches shipped, working code</h3>
-      <p><code>ReportView</code> (1,322 lines) is already pixel-perfect and print-ready, but tightly coupled to editing state. <strong>Recommended for v1:</strong> a new, simpler, purpose-built read-only summary component for the parent's report page — not the full print grid. Half a day, zero risk to the teacher's existing print flow. Extracting a shared, presentation-only <code>ReportSheet</code> for full pixel parity is a real one-day refactor of already-working, print-sensitive code — worth deferring to v1.1, once it's clear parents are actually using the portal.</p>
+      <h3 class="subhead">Report rendering</h3>
+      <p><code>ReportView</code> (1,322 lines) is already pixel-perfect and print-ready, but tightly coupled to editing state. The MVP uses a new, simpler, purpose-built read-only summary component — not the full print grid. Half a day, zero risk to the teacher's existing print flow. A shared, presentation-only <code>ReportSheet</code> for full pixel parity stays deferred — now more clearly than before, pending real evidence parents are using the portal at all, not just evidence they want a nicer version of it.</p>
 
       <details class="dis">
-        <summary>Security posture, distribution, and open questions</summary>
+        <summary>Token infrastructure, and why it still ships regardless</summary>
         <div class="dis-body">
-          <ul class="tight">
-            <li>No distribution channel exists for the link itself yet (no email/SMS infra) — manual copy-paste for the foreseeable future. Fine for a handful of families, a real chore past ~15–20.</li>
-            <li>No active leak-detection beyond passive <code>lastUsedAt</code> — a reasonable bar given a leaked link's worst case is bounded to one student's non-sensitive data.</li>
-            <li><strong>Recommendation, not yet a decision:</strong> build the shared token mechanism as part of <em>this</em> phase, since a read-only surface is the lower-risk place to retire "first public endpoint in an app with zero rate limiting" — Phase 1's write-capable student token then builds second, against an already-hardened mechanism. See <a href="#roadmap">Build sequence</a>.</li>
-          </ul>
+          <p>Keep building the shared hashed-token mechanism on its own timeline, independent of what happened to this phase's scope. Its real justification was never really "for parents" — <strong>Phase 1 Slice 1B (student self-serve practice) has a hard structural dependency on the same <code>StudentAccessToken</code> primitive</strong>, and it's the better-validated half of this investment given the direct enthusiasm for reminders and leveling.</p>
+          <p><strong>Honest trade-off, not an unqualified improvement:</strong> the original plan put Parent Portal first because a read-only surface is a lower-blast-radius place to retire the app's first unauthenticated endpoint. Building Slice 1B first instead (see <a href="#roadmap">Build sequence</a>) means a write-capable surface exercises the fresh token middleware before a read-only one does — a real, deliberately-accepted trade of blast-radius-first for validated-value-first, not a strict win. Required-fix #7 (sensitive-field-exclusion tests, still unresolved — see <a href="#review">the review</a>) becomes a hard prerequisite for whichever surface goes first as a result.</p>
+          <p>No distribution channel exists for the link itself yet (no email/SMS infra) — manual copy-paste for the foreseeable future, fine for a handful of families, a real chore past ~15–20. No active leak-detection beyond passive <code>lastUsedAt</code> — reasonable given a leaked link's worst case is bounded to one student's non-sensitive data.</p>
         </div>
       </details>
     </section>
@@ -679,11 +704,14 @@
       <p>The teacher already has everything the model needs sitting in Postgres — nothing to autonomously fetch or browse. This is squarely a single bounded structured-generation task: <code>claude-sonnet-5</code> at <code>medium</code> effort, <code>messages.parse()</code> against a Zod schema for guaranteed-valid JSON, matching the app's existing all-Zod convention.</p>
       <div class="schema"><pre>Input:  { studentId, pieceId, lessonId?, teacherHint? }
 Context assembled server-side: piece title/description/difficulty,
-  last 3 COMPLETE lessons' notes + scores, any open spaced-review
-  history for this piece (so the model knows if it's been forgotten before)
+  last 3 COMPLETE lessons' notes + scores, open spaced-review notes
+  for this student — piece-tagged ones filtered to the target piece
+  when set, untagged general/technique notes always included, each
+  with its checkpoints' recorded outcomes
 Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
           focusNote, difficulty, motivationalNote, dueInDays }</pre></div>
       <p><strong>AI drafts, teacher commits — always.</strong> The result pre-fills the homework form; it never writes to <code>Homework</code> directly. A hallucinated tempo or an inappropriately hard passage assigned to a beginner is a real pedagogical risk this design treats as non-negotiable to guard against, not a nice-to-have.</p>
+      <div class="note note-fixed"><span class="note-label">Strictly better grounding, added 2026-07-28</span>Phase 5's spaced-repetition redesign turns this from a list of titles into real, teacher-verified pedagogical detail ("Rushes the left-hand entrance in bar 12," with whether the 2-day check went well) — exactly the kind of non-hallucination-prone grounding this section already argued for, and available earlier than before since it no longer waits on Phase 1. See <a href="#phase-5">Phase 5</a>.</div>
 
       <h3 class="subhead">Pattern detection — deterministic first, language second</h3>
       <p>All five signals (losing streak, forgetting quickly, improving, at risk of quitting, teacher burnout) are <strong>pure functions over already-fetched data</strong>, unit-tested like every other <code>src/lib/</code> module. The LLM's only job — optional, on-demand — is turning a batch of already-computed flags into one warm sentence a busy teacher can skim ("Summarize for me," not auto-run on every load). A rule like <code>daysSinceLastPractice ≥ 3 AND previousStreak ≥ 5</code> is something a teacher can verify and trust; an LLM classification of the same data is a black box that can flap between visits on identical input. At this scale (tens of students), that trade is not close.</p>
@@ -727,23 +755,30 @@ Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
         <span class="chip chip-warn">1 new page: /analytics</span>
       </div>
 
-      <h3 class="subhead">Spaced repetition — the exact trigger</h3>
-      <p>A review chain starts the moment a <code>Homework</code> row's status transitions to <strong>COMPLETED</strong> — not when assigned, not when merely started. "Assigned" carries no signal anything was learned; "completed" is the one unambiguous event in Phase 1's own workflow that means the student demonstrably practiced the material to the teacher's satisfaction. This rides Phase 1's existing status change — no new UI trigger of its own.</p>
-      <div class="schema"><pre><span class="kw">model</span> <span class="ty">SpacedReviewItem</span> {            <span class="cm">// one chain per completed homework</span>
-  homeworkId  String @unique
-  label       String            <span class="cm">// frozen snapshot at creation — a later edit never rewrites what the reminder says</span>
-  learnedAt   DateTime          <span class="cm">// = the moment Homework became COMPLETED</span>
+      <h3 class="subhead">Spaced repetition — redesigned around her own post-lesson notes <span class="chip chip-good" style="margin-left:6px">Validated 2026-07-28</span></h3>
+      <div class="note note-fixed">
+        <span class="note-label">Redesigned per direct feedback</span>
+        <p>"I'll have to take notes on what I need to remember after each lesson." The original trigger (<code>Homework.status → COMPLETED</code>, with an auto-derived title snapshot) is replaced by something built around that exact habit: a short teacher-authored note captured the moment a <em>lesson</em> is marked complete — real pedagogical content ("Rushes the left-hand entrance in bar 12"), not a title she already knows. Welcome side effect: this half of Phase 5 no longer depends on Phase 1 shipping at all — it only needs <code>Lesson</code> and <code>Piece</code>, both live today.</p>
+      </div>
+      <p>The note-capture UI sits in the exact same place Phase 1 adds "+ Assign homework" — <code>AttendanceDialog</code>'s COMPLETE-status row, next to the score picker — as a second, independent, collapsed "+ Add a note to remember" link. They're deliberately separate actions, not one merged flow: one is forward-looking (what's next), one is backward-looking (what wobbled today); most lessons will have one but not the other, and keeping both collapsed by default means the fast "tap Present" path that makes this dialog work today is untouched.</p>
+      <div class="schema"><pre><span class="kw">model</span> <span class="ty">SpacedReviewItem</span> {            <span class="cm">// one chain per lesson that got a review note</span>
+  lessonId    String @unique     <span class="cm">// trigger anchor is Lesson, not Homework</span>
+  pieceId     String?            <span class="cm">// = lesson.pieceId — nullable; a general/technique note has none, that's fine</span>
+  homeworkId  String?            <span class="cm">// optional, opportunistic — set only if "+Assign homework" was also used</span>
+  note        String             <span class="cm">// teacher-authored, REQUIRED, live-editable — the entire point of the redesign</span>
+  learnedAt   DateTime           <span class="cm">// = lesson.date of the COMPLETE lesson</span>
   checkpoints SpacedReviewCheckpoint[]
 }
-<span class="kw">model</span> <span class="ty">SpacedReviewCheckpoint</span> {      <span class="cm">// child table, not 3 flat columns — same HomeworkLog precedent</span>
+<span class="kw">model</span> <span class="ty">SpacedReviewCheckpoint</span> {      <span class="cm">// UNCHANGED — child table, not 3 flat columns</span>
   intervalDays Int               <span class="cm">// 2, 5, or 10 — exactly per the vision</span>
   dueAt        DateTime
   outcome      ReviewOutcome?    <span class="cm">// RECALLED_WELL | NEEDED_REVIEW | SKIPPED</span>
   @@unique([spacedReviewItemId, intervalDays])
 }</pre></div>
-      <p>Until a student-facing surface exists, the <em>teacher</em> marks the outcome from a reminder feed item — same interaction shape as the existing lesson score-picker. The field is forward-compatible by construction: once Phase 1's token surface ships, it becomes writable by a second path with zero schema change.</p>
+      <p>Trigger, concretely: <code>lesson.markAttendance</code> gains one optional input, <code>reviewNote?</code> (<code>z.string().max(1000)</code>, matching the existing <code>note</code> field's own convention). On save, a non-empty note upserts <code>SpacedReviewItem</code> and seeds its three checkpoints via the shared <code>addDaysInTimezone</code> helper; clearing it back to empty deletes the row. Unlike the frozen-snapshot discipline used elsewhere in this plan, <code>note</code> is deliberately <strong>live-editable</strong> — she should be able to refine what she jotted mid-lesson, the same way the score field already works in this dialog. Until a student-facing surface exists, she marks the outcome from a reminder-feed item — same interaction shape as the score picker, forward-compatible with zero schema change once Phase 1B's token surface ships.</p>
 
-      <div class="note note-critical"><span class="note-label">Required fix before implementation</span>Two independent designs (this one and Phase 2's) assumed Phase 1's <code>markStatus</code> mutation would call an integration hook on completion — <code>onHomeworkCompleted</code>, a spaced-repetition-seed call. Phase 1's own router spec, written before either of those, doesn't contain them. If this hook is silently omitted when Phase 1 ships, spaced repetition and Phase 2's homework-driven XP don't crash — they just permanently produce nothing. <strong>These stub calls must be an explicit line item in Phase 1's implementation checklist, wired in from day one, even as no-ops.</strong></div>
+      <div class="note note-critical"><span class="note-label">Required fix before implementation</span>This upsert rides <code>lesson.markAttendance</code> — the same mutation Phase 2's XP hook touches, and the same mutation with a documented, still-open rollback bug (<code>ISSUES_AND_FIXES.md</code> #29, see <a href="#phase-2">Phase 2</a>). <strong>Fix #29 first, or make this write part of the same transaction as the attendance update</strong> — a second silently-driftable side-effect on top of an already-flagged risk is not an improvement. Separately: the <code>onHomeworkCompleted</code> stub hook from the original required-fix list is <strong>no longer needed for spaced repetition</strong> — only for Phase 2's homework-driven XP — since this trigger moved off <code>Homework.status</code> entirely.</div>
+      <p style="font-size:14px;color:var(--ink-soft)">One more consequence worth surfacing to whoever builds Phase 4: its context-assembly already reads "open spaced-review history" as AI prompt grounding — under this redesign that becomes real, teacher-verified pedagogical detail instead of a list of titles, and should be queried by <code>studentId</code> (not only <code>pieceId</code>, since general/technique notes are unattached) so it surfaces for any homework generation for that student.</p>
 
       <h3 class="subhead">Analytics</h3>
       <div class="table-wrap">
@@ -759,7 +794,7 @@ Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
         </table>
       </div>
 
-      <h3 class="subhead">Reminders — lazy generation, one cron for the clock-sensitive part</h3>
+      <h3 class="subhead">Reminders — lazy generation, one cron for the clock-sensitive part <span class="chip chip-good" style="margin-left:6px">Validated 2026-07-28</span></h3>
       <p>Notifications are recomputed and <strong>upserted</strong> (idempotent by construction) every time the teacher opens the dashboard — zero new job infrastructure, matching this app's existing effort-realism bar. Named limitation, not glossed over: this cannot deliver the vision's <em>evening</em> nudge ("Your lesson is tomorrow") unless someone happens to open a tab around then. <strong>Recommendation:</strong> one small Vercel Cron job, nightly, for exactly the clock-sensitive types (spaced-repetition-due, homework-due-soon, lesson-tomorrow) — genuinely small (no new service, no new hosting), and should ship as core Phase 5 scope, not be deferred indefinitely.</p>
       <p>Reminder copy is templated strings, not LLM-generated — the vision's own examples ("Only 7 minutes today," "Mochi is waiting") are simple parameterized text; an LLM call would add latency and tone risk for zero benefit here.</p>
 
@@ -819,14 +854,14 @@ Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
         <li><span class="num">3</span><div><strong>Designate <code>students/[id]/page.tsx</code> as the single per-student hub</strong> — Homework, Motivation, Competitions land as tabs there, not three more routes. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
         <li><span class="num">4</span><div><strong>Fix the <code>Notification</code> nullable-uniqueness bug</strong> — non-null sentinel, mirroring <code>StudentBadge.periodKey</code>. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
         <li><span class="num">5</span><div><strong>Don't wire Phase 2's XP award into <code>markAttendance</code> as fire-and-forget</strong> — fix issue #29 first, or make it transactional. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
-        <li><span class="num">6</span><div><strong>Wire Phase 1's integration-hook stubs from day one</strong> (<code>onHomeworkCompleted</code>, <code>onPracticeLogged</code>, spaced-repetition-seed) — cheapest possible insurance against a permanently-empty downstream feature. <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
-        <li><span class="num">7</span><div><strong>Add an explicit sensitive-field-exclusion test</strong> for every non-teacher-facing router. This app's 42-test suite covers pure <code>src/lib/</code> math only — zero router/integration tests exist today, and none of the five designs proposed adding any for the one genuinely new privacy-sensitive surface this plan introduces. A regression here doesn't produce a wrong number, it leaks one family's private data to another. <span class="chip chip-warn" style="margin-left:4px">not yet resolved — see below</span></div></li>
+        <li><span class="num">6</span><div><strong>Wire Phase 1's integration-hook stubs from day one</strong> (<code>onHomeworkCompleted</code> for Phase 2's XP, <code>onPracticeLogged</code>) — cheapest possible insurance against a permanently-empty downstream feature. <em>Updated 2026-07-28: the spaced-repetition-seed hook is no longer part of this — that trigger moved off <code>Homework.status</code> entirely, see <a href="#phase-5">Phase 5</a>.</em> <span class="chip chip-good" style="margin-left:4px">resolved above</span></div></li>
+        <li><span class="num">7</span><div><strong>Add an explicit sensitive-field-exclusion test</strong> for every non-teacher-facing router. This app's 42-test suite covers pure <code>src/lib/</code> math only — zero router/integration tests exist today, and none of the five designs proposed adding any for the one genuinely new privacy-sensitive surface this plan introduces. A regression here doesn't produce a wrong number, it leaks one family's private data to another. <em>Updated 2026-07-28: since Phase 1 Slice 1B now builds before the re-scoped Parent Portal (see <a href="#roadmap">Build sequence</a>), this is a hard prerequisite for Slice 1B specifically, not a general nice-to-have.</em> <span class="chip chip-warn" style="margin-left:4px">not yet resolved — see below</span></div></li>
       </ol>
 
       <details class="dis" open>
         <summary>Security posture — minimum viable, not gold-plated</summary>
         <div class="dis-body">
-          <p>Zero rate limiting exists anywhere in the app today, and the only precedent for unauthenticated access (<code>demo.ts</code>) is itself flagged as unguarded (<code>ISSUES_AND_FIXES.md</code> #19). Phase 1B and Phase 3 add the app's second and third public-facing surfaces, ever.</p>
+          <p>Zero rate limiting exists anywhere in the app today, and the only precedent for unauthenticated access (<code>demo.ts</code>) is itself flagged as unguarded (<code>ISSUES_AND_FIXES.md</code> #19). Phase 1B and Phase 3 add the app's second and third public-facing surfaces, ever — <strong>in that order</strong> as of the 2026-07-28 revision (Slice 1B now builds first, against the fresh token mechanism — a deliberate trade of blast-radius-first for validated-value-first, see <a href="#phase-3">Phase 3</a>), where the original plan had it reversed.</p>
           <p><strong>Ship these (cheap, and mostly already specified above):</strong> hashed tokens at rest · field-level <code>select</code> allow-listing, never <code>include</code>-then-strip · zero mutations on the parent router · revocation + <code>lastUsedAt</code> surfaced to the teacher · a trivial in-memory sliding-window throttle on the token-resolution middleware (the one guardrail neither original design fully committed to — closes a volumetric-abuse gap for about twenty lines).</p>
           <p><strong>Skip as genuine gold-plating</strong> for a single-teacher, dozens-of-families app: distributed rate-limiting infra, IP-anomaly alerting, CAPTCHA, mandatory token expiry.</p>
         </div>
@@ -850,35 +885,36 @@ Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
     <section id="roadmap" style="scroll-margin-top:20px;">
       <div class="phase-head"><span class="kicker">HOW WE'RE ACTUALLY GOING TO DO IT</span></div>
       <h2>Recommended build sequence</h2>
-      <p class="phase-dek">The vision's phase order (1→5) is the right <em>priority</em> order — homework is still the first and biggest thing built. It is not the right <em>literal sequencing</em>. The real dependency graph shows Phase 1's schema and status-transition semantics are the true root almost everything waits on — not Phase 1's full UI. Meanwhile a meaningful slice of Phase 2, the Wellbeing panel's first card, and most of Phase 3 can ship in parallel with, or ahead of, Phase 1's student-facing half.</p>
+      <p class="phase-dek">The vision's phase order (1→5) is the right <em>priority</em> order — homework is still the first and biggest thing built. It is not the right <em>literal sequencing</em>. The real dependency graph shows Phase 1's schema and status-transition semantics are the true root almost everything waits on — not Phase 1's full UI. <strong>Reordered again 2026-07-28</strong> around what her feedback actually validated: reminders, leveling, and Mochi move earlier; the note-capture half of spaced repetition moves much earlier, since it no longer needs Phase 1 at all; Parent Portal moves later and smaller.</p>
 
       <div class="timeline">
         <div class="tl-step">
           <div class="dot">0</div>
           <h4>Shared prerequisite — land it before anyone needs it</h4>
-          <p>Add <code>addDaysInTimezone()</code> to <code>src/lib/timezone.ts</code> now. Three later steps each independently assume it exists; none of them owns building it.</p>
+          <p>Add <code>addDaysInTimezone()</code> to <code>src/lib/timezone.ts</code> now — needed one step earlier than originally planned, by step 2 below.</p>
         </div>
         <div class="tl-step">
           <div class="dot">1</div>
           <h4>Students Needing Attention v0 — this week</h4>
           <p>An un-collapse of the already-shipped <code>getQuickInsights</code> query into a real list, plus one new dashboard card. Zero new models, zero new auth.</p>
-          <p class="why">Why first: validates the "new card in the dashboard panel" pattern every other phase depends on, and delivers the vision's single most differentiated pillar — proactive teacher wellbeing — in under two days.</p>
+          <p class="why">Why first: validates the "new card in the dashboard panel" pattern every other phase depends on.</p>
         </div>
         <div class="tl-step">
           <div class="dot">2</div>
-          <h4>Build the shared token mechanism, once</h4>
-          <p>Hashed <code>StudentAccessToken</code>, single <code>kind</code> enum, the resolution middleware, the sliding-window throttle. Owned by neither Phase 1 nor Phase 3 exclusively.</p>
+          <h4>Spaced-repetition note capture + minimal reminder loop <span class="chip chip-good" style="margin-left:4px">new — moved up 2026-07-28</span></h4>
+          <p>Two halves, sized separately: (a) the redesigned <code>SpacedReviewItem</code>/<code>Checkpoint</code> schema anchored to <code>Lesson</code>, plus the "+ Add a note to remember" link in <code>AttendanceDialog</code> — cheap, needs only <code>Lesson</code>/<code>Piece</code>; (b) a minimal <code>Notification</code> model (with the sentinel-value uniqueness fix) scoped to <code>SPACED_REVIEW_DUE</code> only, plus a surface for the teacher to mark outcomes — genuinely new infra, not a footnote.</p>
+          <p class="why">Why moved up: this is now the single most concretely-validated piece of the whole plan — she explicitly likes reminders and already volunteered to do the note-taking this runs on — and it no longer waits on Phase 1 at all.</p>
         </div>
         <div class="tl-step">
           <div class="dot">3</div>
-          <h4>Phase 3 — Parent Portal MVP</h4>
-          <p>Read-only, against the now-built token infra: upcoming lessons + the existing <code>MonthlyReport</code>, nothing else yet.</p>
-          <p class="why">Why before Phase 1B: lower blast radius — the safer place to retire "first public endpoint with zero rate limiting" — and most of its data already exists, so real value reaches a real parent fastest.</p>
+          <h4>Build the shared token mechanism, once</h4>
+          <p>Hashed <code>StudentAccessToken</code>, single <code>kind</code> enum, the resolution middleware, the sliding-window throttle. Justified purely by step 6's dependency on it now, not by Parent Portal.</p>
         </div>
         <div class="tl-step">
           <div class="dot">4</div>
-          <h4>Phase 1 Slice 1A — teacher-side homework</h4>
-          <p>Schema, teacher-only router, <code>/homework</code> page, the <code>AttendanceDialog</code> hook — <strong>with the stubbed integration hooks wired in from day one</strong>, even as no-ops.</p>
+          <h4>Phase 1 Slice 1A — teacher-side homework <span class="chip chip-good" style="margin-left:4px">moved up 2026-07-28</span></h4>
+          <p>Schema, teacher-only router, <code>/homework</code> page, the <code>AttendanceDialog</code> hook — <strong>with the <code>onHomeworkCompleted</code>/<code>onPracticeLogged</code> stub hooks wired in from day one</strong>. Resolve step 2's UI-coexistence question ("+Assign homework" vs. "+Add a note to remember" — same submit or not) while building this.</p>
+          <p class="why">Why promoted ahead of any parent-facing work: directly validated by "I like the reminders to practice and level up" — homework is the mechanic those reminders are about.</p>
         </div>
         <div class="tl-step">
           <div class="dot">5</div>
@@ -887,28 +923,35 @@ Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
         </div>
         <div class="tl-step">
           <div class="dot">6</div>
-          <h4>Phase 1 Slice 1B — student self-serve</h4>
-          <p>Against the token mechanism, now already hardened by Phase 3's real-world use.</p>
+          <h4>Phase 1 Slice 1B — student self-serve <span class="chip chip-good" style="margin-left:4px">moved up 2026-07-28</span></h4>
+          <p>Against the token mechanism from step 3 — now the <em>first</em> surface to exercise it, ahead of Parent Portal. Required-fix #7 (sensitive-field-exclusion tests) is a hard prerequisite here as a result.</p>
+          <p class="why">Why ahead of Parent Portal: the better-validated half of the token investment, and delivers the other side of her validated enthusiasm (student-facing reminders/leveling) sooner.</p>
         </div>
         <div class="tl-step">
           <div class="dot">7</div>
-          <h4>Phase 5's homework-dependent pieces</h4>
-          <p>Spaced repetition, homework-completion wellbeing card, forgetting-signal analytics — unblocked as soon as step 4 lands, doesn't wait for step 6.</p>
+          <h4>Parent Portal MVP, re-scoped <span class="chip chip-warn" style="margin-left:4px">moved down 2026-07-28</span></h4>
+          <p>Upcoming lesson + the existing <code>MonthlyReport</code>, nothing else. Built against a token mechanism already hardened by real Slice-1B traffic.</p>
+          <p class="why">Why later, honestly: not because it's worthless, but because it's the least-validated piece of the whole plan — her own paper-forms experience argues for proving it cheaply rather than investing early.</p>
         </div>
         <div class="tl-step">
           <div class="dot">8</div>
+          <h4>Phase 5's remaining homework-dependent pieces</h4>
+          <p>Homework-completion wellbeing card, homework-linked analytics, <code>HOMEWORK_DUE_SOON</code>/lesson-tomorrow notifications, the nightly cron. Pure spaced-repetition already shipped in step 2.</p>
+        </div>
+        <div class="tl-step">
+          <div class="dot">9</div>
           <h4>The rest of Phase 2</h4>
           <p>Practice-driven streaks, badges, Mochi's mood — unblocked once step 4 lands.</p>
         </div>
         <div class="tl-step">
-          <div class="dot">9</div>
+          <div class="dot">10</div>
           <h4>Phase 4 — AI, last</h4>
-          <p>Deliberately last: prompt grounding quality depends on steps 4–5 having produced real homework and lesson-note data to draw on.</p>
+          <p>Grounding is richer, and available earlier than originally assumed — real spaced-review notes exist since step 2, not gated behind all of Phase 1.</p>
         </div>
         <div class="tl-step">
-          <div class="dot">10</div>
-          <h4>Student Profile enrichment</h4>
-          <p>Goals, strengths, confidence log, competitions — separable, ships on its own timeline, gates nothing else in this plan.</p>
+          <div class="dot">11</div>
+          <h4>Student Profile — three-way split</h4>
+          <p><strong>11a</strong> teacher-only notes (goals/songs/level/strengths) — ships whenever, no gate. <strong>11b</strong> <code>StudentCompetition</code> — same track, feeds Wellbeing's card. <strong>11c</strong> parent-facing enrichment — shelved, pending evidence step 7's MVP is actually used, and pending push infra.</p>
         </div>
       </div>
     </section>
@@ -924,15 +967,16 @@ Output: { bars, handFocus, tempoBpm, dailyGoalMinutes,
         <li><span class="num">?</span><div><strong>Target device for the student practice link</strong> — the student's own phone/tablet, or a shared family device by the piano? Changes UI tone and whether token revocation is operationally realistic.</div></li>
         <li><span class="num">?</span><div><strong>Streak behavior during a legitimate absence</strong> — exam week, a family trip the teacher knew about — full break, or a manual "excused day" the teacher can set?</div></li>
         <li><span class="num">?</span><div><strong>Is <code>Lesson.score</code> visible to parents?</strong> Currently defaulted to hidden in the "progress" view.</div></li>
-        <li><span class="num">?</span><div><strong>Does the parent's report need to be pixel-identical</strong> to the teacher's existing print sheet, or is a simpler summary acceptable for v1?</div></li>
-        <li><span class="num">?</span><div><strong>Is "Upcoming Competitions" worth the extra admin task</strong> it asks of the teacher (nothing else in Wellbeing requires new data entry), or does it wait for the full Student Profile phase?</div></li>
+        <li><span class="num">?</span><div><strong>Is "Upcoming Competitions" worth the extra admin task</strong> it asks of the teacher? Now assigned to the teacher-only track regardless (it feeds Wellbeing's dashboard card either way) — the open part is only whether logging competitions is worth her time at all.</div></li>
         <li><span class="num">?</span><div><strong>Card layout for the Wellbeing panel</strong> — one umbrella "Needs Attention" card with reason-tags, or separate cards per signal, accepting the dashboard-noise trade-off?</div></li>
         <li><span class="num">?</span><div><strong>30 level names and 8 badge titles</strong> are a real copywriting pass, not just engineering — a starter set is proposed in Phase 2, but it's content to iterate on, not locked.</div></li>
+        <li><span class="num">?</span><div><strong>Added 2026-07-28 — submit mechanics in <code>AttendanceDialog</code>:</strong> do "+ Assign homework" and "+ Add a note to remember" fire through one combined <code>markAttendance</code> submit, or does either need its own affordance inside the dialog's single form? Settle this while building Phase 1 Slice 1A.</div></li>
+        <li><span class="num">?</span><div><strong>Added 2026-07-28 — is a passive portal the right model for parents at all?</strong> Her own experience with paper forms argues push (occasional notifications) over pull (a page to remember to visit) as the real end-state — not buildable without email/SMS infra that doesn't exist yet. See <a href="#phase-3">Phase 3</a>.</div></li>
       </ul>
     </section>
 
     <footer class="doc-footer">
-      <p>Drafted 2026-07-27 from a grounded, adversarially-reviewed multi-agent pass over the live <code>my-piano-diary</code> codebase — every schema field, file path, and reuse claim above was verified against source, not assumed. Companion reading: <code>docs/PROJECT_STATE.md</code> for current architecture, <code>docs/FUTURE_FEATURES.md</code> for the pre-existing roadmap this extends, <code>docs/ISSUES_AND_FIXES.md</code> for issue #29 referenced above.</p>
+      <p>Drafted 2026-07-27 from a grounded, adversarially-reviewed multi-agent pass over the live <code>my-piano-diary</code> codebase — every schema field, file path, and reuse claim above was verified against source, not assumed. Revised 2026-07-28 against direct feedback from the app's actual teacher, then re-reviewed for consistency with the rest of the document — see the callouts dated 2026-07-28 throughout. Companion reading: <code>docs/PROJECT_STATE.md</code> for current architecture, <code>docs/FUTURE_FEATURES.md</code> for the pre-existing roadmap this extends, <code>docs/ISSUES_AND_FIXES.md</code> for issue #29 referenced above.</p>
     </footer>
   </main>
 </div>
