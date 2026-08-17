@@ -324,6 +324,27 @@ export const lessonRouter = createTRPCRouter({
       });
     }),
 
+  // Bulk delete lessons
+  deleteMany: protectedProcedure
+    .input(z.object({ ids: z.array(idSchema).min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        throw new Error("Teacher not found");
+      }
+
+      // Delete only lessons that belong to this teacher
+      return ctx.db.lesson.deleteMany({
+        where: {
+          id: { in: input.ids },
+          teacherId: teacher.id,
+        },
+      });
+    }),
+
   // Mark attendance
   markAttendance: protectedProcedure
     .input(markAttendanceSchema)

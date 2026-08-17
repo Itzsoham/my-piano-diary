@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import { Blossom } from "@/components/blossom/blossom";
 import { Mochi } from "@/components/blossom/mochi";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,6 +131,10 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
   const [editLesson, setEditLesson] = useState<Lesson | null>(null);
   const [attendanceLesson, setAttendanceLesson] = useState<Lesson | null>(null);
   const [deleteLesson, setDeleteLesson] = useState<Lesson | null>(null);
+
+  // ─── Multi-select state ────────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Filters live in the URL (shareable + SSR-consistent). Dates are memoised off
   // the raw `yyyy-MM-dd` params so their identity is stable across renders —
@@ -257,8 +263,81 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
     },
   });
 
+  // ─── Bulk delete mutation ──────────────────────────────────────────────────
+  const bulkDeleteMutation = api.lesson.deleteMany.useMutation({
+    mutationKey: ["lesson-write"],
+    onMutate: async ({ ids }) => {
+      await utils.lesson.getAll.cancel({});
+
+      const previousData = utils.lesson.getAll.getData(filters);
+
+      const idSet = new Set(ids);
+      toast.success(
+        `${ids.length} lesson${ids.length === 1 ? "" : "s"} deleted`,
+        { id: "lesson-bulk-delete" },
+      );
+      setShowBulkDeleteConfirm(false);
+      setSelectedIds(new Set());
+
+      utils.lesson.getAll.setData(filters, (old) =>
+        old ? old.filter((l) => !idSet.has(l.id)) : old,
+      );
+
+      return { previousData };
+    },
+
+    onError: (error, _input, context) => {
+      toast.error(error.message ?? "Failed to delete lessons", {
+        id: "lesson-bulk-delete",
+      });
+      if (context?.previousData) {
+        utils.lesson.getAll.setData(filters, context.previousData);
+      }
+    },
+
+    onSettled: async () => {
+      const inFlight = queryClient.isMutating({
+        mutationKey: ["lesson-write"],
+      });
+      if (inFlight !== 1) return;
+      await utils.lesson.invalidate();
+    },
+  });
+
   const resetFilters = () =>
     setParams({ student: null, status: null, from: null, to: null });
+
+  // ─── Selection helpers ─────────────────────────────────────────────────────
+  const toggleLesson = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleGroup = (group: DayGroup) => {
+    const groupIds = group.lessons.map((l) => l.id);
+    const allSelected = groupIds.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        groupIds.forEach((id) => next.delete(id));
+      } else {
+        groupIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const selectedCount = selectedIds.size;
+  const hasSelection = selectedCount > 0;
 
   return (
     <>
@@ -401,6 +480,13 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
               <div className="flex flex-col gap-8 md:gap-10">
                 {dayGroups.map((group) => {
                   const isToday = isSameDay(group.date, new Date());
+                  const groupIds = group.lessons.map((l) => l.id);
+                  const allGroupSelected = groupIds.every((id) =>
+                    selectedIds.has(id),
+                  );
+                  const someGroupSelected =
+                    !allGroupSelected &&
+                    groupIds.some((id) => selectedIds.has(id));
 
                   return (
                     <div key={group.lessons[0]!.id}>
@@ -418,6 +504,20 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                           that cutout, not just the mask's own padding. */}
                       <div className="scallop-b bg-floss relative mb-4 rounded-t-2xl px-4 pt-4 md:mb-5 md:px-4.5 md:pt-4.5">
                         <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {/* ── Select-all checkbox for this day group ── */}
+                          <Checkbox
+                            id={`select-group-${group.lessons[0]!.id}`}
+                            checked={
+                              allGroupSelected
+                                ? true
+                                : someGroupSelected
+                                  ? "indeterminate"
+                                  : false
+                            }
+                            onCheckedChange={() => toggleGroup(group)}
+                            aria-label={`Select all lessons on ${format(group.date, "EEEE, MMMM d")}`}
+                            className="border-pink-300 data-[state=checked]:border-pink-500 data-[state=checked]:bg-pink-500 data-[state=indeterminate]:border-pink-400 data-[state=indeterminate]:bg-pink-400"
+                          />
                           <h3 className="text-ink font-serif text-lg font-normal sm:text-xl">
                             {format(group.date, "EEEE, MMMM d")}
                           </h3>
@@ -436,6 +536,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                           const isLessonPending = lessonStatus === "PENDING";
                           const isLastInGroup =
                             idx === group.lessons.length - 1;
+                          const isSelected = selectedIds.has(lesson.id);
 
                           return (
                             <li
@@ -497,13 +598,26 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
                               {/* The lesson card — sober data layer, no ornament. */}
                               <article
                                 className={cn(
-                                  "col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-[var(--sh-sm)] sm:col-start-3 sm:row-start-1 sm:p-4",
+                                  "col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-[var(--sh-sm)] transition-shadow sm:col-start-3 sm:row-start-1 sm:p-4",
                                   isCancelled
                                     ? "border-[var(--line-pink)] [background-image:linear-gradient(160deg,var(--pink-50),var(--card)_62%)]"
                                     : "border-border bg-card",
+                                  isSelected &&
+                                    "ring-2 ring-pink-400 ring-offset-1",
                                 )}
                               >
                                 <div className="flex items-start gap-3">
+                                  {/* ── Per-lesson checkbox ── */}
+                                  <Checkbox
+                                    id={`select-lesson-${lesson.id}`}
+                                    checked={isSelected}
+                                    onCheckedChange={() =>
+                                      toggleLesson(lesson.id)
+                                    }
+                                    aria-label={`Select lesson for ${lesson.student.name}`}
+                                    className="mt-0.5 shrink-0 border-pink-300 data-[state=checked]:border-pink-500 data-[state=checked]:bg-pink-500"
+                                  />
+
                                   <Avatar className="border-card size-10 shrink-0 border-2 shadow-[var(--sh-sm)]">
                                     <AvatarImage
                                       src={lesson.student.avatar ?? undefined}
@@ -649,6 +763,39 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         </div>
       </section>
 
+      {/* ═══════════ BULK-SELECT FLOATING ACTION BAR ═══════════ */}
+      {hasSelection && (
+        <div
+          role="toolbar"
+          aria-label="Bulk actions"
+          className="animate-in slide-in-from-bottom-4 fade-in fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit items-center gap-3 rounded-2xl border border-pink-200 bg-white px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.14)] duration-200"
+        >
+          <span className="text-ink text-sm font-semibold">
+            {selectedCount} selected
+          </span>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowBulkDeleteConfirm(true)}
+            className="h-8 rounded-full px-4 text-xs font-semibold"
+          >
+            <Trash2 className="mr-1.5 size-3.5" />
+            Delete {selectedCount}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={clearSelection}
+            aria-label="Clear selection"
+            className="text-ink-soft hover:text-ink size-8 rounded-full p-0"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      )}
+
       {editLesson && (
         <LessonEditDialog
           open={!!editLesson}
@@ -685,6 +832,7 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         />
       )}
 
+      {/* Single lesson delete */}
       <ConfirmDialog
         open={!!deleteLesson}
         onOpenChange={(open) => !open && setDeleteLesson(null)}
@@ -695,6 +843,20 @@ export function LessonsPage({ students, initialLessons }: LessonsPageProps) {
         isLoading={deleteMutation.isPending}
         onConfirm={() =>
           deleteLesson && deleteMutation.mutate({ id: deleteLesson.id })
+        }
+      />
+
+      {/* Bulk delete confirm */}
+      <ConfirmDialog
+        open={showBulkDeleteConfirm}
+        onOpenChange={(open) => !open && setShowBulkDeleteConfirm(false)}
+        title={`Delete ${selectedCount} lesson${selectedCount === 1 ? "" : "s"}`}
+        description={`Are you sure you want to delete ${selectedCount} lesson${selectedCount === 1 ? "" : "s"}? This action cannot be undone.`}
+        confirmText={`Delete ${selectedCount}`}
+        variant="destructive"
+        isLoading={bulkDeleteMutation.isPending}
+        onConfirm={() =>
+          bulkDeleteMutation.mutate({ ids: Array.from(selectedIds) })
         }
       />
     </>
