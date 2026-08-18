@@ -8,7 +8,7 @@
 <style>
   /* ======================================================================
      MASTER GALLERY — index + device-frame previewer.
-     25 designs · 3 directions (Classic / Sugar Bloom / Blossom Diary) · one token contract.
+     10 designs · one direction (Blossom Diary) · one token contract.
      Only gallery-chrome CSS lives here; every token comes from _theme.css.
      ====================================================================== */
 
@@ -140,18 +140,7 @@
     place-items: center;
     font: 700 13px/1 var(--font-sans);
   }
-  .dir-key.classic {
-    background: var(--teal-100);
-    color: var(--teal-700);
-    border: 1px solid var(--line-strong);
-  }
-  .dir-key.sugar {
-    background: var(--pink-100);
-    color: var(--pink-700);
-    border: 1px solid var(--line-pink);
-  }
-  /* Blossom Diary fuses the other two — so it wears the brand gradient that
-     blends the teal of Classic into the pink of Sugar Bloom. */
+  /* Blossom Diary wears the brand gradient — teal blended into pink. */
   .dir-key.blossom {
     background: var(--grad-brand);
     color: #fff;
@@ -249,61 +238,6 @@
     .main { grid-template-columns: 324px minmax(0, 1fr); }
   }
 
-  /* ── Direction filter (shared by rail + chipbar) ─────────────────────── */
-  .filter {
-    display: flex;
-    flex-wrap: wrap; /* four directions: wrap to 2×2 in the 324px rail rather than truncate */
-    gap: 4px;
-    padding: 4px;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: var(--r-md); /* not a pill: stays correct when the row wraps */
-  }
-  .filter button {
-    flex: 1 1 96px;
-    min-width: 0;
-    min-height: 38px;
-    padding: 0 8px;
-    border: 1px solid transparent;
-    border-radius: var(--r-pill);
-    font: 600 12px/1 var(--font-sans);
-    color: var(--ink-soft);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
-  }
-  .filter button:hover { color: var(--ink); background: rgba(255,255,255,.85); }
-  .filter button .n {
-    font: 600 10.5px/1 var(--font-num);
-    opacity: .7;
-    margin-left: 4px;
-  }
-  .filter button[aria-pressed="true"] {
-    background: var(--surface);
-    color: var(--ink);
-    box-shadow: var(--sh-sm);
-    border: 1px solid var(--line);
-  }
-  .filter button[data-dir="classic"][aria-pressed="true"] {
-    background: var(--grad-mint);
-    color: var(--mint-ink);
-    border-color: transparent;
-    box-shadow: var(--sh-mint);
-  }
-  .filter button[data-dir="sugar"][aria-pressed="true"] {
-    background: var(--grad-pink);
-    color: #fff;
-    border-color: transparent;
-    box-shadow: var(--sh-pink);
-  }
-  .filter button[data-dir="blossom"][aria-pressed="true"] {
-    background: var(--grad-brand);
-    color: #fff;
-    border-color: transparent;
-    box-shadow: var(--sh-pink);
-  }
-
   /* ── Left nav (≥1024) ────────────────────────────────────────────────── */
   .rail {
     display: none;
@@ -320,16 +254,6 @@
   }
   @media (min-width: 1024px) { .rail { display: block; } }
 
-  .rail-filter {
-    position: sticky;
-    top: -14px;
-    z-index: 2;
-    margin: -14px -12px 12px;
-    padding: 12px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--line);
-  }
-  .rail-filter .label { display: block; margin-bottom: 8px; }
 
   .grp + .grp { margin-top: 14px; }
   .grp[hidden] { display: none; }
@@ -376,11 +300,6 @@
     border: 1px solid var(--line);
     font: 700 11px/1 var(--font-num);
     color: var(--ink-soft);
-  }
-  .item .badge.sugar {
-    background: var(--pink-100);
-    border-color: var(--line-pink);
-    color: var(--pink-700);
   }
   .item .badge.blossom {
     background: var(--grad-brand);
@@ -432,7 +351,6 @@
     box-shadow: var(--sh-sm);
   }
   @media (min-width: 1024px) { .chipbar { display: none; } }
-  .chipbar .filter { margin-bottom: 9px; max-width: 580px; }
   .chipbar-inner { display: flex; gap: 8px; padding-bottom: 2px; }
   .navchip {
     display: inline-flex;
@@ -504,25 +422,10 @@
     padding: 5px 9px;
     white-space: nowrap;
   }
-  .dir-pill.classic {
-    background: var(--teal-100);
-    color: var(--teal-700);
-    border: 1px solid var(--line-strong);
-  }
-  .dir-pill.sugar {
-    background: var(--pink-100);
-    color: var(--pink-700);
-    border: 1px solid var(--line-pink);
-  }
   .dir-pill.blossom {
     background: var(--grad-brand);
     color: #fff;
     border: 1px solid transparent;
-  }
-  .dir-pill.both {
-    background: var(--surface-2);
-    color: var(--ink-label);
-    border: 1px solid var(--line);
   }
   .now .f {
     font: 400 11.5px/1.4 var(--font-num);
@@ -732,7 +635,7 @@
       </div>
       <div>
         <h1>Candy&nbsp;Floss <span>— a redesign of My Piano Diary</span></h1>
-        <div class="sub">Master gallery · 25 mockups, in a resizable device frame</div>
+        <div class="sub">Master gallery · 10 mockups, in a resizable device frame</div>
       </div>
       <div class="swatches" role="img" aria-label="Palette: Bubble Gum, Cotton Candy, Candy Floss, Mint, Wintergreen">
         <span class="sw" style="background:#F3A2BE" title="Bubble Gum #F3A2BE"></span>
@@ -746,49 +649,34 @@
     <div class="intro-body">
       <div>
         <p>
-          <b>25 mockups · 9 screens · 3 design directions</b>, plus the design system.
-          Dashboard, Calendar and Lessons get five takes each; Reports gets four; Students, Payments,
-          Pieces, Auth and Profile get one. Everything is built <b>tablet-first</b>
+          <b>10 mockups · 10 screens · one design direction</b> — <b>Blossom Diary&nbsp;✿</b>, the
+          direction the app is actually built in. One take per screen: Dashboard, Calendar, Lessons,
+          Reports, Students, Payments, Pieces, Auth and Profile, plus the design system. Everything is
+          built <b>tablet-first</b>
           (768&nbsp;×&nbsp;1024 and 1024&nbsp;×&nbsp;768 are the primary targets, not an afterthought),
           <b>light theme only</b>, and drawn from one shared token contract —
           <span class="mono">_theme.css</span>.
         </p>
         <p>
-          <b>Start with Blossom&nbsp;Diary&nbsp;✿✿</b> — the new direction, and the one waiting on your
-          verdict. It fuses the other two: <b>The Diary's editorial bones</b> — serif headings, the
-          vertical lesson timeline, generous whitespace — wrapped in <b>Blossom's petals</b>, scalloped
-          edges and Mochi the cat. It's the e-variants: Dashboard, Calendar, Lessons and Reports.
-        </p>
-        <p>
-          The two it grew out of still run alongside it. <b>Classic</b> is the restrained,
-          information-first take — the a&nbsp;/&nbsp;b&nbsp;/&nbsp;c variants. <b>Sugar Bloom&nbsp;✿</b> is
-          the sweet, feminine one — scallops, blossoms, washi tape and Mochi — the d-variants plus the five
-          newer screens. All three share the <b>same palette</b> and the <b>same tokens</b>; only the
-          ornament layer differs, so you can still mix them per-screen and the app reads as one product.
-          Use the filter above the nav to see each direction on its own.
+          <b>Blossom Diary&nbsp;✿</b> is <b>editorial bones in petals</b>: serif headings, the vertical
+          lesson timeline and generous whitespace, wrapped in scalloped edges, blossoms, washi tape and
+          Mochi the cat. The earlier exploratory directions have been retired — this gallery now shows
+          only the design that shipped, so every screen here matches the live app.
           <span class="mono">styleguide.html</span> carries the <b>Tailwind v4 token handoff</b> for
           <span class="mono">globals.css</span>.
         </p>
       </div>
 
       <div class="dirs">
-        <h2>The three directions</h2>
+        <h2>The direction</h2>
         <div class="dir-row">
-          <span class="dir-key blossom" aria-hidden="true">✿✿</span>
-          <span><b>Blossom Diary ✿✿ — start here</b> The Diary's editorial bones in Blossom's petals.
-            Serif headings, the vertical timeline, scalloped edges, Mochi. 4 designs.</span>
-        </div>
-        <div class="dir-row">
-          <span class="dir-key classic" aria-hidden="true">A</span>
-          <span><b>Classic</b> Restrained and professional. Data density, real tables, calm chrome. 12 designs.</span>
-        </div>
-        <div class="dir-row">
-          <span class="dir-key sugar" aria-hidden="true">✿</span>
-          <span><b>Sugar Bloom ✿</b> The sweet layer. Scallops, blossoms, washi tape, Mochi. 8 designs.</span>
+          <span class="dir-key blossom" aria-hidden="true">✿</span>
+          <span><b>Blossom Diary ✿</b> The Diary's editorial bones in Blossom's petals.
+            Serif headings, the vertical timeline, scalloped edges, washi tape, Mochi. 10 designs.</span>
         </div>
         <div class="same">
-          <b>Same palette. Same tokens.</b> Same status chips, same 44px targets, same
-          <span class="mono">_theme.css</span> — only the ornament changes. Mixable per screen.
+          <b>One palette. One token set.</b> Same status chips, same 44px targets, same
+          <span class="mono">_theme.css</span> across every screen.
         </div>
       </div>
     </div>
@@ -798,9 +686,8 @@
         <path d="M9 11l3 3L22 4"></path>
         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
       </svg>
-      <span><b>How to review:</b> flip through each screen at <b>Tablet 768</b> and <b>Tablet L 1024</b>, then
-      <b>pick one winner per screen</b>, and tell me which direction — <b>Classic</b>, <b>Sugar Bloom&nbsp;✿</b>,
-      or <b>Blossom Diary&nbsp;✿✿</b>. <b>They can be mixed.</b></span>
+      <span><b>How to review:</b> flip through each screen at <b>Tablet 768</b> and <b>Tablet L 1024</b>.
+      Every screen is <b>Blossom Diary ✿</b> — the direction the app ships in.</span>
     </div>
 
     <details class="note">
@@ -819,9 +706,6 @@
             mockup re-renders and <strong>its own media queries fire for real</strong> — this is not a
             screenshot being squashed. Widths past the available space are scaled down with a visible
             scale&nbsp;% so 1440 stays reviewable on a laptop.</li>
-          <li>The <strong>direction filter</strong> above the nav narrows the list to
-            <strong>Classic</strong>, <strong>Sugar Bloom ✿</strong> or <strong>Blossom Diary ✿✿</strong>.
-            The design system stays in all three — it is the shared contract.</li>
           <li>The <strong>Design system</strong> page carries the token handoff: the palette, the
             LessonStatus chips and the <strong>Tailwind&nbsp;v4 <span class="mono">@theme</span></strong>
             block for <span class="mono">globals.css</span>, so a winning mockup ports without re-deriving
@@ -837,7 +721,6 @@
 
   <!-- ══ CHIP BAR (<1024) ════════════════════════════════════════════════ -->
   <nav class="chipbar" aria-label="Designs">
-    <div class="filter" role="group" aria-label="Design direction" id="filterChips"></div>
     <div class="chipbar-inner scroll-x no-scrollbar" id="chipbar"></div>
   </nav>
 
@@ -845,10 +728,6 @@
 
     <!-- ══ LEFT NAV (≥1024) ══════════════════════════════════════════════ -->
     <aside class="rail" id="rail" aria-label="Designs">
-      <div class="rail-filter">
-        <span class="label">Design direction</span>
-        <div class="filter" role="group" aria-label="Design direction" id="filterRail"></div>
-      </div>
       <div id="railGroups"></div>
       <div class="rail-foot">
         <b>Static references.</b> No live data — the real app is Next.js + tRPC + Prisma + shadcn.
@@ -863,8 +742,8 @@
         <div class="now">
           <div class="t">
             <span class="grp-tag" id="curGroup">Dashboard</span>
-            <span id="curName">Blossom Diary ✿✿</span>
-            <span class="dir-pill blossom" id="curDir">Blossom Diary ✿✿</span>
+            <span id="curName">Blossom Diary ✿</span>
+            <span class="dir-pill blossom" id="curDir">Blossom Diary ✿</span>
           </div>
           <div class="f" id="curFile">dashboard-e.html</div>
         </div>
@@ -955,77 +834,47 @@
     fit: S('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>')
   };
 
-  /* ── The designs. dir: "classic" | "sugar" | "blossom" | "both" ─────── */
-  var C = "classic", G = "sugar", B = "blossom";
+  /* ── The designs. One direction: Blossom Diary. ─────────────────────── */
+  var B = "blossom";
   var GROUPS = [
     { key: "Dashboard", icon: "dashboard", items: [
-      { file: "dashboard-a.html", badge: "A", dir: C, name: "Bento Bloom",
-        desc: "Asymmetric bento of soft tiles; the spoiler card and the big revenue hero." },
-      { file: "dashboard-b.html", badge: "B", dir: C, name: "Studio Rail",
-        desc: "Dense, professional. Icon rail + KPI carousel + a real Today table." },
-      { file: "dashboard-c.html", badge: "C", dir: C, name: "The Diary",
-        desc: "Editorial and warm. Serif greeting, vertical lesson timeline, podium." },
-      { file: "dashboard-d.html", badge: "D", dir: G, name: "Sugar Bloom ✿",
-        desc: "The sweet take — scalloped hero, washi-tape cards, blossom podium." },
-      { file: "dashboard-e.html", badge: "E", dir: B, name: "Blossom Diary ✿✿",
+      { file: "dashboard-e.html", badge: "✿", dir: B, name: "Blossom Diary ✿",
         desc: "The Diary's serif timeline, in full bloom. Mochi included." }
     ]},
     { key: "Calendar", icon: "calendar", items: [
-      { file: "calendar-a.html", badge: "A", dir: C, name: "Month + Day Rail",
-        desc: "The real month grid (count pills, no chips) with a day agenda rail." },
-      { file: "calendar-b.html", badge: "B", dir: C, name: "Week Timeline",
-        desc: "timeGridWeek with status-coloured blocks — plus the attendance dialog open." },
-      { file: "calendar-c.html", badge: "C", dir: C, name: "Agenda Split",
-        desc: "Itinerary style — mini month + a grouped, thumb-friendly agenda." },
-      { file: "calendar-d.html", badge: "D", dir: G, name: "Blossom Month ✿",
-        desc: "The sweet take — blossom count-pills, scalloped day panel." },
-      { file: "calendar-e.html", badge: "E", dir: B, name: "Blossom Diary ✿✿",
+      { file: "calendar-e.html", badge: "✿", dir: B, name: "Blossom Diary ✿",
         desc: "Blossom count-pills on a calm month grid; scalloped day panel." }
     ]},
     { key: "Lessons", icon: "lessons", items: [
-      { file: "lessons-a.html", badge: "A", dir: C, name: "Dense Table",
-        desc: "The data grid: sticky filters, 7 real columns, row menus." },
-      { file: "lessons-b.html", badge: "B", dir: C, name: "Card Grid",
-        desc: "Touch-first. Mark attendance with a thumb on an iPad." },
-      { file: "lessons-c.html", badge: "C", dir: C, name: "Grouped Timeline",
-        desc: "A river of lessons grouped by day, on a timeline rail." },
-      { file: "lessons-d.html", badge: "D", dir: G, name: "Sticker Board ✿",
-        desc: "The sweet take — lessons as washi-taped stickers on a pinboard." },
-      { file: "lessons-e.html", badge: "E", dir: B, name: "Blossom Diary ✿✿",
+      { file: "lessons-e.html", badge: "✿", dir: B, name: "Blossom Diary ✿",
         desc: "A river of lessons on a rail of blossoms." }
     ]},
     { key: "Reports", icon: "reports", items: [
-      { file: "reports-a.html", badge: "A", dir: C, name: "The Paper",
-        desc: "The printable A4 sheet, VI/EN, attendance grid, tuition totals." },
-      { file: "reports-b.html", badge: "B", dir: C, name: "Split Builder",
-        desc: "Editor left, live A4 preview right. How you actually fill a report in." },
-      { file: "reports-c.html", badge: "C", dir: C, name: "Hub + Family Sheet",
-        desc: "The /reports index, plus the combined family tuition sheet." },
-      { file: "reports-e.html", badge: "E", dir: B, name: "Blossom Diary ✿✿",
+      { file: "reports-e.html", badge: "✿", dir: B, name: "Blossom Diary ✿",
         desc: "The printable A4 sheet, bloomed at the edges." }
     ]},
     { key: "Students", icon: "students", items: [
-      { file: "students.html", badge: "✿", dir: G, name: "Student Garden ✿",
+      { file: "students.html", badge: "✿", dir: B, name: "Student Garden ✿",
         desc: "Card garden with both rates surfaced; a Families tab with STT order." }
     ]},
     { key: "Payments", icon: "payments", items: [
-      { file: "payments.html", badge: "✿", dir: G, name: "Piggy Bank ✿",
+      { file: "payments.html", badge: "✿", dir: B, name: "Piggy Bank ✿",
         desc: "Makes the DERIVED paid / partial / outstanding maths visible." }
     ]},
     { key: "Pieces", icon: "pieces", items: [
-      { file: "pieces.html", badge: "✿", dir: G, name: "Repertoire Shelf ✿",
+      { file: "pieces.html", badge: "✿", dir: B, name: "Repertoire Shelf ✿",
         desc: "Difficulty 1–5 as a blossom rating; the edit sheet open." }
     ]},
     { key: "Auth", icon: "auth", items: [
-      { file: "login.html", badge: "✿", dir: G, name: "Welcome ✿",
+      { file: "login.html", badge: "✿", dir: B, name: "Welcome ✿",
         desc: "Split art / form. The Mochi mascot at the piano. First impression." }
     ]},
     { key: "Profile", icon: "profile", items: [
-      { file: "profile.html", badge: "✿", dir: G, name: "My Studio ✿",
+      { file: "profile.html", badge: "✿", dir: B, name: "My Studio ✿",
         desc: "Profile, password, and the real currency / timezone settings." }
     ]},
     { key: "Design system", icon: "system", items: [
-      { file: "styleguide.html", badge: "◆", dir: "both", name: "Candy Floss",
+      { file: "styleguide.html", badge: "◆", dir: B, name: "Candy Floss",
         desc: "Palette, status tokens, components, and the Tailwind v4 handoff." }
     ]}
   ];
@@ -1039,23 +888,9 @@
     });
   });
 
-  var FILTERS = [
-    { key: "all",     label: "All" },
-    { key: "classic", label: "Classic" },
-    { key: "sugar",   label: "Sugar Bloom ✿" },
-    { key: "blossom", label: "Blossom Diary ✿✿" }
-  ];
-  function inFilter(it, f) { return f === "all" || it.dir === f || it.dir === "both"; }
-  function count(f) { return ALL.filter(function (x) { return inFilter(x, f); }).length; }
 
-  var DIR_LABEL = {
-    classic: "Classic",
-    sugar: "Sugar Bloom ✿",
-    blossom: "Blossom Diary ✿✿",
-    both: "Shared"
-  };
-  /* Only these dirs tint their rail badge; classic + both keep the neutral chip. */
-  var BADGE_TINT = { sugar: " sugar", blossom: " blossom" };
+  var DIR_LABEL = { blossom: "Blossom Diary ✿" };
+  var BADGE_TINT = { blossom: " blossom" };
 
   /* ── Devices ────────────────────────────────────────────────────────── */
   var DEVICES = [
@@ -1074,10 +909,9 @@
   var openNew = el("openNew"), capText = el("capText"), pos = el("pos");
   var prevBtn = el("prev"), nextBtn = el("next"), prevName = el("prevName"), nextName = el("nextName");
 
-  /* The gallery opens on Blossom Diary — the newest direction, the one awaiting
-     a verdict. A #hash still wins over this (see boot). */
+  /* The gallery opens on the Dashboard. A #hash still wins over this (see boot). */
   var DEFAULT_ID = "dashboard-e";
-  var state = { id: DEFAULT_ID, device: "tabletL", filter: "all" };
+  var state = { id: DEFAULT_ID, device: "tabletL" };
 
   /* ── Build the nav ──────────────────────────────────────────────────── */
   GROUPS.forEach(function (g) {
@@ -1117,18 +951,6 @@
     railGroups.appendChild(sec);
   });
 
-  /* ── Build the direction filter (rendered twice, one state) ─────────── */
-  [el("filterRail"), el("filterChips")].forEach(function (host) {
-    FILTERS.forEach(function (f) {
-      var b = document.createElement("button");
-      b.type = "button";
-      b.dataset.dir = f.key;
-      b.innerHTML = f.label + '<span class="n">' + count(f.key) + '</span>';
-      b.addEventListener("click", function () { setFilter(f.key); });
-      host.appendChild(b);
-    });
-  });
-
   /* ── Build the device switcher ──────────────────────────────────────── */
   DEVICES.forEach(function (d) {
     var b = document.createElement("button");
@@ -1142,36 +964,7 @@
     seg.appendChild(b);
   });
 
-  /* ── Filtering ──────────────────────────────────────────────────────── */
-  function visible() {
-    return ALL.filter(function (x) { return inFilter(x, state.filter); });
-  }
-
-  function setFilter(key, silent) {
-    state.filter = key;
-
-    Array.prototype.forEach.call(document.querySelectorAll(".filter button"), function (b) {
-      b.setAttribute("aria-pressed", String(b.dataset.dir === key));
-    });
-
-    Array.prototype.forEach.call(document.querySelectorAll(".item, .navchip"), function (b) {
-      b.hidden = !(key === "all" || b.dataset.dir === key || b.dataset.dir === "both");
-    });
-
-    // Hide empty groups; recount the visible ones.
-    Array.prototype.forEach.call(railGroups.children, function (sec) {
-      var shown = sec.querySelectorAll(".item:not([hidden])").length;
-      sec.hidden = shown === 0;
-      sec.querySelector(".count").textContent = shown;
-    });
-
-    var list = visible();
-    if (!list.some(function (x) { return x.id === state.id; })) {
-      go(list[0].id, silent);
-      return;
-    }
-    if (!silent) syncStepper();
-  }
+  function visible() { return ALL.slice(); }
 
   /* ── Layout / scale maths ───────────────────────────────────────────── */
   function fitHeight() {
@@ -1322,7 +1115,6 @@
   });
 
   /* ── Boot ───────────────────────────────────────────────────────────── */
-  setFilter("all", true);
   setDevice("tabletL", true);
   if (!readHash()) go(DEFAULT_ID, true);
   syncStepper();
