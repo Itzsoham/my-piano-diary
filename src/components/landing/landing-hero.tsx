@@ -82,8 +82,8 @@ const TRUST = [
    source text for whole class names, so a `hover:${...}` template would never
    be generated. */
 const KEY_PRESS =
-  "hover:translate-y-0.75 hover:scale-y-[0.98] focus-visible:translate-y-0.75 focus-visible:scale-y-[0.98] active:translate-y-0.75 active:scale-y-[0.98]";
-const KEY_PRESSED = "translate-y-0.75 scale-y-[0.98]";
+  "hover:translate-y-0.75 hover:scale-y-98 focus-visible:translate-y-0.75 focus-visible:scale-y-98 active:translate-y-0.75 active:scale-y-98";
+const KEY_PRESSED = "translate-y-0.75 scale-y-98";
 
 /** One quaver, used three times as a rising note above the keys. */
 function NoteGlyph({ size, className }: { size: number; className?: string }) {
