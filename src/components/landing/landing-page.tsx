@@ -82,7 +82,7 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
             have to tab through the whole nav to reach the content. */}
         <a
           href="#main"
-          className="focus:ring-ring/50 sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:inline-flex focus:h-11 focus:items-center focus:rounded-full focus:bg-pink-600 focus:px-5 focus:text-sm focus:font-semibold focus:text-white focus:shadow-(--sh-pink) focus:ring-3 focus:outline-none"
+          className="focus:ring-ring/50 sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-100 focus:inline-flex focus:h-11 focus:items-center focus:rounded-full focus:bg-pink-600 focus:px-5 focus:text-sm focus:font-semibold focus:text-white focus:shadow-(--sh-pink) focus:ring-3 focus:outline-none"
         >
           Skip to content
         </a>
