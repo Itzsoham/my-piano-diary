@@ -5,6 +5,12 @@ import { RegisterForm } from "../_components/register-form";
 import { AuthArtPanel } from "../_components/auth-art-panel";
 import { getServerAuthSession } from "@/server/auth";
 
+export const metadata = {
+  title: "Create your studio",
+  description:
+    "Set up your piano teaching diary — students, lessons, attendance, tuition and monthly reports in one place.",
+};
+
 export default async function Register() {
   const session = await getServerAuthSession();
 

@@ -3,6 +3,12 @@ import { DashboardHero } from "@/app/(root)/dashboard/_components/dashboard-hero
 import { DashboardIntelligencePanel } from "@/app/(root)/dashboard/_components/dashboard-intelligence-panel";
 // import { BirthdayCountdownCard } from "./_components/birthday-countdown-card";
 
+export const metadata = {
+  title: "Dashboard",
+  description:
+    "Today at a glance: who is coming, what is expected, and what is still owed.",
+};
+
 export default function Page() {
   return (
     <div className="flex flex-1 flex-col">

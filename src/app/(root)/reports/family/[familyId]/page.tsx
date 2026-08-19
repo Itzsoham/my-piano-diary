@@ -22,6 +22,12 @@ type CombinedReportProps = {
   searchParams: Promise<{ month?: string; year?: string }>;
 };
 
+export const metadata = {
+  title: "Family report",
+  description:
+    "One printable sheet for a whole family, sharing the same attendance and tuition maths.",
+};
+
 export default async function CombinedReportPage(props: CombinedReportProps) {
   const [{ familyId }, searchParams] = await Promise.all([
     props.params,

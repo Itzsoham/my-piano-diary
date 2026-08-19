@@ -5,6 +5,12 @@ import { LoginForm } from "../_components/login-form";
 import { AuthArtPanel } from "../_components/auth-art-panel";
 import { getServerAuthSession } from "@/server/auth";
 
+export const metadata = {
+  title: "Log in",
+  description:
+    "Sign in to your studio, or seed a full sample studio with one click to look around first.",
+};
+
 export default async function Login() {
   const session = await getServerAuthSession();
 

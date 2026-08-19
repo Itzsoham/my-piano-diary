@@ -24,6 +24,12 @@ const getSafeMonthYear = (searchParams: { month?: string; year?: string }) => {
   };
 };
 
+export const metadata = {
+  title: "Student report",
+  description:
+    "One student's month: attendance grid, summary, next-month plan and tuition.",
+};
+
 export default async function ReportDetail(props: ReportDetailProps) {
   const [{ studentId }, searchParams] = await Promise.all([
     props.params,

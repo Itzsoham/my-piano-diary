@@ -2,6 +2,12 @@ import { api } from "@/trpc/server";
 import { PiecesTable } from "./_components/pieces-table";
 import { PiecesHero } from "./_components/pieces-hero";
 
+export const metadata = {
+  title: "Repertoire",
+  description:
+    "Your pieces library, with level, difficulty and how many lessons reference each one.",
+};
+
 export default async function PiecesPage() {
   const pieces = await api.piece.getAll();
 

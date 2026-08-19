@@ -3,6 +3,12 @@ import { StudentsHero } from "./_components/students-hero";
 import { StudentsTable } from "./_components/students-table";
 import { FamiliesManager } from "./_components/families-manager";
 
+export const metadata = {
+  title: "Students",
+  description:
+    "Your studio roster — rates, notes, families and lesson history.",
+};
+
 export default async function StudentsPage() {
   const students = await api.student.getAll();
 

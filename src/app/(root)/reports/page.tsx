@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 import { ReportsHero } from "./_components/reports-hero";
 import { ReportsPage } from "./_components/reports-page";
 
+export const metadata = {
+  title: "Reports",
+  description:
+    "Monthly student reports with attendance grids, tuition totals and print-to-PDF.",
+};
+
 export default async function Reports(props: {
   searchParams: Promise<{ studentId?: string; month?: string; year?: string }>;
 }) {

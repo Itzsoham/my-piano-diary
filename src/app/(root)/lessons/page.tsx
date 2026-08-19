@@ -3,6 +3,12 @@ import { api } from "@/trpc/server";
 import { LessonsHero } from "./_components/lessons-hero";
 import { LessonsPage } from "./_components/lessons-page";
 
+export const metadata = {
+  title: "Lessons",
+  description:
+    "Every lesson month by month — schedule, reschedule, cancel and score.",
+};
+
 export default async function Lessons() {
   const now = new Date();
   const from = startOfDay(now);

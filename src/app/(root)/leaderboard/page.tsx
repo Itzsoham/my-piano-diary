@@ -2,6 +2,12 @@ import { api } from "@/trpc/server";
 import { LeaderboardHero } from "./_components/leaderboard-hero";
 import { LeaderboardPage } from "./_components/leaderboard-page";
 
+export const metadata = {
+  title: "Ranking",
+  description:
+    "All-time student ranking by average blossom score, with genuine ties sharing a rank.",
+};
+
 export default async function Leaderboard() {
   const data = await api.earnings.getStudentLeaderboard();
 
