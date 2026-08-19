@@ -7,6 +7,20 @@ const AUTH_COOKIES = [
   "__Secure-next-auth.session-token",
 ];
 
+/**
+ * NOT A SECURITY BOUNDARY. This tests only that a cookie *named* like a
+ * session token is present — it never verifies the signature, so any visitor
+ * can set one by hand. That is deliberate: decoding the JWT here would pull
+ * the auth secret into every request and slow the edge runtime down, and the
+ * job of this file is to send signed-out visitors somewhere sensible, not to
+ * protect data.
+ *
+ * The real checks are server-side, and every private route must have one:
+ * app/(root)/layout.tsx and app/(secret)/layout.tsx call getServerAuthSession()
+ * and redirect, and tRPC protectedProcedure rejects unauthenticated calls. A
+ * new private route needs to live under one of those groups — adding it to
+ * this file alone protects nothing.
+ */
 function hasSessionCookie(req: NextRequest) {
   return AUTH_COOKIES.some((name) => req.cookies.has(name));
 }
