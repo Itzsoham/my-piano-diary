@@ -5,10 +5,15 @@
 //
 // Preloaded once and cloned per play so rapid repeat clicks (petting Mochi
 // over and over) overlap instead of cutting each other off.
+//
+// The landing page owns a global sound switch, so it can mute Mochi from the
+// outside via setMeowMuted(). Default is unmuted — every existing caller in
+// the app behaves exactly as before.
 
 const SRC = "/sounds/meow.mp3";
 
 let template: HTMLAudioElement | null = null;
+let muted = false;
 
 function getTemplate(): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
@@ -16,7 +21,13 @@ function getTemplate(): HTMLAudioElement | null {
   return template;
 }
 
+export function setMeowMuted(next: boolean): void {
+  muted = next;
+}
+
 export function playMeow() {
+  if (muted) return;
+
   const base = getTemplate();
   if (!base) return;
 

@@ -1,18 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useUserStore } from "@/store/use-user-store";
 
+/**
+ * Mirrors the NextAuth session into the user store.
+ *
+ * It renders `children` unconditionally, and that is load-bearing. This
+ * provider sits inside the root layout, so it wraps every route including the
+ * public landing page at "/" — an earlier `if (!isHydrated) return null` meant
+ * the server shipped an empty <body> and the whole site only existed after
+ * React hydrated: no content for crawlers or link-preview bots, and a blank
+ * first paint for everyone. There is nothing here that needs to wait for
+ * hydration anyway; the only write happens in an effect.
+ */
 export function UserStoreProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const setUser = useUserStore((state) => state.setUser);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // Handle hydration to prevent mismatch
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
 
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
@@ -22,14 +27,11 @@ export function UserStoreProvider({ children }: { children: React.ReactNode }) {
         email: session.user.email,
         image: session.user.image,
       });
-    } else if (status === "unauthenticated") {
-      // We don't necessarily want to clear here if we want to keep some data
-      // but usually if session is gone, user should be null
-      // Use it carefully if you have public info
     }
+    // Deliberately no `else` for "unauthenticated": signing out clears the
+    // store explicitly, and blanking it here would also wipe cached profile
+    // data during the moment the session is still being fetched.
   }, [session, status, setUser]);
-
-  if (!isHydrated) return null;
 
   return <>{children}</>;
 }

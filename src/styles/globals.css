@@ -364,8 +364,29 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* Without this, `.rise` still holds its `from` keyframe — opacity 0 — for
+       the whole staggered delay, so a reduced-motion visitor watches the hero
+       appear line by line instead of it simply being there. */
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Landing page only. Its nav is anchor-based and sits under a sticky bar, so
+   anchors need smooth scrolling plus headroom. Scoped to :has(#landing-root)
+   so the app shell — which owns its own scroll containers — is untouched, and
+   dropped under reduced motion because the block above cannot reach
+   scroll-behavior. */
+html:has(#landing-root) {
+  scroll-behavior: smooth;
+}
+html:has(#landing-root) [id] {
+  scroll-margin-top: 5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has(#landing-root) {
+    scroll-behavior: auto;
   }
 }
 
