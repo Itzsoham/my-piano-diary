@@ -14,17 +14,24 @@ type InsightSummary = {
   completed: number;
   cancelled: number;
   inactiveCount: number;
+  /** Server-authored window copy — a rolling 14 days, or "that month". */
+  inactiveLabel: string;
 };
 
 type DashboardQuickInsightsCardProps = {
   insights: InsightSummary;
   insightsLoading?: boolean;
+  /** The month these patterns come from, e.g. "August". */
+  monthLabel: string;
+  isCurrentMonth: boolean;
   className?: string;
 };
 
 export function DashboardQuickInsightsCard({
   insights,
   insightsLoading = false,
+  monthLabel,
+  isCurrentMonth,
   className,
 }: DashboardQuickInsightsCardProps) {
   return (
@@ -62,7 +69,9 @@ export function DashboardQuickInsightsCard({
           <Blossom className="text-bubblegum" size={17} />
           Quick Insights
         </CardTitle>
-        <p className="text-ink-soft text-xs">Patterns worth a glance</p>
+        <p className="text-ink-soft text-xs">
+          Patterns worth a glance · {monthLabel}
+        </p>
       </CardHeader>
 
       <CardContent className="text-ink-soft flex flex-col gap-3 pt-0 text-sm">
@@ -115,7 +124,9 @@ export function DashboardQuickInsightsCard({
                   {insights.bestDay}
                 </p>
                 <p className="text-ink-soft mt-1 text-xs">
-                  Your strongest this month.
+                  {isCurrentMonth
+                    ? "Your strongest this month."
+                    : `Your strongest in ${monthLabel}.`}
                 </p>
               </div>
             </div>
@@ -154,7 +165,7 @@ export function DashboardQuickInsightsCard({
                   <span className="text-ink font-semibold tabular-nums">
                     {insights.inactiveCount}
                   </span>{" "}
-                  students have not attended in the last 14 days.
+                  students did not attend {insights.inactiveLabel}.
                 </p>
               </div>
               <Button

@@ -7,16 +7,95 @@ import {
   getEndOfMonthUTC,
   fromUTC,
 } from "@/lib/timezone";
+import {
+  compareMonthScopeDesc,
+  monthScopeKey,
+  previousMonthScope,
+  type MonthScope,
+} from "@/lib/month-scope";
 import { rankByAverage, takeWithTies } from "@/lib/ranking";
+
+/**
+ * Every month-scoped board here takes the same optional `{ month, year }`.
+ * Omit it and the procedure answers for the teacher's *current* month, exactly
+ * as it did before the month picker existed — so a caller that only ever wants
+ * "now" never has to compute a month, and the timezone maths stays server-side
+ * where the teacher's IANA zone actually lives.
+ */
+const monthScopeInput = z
+  .object({
+    month: z.number().int().min(1).max(12),
+    year: z.number().int().min(2000).max(2100),
+  })
+  .optional();
+
+type ResolvedMonth = MonthScope & {
+  /** UTC instant of the first millisecond of the month in the teacher's zone. */
+  start: Date;
+  /** UTC instant of the last millisecond of the month in the teacher's zone. */
+  end: Date;
+  isCurrentMonth: boolean;
+  /** A month that has not started yet — reachable only by a hand-edited URL. */
+  isFuture: boolean;
+  /**
+   * Days of the month that have actually happened: the whole month once it is
+   * over, today's date while it is running, and zero before it begins. The cut
+   * for anything that would otherwise draw a not-yet-lived day as an empty one.
+   */
+  elapsedDays: number;
+  /** "Now" as a wall clock in the teacher's zone. */
+  nowInUserTz: Date;
+};
+
+function resolveMonth(timezone: string, scope?: MonthScope): ResolvedMonth {
+  const nowInUserTz = fromUTC(new Date(), timezone);
+  const currentMonth = nowInUserTz.getMonth() + 1;
+  const currentYear = nowInUserTz.getFullYear();
+
+  const month = scope?.month ?? currentMonth;
+  const year = scope?.year ?? currentYear;
+
+  const isCurrentMonth = month === currentMonth && year === currentYear;
+  const isFuture =
+    year > currentYear || (year === currentYear && month > currentMonth);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  return {
+    month,
+    year,
+    start: getStartOfMonthUTC(month, year, timezone),
+    end: getEndOfMonthUTC(month, year, timezone),
+    isCurrentMonth,
+    isFuture,
+    elapsedDays: isCurrentMonth
+      ? nowInUserTz.getDate()
+      : isFuture
+        ? 0
+        : daysInMonth,
+    nowInUserTz,
+  };
+}
+
+const withinMonth = (date: Date, { start, end }: { start: Date; end: Date }) =>
+  date >= start && date <= end;
 
 // Type definitions for return values
 interface DashboardData {
+  /** The month these figures describe — echoed back so the UI can label them. */
+  month: number;
+  year: number;
+  isCurrentMonth: boolean;
+  /** All-time billed revenue. Never month-scoped. */
   totalEarnings: number;
-  currentMonthEarnings: number;
-  currentMonthLoss: number;
   totalStudents: number;
-  lastMonthCollected: number;
-  lastMonthOutstanding: number;
+  /** COMPLETE lessons dated inside the selected month. */
+  monthEarnings: number;
+  /** CANCELLED lessons dated inside the selected month — revenue not billed. */
+  monthLoss: number;
+  /** Transactions recorded against the selected billing month. */
+  monthCollected: number;
+  /** Expected minus received for the selected billing month, floored at 0. */
+  monthOutstanding: number;
 }
 
 interface StudentEarningsData {
@@ -38,7 +117,7 @@ interface StudentScoreData {
 }
 
 interface LeaderboardEntry extends StudentScoreData {
-  /** Every COMPLETE lesson, rated or not — the denominator for `ratedShare`. */
+  /** Every COMPLETE lesson in scope, rated or not — `ratedShare`'s denominator. */
   completedCount: number;
   /** Percentage of completed lessons that carry a score, 0-100. */
   ratedShare: number;
@@ -46,9 +125,18 @@ interface LeaderboardEntry extends StudentScoreData {
   /** How many 1s / 2s / 3s / 4s / 5s — index 0 is score 1. */
   scoreCounts: number[];
   lastRatedAt: Date | null;
-  thisMonthAvg: number | null;
-  thisMonthRatedCount: number;
-  /** `thisMonthAvg - avgScore`, or null when nothing was rated this month. */
+  /**
+   * Average over the comparison window described by `summary.comparison` —
+   * this month when the board is all-time, the previous month when the board
+   * is scoped to a single month.
+   */
+  comparisonAvg: number | null;
+  comparisonRatedCount: number;
+  /**
+   * Which way the student is moving. On an all-time board that is this month
+   * against the all-time average; on a month board, the selected month against
+   * the month before it. Null when the comparison window holds no rated lesson.
+   */
   trend: number | null;
 }
 
@@ -61,7 +149,7 @@ interface UnratedStudent {
 
 interface LeaderboardData {
   ranked: LeaderboardEntry[];
-  /** Students with zero rated lessons — listed, never ranked at 0. */
+  /** Students with zero rated lessons in scope — listed, never ranked at 0. */
   unrated: UnratedStudent[];
   summary: {
     studioAverage: number | null;
@@ -70,6 +158,13 @@ interface LeaderboardData {
     rankedStudents: number;
     totalStudents: number;
     firstRatedAt: Date | null;
+    /** Null when the board covers every rated lesson ever. */
+    scope: MonthScope | null;
+    isCurrentMonth: boolean;
+    /** What `entry.trend` is measured against, so the UI can name it. */
+    comparison:
+      | { kind: "this-month" }
+      | { kind: "previous-month"; month: number; year: number };
   };
 }
 
@@ -84,7 +179,19 @@ interface QuickInsightsData {
   completed: number;
   cancelled: number;
   inactiveCount: number;
+  /**
+   * Names the window `inactiveCount` was counted over. The current month asks
+   * "who has gone quiet lately" (a rolling 14 days); a past month can only ask
+   * "who never showed up that month", and the copy has to say which.
+   */
+  inactiveLabel: string;
   completionRate: number;
+}
+
+/** One month the teacher actually has lessons in — a month picker's option. */
+interface ActivityMonth extends MonthScope {
+  lessons: number;
+  rated: number;
 }
 
 interface TodayLesson {
@@ -115,42 +222,30 @@ interface TodayLesson {
 }
 
 export const earningsRouter = createTRPCRouter({
-  // Get earnings dashboard data
-  getDashboard: protectedProcedure.query(
-    async ({ ctx }): Promise<DashboardData> => {
+  // Get earnings dashboard data for one month (defaults to the current one)
+  getDashboard: protectedProcedure
+    .input(monthScopeInput)
+    .query(async ({ ctx, input }): Promise<DashboardData> => {
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const month = resolveMonth(timezone, input);
+
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
       });
 
       if (!teacher) {
         return {
+          month: month.month,
+          year: month.year,
+          isCurrentMonth: month.isCurrentMonth,
           totalEarnings: 0,
-          currentMonthEarnings: 0,
-          currentMonthLoss: 0,
           totalStudents: 0,
-          lastMonthCollected: 0,
-          lastMonthOutstanding: 0,
+          monthEarnings: 0,
+          monthLoss: 0,
+          monthCollected: 0,
+          monthOutstanding: 0,
         };
       }
-
-      const timezone = ctx.session.user.timezone ?? "UTC";
-
-      // Get current date/time in user's timezone to determine their "now" month/year
-      const nowInUserTz = fromUTC(new Date(), timezone);
-      const currentMonth = nowInUserTz.getMonth() + 1;
-      const currentYear = nowInUserTz.getFullYear();
-
-      // Use timezone-aware month boundaries
-      const currentMonthStart = getStartOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
-      );
-      const currentMonthEnd = getEndOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
-      );
 
       // Get all completed lessons (rate is snapshotted per-lesson)
       const completedLessons = await ctx.db.lesson.findMany({
@@ -163,28 +258,29 @@ export const earningsRouter = createTRPCRouter({
         },
       });
 
-      // Get current month completed lessons
-      const currentMonthCompletedLessons = await ctx.db.lesson.findMany({
+      // Get the selected month's completed lessons
+      const monthCompletedLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
           date: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd,
+            gte: month.start,
+            lte: month.end,
           },
           status: "COMPLETE",
         },
         select: {
+          studentId: true,
           rate: true,
         },
       });
 
-      // Get current month cancelled lessons
-      const currentMonthCancelledLessons = await ctx.db.lesson.findMany({
+      // Get the selected month's cancelled lessons
+      const monthCancelledLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
           date: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd,
+            gte: month.start,
+            lte: month.end,
           },
           status: "CANCELLED",
         },
@@ -199,14 +295,14 @@ export const earningsRouter = createTRPCRouter({
         0,
       );
 
-      // Calculate current month earnings
-      const currentMonthEarnings = currentMonthCompletedLessons.reduce(
+      // Calculate the selected month's earnings
+      const monthEarnings = monthCompletedLessons.reduce(
         (sum, lesson) => sum + lesson.rate,
         0,
       );
 
-      // Calculate current month loss from cancelled lessons
-      const currentMonthLoss = currentMonthCancelledLessons.reduce(
+      // Calculate the selected month's loss from cancelled lessons
+      const monthLoss = monthCancelledLessons.reduce(
         (sum, lesson) => sum + lesson.rate,
         0,
       );
@@ -216,99 +312,136 @@ export const earningsRouter = createTRPCRouter({
         where: { teacherId: teacher.id },
       });
 
-      // Get Last Month boundaries
-      const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-      const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-
-      const lastMonthStart = getStartOfMonthUTC(
-        lastMonth,
-        lastMonthYear,
-        timezone,
-      );
-      const lastMonthEnd = getEndOfMonthUTC(lastMonth, lastMonthYear, timezone);
-
-      // Calculate total collected for last billing month (sum transactions under that month record)
-      const lastMonthPaymentsForCollected = await ctx.db.paymentMonth.findMany({
+      // Payment months are keyed by month/year rather than by lesson date, so
+      // the billing month the teacher is looking at *is* the selected month.
+      const monthPayments = await ctx.db.paymentMonth.findMany({
         where: {
           teacherId: teacher.id,
-          month: lastMonth,
-          year: lastMonthYear,
+          month: month.month,
+          year: month.year,
         },
         include: {
           transactions: true,
         },
       });
 
-      const lastMonthCollected = lastMonthPaymentsForCollected.reduce(
+      const monthCollected = monthPayments.reduce(
         (sum, paymentMonth) =>
           sum +
           paymentMonth.transactions.reduce((txSum, tx) => txSum + tx.amount, 0),
         0,
       );
 
-      // Calculate outstanding for last month
-      // 1. Get all completed lessons for last month to know the expected amount
-      const lastMonthLessons = await ctx.db.lesson.findMany({
-        where: {
-          teacherId: teacher.id,
-          date: {
-            gte: lastMonthStart,
-            lte: lastMonthEnd,
-          },
-          status: "COMPLETE",
-        },
-        select: {
-          studentId: true,
-          rate: true,
-        },
-      });
-
+      // Outstanding = what each student was billed for the month minus what
+      // they have actually paid against it. Floored per student, so one
+      // family's overpayment never cancels out another family's arrears.
       const expectedByStudent = new Map<string, number>();
-      lastMonthLessons.forEach((lesson) => {
+      monthCompletedLessons.forEach((lesson) => {
         const current = expectedByStudent.get(lesson.studentId) ?? 0;
         expectedByStudent.set(lesson.studentId, current + lesson.rate);
       });
 
-      // 2. Get all payment month records for last month to know received amount by student
-      const lastMonthPayments = await ctx.db.paymentMonth.findMany({
-        where: {
-          teacherId: teacher.id,
-          month: lastMonth,
-          year: lastMonthYear,
-        },
-        include: {
-          transactions: true,
-        },
-      });
-
       const receivedByStudent = new Map<string, number>();
-      lastMonthPayments.forEach((pm) => {
+      monthPayments.forEach((pm) => {
         const received = pm.transactions.reduce((s, t) => s + t.amount, 0);
         receivedByStudent.set(pm.studentId, received);
       });
 
-      // 3. Sum up the difference for each student
       const allStudentIds = new Set([
         ...expectedByStudent.keys(),
         ...receivedByStudent.keys(),
       ]);
 
-      let lastMonthOutstanding = 0;
+      let monthOutstanding = 0;
       allStudentIds.forEach((studentId) => {
         const expected = expectedByStudent.get(studentId) ?? 0;
         const received = receivedByStudent.get(studentId) ?? 0;
-        const remaining = Math.max(0, expected - received);
-        lastMonthOutstanding += remaining;
+        monthOutstanding += Math.max(0, expected - received);
       });
 
       return {
+        month: month.month,
+        year: month.year,
+        isCurrentMonth: month.isCurrentMonth,
         totalEarnings,
-        currentMonthEarnings,
-        currentMonthLoss,
         totalStudents,
-        lastMonthCollected,
-        lastMonthOutstanding,
+        monthEarnings,
+        monthLoss,
+        monthCollected,
+        monthOutstanding,
       };
+    }),
+
+  /**
+   * Every month the teacher has lessons in, newest first — the option list
+   * behind both month pickers. The current month is always present, even in a
+   * brand-new studio, so the picker can always offer the way back home.
+   *
+   * Months later than the current one are dropped even when they already hold
+   * scheduled lessons: every board these pickers drive reports on what has
+   * happened (revenue billed, lessons taught, scores given), so a future month
+   * could only ever render as a completed month of zeros.
+   */
+  getActivityMonths: protectedProcedure.query(
+    async ({ ctx }): Promise<ActivityMonth[]> => {
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const nowInUserTz = fromUTC(new Date(), timezone);
+      const current: MonthScope = {
+        month: nowInUserTz.getMonth() + 1,
+        year: nowInUserTz.getFullYear(),
+      };
+
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        return [{ ...current, lessons: 0, rated: 0 }];
+      }
+
+      const lessons = await ctx.db.lesson.findMany({
+        where: { teacherId: teacher.id },
+        select: { date: true, status: true, score: true },
+      });
+
+      const months = new Map<string, ActivityMonth>();
+      const ensure = (scope: MonthScope) => {
+        const key = monthScopeKey(scope);
+        const existing = months.get(key);
+        if (existing) return existing;
+
+        const created: ActivityMonth = { ...scope, lessons: 0, rated: 0 };
+        months.set(key, created);
+        return created;
+      };
+
+      ensure(current);
+
+      for (const lesson of lessons) {
+        // Bucket by the teacher's wall clock, not by UTC — a 23:30 lesson on
+        // the last of the month belongs to that month for the teacher,
+        // whatever the stored UTC date rolls over to.
+        const zoned = fromUTC(lesson.date, timezone);
+        const scope = {
+          month: zoned.getMonth() + 1,
+          year: zoned.getFullYear(),
+        };
+
+        // compareMonthScopeDesc orders newest first, so a negative result puts
+        // `scope` ahead of `current` — meaning it has not happened yet.
+        if (compareMonthScopeDesc(scope, current) < 0) {
+          continue;
+        }
+
+        const bucket = ensure(scope);
+
+        bucket.lessons += 1;
+        if (lesson.status === "COMPLETE" && lesson.score != null) {
+          bucket.rated += 1;
+        }
+      }
+
+      return [...months.values()].sort(compareMonthScopeDesc);
     },
   ),
 
@@ -365,9 +498,10 @@ export const earningsRouter = createTRPCRouter({
       }));
     }),
 
-  // Get earnings by student for current month
-  getByStudent: protectedProcedure.query(
-    async ({ ctx }): Promise<StudentEarningsData[]> => {
+  // Get earnings by student for one month (defaults to the current one)
+  getByStudent: protectedProcedure
+    .input(monthScopeInput)
+    .query(async ({ ctx, input }): Promise<StudentEarningsData[]> => {
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
       });
@@ -377,30 +511,14 @@ export const earningsRouter = createTRPCRouter({
       }
 
       const timezone = ctx.session.user.timezone ?? "UTC";
-
-      // Get current date/time in user's timezone to determine their "now" month/year
-      const nowInUserTz = fromUTC(new Date(), timezone);
-      const currentMonth = nowInUserTz.getMonth() + 1;
-      const currentYear = nowInUserTz.getFullYear();
-
-      // Use timezone-aware month boundaries
-      const currentMonthStart = getStartOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
-      );
-      const currentMonthEnd = getEndOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
-      );
+      const month = resolveMonth(timezone, input);
 
       const lessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
           date: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd,
+            gte: month.start,
+            lte: month.end,
           },
           status: "COMPLETE",
         },
@@ -452,19 +570,22 @@ export const earningsRouter = createTRPCRouter({
       return Object.values(studentEarnings).sort(
         (a, b) => b.earnings - a.earnings,
       );
-    },
-  ),
+    }),
 
-  // Get top students for the current month, ranked by average lesson score.
-  // Only RATED lessons count — unrated ones (old data, or a lesson the
-  // teacher deliberately left unscored) never factor into the average, and a
-  // student with zero rated lessons doesn't appear on the board at all.
+  // Top students for one month, ranked by average lesson score. Only RATED
+  // lessons count — unrated ones (old data, or a lesson the teacher
+  // deliberately left unscored) never factor into the average, and a student
+  // with zero rated lessons doesn't appear on the board at all.
   // `limit` is a floor, not a ceiling: takeWithTies may return more so the
   // cut never separates two students with the same average.
-  getTopStudentsThisMonth: protectedProcedure
+  getTopStudentsForMonth: protectedProcedure
     .input(
       z
-        .object({ limit: z.number().int().min(1).max(10).optional() })
+        .object({
+          limit: z.number().int().min(1).max(10).optional(),
+          month: z.number().int().min(1).max(12).optional(),
+          year: z.number().int().min(2000).max(2100).optional(),
+        })
         .optional(),
     )
     .query(async ({ ctx, input }): Promise<StudentScoreData[]> => {
@@ -477,27 +598,19 @@ export const earningsRouter = createTRPCRouter({
       }
 
       const timezone = ctx.session.user.timezone ?? "UTC";
-      const nowInUserTz = fromUTC(new Date(), timezone);
-      const currentMonth = nowInUserTz.getMonth() + 1;
-      const currentYear = nowInUserTz.getFullYear();
-
-      const currentMonthStart = getStartOfMonthUTC(
-        currentMonth,
-        currentYear,
+      const month = resolveMonth(
         timezone,
-      );
-      const currentMonthEnd = getEndOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
+        input?.month != null && input?.year != null
+          ? { month: input.month, year: input.year }
+          : undefined,
       );
 
       const lessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
           date: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd,
+            gte: month.start,
+            lte: month.end,
           },
           status: "COMPLETE",
           score: { not: null },
@@ -547,9 +660,9 @@ export const earningsRouter = createTRPCRouter({
         >,
       );
 
-      // Rank rules live in @/lib/ranking so this board and the all-time
-      // /leaderboard can never drift apart: exact-average comparison, ties
-      // share a rank, and the cut never lands inside a tie group.
+      // Rank rules live in @/lib/ranking so this board and the /leaderboard
+      // page can never drift apart: exact-average comparison, ties share a
+      // rank, and the cut never lands inside a tie group.
       const ranked = rankByAverage(Object.values(studentScores)).map(
         (entry): StudentScoreData => ({
           studentId: entry.studentId,
@@ -564,43 +677,67 @@ export const earningsRouter = createTRPCRouter({
       return takeWithTies(ranked, input?.limit ?? 5);
     }),
 
-  // All-time board behind the dashboard card: every student the teacher has
-  // ever rated, plus the context that makes an average readable (how many
-  // lessons it rests on, the score spread, how this month compares).
-  getStudentLeaderboard: protectedProcedure.query(
-    async ({ ctx }): Promise<LeaderboardData> => {
-      const emptyResult: LeaderboardData = {
-        ranked: [],
-        unrated: [],
-        summary: {
-          studioAverage: null,
-          ratedLessons: 0,
-          completedLessons: 0,
-          rankedStudents: 0,
-          totalStudents: 0,
-          firstRatedAt: null,
-        },
-      };
+  // The board behind the dashboard card: every student the teacher has rated,
+  // plus the context that makes an average readable (how many lessons it rests
+  // on, the score spread, which way it is moving).
+  //
+  // With no input the board is all-time and `trend` reads "this month against
+  // your all-time average". Pass a month and the whole board narrows to it —
+  // averages, ranks, counts and spread are that month's alone — and `trend`
+  // switches to "this month against the month before", the only honest
+  // comparison once the all-time average is out of frame.
+  getStudentLeaderboard: protectedProcedure
+    .input(monthScopeInput)
+    .query(async ({ ctx, input }): Promise<LeaderboardData> => {
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const month = resolveMonth(timezone, input);
+      const isScoped = input != null;
+
+      const previous = previousMonthScope({
+        month: month.month,
+        year: month.year,
+      });
+
+      // Where `trend` is measured. All-time board: the current month against
+      // the all-time average. Month board: the month before the selected one.
+      const comparisonWindow = isScoped
+        ? {
+            start: getStartOfMonthUTC(previous.month, previous.year, timezone),
+            end: getEndOfMonthUTC(previous.month, previous.year, timezone),
+          }
+        : { start: month.start, end: month.end };
+
+      const scope = isScoped ? { month: month.month, year: month.year } : null;
+
+      const comparison: LeaderboardData["summary"]["comparison"] = isScoped
+        ? {
+            kind: "previous-month",
+            month: previous.month,
+            year: previous.year,
+          }
+        : { kind: "this-month" };
 
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
       });
 
       if (!teacher) {
-        return emptyResult;
+        return {
+          ranked: [],
+          unrated: [],
+          summary: {
+            studioAverage: null,
+            ratedLessons: 0,
+            completedLessons: 0,
+            rankedStudents: 0,
+            totalStudents: 0,
+            firstRatedAt: null,
+            scope,
+            isCurrentMonth: month.isCurrentMonth,
+            comparison,
+          },
+        };
       }
-
-      const timezone = ctx.session.user.timezone ?? "UTC";
-      const nowInUserTz = fromUTC(new Date(), timezone);
-      const currentMonth = nowInUserTz.getMonth() + 1;
-      const currentYear = nowInUserTz.getFullYear();
-
-      const monthStart = getStartOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
-      );
-      const monthEnd = getEndOfMonthUTC(currentMonth, currentYear, timezone);
 
       const [students, lessons] = await Promise.all([
         ctx.db.student.findMany({
@@ -608,7 +745,16 @@ export const earningsRouter = createTRPCRouter({
           select: { id: true, name: true, avatar: true },
         }),
         ctx.db.lesson.findMany({
-          where: { teacherId: teacher.id, status: "COMPLETE" },
+          where: {
+            teacherId: teacher.id,
+            status: "COMPLETE",
+            // A month board still needs the month before it to compute the
+            // trend, so the fetch spans both windows and the loop below
+            // separates them. The all-time board fetches everything, as ever.
+            ...(isScoped
+              ? { date: { gte: comparisonWindow.start, lte: month.end } }
+              : {}),
+          },
           select: { score: true, date: true, studentId: true },
           // Ascending so the last rated lesson we visit per student is also
           // the most recent one — no extra max() pass for `lastRatedAt`.
@@ -626,8 +772,8 @@ export const earningsRouter = createTRPCRouter({
         bestScore: number;
         scoreCounts: number[];
         lastRatedAt: Date | null;
-        monthScoreSum: number;
-        monthRatedCount: number;
+        comparisonScoreSum: number;
+        comparisonRatedCount: number;
       };
 
       const buckets = new Map<string, Bucket>(
@@ -643,14 +789,15 @@ export const earningsRouter = createTRPCRouter({
             bestScore: 0,
             scoreCounts: [0, 0, 0, 0, 0],
             lastRatedAt: null,
-            monthScoreSum: 0,
-            monthRatedCount: 0,
+            comparisonScoreSum: 0,
+            comparisonRatedCount: 0,
           },
         ]),
       );
 
       let ratedLessons = 0;
       let ratedScoreSum = 0;
+      let completedLessons = 0;
       let firstRatedAt: Date | null = null;
 
       for (const lesson of lessons) {
@@ -659,9 +806,23 @@ export const earningsRouter = createTRPCRouter({
           continue;
         }
 
-        bucket.completedCount += 1;
-
         const score = lesson.score;
+
+        // The comparison window is tallied first because on a month board it
+        // sits *outside* the board's own scope — those lessons contribute the
+        // trend and nothing else.
+        if (score != null && withinMonth(lesson.date, comparisonWindow)) {
+          bucket.comparisonScoreSum += score;
+          bucket.comparisonRatedCount += 1;
+        }
+
+        if (isScoped && !withinMonth(lesson.date, month)) {
+          continue;
+        }
+
+        bucket.completedCount += 1;
+        completedLessons += 1;
+
         if (score == null) {
           continue;
         }
@@ -676,11 +837,6 @@ export const earningsRouter = createTRPCRouter({
           bucket.scoreCounts[slot] = (bucket.scoreCounts[slot] ?? 0) + 1;
         }
 
-        if (lesson.date >= monthStart && lesson.date <= monthEnd) {
-          bucket.monthScoreSum += score;
-          bucket.monthRatedCount += 1;
-        }
-
         ratedLessons += 1;
         ratedScoreSum += score;
         firstRatedAt ??= lesson.date;
@@ -690,12 +846,21 @@ export const earningsRouter = createTRPCRouter({
 
       const ranked = rankByAverage(allBuckets).map(
         (entry): LeaderboardEntry => {
-          const thisMonthAvg =
-            entry.monthRatedCount > 0
+          const comparisonAvg =
+            entry.comparisonRatedCount > 0
               ? Math.round(
-                  (entry.monthScoreSum / entry.monthRatedCount) * 100,
+                  (entry.comparisonScoreSum / entry.comparisonRatedCount) * 100,
                 ) / 100
               : null;
+
+          // Sign convention is the same either way: positive means the newer
+          // of the two windows is the better one.
+          const trend =
+            comparisonAvg === null
+              ? null
+              : isScoped
+                ? Math.round((entry.avgScore - comparisonAvg) * 100) / 100
+                : Math.round((comparisonAvg - entry.avgScore) * 100) / 100;
 
           return {
             studentId: entry.studentId,
@@ -712,12 +877,9 @@ export const earningsRouter = createTRPCRouter({
             bestScore: entry.bestScore,
             scoreCounts: entry.scoreCounts,
             lastRatedAt: entry.lastRatedAt,
-            thisMonthAvg,
-            thisMonthRatedCount: entry.monthRatedCount,
-            trend:
-              thisMonthAvg === null
-                ? null
-                : Math.round((thisMonthAvg - entry.avgScore) * 100) / 100,
+            comparisonAvg,
+            comparisonRatedCount: entry.comparisonRatedCount,
+            trend,
           };
         },
       );
@@ -747,18 +909,31 @@ export const earningsRouter = createTRPCRouter({
               ? Math.round((ratedScoreSum / ratedLessons) * 100) / 100
               : null,
           ratedLessons,
-          completedLessons: lessons.length,
+          completedLessons,
           rankedStudents: ranked.length,
           totalStudents: students.length,
           firstRatedAt,
+          scope,
+          isCurrentMonth: month.isCurrentMonth,
+          comparison,
         },
       };
-    },
-  ),
+    }),
 
-  // Get quick insights for the dashboard panel
-  getQuickInsights: protectedProcedure.query(
-    async ({ ctx }): Promise<QuickInsightsData> => {
+  // Get quick insights for one month (defaults to the current one)
+  getQuickInsights: protectedProcedure
+    .input(monthScopeInput)
+    .query(async ({ ctx, input }): Promise<QuickInsightsData> => {
+      const timezone = ctx.session.user.timezone ?? "UTC";
+      const month = resolveMonth(timezone, input);
+
+      // The rolling window only means something while the month is running.
+      // Looking back at June, "not seen in 14 days" would be measured from
+      // today — a number about now, printed on a card about June.
+      const inactiveLabel = month.isCurrentMonth
+        ? "in the last 14 days"
+        : "that month";
+
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
       });
@@ -769,21 +944,11 @@ export const earningsRouter = createTRPCRouter({
           completed: 0,
           cancelled: 0,
           inactiveCount: 0,
+          inactiveLabel,
           completionRate: 0,
         };
       }
 
-      const timezone = ctx.session.user.timezone ?? "UTC";
-      const nowInUserTz = fromUTC(new Date(), timezone);
-      const currentMonth = nowInUserTz.getMonth() + 1;
-      const currentYear = nowInUserTz.getFullYear();
-
-      const monthStart = getStartOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
-      );
-      const monthEnd = getEndOfMonthUTC(currentMonth, currentYear, timezone);
       const recentFrom = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
       const [monthLessons, recentCompletedLessons, totalStudents] =
@@ -792,47 +957,53 @@ export const earningsRouter = createTRPCRouter({
             where: {
               teacherId: teacher.id,
               date: {
-                gte: monthStart,
-                lte: monthEnd,
+                gte: month.start,
+                lte: month.end,
               },
             },
             select: {
               status: true,
               date: true,
-            },
-          }),
-          ctx.db.lesson.findMany({
-            where: {
-              teacherId: teacher.id,
-              date: {
-                gte: recentFrom,
-                lte: new Date(),
-              },
-              status: "COMPLETE",
-            },
-            select: {
               studentId: true,
             },
           }),
+          month.isCurrentMonth
+            ? ctx.db.lesson.findMany({
+                where: {
+                  teacherId: teacher.id,
+                  date: {
+                    gte: recentFrom,
+                    lte: new Date(),
+                  },
+                  status: "COMPLETE",
+                },
+                select: {
+                  studentId: true,
+                },
+              })
+            : Promise.resolve([]),
+          // Only students who already existed by the end of the month can be
+          // said to have skipped it — counting everyone on the roster today
+          // would bill a student who joined in August as a no-show for June.
           ctx.db.student.count({
-            where: { teacherId: teacher.id },
+            where: {
+              teacherId: teacher.id,
+              createdAt: { lte: month.end },
+            },
           }),
         ]);
 
-      const completed = monthLessons.filter(
+      const completedLessons = monthLessons.filter(
         (lesson) => lesson.status === "COMPLETE",
-      ).length;
+      );
+      const completed = completedLessons.length;
       const cancelled = monthLessons.filter(
         (lesson) => lesson.status === "CANCELLED",
       ).length;
       const scheduled = monthLessons.length;
 
       const weekdayCounts = new Map<string, number>();
-      for (const lesson of monthLessons) {
-        if (lesson.status !== "COMPLETE") {
-          continue;
-        }
-
+      for (const lesson of completedLessons) {
         const weekday = fromUTC(
           new Date(lesson.date),
           timezone,
@@ -844,24 +1015,27 @@ export const earningsRouter = createTRPCRouter({
         [...weekdayCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
         "No best day yet";
 
-      const recentActiveIds = new Set(
-        recentCompletedLessons.map((lesson) => lesson.studentId),
+      const activeIds = new Set(
+        (month.isCurrentMonth ? recentCompletedLessons : completedLessons).map(
+          (lesson) => lesson.studentId,
+        ),
       );
 
       return {
         bestDay,
         completed,
         cancelled,
-        inactiveCount: Math.max(0, totalStudents - recentActiveIds.size),
+        inactiveCount: Math.max(0, totalStudents - activeIds.size),
+        inactiveLabel,
         completionRate:
           scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0,
       };
-    },
-  ),
+    }),
 
-  // Get line chart data for earnings trend in the current month
-  getEarningsTrendThisMonth: protectedProcedure.query(
-    async ({ ctx }): Promise<TrendPoint[]> => {
+  // Daily billed revenue across one month (defaults to the current one)
+  getEarningsTrendForMonth: protectedProcedure
+    .input(monthScopeInput)
+    .query(async ({ ctx, input }): Promise<TrendPoint[]> => {
       const teacher = await ctx.db.teacher.findUnique({
         where: { userId: ctx.session.user.id },
       });
@@ -871,24 +1045,15 @@ export const earningsRouter = createTRPCRouter({
       }
 
       const timezone = ctx.session.user.timezone ?? "UTC";
-      const nowInUserTz = fromUTC(new Date(), timezone);
-      const currentMonth = nowInUserTz.getMonth() + 1;
-      const currentYear = nowInUserTz.getFullYear();
-
-      const monthStart = getStartOfMonthUTC(
-        currentMonth,
-        currentYear,
-        timezone,
-      );
-      const monthEnd = getEndOfMonthUTC(currentMonth, currentYear, timezone);
+      const month = resolveMonth(timezone, input);
 
       const completedLessons = await ctx.db.lesson.findMany({
         where: {
           teacherId: teacher.id,
           status: "COMPLETE",
           date: {
-            gte: monthStart,
-            lte: monthEnd,
+            gte: month.start,
+            lte: month.end,
           },
         },
         select: {
@@ -897,7 +1062,7 @@ export const earningsRouter = createTRPCRouter({
         },
       });
 
-      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+      const daysInMonth = new Date(month.year, month.month, 0).getDate();
       const points = Array.from({ length: daysInMonth }, (_, index) => ({
         day: index + 1,
         label: String(index + 1),
@@ -917,7 +1082,9 @@ export const earningsRouter = createTRPCRouter({
         point.earned += lesson.rate;
       }
 
-      return points.filter((point) => point.day <= nowInUserTz.getDate());
-    },
-  ),
+      // Only days that have happened are plotted — a flat line across days
+      // still to come reads as "you earned nothing", not "not yet". A finished
+      // month is drawn end to end; a month that has not started is empty.
+      return points.filter((point) => point.day <= month.elapsedDays);
+    }),
 });

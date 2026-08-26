@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Search, TrendingDown, TrendingUp, Minus } from "lucide-react";
 
@@ -12,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MonthSelect } from "@/components/ui/month-select";
+import { RefreshOverlay } from "@/components/ui/refresh-overlay";
 import {
   Select,
   SelectContent,
@@ -19,12 +22,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  formatMonthScope,
+  formatShortMonthScope,
+  parseMonthScopeParams,
+  sameMonthScope,
+  type MonthScope,
+} from "@/lib/month-scope";
 import { formatScore, ordinal, takeWithTies } from "@/lib/ranking";
+import { useFilterParams } from "@/lib/use-filter-params";
 import { cn } from "@/lib/utils";
 import { api, type RouterOutputs } from "@/trpc/react";
 
 type LeaderboardData = RouterOutputs["earnings"]["getStudentLeaderboard"];
 type LeaderboardEntry = LeaderboardData["ranked"][number];
+type Comparison = LeaderboardData["summary"]["comparison"];
 
 type SortKey = "rank" | "lessons" | "recent" | "name";
 
@@ -85,12 +97,31 @@ function ScoreSpread({ counts }: { counts: number[] }) {
   );
 }
 
-function TrendPill({ entry }: { entry: LeaderboardEntry }) {
+/**
+ * What the trend is measured against changes with the board: an all-time board
+ * compares this month to the all-time average, a month board compares the month
+ * on screen to the one before it. The pill has to name the right one or a "+0.4"
+ * is meaningless.
+ */
+function TrendPill({
+  entry,
+  comparison,
+}: {
+  entry: LeaderboardEntry;
+  comparison: Comparison;
+}) {
+  const against =
+    comparison.kind === "this-month"
+      ? "this month"
+      : `vs ${formatShortMonthScope(comparison)}`;
+
   if (entry.trend === null) {
     return (
       <span className="text-ink-soft inline-flex items-center gap-1 text-xs">
         <Minus className="size-3.5" aria-hidden="true" />
-        No rating this month
+        {comparison.kind === "this-month"
+          ? "No rating this month"
+          : `Nothing rated in ${formatShortMonthScope(comparison)}`}
       </span>
     );
   }
@@ -112,27 +143,64 @@ function TrendPill({ entry }: { entry: LeaderboardEntry }) {
     >
       <Icon className="size-3.5" aria-hidden="true" />
       {isFlat
-        ? "Holding steady this month"
-        : `${rounded > 0 ? "+" : "−"}${formatScore(Math.abs(rounded))} this month`}
+        ? `Holding steady ${against}`
+        : `${rounded > 0 ? "+" : "−"}${formatScore(Math.abs(rounded))} ${against}`}
     </span>
   );
 }
 
 export function LeaderboardPage({
   initialData,
+  initialScope,
+  currentMonth,
 }: {
   initialData: LeaderboardData;
+  /** The scope the server rendered `initialData` for — null means all-time. */
+  initialScope: MonthScope | null;
+  currentMonth: MonthScope;
 }) {
-  const { data, isPending } = api.earnings.getStudentLeaderboard.useQuery(
-    undefined,
-    { initialData },
+  const { searchParams, setParams } = useFilterParams();
+
+  const scope = parseMonthScopeParams(
+    searchParams.get("month"),
+    searchParams.get("year"),
   );
+
+  const setScope = (next: MonthScope | null) =>
+    setParams(
+      next
+        ? { month: String(next.month), year: String(next.year) }
+        : { month: null, year: null },
+    );
+
+  const { data, isPending, isFetching } =
+    api.earnings.getStudentLeaderboard.useQuery(scope ?? undefined, {
+      // Seeded only for the scope the server actually fetched; every other
+      // month arrives over the wire, with the previous board held on screen so
+      // switching months never blanks the page.
+      initialData: sameMonthScope(scope, initialScope)
+        ? initialData
+        : undefined,
+      placeholderData: keepPreviousData,
+    });
+
+  const { data: activityMonths = [] } =
+    api.earnings.getActivityMonths.useQuery();
+
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("rank");
 
   const ranked = useMemo(() => data?.ranked ?? [], [data]);
   const unrated = data?.unrated ?? [];
   const summary = data?.summary;
+  const comparison: Comparison = summary?.comparison ?? { kind: "this-month" };
+  const isRefreshing = isFetching && !isPending;
+
+  // Named from the data on screen, not from the URL. `keepPreviousData` holds
+  // the old month's rows during a switch, and a heading that had already
+  // flipped to the new month would be captioning the wrong board. The picker
+  // itself still follows `scope`, so the control stays responsive.
+  const scopeLabel = summary?.scope ? formatMonthScope(summary.scope) : null;
 
   // Podium mirrors the dashboard card exactly — same component, same rules,
   // so the two boards can never disagree about who is on top.
@@ -173,24 +241,95 @@ export function LeaderboardPage({
     [ranked],
   );
 
+  // The filter bar renders in every state — including the empty one. A month
+  // with no ratings that also hid its own month picker would be a dead end.
+  const filters = (
+    <section className="relative">
+      <RefreshOverlay active={isRefreshing} />
+      <div className="rounded-[calc(var(--radius)+4px)] border border-pink-100 bg-[linear-gradient(160deg,var(--pink-50),var(--surface)_75%)] p-3 shadow-(--sh-sm) sm:p-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,15rem)]">
+          <Field label="Period">
+            <MonthSelect
+              value={scope}
+              onChange={setScope}
+              months={activityMonths}
+              currentMonth={currentMonth}
+              allTimeLabel="All time"
+              ariaLabel="Ranking period"
+              renderHint={(option) =>
+                option.lessons ? `${option.lessons} lessons` : "no lessons"
+              }
+            />
+          </Field>
+
+          <Field label="Search" htmlFor="ranking-search">
+            <div className="relative">
+              <Search
+                className="text-ink-soft pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2"
+                aria-hidden="true"
+              />
+              <Input
+                id="ranking-search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search students"
+                className="bg-card h-11 rounded-full border-pink-200 pl-10 shadow-(--sh-xs) focus-visible:ring-pink-400"
+              />
+            </div>
+          </Field>
+
+          <Field label="Sort by">
+            <Select
+              value={sortKey}
+              onValueChange={(value) => setSortKey(value as SortKey)}
+            >
+              <SelectTrigger
+                className={selectTriggerClass}
+                aria-label="Sort by"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {SORT_LABELS[key]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </div>
+    </section>
+  );
+
   if (isPending) {
     return (
-      <div className="flex h-60 items-center justify-center">
-        <AppLoader size="sm" />
+      <div className="flex flex-col gap-6">
+        {filters}
+        <div className="flex h-60 items-center justify-center">
+          <AppLoader size="sm" />
+        </div>
       </div>
     );
   }
 
   if (ranked.length === 0) {
     return (
-      <div className="bg-card/60 flex flex-col items-center justify-center rounded-3xl border border-dashed border-pink-200 px-6 py-14 text-center">
-        <Mochi mood="sleepy" bob size={112} />
-        <div className="text-ink mt-4 text-lg font-medium">
-          No rated lessons yet
-        </div>
-        <div className="text-ink-soft mt-1 max-w-sm text-sm">
-          Mark a lesson complete and give it a score from the attendance dialog
-          — the ranking builds itself from there.
+      <div className="flex flex-col gap-6">
+        {filters}
+        <div className="bg-card/60 flex flex-col items-center justify-center rounded-3xl border border-dashed border-pink-200 px-6 py-14 text-center">
+          <Mochi mood="sleepy" bob size={112} />
+          <div className="text-ink mt-4 text-lg font-medium">
+            {scopeLabel
+              ? `No rated lessons in ${scopeLabel}`
+              : "No rated lessons yet"}
+          </div>
+          <div className="text-ink-soft mt-1 max-w-sm text-sm">
+            {scopeLabel
+              ? "Pick another month above, or switch to All time to see the whole studio."
+              : "Mark a lesson complete and give it a score from the attendance dialog — the ranking builds itself from there."}
+          </div>
         </div>
       </div>
     );
@@ -198,13 +337,15 @@ export function LeaderboardPage({
 
   return (
     <div className="flex flex-col gap-8 md:gap-10">
+      {filters}
+
       {/* ── Podium ─────────────────────────────────────────────────────── */}
       <section>
         <Card className="border-border bg-card rounded-[2rem] py-6 shadow-(--sh)">
           <CardHeader className="gap-1 pb-0">
             <CardTitle className="text-ink flex items-center gap-2 font-serif text-[1.35rem] leading-tight font-normal">
               <Blossom className="text-bubblegum" size={17} />
-              All-Time Podium
+              {scopeLabel ? `${scopeLabel} Podium` : "All-Time Podium"}
             </CardTitle>
             <p className="text-ink-soft text-xs">
               By average lesson score · students with the same average share a
@@ -224,52 +365,25 @@ export function LeaderboardPage({
 
       {/* ── Full ranking ───────────────────────────────────────────────── */}
       <section>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0">
             <h2 className="text-ink flex items-center gap-2 font-serif text-xl font-normal sm:text-2xl">
               <Blossom size={17} className="text-bubblegum" />
               Full Ranking
             </h2>
             <p className="text-ink-soft mt-1 text-sm">
-              {summary?.firstRatedAt
-                ? `Every rated lesson since ${format(summary.firstRatedAt, "MMMM yyyy")}.`
-                : "Every rated lesson so far."}
+              {scopeLabel
+                ? `Every lesson rated in ${scopeLabel}.`
+                : summary?.firstRatedAt
+                  ? `Every rated lesson since ${format(summary.firstRatedAt, "MMMM yyyy")}.`
+                  : "Every rated lesson so far."}
             </p>
           </div>
-          <Badge className="rounded-full bg-pink-100 px-3 py-1 font-semibold text-pink-700 tabular-nums hover:bg-pink-100">
-            {ranked.length} ranked
+          <Badge className="flex-none rounded-full bg-pink-100 px-3 py-1 font-semibold text-pink-700 tabular-nums hover:bg-pink-100">
+            {visible.length === ranked.length
+              ? `${ranked.length} ranked`
+              : `${visible.length} of ${ranked.length}`}
           </Badge>
-        </div>
-
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_16rem]">
-          <div className="relative">
-            <Search
-              className="text-ink-soft pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2"
-              aria-hidden="true"
-            />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search students"
-              aria-label="Search students"
-              className="bg-card h-11 rounded-full border-pink-200 pl-10 shadow-(--sh-xs) focus-visible:ring-pink-400"
-            />
-          </div>
-          <Select
-            value={sortKey}
-            onValueChange={(value) => setSortKey(value as SortKey)}
-          >
-            <SelectTrigger className={selectTriggerClass} aria-label="Sort by">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
-                <SelectItem key={key} value={key}>
-                  {SORT_LABELS[key]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {visible.length === 0 ? (
@@ -290,63 +404,78 @@ export function LeaderboardPage({
                   className="rise bg-card rounded-3xl border border-pink-100 p-4 shadow-(--sh-sm) sm:p-5"
                   style={{ "--i": index } as CSSProperties}
                 >
-                  <div className="flex flex-wrap items-start gap-4">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <span
-                        className={cn(
-                          "grid size-11 flex-none place-items-center rounded-2xl font-serif text-lg font-bold tabular-nums",
-                          entry.rank === 1
-                            ? "bg-pink-100 text-pink-700"
-                            : entry.rank === 2
-                              ? "bg-teal-100 text-teal-700"
-                              : entry.rank === 3
-                                ? "bg-sand-100 text-sand-700"
-                                : "text-ink-soft bg-pink-50",
-                        )}
-                      >
-                        <span aria-hidden="true">{entry.rank}</span>
-                        <span className="sr-only">
-                          {ordinal(entry.rank)} place{isTied ? " (tied)" : ""}
-                        </span>
+                  {/* Identity row. Fixed-width rank badge and avatar so the
+                      names start on one line down the whole list, and the
+                      score pill hangs on a single right edge — nothing wraps
+                      onto its own row at any width. */}
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <span
+                      className={cn(
+                        "grid size-10 flex-none place-items-center rounded-2xl font-serif text-lg font-bold tabular-nums sm:size-11",
+                        entry.rank === 1
+                          ? "bg-pink-100 text-pink-700"
+                          : entry.rank === 2
+                            ? "bg-teal-100 text-teal-700"
+                            : entry.rank === 3
+                              ? "bg-sand-100 text-sand-700"
+                              : "text-ink-soft bg-pink-50",
+                      )}
+                    >
+                      <span aria-hidden="true">{entry.rank}</span>
+                      <span className="sr-only">
+                        {ordinal(entry.rank)} place{isTied ? " (tied)" : ""}
                       </span>
+                    </span>
 
-                      <Avatar className="border-card size-11 flex-none border-2 shadow-(--sh-xs)">
-                        <AvatarImage src={entry.avatar ?? undefined} />
-                        <AvatarFallback className="bg-pink-100 text-xs font-bold text-pink-700">
-                          {getInitials(entry.studentName)}
-                        </AvatarFallback>
-                      </Avatar>
+                    <Avatar className="border-card size-10 flex-none border-2 shadow-(--sh-xs) sm:size-11">
+                      <AvatarImage src={entry.avatar ?? undefined} />
+                      <AvatarFallback className="bg-pink-100 text-xs font-bold text-pink-700">
+                        {getInitials(entry.studentName)}
+                      </AvatarFallback>
+                    </Avatar>
 
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-ink truncate font-semibold">
-                            {entry.studentName}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-ink truncate font-semibold">
+                          {entry.studentName}
+                        </span>
+                        {isTied && (
+                          <span className="text-ink-soft flex-none rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                            tied
                           </span>
-                          {isTied && (
-                            <span className="text-ink-soft flex-none rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
-                              tied
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-0.5">
-                          <TrendPill entry={entry} />
-                        </div>
+                        )}
+                      </div>
+                      <div className="mt-0.5">
+                        <TrendPill entry={entry} comparison={comparison} />
                       </div>
                     </div>
 
-                    <div className="flex flex-none items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1.5 text-sm font-bold text-pink-700 tabular-nums">
+                    {/* Score only — the rated count lives in the stat grid, so
+                        this pill stays a constant width and the column of
+                        averages reads straight down the page. */}
+                    <span className="flex flex-none items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1.5 text-sm font-bold text-pink-700 tabular-nums">
                       <Blossom size={13} className="text-bubblegum" />
                       {formatScore(entry.avgScore)}
-                      <span className="font-semibold text-pink-400">
-                        · {entry.ratedCount} rated
+                      <span className="sr-only">
+                        {" "}
+                        average from {entry.ratedCount} rated{" "}
+                        {entry.ratedCount === 1 ? "lesson" : "lessons"}
                       </span>
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-                    <Stat label="Lessons done" value={entry.completedCount} />
-                    <Stat label="Best score" value={entry.bestScore} />
-                    <Stat label="Rated" value={`${entry.ratedShare}%`} />
+                  {/* Four short, tabular values so the columns line up across
+                      every row. Coverage rides along inside "Rated" rather
+                      than taking a tile of its own — it is the same fact as
+                      rated-over-lessons, just easier to compare between
+                      students with different lesson counts. */}
+                  <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+                    <Stat label="Lessons" value={entry.completedCount} />
+                    <Stat
+                      label="Rated"
+                      value={`${entry.ratedCount} · ${entry.ratedShare}%`}
+                    />
+                    <Stat label="Best" value={entry.bestScore} />
                     <Stat
                       label="Last rated"
                       value={
@@ -355,9 +484,20 @@ export function LeaderboardPage({
                           : "—"
                       }
                     />
-                  </div>
+                  </dl>
 
-                  <div className="mt-3.5">
+                  <div className="mt-4">
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                        Score spread
+                      </span>
+                      <span
+                        className="text-ink-soft text-[10px] font-semibold"
+                        aria-hidden="true"
+                      >
+                        5 → 1
+                      </span>
+                    </div>
                     <ScoreSpread counts={entry.scoreCounts} />
                   </div>
 
@@ -383,8 +523,9 @@ export function LeaderboardPage({
             Not Rated Yet
           </h2>
           <p className="text-ink-soft mt-1 mb-4 text-sm">
-            No scored lesson yet, so there is no average to rank — they are
-            listed here rather than placed last.
+            {scopeLabel
+              ? `No scored lesson in ${scopeLabel}, so there is no average to rank — they are listed here rather than placed last.`
+              : "No scored lesson yet, so there is no average to rank — they are listed here rather than placed last."}
           </p>
 
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -405,7 +546,9 @@ export function LeaderboardPage({
                   </div>
                   <div className="text-ink-soft text-xs">
                     {student.completedCount === 0
-                      ? "No completed lessons yet"
+                      ? scopeLabel
+                        ? "No lessons that month"
+                        : "No completed lessons yet"
                       : `${student.completedCount} completed lesson${student.completedCount === 1 ? "" : "s"} · none rated`}
                   </div>
                 </div>
@@ -418,15 +561,48 @@ export function LeaderboardPage({
   );
 }
 
+/**
+ * Label above control — keeps the three filters on one grid, with matching
+ * label baselines and a shared 44px control height.
+ *
+ * Only the search box is a real form control, so only it gets a `<label>`; the
+ * two Radix triggers carry their own `aria-label` and take a plain caption
+ * here, because a `<label for>` pointing at a button id that never renders is
+ * worse for a screen reader than no label at all.
+ */
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: React.ReactNode;
+}) {
+  const Caption = htmlFor ? "label" : "span";
+
+  return (
+    <div className="min-w-0 space-y-1.5">
+      <Caption
+        htmlFor={htmlFor}
+        className="block text-xs font-medium text-pink-700"
+      >
+        {label}
+      </Caption>
+      {children}
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div>
-      <div className="text-[10px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+    <div className="min-w-0">
+      <dt className="text-[10px] font-semibold tracking-[0.08em] whitespace-nowrap text-pink-700 uppercase">
         {label}
-      </div>
-      <div className="text-ink mt-0.5 text-sm font-semibold tabular-nums">
+      </dt>
+      <dd className="text-ink mt-0.5 truncate text-sm font-semibold tabular-nums">
         {value}
-      </div>
+      </dd>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { DashboardEarningsTrendCard } from "./dashboard-earnings-trend-card";
+import { useDashboardMonth } from "./dashboard-month-provider";
 import { DashboardQuickInsightsCard } from "./dashboard-quick-insights-card";
 import { DashboardTopStudentsCard } from "./dashboard-top-students-card";
 import { TodayLessonsTable } from "./today-lessons-table";
@@ -49,21 +50,23 @@ const birthdayCardStyles = {
 export function DashboardIntelligencePanel() {
   const { currency } = useCurrency();
   const { isBirthdayMode } = useBirthday();
+  const { scope, isCurrentMonth, label, shortLabel } = useDashboardMonth();
 
   const { data: topStudents = [], isLoading: studentsLoading } =
-    api.earnings.getTopStudentsThisMonth.useQuery({ limit: 5 });
+    api.earnings.getTopStudentsForMonth.useQuery({ limit: 5, ...scope });
 
   const { data: trendData = [], isLoading: trendLoading } =
-    api.earnings.getEarningsTrendThisMonth.useQuery();
+    api.earnings.getEarningsTrendForMonth.useQuery(scope);
 
   const { data: insights, isLoading: insightsLoading } =
-    api.earnings.getQuickInsights.useQuery();
+    api.earnings.getQuickInsights.useQuery(scope);
 
   const defaultInsights = {
     completed: 0,
     cancelled: 0,
     bestDay: "No best day yet",
     inactiveCount: 0,
+    inactiveLabel: "in the last 14 days",
     completionRate: 0,
   };
 
@@ -114,6 +117,11 @@ export function DashboardIntelligencePanel() {
         <DashboardTopStudentsCard
           studentsLoading={studentsLoading}
           topFiveStudents={topStudents}
+          monthLabel={label}
+          isCurrentMonth={isCurrentMonth}
+          // Carries the month across, so the full board opens on the same
+          // month the card is showing rather than snapping back to all-time.
+          rankingHref={`/leaderboard?month=${scope.month}&year=${scope.year}`}
           className={cn(
             "h-full transition-all duration-300 ease-out",
             isBirthdayMode &&
@@ -140,6 +148,8 @@ export function DashboardIntelligencePanel() {
         <DashboardQuickInsightsCard
           insights={quickInsights}
           insightsLoading={insightsLoading}
+          monthLabel={shortLabel}
+          isCurrentMonth={isCurrentMonth}
           className={cn(
             "h-full transition-all duration-300 ease-out",
             isBirthdayMode &&
@@ -168,6 +178,8 @@ export function DashboardIntelligencePanel() {
           trendData={trendData}
           insights={quickInsights}
           currency={currency}
+          monthLabel={label}
+          isCurrentMonth={isCurrentMonth}
           className={cn(
             "h-full transition-all duration-300 ease-out",
             isBirthdayMode &&

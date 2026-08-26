@@ -24,12 +24,20 @@ type TopStudent = PodiumStudent;
 type DashboardTopStudentsCardProps = {
   studentsLoading: boolean;
   topFiveStudents: TopStudent[];
+  /** The month the ranking covers, e.g. "August 2026". */
+  monthLabel: string;
+  isCurrentMonth: boolean;
+  /** Deep link to /leaderboard already scoped to the same month. */
+  rankingHref: string;
   className?: string;
 };
 
 export function DashboardTopStudentsCard({
   studentsLoading,
   topFiveStudents,
+  monthLabel,
+  isCurrentMonth,
+  rankingHref,
   className,
 }: DashboardTopStudentsCardProps) {
   return (
@@ -42,10 +50,10 @@ export function DashboardTopStudentsCard({
       <CardHeader className="gap-1 pb-0">
         <CardTitle className="text-ink flex items-center gap-2 font-serif text-[1.35rem] leading-tight font-normal">
           <Blossom className="text-bubblegum" size={17} />
-          Top Students This Month
+          {isCurrentMonth ? "Top Students This Month" : "Top Students"}
         </CardTitle>
         <p className="text-ink-soft text-xs">
-          By lesson score · ties share a rank
+          {monthLabel} · by lesson score · ties share a rank
         </p>
       </CardHeader>
 
@@ -80,10 +88,14 @@ export function DashboardTopStudentsCard({
             <Mochi mood="sleepy" size={104} />
             <div>
               <p className="text-ink font-serif text-base">
-                No rated lessons yet this month
+                {isCurrentMonth
+                  ? "No rated lessons yet this month"
+                  : `No rated lessons in ${monthLabel}`}
               </p>
               <p className="text-ink-soft mt-1 text-xs">
-                Rate a completed lesson to crown your star performers here.
+                {isCurrentMonth
+                  ? "Rate a completed lesson to crown your star performers here."
+                  : "Nothing was scored that month, so there is no ranking to show."}
               </p>
             </div>
           </div>
@@ -94,7 +106,7 @@ export function DashboardTopStudentsCard({
 
       <div className="px-6">
         <Link
-          href="/leaderboard"
+          href={rankingHref}
           className="text-ink flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-pink-200 bg-pink-50/70 px-4 text-[13px] font-semibold transition-colors hover:bg-pink-100 hover:text-pink-700"
         >
           View full ranking

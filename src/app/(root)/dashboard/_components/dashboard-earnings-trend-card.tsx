@@ -26,6 +26,13 @@ type DashboardEarningsTrendCardProps = {
   trendData: TrendPoint[];
   insights: InsightSummary;
   currency: CurrencyCode;
+  /** The month being plotted, e.g. "August 2026". */
+  monthLabel: string;
+  /**
+   * A finished month is drawn end to end and has no "today" in it — the marker
+   * would otherwise land on the 31st and label a past day as now.
+   */
+  isCurrentMonth: boolean;
   className?: string;
 };
 
@@ -82,6 +89,8 @@ export function DashboardEarningsTrendCard({
   trendData,
   insights,
   currency,
+  monthLabel,
+  isCurrentMonth,
   className,
 }: DashboardEarningsTrendCardProps) {
   const gradientId = useId();
@@ -98,10 +107,10 @@ export function DashboardEarningsTrendCard({
           <div className="space-y-1">
             <CardTitle className="text-ink flex items-center gap-2 font-serif text-2xl font-normal">
               <Blossom className="text-bubblegum" size={20} />
-              Earnings Trend This Month
+              {isCurrentMonth ? "Earnings Trend This Month" : "Earnings Trend"}
             </CardTitle>
             <p className="text-ink-soft text-sm">
-              Daily billed revenue · COMPLETE lessons only
+              {monthLabel} · daily billed revenue · COMPLETE lessons only
             </p>
           </div>
 
@@ -128,12 +137,17 @@ export function DashboardEarningsTrendCard({
         {trendLoading ? (
           <Skeleton className="h-64 w-full rounded-[1.5rem] sm:h-72" />
         ) : trendData.length === 0 ? (
-          <EarningsTrendEmpty />
+          <EarningsTrendEmpty
+            monthLabel={monthLabel}
+            isCurrentMonth={isCurrentMonth}
+          />
         ) : (
           <EarningsTrendChart
             trendData={trendData}
             currency={currency}
             gradientId={gradientId}
+            monthLabel={monthLabel}
+            isCurrentMonth={isCurrentMonth}
           />
         )}
       </CardContent>
@@ -141,12 +155,20 @@ export function DashboardEarningsTrendCard({
   );
 }
 
-function EarningsTrendEmpty() {
+function EarningsTrendEmpty({
+  monthLabel,
+  isCurrentMonth,
+}: {
+  monthLabel: string;
+  isCurrentMonth: boolean;
+}) {
   return (
     <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-dashed border-pink-200 bg-pink-50/50 px-6 py-10 text-center">
       <Mochi mood="sleepy" size={96} />
       <p className="text-ink-soft text-sm">
-        No completed lessons yet this month.
+        {isCurrentMonth
+          ? "No completed lessons yet this month."
+          : `No completed lessons in ${monthLabel}.`}
       </p>
     </div>
   );
@@ -156,10 +178,14 @@ function EarningsTrendChart({
   trendData,
   currency,
   gradientId,
+  monthLabel,
+  isCurrentMonth,
 }: {
   trendData: TrendPoint[];
   currency: CurrencyCode;
   gradientId: string;
+  monthLabel: string;
+  isCurrentMonth: boolean;
 }) {
   const areaFill = `${gradientId}-area`;
   const lineStroke = `${gradientId}-line`;
@@ -190,8 +216,10 @@ function EarningsTrendChart({
   const areaPath =
     count >= 2 ? `${linePath} L${lastX},${BOTTOM} L${LEFT},${BOTTOM} Z` : "";
 
-  // First / today anchors. This component is only rendered for non-empty data,
+  // First / last anchors. This component is only rendered for non-empty data,
   // so the guard is unreachable — it exists to satisfy noUncheckedIndexedAccess.
+  // The last plotted day is "today" only on the live month; on a finished
+  // month it is just the 30th, and marking it as now would be a lie.
   const firstPoint = points[0];
   const today = points[count - 1];
   if (!firstPoint || !today) {
@@ -210,9 +238,10 @@ function EarningsTrendChart({
 
   const todayLabelY = today.y > 64 ? today.y - 12 : today.y + 22;
 
+  const period = isCurrentMonth ? "this month" : `in ${monthLabel}`;
   const ariaLabel = showPeak
-    ? `Area chart of daily billed earnings this month across ${count} ${count === 1 ? "day" : "days"}, COMPLETE lessons only. Peak ${formatCurrency(peak.earned, currency)} on day ${peak.label}.`
-    : `Area chart of daily billed earnings this month across ${count} ${count === 1 ? "day" : "days"}. No billed earnings yet.`;
+    ? `Area chart of daily billed earnings ${period} across ${count} ${count === 1 ? "day" : "days"}, COMPLETE lessons only. Peak ${formatCurrency(peak.earned, currency)} on day ${peak.label}.`
+    : `Area chart of daily billed earnings ${period} across ${count} ${count === 1 ? "day" : "days"}. No billed earnings.`;
 
   return (
     <div className="flex flex-col">
@@ -295,9 +324,11 @@ function EarningsTrendChart({
             />
           )}
 
-          {/* data dots — identical for every past day (today gets its own mark) */}
+          {/* data dots — identical for every day. On the live month the last
+              one is dropped because the "today" marker below replaces it; on a
+              finished month there is no such marker, so it keeps its dot. */}
           <g fill="var(--surface)" stroke="var(--teal-600)" strokeWidth="2">
-            {points.slice(0, -1).map((point) => (
+            {(isCurrentMonth ? points.slice(0, -1) : points).map((point) => (
               <circle key={point.day} cx={point.x} cy={point.y} r="3.4" />
             ))}
           </g>
@@ -324,51 +355,57 @@ function EarningsTrendChart({
             </>
           )}
 
-          {/* today marker */}
-          <line
-            x1={today.x}
-            y1={TOP}
-            x2={today.x}
-            y2={BOTTOM}
-            stroke="var(--bubblegum)"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-          />
-          <circle
-            cx={today.x}
-            cy={today.y}
-            r="7"
-            fill="var(--bubblegum)"
-            opacity="0.3"
-          />
-          <circle cx={today.x} cy={today.y} r="4" fill="var(--pink-600)" />
-          <text
-            x={today.x - 8}
-            y={todayLabelY}
-            fill="var(--pink-700)"
-            fontSize="11"
-            fontWeight="700"
-            textAnchor="end"
-          >
-            Today
-          </text>
+          {/* today marker — only on the month that actually contains today */}
+          {isCurrentMonth && (
+            <>
+              <line
+                x1={today.x}
+                y1={TOP}
+                x2={today.x}
+                y2={BOTTOM}
+                stroke="var(--bubblegum)"
+                strokeWidth="1.5"
+                strokeDasharray="4 4"
+              />
+              <circle
+                cx={today.x}
+                cy={today.y}
+                r="7"
+                fill="var(--bubblegum)"
+                opacity="0.3"
+              />
+              <circle cx={today.x} cy={today.y} r="4" fill="var(--pink-600)" />
+              <text
+                x={today.x - 8}
+                y={todayLabelY}
+                fill="var(--pink-700)"
+                fontSize="11"
+                fontWeight="700"
+                textAnchor="end"
+              >
+                Today
+              </text>
+            </>
+          )}
 
           {/* x axis · day of month */}
           <g textAnchor="middle">
-            {points.map((point, index) => (
-              <text
-                key={point.day}
-                x={point.x}
-                y="238"
-                fill={
-                  index === count - 1 ? "var(--pink-700)" : "var(--ink-soft)"
-                }
-                fontSize="11"
-                fontWeight={index === count - 1 ? 700 : 600}
-              >
-                {point.label}
-              </text>
-            ))}
+            {points.map((point, index) => {
+              const isToday = isCurrentMonth && index === count - 1;
+
+              return (
+                <text
+                  key={point.day}
+                  x={point.x}
+                  y="238"
+                  fill={isToday ? "var(--pink-700)" : "var(--ink-soft)"}
+                  fontSize="11"
+                  fontWeight={isToday ? 700 : 600}
+                >
+                  {point.label}
+                </text>
+              );
+            })}
           </g>
           <text
             x={LEFT + (lastX - LEFT) / 2}
@@ -392,13 +429,15 @@ function EarningsTrendChart({
           />
           Billed (COMPLETE only)
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="block size-2.5 rounded-full"
-            style={{ background: "var(--bubblegum)" }}
-          />
-          Today
-        </span>
+        {isCurrentMonth && (
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="block size-2.5 rounded-full"
+              style={{ background: "var(--bubblegum)" }}
+            />
+            Today
+          </span>
+        )}
       </p>
     </div>
   );

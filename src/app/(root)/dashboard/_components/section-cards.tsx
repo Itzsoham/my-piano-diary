@@ -7,24 +7,12 @@ import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { useBirthday } from "@/components/birthday/birthday-provider";
 import { Blossom } from "@/components/blossom/blossom";
+import { MONTH_NAMES } from "@/lib/month-scope";
 import { cn } from "@/lib/utils";
 import { Eye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
+import { useDashboardMonth } from "./dashboard-month-provider";
 
 // Smooth count-up hook
 function useCountUp(target: number, duration = 800) {
@@ -56,18 +44,23 @@ function useCountUp(target: number, duration = 800) {
 export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
 
-  const { data: earnings, isLoading } =
-    api.earnings.getDashboard.useQuery() as {
-      data: DashboardOutput | undefined;
-      isLoading: boolean;
-    };
+  const { scope, isCurrentMonth, isFuture, shortLabel } = useDashboardMonth();
+
+  const { data: earnings, isLoading } = api.earnings.getDashboard.useQuery(
+    scope,
+  ) as {
+    data: DashboardOutput | undefined;
+    isLoading: boolean;
+  };
   const { currency } = useCurrency();
   const { isBirthdayMode } = useBirthday();
   const [isMissedRevealed, setIsMissedRevealed] = useState(false);
 
   // Month-elapsed progress for the Revenue tile's piano-key strip. Derived
-  // client-side from the local date after mount, so SSR and hydration never
-  // disagree across timezones (the earnings query exposes no day-of-month).
+  // client-side after mount, so SSR and hydration never disagree across
+  // timezones (the earnings query exposes no day-of-month). A month that is
+  // already over is simply full — its bar is a finished month, not a stalled
+  // one.
   const [monthElapsed, setMonthElapsed] = useState<{
     day: number;
     days: number;
@@ -76,24 +69,41 @@ export function SectionCards() {
   } | null>(null);
 
   useEffect(() => {
-    const now = new Date();
-    const day = now.getDate();
-    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const days = new Date(scope.year, scope.month, 0).getDate();
+    const day = isCurrentMonth ? new Date().getDate() : isFuture ? 0 : days;
+
     setMonthElapsed({
       day,
       days,
       pct: Math.round((day / days) * 100),
-      month: MONTH_NAMES[now.getMonth()]!,
+      month: MONTH_NAMES[scope.month - 1]!,
     });
-  }, []);
+  }, [scope.month, scope.year, isCurrentMonth, isFuture]);
 
-  const currentMonthEarnings = earnings?.currentMonthEarnings ?? 0;
-  const missedAmount = earnings?.currentMonthLoss ?? 0;
-  const collectedAmount = earnings?.lastMonthCollected ?? 0;
-  const outstandingAmount = earnings?.lastMonthOutstanding ?? 0;
+  const monthEarnings = earnings?.monthEarnings ?? 0;
+  const missedAmount = earnings?.monthLoss ?? 0;
+  const collectedAmount = earnings?.monthCollected ?? 0;
+  const outstandingAmount = earnings?.monthOutstanding ?? 0;
+
+  // Titles name the month the tiles are actually about. The live month keeps
+  // the familiar "this month" wording; any other month gets named outright,
+  // so a figure can never be mistaken for today's.
+  const titles = isCurrentMonth
+    ? {
+        revenue: "This Month Revenue",
+        missed: "Missed This Month",
+        collected: "Collected This Month",
+        outstanding: "Outstanding This Month",
+      }
+    : {
+        revenue: `${shortLabel} Revenue`,
+        missed: `Missed in ${shortLabel}`,
+        collected: `Collected in ${shortLabel}`,
+        outstanding: `Outstanding in ${shortLabel}`,
+      };
 
   // Count-up values (only animate in birthday mode)
-  const animatedRevenue = useCountUp(isBirthdayMode ? currentMonthEarnings : 0);
+  const animatedRevenue = useCountUp(isBirthdayMode ? monthEarnings : 0);
   const animatedMissed = useCountUp(isBirthdayMode ? missedAmount : 0);
   const animatedCollected = useCountUp(isBirthdayMode ? collectedAmount : 0);
   const animatedOutstanding = useCountUp(
@@ -125,8 +135,8 @@ export function SectionCards() {
     bdaySubtitle: string;
   }> = [
     {
-      title: "This Month Revenue",
-      rawValue: currentMonthEarnings,
+      title: titles.revenue,
+      rawValue: monthEarnings,
       animatedValue: animatedRevenue,
       washBg: "linear-gradient(160deg, var(--pink-100), var(--surface) 70%)",
       borderClass: "border-pink-200/70",
@@ -138,7 +148,7 @@ export function SectionCards() {
       bdaySubtitle: bdaySubtitles[0]!,
     },
     {
-      title: "Missed This Month",
+      title: titles.missed,
       rawValue: missedAmount,
       animatedValue: animatedMissed,
       washBg: "linear-gradient(160deg, var(--no-bg), var(--surface) 72%)",
@@ -152,7 +162,7 @@ export function SectionCards() {
       bdaySubtitle: bdaySubtitles[1]!,
     },
     {
-      title: "Collected Last Month",
+      title: titles.collected,
       rawValue: collectedAmount,
       animatedValue: animatedCollected,
       washBg: "linear-gradient(160deg, var(--teal-100), var(--surface) 70%)",
@@ -167,7 +177,7 @@ export function SectionCards() {
       bdaySubtitle: bdaySubtitles[2]!,
     },
     {
-      title: "Outstanding Last Month",
+      title: titles.outstanding,
       rawValue: outstandingAmount,
       animatedValue: animatedOutstanding,
       washBg: "linear-gradient(160deg, var(--sand-100), var(--surface) 70%)",

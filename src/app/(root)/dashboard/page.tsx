@@ -1,6 +1,9 @@
 import { SectionCards } from "@/app/(root)/dashboard/_components/section-cards";
 import { DashboardHero } from "@/app/(root)/dashboard/_components/dashboard-hero";
 import { DashboardIntelligencePanel } from "@/app/(root)/dashboard/_components/dashboard-intelligence-panel";
+import { DashboardMonthBar } from "@/app/(root)/dashboard/_components/dashboard-month-bar";
+import { DashboardMonthProvider } from "@/app/(root)/dashboard/_components/dashboard-month-provider";
+import { getCurrentMonthScope } from "@/server/current-month";
 // import { BirthdayCountdownCard } from "./_components/birthday-countdown-card";
 
 export const metadata = {
@@ -9,7 +12,12 @@ export const metadata = {
     "Today at a glance: who is coming, what is expected, and what is still owed.",
 };
 
-export default function Page() {
+export default async function Page() {
+  // Resolved in the teacher's timezone so this default is the same month the
+  // month-scoped procedures call "current"; the `?month=&year=` query string
+  // overrides it from there.
+  const currentMonth = await getCurrentMonthScope();
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -20,9 +28,18 @@ export default function Page() {
 
           <DashboardHero />
 
-          <SectionCards />
+          <DashboardMonthProvider
+            defaultMonth={currentMonth.month}
+            defaultYear={currentMonth.year}
+          >
+            <div className="flex flex-col gap-8 md:gap-10">
+              <DashboardMonthBar />
 
-          <DashboardIntelligencePanel />
+              <SectionCards />
+
+              <DashboardIntelligencePanel />
+            </div>
+          </DashboardMonthProvider>
         </div>
       </div>
     </div>
