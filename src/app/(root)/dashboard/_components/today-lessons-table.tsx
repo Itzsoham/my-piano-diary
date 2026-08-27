@@ -89,6 +89,29 @@ const getStatusChip = (status: LessonStatus) => (
   </span>
 );
 
+// Sticky head cells for the >=lg table. The background and border live on
+// the cells, not the <tr>: a sticky <thead> paints neither in every browser,
+// so rows would scroll through a transparent header.
+function HeadCell({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <th
+      scope="col"
+      className={cn(
+        "bg-card border-border text-ink-soft sticky top-0 z-2 border-b pt-1 pb-2.5 text-[11px] font-semibold tracking-[0.08em] uppercase",
+        className,
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+
 const getInitials = (name: string) =>
   name
     .split(" ")
@@ -219,6 +242,46 @@ export function TodayLessonsTable({
     </li>
   ));
 
+  const desktopSkeletonRows = Array.from({ length: 5 }, (_, index) => (
+    <tr
+      key={`desktop-skeleton-${index}`}
+      className="[&>td]:border-border/60 [&>td]:border-b"
+    >
+      <td className="py-3 pr-3">
+        <Skeleton className="h-4 w-16" />
+      </td>
+      <td className="py-3 pr-3">
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="size-9 shrink-0 rounded-full" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+      </td>
+      <td className="py-3 pr-3">
+        <Skeleton className="h-5 w-20 rounded-full" />
+      </td>
+      <td className="py-3 pr-3">
+        <Skeleton className="ml-auto h-4 w-20" />
+      </td>
+      <td className="py-3">
+        <Skeleton className="ml-auto h-9 w-20 rounded-full" />
+      </td>
+    </tr>
+  ));
+
+  const tableHead = (
+    <thead>
+      <tr>
+        <HeadCell className="w-24">Time</HeadCell>
+        <HeadCell>Student</HeadCell>
+        <HeadCell>Status</HeadCell>
+        <HeadCell className="text-right">Earnings</HeadCell>
+        <HeadCell className="w-px">
+          <span className="sr-only">Attendance</span>
+        </HeadCell>
+      </tr>
+    </thead>
+  );
+
   return (
     <Card
       className={cn(
@@ -315,95 +378,70 @@ export function TodayLessonsTable({
 
       <CardContent
         className={cn(
-          "min-h-0 flex-1 px-4 pt-1 pb-5 sm:px-6 sm:pb-6",
+          "min-h-0 flex-1 px-4 pt-1 pb-5 sm:px-6 sm:pb-6 lg:pt-0",
           contentClassName,
         )}
       >
         {isLoading ? (
-          <ol className="flex flex-col gap-4">{skeletonRows}</ol>
+          <>
+            <table className="hidden w-full border-separate border-spacing-0 text-left lg:table">
+              {tableHead}
+              <tbody>{desktopSkeletonRows}</tbody>
+            </table>
+            <ol className="flex flex-col gap-4 lg:hidden">{skeletonRows}</ol>
+          </>
         ) : lessons.length > 0 ? (
-          <ol className="flex flex-col gap-4">
-            {lessons.map((lesson, index) => {
-              const status = toLessonStatus(lesson.status);
-              const isCancelled = status === "CANCELLED";
-              const isPending = status === "PENDING";
-              const isLast = index === lessons.length - 1;
+          <>
+            {/* >=lg: a dense table. The day is a list of five short facts per
+                lesson, and at this width the timeline spends the card's height
+                on air — which the dashboard grid then hands to the ranking card
+                beside it as blank space. The table keeps the same facts in a
+                fifth of the height, and the card scrolls past its cap. */}
+            <table className="hidden w-full border-separate border-spacing-0 text-left lg:table">
+              {tableHead}
+              <tbody>
+                {lessons.map((lesson) => {
+                  const status = toLessonStatus(lesson.status);
+                  const isCancelled = status === "CANCELLED";
+                  const isPending = status === "PENDING";
 
-              return (
-                <li
-                  key={lesson.id}
-                  className="rise grid grid-cols-[24px_minmax(0,1fr)] gap-x-2 gap-y-1 sm:grid-cols-[78px_30px_minmax(0,1fr)] sm:gap-x-3.5 sm:gap-y-0"
-                  style={{ "--i": index } as CSSProperties}
-                >
-                  {/* Time + duration: a fixed column on the left at ≥sm, stacked
-                      above the card on phone. */}
-                  <div className="col-start-2 row-start-1 flex items-baseline gap-1.5 sm:col-start-1 sm:flex-col sm:items-end sm:gap-0 sm:pt-4 sm:text-right">
-                    <span className="text-ink text-[13px] font-bold tracking-tight tabular-nums">
-                      {formatTime(lesson.date)}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      className="text-ink-soft sm:hidden"
-                    >
-                      ·
-                    </span>
-                    <span className="text-ink-soft text-[11px] font-medium">
-                      {lesson.duration} min
-                    </span>
-                  </div>
-
-                  {/* The soft rail + the status-coloured blossom node. */}
-                  <div className="relative col-start-1 row-span-2 row-start-1 flex justify-center sm:col-start-2 sm:row-span-1">
-                    <span
-                      aria-hidden="true"
+                  return (
+                    <tr
+                      key={lesson.id}
                       className={cn(
-                        "absolute top-0 w-0.5 rounded-full",
-                        isLast ? "h-7" : "-bottom-4",
-                      )}
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(180deg, var(--mint), var(--cotton))",
-                      }}
-                    />
-                    <div
-                      className={cn(
-                        "relative z-1 mt-2 grid size-5.5 shrink-0 place-items-center sm:mt-3",
-                        NODE_COLORS[status],
+                        "[&>td]:border-border/60 transition-colors [&>td]:border-b last:[&>td]:border-b-0",
+                        isCancelled
+                          ? "bg-[linear-gradient(90deg,var(--pink-50),transparent_70%)]"
+                          : "hover:bg-muted/50",
                       )}
                     >
-                      <span
-                        aria-hidden="true"
-                        className="absolute -inset-1 rounded-full bg-current opacity-20"
-                      />
-                      <span
-                        aria-hidden="true"
-                        className="bg-card absolute inset-0 rounded-full"
-                      />
-                      <Blossom size={21} className="relative z-1" />
-                    </div>
-                  </div>
-
-                  {/* The lesson card — strictly sober: no ornament inside. */}
-                  <article
-                    className={cn(
-                      "col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-(--sh-sm) sm:col-start-3 sm:row-start-1 sm:p-4",
-                      isCancelled
-                        ? "border-(--line-pink) bg-[linear-gradient(160deg,var(--pink-50),var(--card)_62%)]"
-                        : "border-border bg-card",
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="border-card size-10 shrink-0 border-2 shadow-(--sh-sm)">
-                        <AvatarImage src={lesson.student.avatar ?? undefined} />
-                        <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-xs font-bold">
-                          {getInitials(lesson.student.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-ink truncate text-[15px] font-semibold tracking-tight">
-                          {lesson.student.name}
+                      <td className="py-3 pr-3 align-middle">
+                        <div className="text-ink text-[13px] font-bold tracking-tight tabular-nums">
+                          {formatTime(lesson.date)}
                         </div>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <div className="text-ink-soft text-[11px] font-medium">
+                          {lesson.duration} min
+                        </div>
+                      </td>
+
+                      <td className="py-3 pr-3 align-middle">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="border-card size-9 shrink-0 border-2 shadow-(--sh-xs)">
+                            <AvatarImage
+                              src={lesson.student.avatar ?? undefined}
+                            />
+                            <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-[11px] font-bold">
+                              {getInitials(lesson.student.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-ink truncate text-sm font-semibold tracking-tight">
+                            {lesson.student.name}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 pr-3 align-middle">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {getStatusChip(status)}
                           {lesson.isOnline && (
                             <span className="inline-flex items-center rounded-full bg-teal-100 px-2 py-1 text-[11px] font-semibold whitespace-nowrap text-teal-700">
@@ -411,39 +449,169 @@ export function TodayLessonsTable({
                             </span>
                           )}
                         </div>
+                      </td>
+
+                      <td className="py-3 pr-3 text-right align-middle">
+                        <span
+                          className={cn(
+                            "text-sm font-bold tracking-tight tabular-nums",
+                            isCancelled
+                              ? "text-no-fg line-through decoration-[1.5px]"
+                              : "text-ink",
+                          )}
+                        >
+                          {formatCurrency(lesson.earnings, currency)}
+                        </span>
+                      </td>
+
+                      <td className="py-3 text-right align-middle">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => openAttendanceDialog(lesson)}
+                          className={cn(
+                            "h-9 rounded-full px-4 text-[13px] font-semibold",
+                            isPending
+                              ? "text-mint-ink hover:text-mint-ink [background-image:var(--grad-mint)] shadow-(--sh-mint) hover:brightness-95"
+                              : "border-border bg-card text-ink hover:bg-muted hover:text-ink border shadow-(--sh-sm)",
+                          )}
+                        >
+                          {isPending ? "Mark" : "Update"}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* <lg: phone and tablet keep the blossom timeline — the table's
+                five columns do not survive a 400px viewport. */}
+            <ol className="flex flex-col gap-4 lg:hidden">
+              {lessons.map((lesson, index) => {
+                const status = toLessonStatus(lesson.status);
+                const isCancelled = status === "CANCELLED";
+                const isPending = status === "PENDING";
+                const isLast = index === lessons.length - 1;
+
+                return (
+                  <li
+                    key={lesson.id}
+                    className="rise grid grid-cols-[24px_minmax(0,1fr)] gap-x-2 gap-y-1 sm:grid-cols-[78px_30px_minmax(0,1fr)] sm:gap-x-3.5 sm:gap-y-0"
+                    style={{ "--i": index } as CSSProperties}
+                  >
+                    {/* Time + duration: a fixed column on the left at ≥sm, stacked
+                      above the card on phone. */}
+                    <div className="col-start-2 row-start-1 flex items-baseline gap-1.5 sm:col-start-1 sm:flex-col sm:items-end sm:gap-0 sm:pt-4 sm:text-right">
+                      <span className="text-ink text-[13px] font-bold tracking-tight tabular-nums">
+                        {formatTime(lesson.date)}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="text-ink-soft sm:hidden"
+                      >
+                        ·
+                      </span>
+                      <span className="text-ink-soft text-[11px] font-medium">
+                        {lesson.duration} min
+                      </span>
+                    </div>
+
+                    {/* The soft rail + the status-coloured blossom node. */}
+                    <div className="relative col-start-1 row-span-2 row-start-1 flex justify-center sm:col-start-2 sm:row-span-1">
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "absolute top-0 w-0.5 rounded-full",
+                          isLast ? "h-7" : "-bottom-4",
+                        )}
+                        style={{
+                          backgroundImage:
+                            "linear-gradient(180deg, var(--mint), var(--cotton))",
+                        }}
+                      />
+                      <div
+                        className={cn(
+                          "relative z-1 mt-2 grid size-5.5 shrink-0 place-items-center sm:mt-3",
+                          NODE_COLORS[status],
+                        )}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="absolute -inset-1 rounded-full bg-current opacity-20"
+                        />
+                        <span
+                          aria-hidden="true"
+                          className="bg-card absolute inset-0 rounded-full"
+                        />
+                        <Blossom size={21} className="relative z-1" />
                       </div>
                     </div>
 
-                    <div className="border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-dashed pt-3">
-                      <span
-                        className={cn(
-                          "text-[15px] font-bold tracking-tight tabular-nums",
-                          isCancelled
-                            ? "text-no-fg line-through decoration-[1.5px]"
-                            : "text-ink",
-                        )}
-                      >
-                        {formatCurrency(lesson.earnings, currency)}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => openAttendanceDialog(lesson)}
-                        className={cn(
-                          "h-11 w-full rounded-full px-5 text-sm font-semibold sm:ml-auto sm:w-auto",
-                          isPending
-                            ? "text-mint-ink hover:text-mint-ink [background-image:var(--grad-mint)] shadow-(--sh-mint) hover:brightness-95"
-                            : "border-border bg-card text-ink hover:bg-muted hover:text-ink border shadow-(--sh-sm)",
-                        )}
-                      >
-                        {isPending ? "Mark" : "Update"}
-                      </Button>
-                    </div>
-                  </article>
-                </li>
-              );
-            })}
-          </ol>
+                    {/* The lesson card — strictly sober: no ornament inside. */}
+                    <article
+                      className={cn(
+                        "col-start-2 row-start-2 flex flex-col gap-3 rounded-2xl border p-3.5 shadow-(--sh-sm) sm:col-start-3 sm:row-start-1 sm:p-4",
+                        isCancelled
+                          ? "border-(--line-pink) bg-[linear-gradient(160deg,var(--pink-50),var(--card)_62%)]"
+                          : "border-border bg-card",
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="border-card size-10 shrink-0 border-2 shadow-(--sh-sm)">
+                          <AvatarImage
+                            src={lesson.student.avatar ?? undefined}
+                          />
+                          <AvatarFallback className="text-mint-ink [background-image:var(--grad-brand)] text-xs font-bold">
+                            {getInitials(lesson.student.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-ink truncate text-[15px] font-semibold tracking-tight">
+                            {lesson.student.name}
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            {getStatusChip(status)}
+                            {lesson.isOnline && (
+                              <span className="inline-flex items-center rounded-full bg-teal-100 px-2 py-1 text-[11px] font-semibold whitespace-nowrap text-teal-700">
+                                Online
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-dashed pt-3">
+                        <span
+                          className={cn(
+                            "text-[15px] font-bold tracking-tight tabular-nums",
+                            isCancelled
+                              ? "text-no-fg line-through decoration-[1.5px]"
+                              : "text-ink",
+                          )}
+                        >
+                          {formatCurrency(lesson.earnings, currency)}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => openAttendanceDialog(lesson)}
+                          className={cn(
+                            "h-11 w-full rounded-full px-5 text-sm font-semibold sm:ml-auto sm:w-auto",
+                            isPending
+                              ? "text-mint-ink hover:text-mint-ink [background-image:var(--grad-mint)] shadow-(--sh-mint) hover:brightness-95"
+                              : "border-border bg-card text-ink hover:bg-muted hover:text-ink border shadow-(--sh-sm)",
+                          )}
+                        >
+                          {isPending ? "Mark" : "Update"}
+                        </Button>
+                      </div>
+                    </article>
+                  </li>
+                );
+              })}
+            </ol>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center sm:py-16">
             <Mochi mood="sleepy" bob size={116} />

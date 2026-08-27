@@ -73,7 +73,15 @@ export function DashboardIntelligencePanel() {
   const quickInsights = insights ?? defaultInsights;
 
   return (
-    <div className="grid gap-4 px-4 lg:auto-rows-[minmax(28rem,auto)] lg:grid-cols-3 lg:px-6">
+    // Row 1 (today + ranking) gets a definite height at >=lg. The two cards
+    // sit side by side, and a content-sized row is as tall as whichever is
+    // taller — a busy teaching day stretched the ranking card to match and
+    // left a screen of dead space under it. 36rem clears the podium plus its
+    // runners-up, and the lessons table scrolls inside its own card past that.
+    // A minmax() here would not work: with no free space to distribute the
+    // row would just sit at the floor. Row 2 stays auto — the trend chart
+    // should never scroll.
+    <div className="grid gap-4 px-4 lg:auto-rows-[minmax(28rem,auto)] lg:grid-cols-3 lg:grid-rows-[36rem] lg:px-6">
       <motion.div
         initial="hidden"
         animate="visible"

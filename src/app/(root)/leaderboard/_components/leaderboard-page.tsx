@@ -393,125 +393,267 @@ export function LeaderboardPage({
             </p>
           </div>
         ) : (
-          <ol className="grid grid-cols-1 gap-3">
-            {visible.map((entry, index) => {
-              const isTied = (tieCounts[entry.rank] ?? 0) > 1;
-              const thinEvidence = entry.ratedCount < THIN_EVIDENCE;
+          <>
+            {/* >=xl: one row per student. Every value on these cards is short
+                and tabular, so as a card grid they read as nine tall blocks
+                that force the eye back to the left edge to compare any two
+                averages. The table puts the whole board in one scan and drops
+                the section to roughly a third of its height. */}
+            <div className="bg-card hidden overflow-hidden rounded-3xl border border-pink-100 shadow-(--sh-sm) xl:block">
+              <table className="w-full border-collapse text-left">
+                <caption className="sr-only">
+                  Full student ranking by average lesson score
+                </caption>
+                <thead>
+                  <tr className="border-b border-pink-100 bg-pink-50/70">
+                    <RankTh className="w-20 pl-5">Rank</RankTh>
+                    <RankTh>Student</RankTh>
+                    <RankTh className="w-24 text-right">Lessons</RankTh>
+                    <RankTh className="w-28 text-right">Rated</RankTh>
+                    <RankTh className="w-20 text-right">Best</RankTh>
+                    <RankTh className="w-32 text-right">Last rated</RankTh>
+                    <RankTh className="w-56">Score spread</RankTh>
+                    <RankTh className="w-28 pr-5 text-right">Average</RankTh>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((entry) => {
+                    const isTied = (tieCounts[entry.rank] ?? 0) > 1;
+                    const thinEvidence = entry.ratedCount < THIN_EVIDENCE;
 
-              return (
-                <li
-                  key={entry.studentId}
-                  className="rise bg-card rounded-3xl border border-pink-100 p-4 shadow-(--sh-sm) sm:p-5"
-                  style={{ "--i": index } as CSSProperties}
-                >
-                  {/* Identity row. Fixed-width rank badge and avatar so the
+                    return (
+                      <tr
+                        key={entry.studentId}
+                        className="border-b border-pink-50 transition-colors last:border-0 hover:bg-pink-50/40"
+                      >
+                        <td className="py-3 pr-3 pl-5 align-middle">
+                          <span
+                            className={cn(
+                              "grid size-10 place-items-center rounded-2xl font-serif text-lg font-bold tabular-nums",
+                              entry.rank === 1
+                                ? "bg-pink-100 text-pink-700"
+                                : entry.rank === 2
+                                  ? "bg-teal-100 text-teal-700"
+                                  : entry.rank === 3
+                                    ? "bg-sand-100 text-sand-700"
+                                    : "text-ink-soft bg-pink-50",
+                            )}
+                          >
+                            <span aria-hidden="true">{entry.rank}</span>
+                            <span className="sr-only">
+                              {ordinal(entry.rank)} place
+                              {isTied ? " (tied)" : ""}
+                            </span>
+                          </span>
+                        </td>
+
+                        <td className="min-w-0 py-3 pr-3 align-middle">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="border-card size-10 flex-none border-2 shadow-(--sh-xs)">
+                              <AvatarImage src={entry.avatar ?? undefined} />
+                              <AvatarFallback className="bg-pink-100 text-xs font-bold text-pink-700">
+                                {getInitials(entry.studentName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-ink truncate font-semibold">
+                                  {entry.studentName}
+                                </span>
+                                {isTied && (
+                                  <span className="text-ink-soft flex-none rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                                    tied
+                                  </span>
+                                )}
+                              </div>
+                              <TrendPill
+                                entry={entry}
+                                comparison={comparison}
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="text-ink py-3 pr-3 text-right align-middle text-sm font-semibold tabular-nums">
+                          {entry.completedCount}
+                        </td>
+
+                        <td className="text-ink py-3 pr-3 text-right align-middle text-sm font-semibold tabular-nums">
+                          {entry.ratedCount} · {entry.ratedShare}%
+                          {thinEvidence && (
+                            <span
+                              className="text-pink-700"
+                              aria-hidden="true"
+                              title="Fewer than 3 rated lessons — a single rating still moves this average a lot."
+                            >
+                              *
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="text-ink py-3 pr-3 text-right align-middle text-sm font-semibold tabular-nums">
+                          {entry.bestScore}
+                        </td>
+
+                        <td className="text-ink py-3 pr-3 text-right align-middle text-sm font-semibold tabular-nums">
+                          {entry.lastRatedAt
+                            ? format(entry.lastRatedAt, "MMM d, yyyy")
+                            : "—"}
+                        </td>
+
+                        <td className="py-3 pr-3 align-middle">
+                          <ScoreSpread counts={entry.scoreCounts} />
+                        </td>
+
+                        <td className="py-3 pr-5 text-right align-middle">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1.5 text-sm font-bold text-pink-700 tabular-nums">
+                            <Blossom size={13} className="text-bubblegum" />
+                            {formatScore(entry.avgScore)}
+                            <span className="sr-only">
+                              {" "}
+                              average from {entry.ratedCount} rated{" "}
+                              {entry.ratedCount === 1 ? "lesson" : "lessons"}
+                            </span>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* The thin-evidence caveat each card spells out in full; the table
+                marks it and explains it once, under the board. */}
+            {visible.some((entry) => entry.ratedCount < THIN_EVIDENCE) && (
+              <p className="text-ink-soft mt-3 hidden text-xs xl:block">
+                <span className="font-semibold text-pink-700">*</span> Fewer
+                than {THIN_EVIDENCE} rated lessons — a single rating still moves
+                that average a lot.
+              </p>
+            )}
+
+            {/* <xl: the cards, which stack the same eight values two-up. */}
+            <ol className="grid grid-cols-1 gap-3 xl:hidden">
+              {visible.map((entry, index) => {
+                const isTied = (tieCounts[entry.rank] ?? 0) > 1;
+                const thinEvidence = entry.ratedCount < THIN_EVIDENCE;
+
+                return (
+                  <li
+                    key={entry.studentId}
+                    className="rise bg-card rounded-3xl border border-pink-100 p-4 shadow-(--sh-sm) sm:p-5"
+                    style={{ "--i": index } as CSSProperties}
+                  >
+                    {/* Identity row. Fixed-width rank badge and avatar so the
                       names start on one line down the whole list, and the
                       score pill hangs on a single right edge — nothing wraps
                       onto its own row at any width. */}
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <span
-                      className={cn(
-                        "grid size-10 flex-none place-items-center rounded-2xl font-serif text-lg font-bold tabular-nums sm:size-11",
-                        entry.rank === 1
-                          ? "bg-pink-100 text-pink-700"
-                          : entry.rank === 2
-                            ? "bg-teal-100 text-teal-700"
-                            : entry.rank === 3
-                              ? "bg-sand-100 text-sand-700"
-                              : "text-ink-soft bg-pink-50",
-                      )}
-                    >
-                      <span aria-hidden="true">{entry.rank}</span>
-                      <span className="sr-only">
-                        {ordinal(entry.rank)} place{isTied ? " (tied)" : ""}
-                      </span>
-                    </span>
-
-                    <Avatar className="border-card size-10 flex-none border-2 shadow-(--sh-xs) sm:size-11">
-                      <AvatarImage src={entry.avatar ?? undefined} />
-                      <AvatarFallback className="bg-pink-100 text-xs font-bold text-pink-700">
-                        {getInitials(entry.studentName)}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-ink truncate font-semibold">
-                          {entry.studentName}
-                        </span>
-                        {isTied && (
-                          <span className="text-ink-soft flex-none rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
-                            tied
-                          </span>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <span
+                        className={cn(
+                          "grid size-10 flex-none place-items-center rounded-2xl font-serif text-lg font-bold tabular-nums sm:size-11",
+                          entry.rank === 1
+                            ? "bg-pink-100 text-pink-700"
+                            : entry.rank === 2
+                              ? "bg-teal-100 text-teal-700"
+                              : entry.rank === 3
+                                ? "bg-sand-100 text-sand-700"
+                                : "text-ink-soft bg-pink-50",
                         )}
-                      </div>
-                      <div className="mt-0.5">
-                        <TrendPill entry={entry} comparison={comparison} />
-                      </div>
-                    </div>
+                      >
+                        <span aria-hidden="true">{entry.rank}</span>
+                        <span className="sr-only">
+                          {ordinal(entry.rank)} place{isTied ? " (tied)" : ""}
+                        </span>
+                      </span>
 
-                    {/* Score only — the rated count lives in the stat grid, so
+                      <Avatar className="border-card size-10 flex-none border-2 shadow-(--sh-xs) sm:size-11">
+                        <AvatarImage src={entry.avatar ?? undefined} />
+                        <AvatarFallback className="bg-pink-100 text-xs font-bold text-pink-700">
+                          {getInitials(entry.studentName)}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-ink truncate font-semibold">
+                            {entry.studentName}
+                          </span>
+                          {isTied && (
+                            <span className="text-ink-soft flex-none rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                              tied
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5">
+                          <TrendPill entry={entry} comparison={comparison} />
+                        </div>
+                      </div>
+
+                      {/* Score only — the rated count lives in the stat grid, so
                         this pill stays a constant width and the column of
                         averages reads straight down the page. */}
-                    <span className="flex flex-none items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1.5 text-sm font-bold text-pink-700 tabular-nums">
-                      <Blossom size={13} className="text-bubblegum" />
-                      {formatScore(entry.avgScore)}
-                      <span className="sr-only">
-                        {" "}
-                        average from {entry.ratedCount} rated{" "}
-                        {entry.ratedCount === 1 ? "lesson" : "lessons"}
+                      <span className="flex flex-none items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1.5 text-sm font-bold text-pink-700 tabular-nums">
+                        <Blossom size={13} className="text-bubblegum" />
+                        {formatScore(entry.avgScore)}
+                        <span className="sr-only">
+                          {" "}
+                          average from {entry.ratedCount} rated{" "}
+                          {entry.ratedCount === 1 ? "lesson" : "lessons"}
+                        </span>
                       </span>
-                    </span>
-                  </div>
+                    </div>
 
-                  {/* Four short, tabular values so the columns line up across
+                    {/* Four short, tabular values so the columns line up across
                       every row. Coverage rides along inside "Rated" rather
                       than taking a tile of its own — it is the same fact as
                       rated-over-lessons, just easier to compare between
                       students with different lesson counts. */}
-                  <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-                    <Stat label="Lessons" value={entry.completedCount} />
-                    <Stat
-                      label="Rated"
-                      value={`${entry.ratedCount} · ${entry.ratedShare}%`}
-                    />
-                    <Stat label="Best" value={entry.bestScore} />
-                    <Stat
-                      label="Last rated"
-                      value={
-                        entry.lastRatedAt
-                          ? format(entry.lastRatedAt, "MMM d, yyyy")
-                          : "—"
-                      }
-                    />
-                  </dl>
+                    <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+                      <Stat label="Lessons" value={entry.completedCount} />
+                      <Stat
+                        label="Rated"
+                        value={`${entry.ratedCount} · ${entry.ratedShare}%`}
+                      />
+                      <Stat label="Best" value={entry.bestScore} />
+                      <Stat
+                        label="Last rated"
+                        value={
+                          entry.lastRatedAt
+                            ? format(entry.lastRatedAt, "MMM d, yyyy")
+                            : "—"
+                        }
+                      />
+                    </dl>
 
-                  <div className="mt-4">
-                    <div className="mb-1.5 flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
-                        Score spread
-                      </span>
-                      <span
-                        className="text-ink-soft text-[10px] font-semibold"
-                        aria-hidden="true"
-                      >
-                        5 → 1
-                      </span>
+                    <div className="mt-4">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-semibold tracking-[0.08em] text-pink-700 uppercase">
+                          Score spread
+                        </span>
+                        <span
+                          className="text-ink-soft text-[10px] font-semibold"
+                          aria-hidden="true"
+                        >
+                          5 → 1
+                        </span>
+                      </div>
+                      <ScoreSpread counts={entry.scoreCounts} />
                     </div>
-                    <ScoreSpread counts={entry.scoreCounts} />
-                  </div>
 
-                  {thinEvidence && (
-                    <p className="text-ink-soft mt-3 text-xs">
-                      Based on {entry.ratedCount} rated lesson
-                      {entry.ratedCount === 1 ? "" : "s"} — a single rating
-                      still moves this average a lot.
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
+                    {thinEvidence && (
+                      <p className="text-ink-soft mt-3 text-xs">
+                        Based on {entry.ratedCount} rated lesson
+                        {entry.ratedCount === 1 ? "" : "s"} — a single rating
+                        still moves this average a lot.
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </>
         )}
       </section>
 
@@ -591,6 +733,27 @@ function Field({
       </Caption>
       {children}
     </div>
+  );
+}
+
+/** Column header for the >=xl ranking table — matches the Stat caption. */
+function RankTh({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <th
+      scope="col"
+      className={cn(
+        "py-2.5 pr-3 text-[10px] font-semibold tracking-[0.08em] text-pink-700 uppercase",
+        className,
+      )}
+    >
+      {children}
+    </th>
   );
 }
 
