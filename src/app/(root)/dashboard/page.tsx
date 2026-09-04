@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { SectionCards } from "@/app/(root)/dashboard/_components/section-cards";
 import { DashboardHero } from "@/app/(root)/dashboard/_components/dashboard-hero";
 import { DashboardIntelligencePanel } from "@/app/(root)/dashboard/_components/dashboard-intelligence-panel";
@@ -28,18 +30,26 @@ export default async function Page() {
 
           <DashboardHero />
 
-          <DashboardMonthProvider
-            defaultMonth={currentMonth.month}
-            defaultYear={currentMonth.year}
-          >
-            <div className="flex flex-col gap-8 md:gap-10">
-              <DashboardMonthBar />
+          {/*
+            Suspense is required here because DashboardMonthProvider calls
+            useSearchParams() (via useFilterParams). Without this boundary,
+            Next.js has no streaming checkpoint and freezes the entire page
+            on every router.replace() call triggered by the month dropdown.
+          */}
+          <Suspense>
+            <DashboardMonthProvider
+              defaultMonth={currentMonth.month}
+              defaultYear={currentMonth.year}
+            >
+              <div className="flex flex-col gap-8 md:gap-10">
+                <DashboardMonthBar />
 
-              <SectionCards />
+                <SectionCards />
 
-              <DashboardIntelligencePanel />
-            </div>
-          </DashboardMonthProvider>
+                <DashboardIntelligencePanel />
+              </div>
+            </DashboardMonthProvider>
+          </Suspense>
         </div>
       </div>
     </div>
