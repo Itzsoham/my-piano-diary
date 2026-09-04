@@ -13,6 +13,8 @@ export const env = createEnv({
         : z.string().optional(),
     DATABASE_URL: z.string().url(),
     CLOUDINARY_URL: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -30,6 +32,7 @@ export const env = createEnv({
     // Canonical origin for metadata, robots.txt and the sitemap. Optional: on
     // Vercel we fall back to the deployment URL, and locally to localhost.
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: z.string().optional(),
   },
 
   /**
@@ -40,9 +43,12 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     CLOUDINARY_URL: process.env.CLOUDINARY_URL,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_ERROR_TRACKING_URL: process.env.NEXT_PUBLIC_ERROR_TRACKING_URL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
