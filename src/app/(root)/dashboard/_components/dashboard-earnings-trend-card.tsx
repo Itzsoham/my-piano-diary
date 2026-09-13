@@ -235,6 +235,10 @@ function EarningsTrendChart({
   const showPeak = peak.earned > 0;
   const peakLabelX = clamp(peak.x, LEFT + 34, width - 34);
   const peakBloomX = clamp(peak.x - 10, 2, width - 22);
+  const peakTooltip = `Best billed day: ${peak.label} — ${formatCurrency(
+    peak.earned,
+    currency,
+  )} from completed lessons.`;
 
   const todayLabelY = today.y > 64 ? today.y - 12 : today.y + 22;
 
@@ -346,12 +350,26 @@ function EarningsTrendChart({
               >
                 {formatCurrency(peak.earned, currency)}
               </text>
-              <Blossom
-                x={peakBloomX}
-                y={2}
-                size={20}
-                className="text-bubblegum"
-              />
+              {/* The bloom is meaningful here (unlike the decorative heading
+                  blooms): it crowns the single highest billed day. The native
+                  SVG title appears on hover, and the focusable hit area makes
+                  the same explanation available by keyboard or tap/click. */}
+              <g tabIndex={0} role="img" aria-label={peakTooltip}>
+                <title>{peakTooltip}</title>
+                <Blossom
+                  x={peakBloomX}
+                  y={2}
+                  size={20}
+                  className="text-bubblegum"
+                />
+                <circle
+                  cx={peak.x}
+                  cy="12"
+                  r="14"
+                  fill="transparent"
+                  className="cursor-help"
+                />
+              </g>
             </>
           )}
 
@@ -429,6 +447,12 @@ function EarningsTrendChart({
           />
           Billed (COMPLETE only)
         </span>
+        {showPeak && (
+          <span className="inline-flex items-center gap-1.5">
+            <Blossom size={13} className="text-bubblegum" />
+            Best billed day
+          </span>
+        )}
         {isCurrentMonth && (
           <span className="inline-flex items-center gap-1.5">
             <span
