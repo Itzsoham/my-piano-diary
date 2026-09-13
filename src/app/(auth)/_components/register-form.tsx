@@ -111,7 +111,7 @@ export function RegisterForm() {
                 <Input
                   id="name"
                   type="text"
-                  placeholder="Soham's Wife"
+                  placeholder="Mochi"
                   autoComplete="name"
                   className="h-12 rounded-full border-(--line-pink) px-4 focus-visible:ring-pink-500"
                   {...field}
@@ -131,7 +131,7 @@ export function RegisterForm() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="danthuy@iloveyou.com"
+                  placeholder="mochi@pianostudio.com"
                   autoComplete="email"
                   className="h-12 rounded-full border-(--line-pink) px-4 focus-visible:ring-pink-500"
                   {...field}
@@ -152,7 +152,7 @@ export function RegisterForm() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder="Create a secret melody"
                     autoComplete="new-password"
                     className="h-12 rounded-full border-(--line-pink) px-4 pr-12 focus-visible:ring-pink-500"
                     {...field}
@@ -219,7 +219,7 @@ export function RegisterForm() {
                   <Input
                     id="confirmPassword"
                     type={showConfirm ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder="Play it once more"
                     autoComplete="new-password"
                     className="h-12 rounded-full border-(--line-pink) px-4 pr-12 focus-visible:ring-pink-500"
                     {...field}

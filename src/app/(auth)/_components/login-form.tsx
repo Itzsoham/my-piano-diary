@@ -180,7 +180,7 @@ export function LoginForm() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="thuyisbest@luv.com"
+                  placeholder="mochi@pianostudio.com"
                   autoComplete="email"
                   className="h-12 rounded-full border-(--line-pink) px-4 focus-visible:ring-pink-500"
                   {...field}
@@ -209,7 +209,7 @@ export function LoginForm() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder="Your secret melody"
                     autoComplete="current-password"
                     className="h-12 rounded-full border-(--line-pink) px-4 pr-12 focus-visible:ring-pink-500"
                     {...field}
