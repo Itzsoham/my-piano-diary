@@ -1,16 +1,20 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   MONTH_NAMES,
   compareMonthScopeDesc,
   formatMonthScope,
-  parseMonthScopeParams,
   sameMonthScope,
   type MonthScope,
 } from "@/lib/month-scope";
-import { useFilterParams } from "@/lib/use-filter-params";
 
 type DashboardMonthContextValue = {
   /** Always a concrete month — the dashboard has no "all time" mode. */
@@ -39,48 +43,71 @@ const DashboardMonthContext = createContext<DashboardMonthContextValue | null>(
 /**
  * Holds the dashboard's "which month am I looking at" selection.
  *
- * It lives in the URL (`?month=6&year=2026`) rather than in component state so
- * the choice is shareable and survives a refresh — and so the four sibling
- * boards (KPI tiles, ranking, insights, trend) read one value instead of
- * passing it down through a tree they don't otherwise share.
+ * Scope lives in React state (instant updates) and is synced to the URL via
+ * `window.history.replaceState` so the address bar and Back button stay
+ * correct — without triggering any Next.js navigation or server re-render.
  *
- * `defaultMonth`/`defaultYear` come from the server so the first render agrees
- * with what was sent over the wire; the query string only ever overrides them.
+ * The initial scope is passed as props by the server (page.tsx reads
+ * `searchParams` and parses them) so this component does NOT call
+ * `useSearchParams()`. That is the key change: without a `useSearchParams()`
+ * subscription, this component has zero interaction with the Next.js router,
+ * which was what caused the dropdown to freeze the entire page on open.
  */
 export function DashboardMonthProvider({
   defaultMonth,
   defaultYear,
+  initialMonth,
+  initialYear,
   children,
 }: {
+  /** The teacher's live month — used as the "reset to current" target. */
   defaultMonth: number;
   defaultYear: number;
+  /** The initial scope to display, pre-parsed from the server's searchParams. */
+  initialMonth: number;
+  initialYear: number;
   children: React.ReactNode;
 }) {
-  const { searchParams, setParams } = useFilterParams();
-
   const currentMonth = useMemo(
     () => ({ month: defaultMonth, year: defaultYear }),
     [defaultMonth, defaultYear],
   );
 
-  const scope =
-    parseMonthScopeParams(
-      searchParams.get("month"),
-      searchParams.get("year"),
-    ) ?? currentMonth;
+  // Seed from the server-resolved initial scope (handles shared links).
+  const [scope, setScope_] = useState<MonthScope>(() => ({
+    month: initialMonth,
+    year: initialYear,
+  }));
 
   const setScope = useCallback(
     (next: MonthScope | null) => {
-      // The live month is the default, so it belongs in a clean URL rather
-      // than as an explicit filter the teacher then has to clear twice.
-      if (!next || sameMonthScope(next, currentMonth)) {
-        setParams({ month: null, year: null });
-        return;
-      }
+      // Resolve: null or "same as live" → current month (clean URL).
+      const resolved =
+        !next || sameMonthScope(next, currentMonth) ? currentMonth : next;
 
-      setParams({ month: String(next.month), year: String(next.year) });
+      // 1. Update reactive state immediately — zero server round-trips.
+      setScope_(resolved);
+
+      // 2. Sync the URL via the browser history API so the address bar and
+      //    Back button stay correct, without triggering any Next.js navigation.
+      const params = new URLSearchParams(window.location.search);
+      if (sameMonthScope(resolved, currentMonth)) {
+        params.delete("month");
+        params.delete("year");
+      } else {
+        params.set("month", String(resolved.month));
+        params.set("year", String(resolved.year));
+      }
+      const query = params.toString();
+      window.history.replaceState(
+        null,
+        "",
+        query
+          ? `${window.location.pathname}?${query}`
+          : window.location.pathname,
+      );
     },
-    [currentMonth, setParams],
+    [currentMonth],
   );
 
   const value = useMemo<DashboardMonthContextValue>(() => {

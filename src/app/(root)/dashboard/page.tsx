@@ -1,11 +1,10 @@
-import { Suspense } from "react";
-
 import { SectionCards } from "@/app/(root)/dashboard/_components/section-cards";
 import { DashboardHero } from "@/app/(root)/dashboard/_components/dashboard-hero";
 import { DashboardIntelligencePanel } from "@/app/(root)/dashboard/_components/dashboard-intelligence-panel";
 import { DashboardMonthBar } from "@/app/(root)/dashboard/_components/dashboard-month-bar";
 import { DashboardMonthProvider } from "@/app/(root)/dashboard/_components/dashboard-month-provider";
 import { getCurrentMonthScope } from "@/server/current-month";
+import { parseMonthScopeParams } from "@/lib/month-scope";
 // import { BirthdayCountdownCard } from "./_components/birthday-countdown-card";
 
 export const metadata = {
@@ -14,11 +13,24 @@ export const metadata = {
     "Today at a glance: who is coming, what is expected, and what is still owed.",
 };
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   // Resolved in the teacher's timezone so this default is the same month the
   // month-scoped procedures call "current"; the `?month=&year=` query string
   // overrides it from there.
   const currentMonth = await getCurrentMonthScope();
+
+  // Read the initial scope from the URL on the server so the provider can
+  // seed the correct month without needing useSearchParams() on the client.
+  // This also eliminates the Suspense boundary that was previously required.
+  const params = await searchParams;
+  const monthStr = Array.isArray(params.month) ? params.month[0] : params.month;
+  const yearStr = Array.isArray(params.year) ? params.year[0] : params.year;
+  const initialScope =
+    parseMonthScopeParams(monthStr, yearStr) ?? currentMonth;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -30,26 +42,20 @@ export default async function Page() {
 
           <DashboardHero />
 
-          {/*
-            Suspense is required here because DashboardMonthProvider calls
-            useSearchParams() (via useFilterParams). Without this boundary,
-            Next.js has no streaming checkpoint and freezes the entire page
-            on every router.replace() call triggered by the month dropdown.
-          */}
-          <Suspense>
-            <DashboardMonthProvider
-              defaultMonth={currentMonth.month}
-              defaultYear={currentMonth.year}
-            >
-              <div className="flex flex-col gap-8 md:gap-10">
-                <DashboardMonthBar />
+          <DashboardMonthProvider
+            defaultMonth={currentMonth.month}
+            defaultYear={currentMonth.year}
+            initialMonth={initialScope.month}
+            initialYear={initialScope.year}
+          >
+            <div className="flex flex-col gap-8 md:gap-10">
+              <DashboardMonthBar />
 
-                <SectionCards />
+              <SectionCards />
 
-                <DashboardIntelligencePanel />
-              </div>
-            </DashboardMonthProvider>
-          </Suspense>
+              <DashboardIntelligencePanel />
+            </div>
+          </DashboardMonthProvider>
         </div>
       </div>
     </div>

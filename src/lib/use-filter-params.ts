@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 /**
@@ -11,11 +11,17 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
  * state restored from sessionStorage in a mount effect — which is what tripped
  * `react-hooks/set-state-in-effect`. `setParams` merges updates into the current
  * query; pass `null`/`""` to drop a key so defaults produce a clean URL.
+ *
+ * `router.replace` is wrapped in `startTransition` so the navigation is treated
+ * as a non-urgent, interruptible update. Without this, React blocks the entire
+ * UI (including closing the dropdown) while Next.js re-renders the server
+ * component, which is what caused the "app freeze" on every month change.
  */
 export function useFilterParams() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   const setParams = useCallback(
     (updates: Record<string, string | null | undefined>) => {
@@ -30,11 +36,13 @@ export function useFilterParams() {
       }
 
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
+      startTransition(() => {
+        router.replace(query ? `${pathname}?${query}` : pathname, {
+          scroll: false,
+        });
       });
     },
-    [router, pathname, searchParams],
+    [router, pathname, searchParams, startTransition],
   );
 
   return { searchParams, setParams };

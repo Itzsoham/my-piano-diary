@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useId, useMemo } from "react";
 import { CalendarRange } from "lucide-react";
 
 import {
@@ -67,6 +67,7 @@ export function MonthSelect({
   className,
   ariaLabel = "Month",
 }: MonthSelectProps) {
+  const diagnosticId = useId();
   const options = useMemo(() => {
     const merged = new Map<string, MonthOption>();
 
@@ -84,14 +85,91 @@ export function MonthSelect({
     return [...merged.values()].sort(compareMonthScopeDesc);
   }, [months, currentMonth, value]);
 
+  const logOpenState = useCallback(
+    (open: boolean) => {
+      // This picker is rendered in a Radix portal, outside the dashboard's
+      // layout tree. Keep diagnostics development-only, but make a report
+      // detailed enough to distinguish clipping from a position/stack issue.
+      if (process.env.NODE_ENV !== "development") return;
+
+      console.debug("[MonthSelect] state changed", {
+        ariaLabel,
+        open,
+        value: value ? monthScopeKey(value) : ALL_TIME_KEY,
+        optionCount: options.length,
+      });
+
+      if (!open) return;
+
+      requestAnimationFrame(() => {
+        const content = Array.from(
+          document.querySelectorAll<HTMLElement>("[data-month-select-content]"),
+        ).find((element) => element.dataset.monthSelectContent === diagnosticId);
+
+        if (!content) {
+          console.warn("[MonthSelect] open, but no menu element was mounted", {
+            ariaLabel,
+            diagnosticId,
+          });
+          return;
+        }
+
+        const styles = window.getComputedStyle(content);
+        const rect = content.getBoundingClientRect();
+        const point = document.elementFromPoint(
+          Math.max(0, Math.min(window.innerWidth - 1, rect.left + rect.width / 2)),
+          Math.max(0, Math.min(window.innerHeight - 1, rect.top + rect.height / 2)),
+        );
+
+        console.debug("[MonthSelect] open-menu diagnostics", {
+          ariaLabel,
+          diagnosticId,
+          viewport: { width: window.innerWidth, height: window.innerHeight },
+          rect: {
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          },
+          computed: {
+            display: styles.display,
+            visibility: styles.visibility,
+            opacity: styles.opacity,
+            position: styles.position,
+            zIndex: styles.zIndex,
+            transform: styles.transform,
+            overflowY: styles.overflowY,
+          },
+          inViewport:
+            rect.bottom > 0 &&
+            rect.right > 0 &&
+            rect.top < window.innerHeight &&
+            rect.left < window.innerWidth,
+          topElement: point
+            ? {
+                tag: point.tagName,
+                slot: point.getAttribute("data-slot"),
+                className: point.className,
+              }
+            : null,
+        });
+      });
+    },
+    [ariaLabel, diagnosticId, options.length, value],
+  );
+
   return (
     <Select
       value={value ? monthScopeKey(value) : ALL_TIME_KEY}
       onValueChange={(next) => onChange(parseMonthScopeKey(next))}
+      onOpenChange={logOpenState}
     >
       <SelectTrigger
         className={cn(TRIGGER_CLASS, className)}
         aria-label={ariaLabel}
+        data-month-select-trigger={diagnosticId}
       >
         <CalendarRange className="size-4 text-pink-500" aria-hidden="true" />
         {/* Rendered here rather than through <SelectValue>, which clones the
@@ -101,7 +179,19 @@ export function MonthSelect({
           {value ? formatMonthScope(value) : (allTimeLabel ?? "All time")}
         </span>
       </SelectTrigger>
-      <SelectContent className="max-h-72">
+      {/*
+        `item-aligned` (Radix's default) calculates an absolute page position.
+        The dashboard scrolls inside the app shell, so that calculation can
+        place the portalled menu below the visible viewport. Popper anchors to
+        the trigger and applies viewport collision handling instead.
+      */}
+      <SelectContent
+        position="popper"
+        side="bottom"
+        align="end"
+        className="max-h-72"
+        data-month-select-content={diagnosticId}
+      >
         {allTimeLabel && (
           <SelectItem value={ALL_TIME_KEY}>{allTimeLabel}</SelectItem>
         )}
