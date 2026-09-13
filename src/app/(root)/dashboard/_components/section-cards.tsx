@@ -7,7 +7,11 @@ import { formatCurrency } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { useBirthday } from "@/components/birthday/birthday-provider";
 import { Blossom } from "@/components/blossom/blossom";
-import { MONTH_NAMES } from "@/lib/month-scope";
+import {
+  formatShortMonthScope,
+  MONTH_NAMES,
+  previousMonthScope,
+} from "@/lib/month-scope";
 import { cn } from "@/lib/utils";
 import { Eye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -45,6 +49,7 @@ export function SectionCards() {
   type DashboardOutput = RouterOutputs["earnings"]["getDashboard"];
 
   const { scope, isCurrentMonth, isFuture, shortLabel } = useDashboardMonth();
+  const paymentMonthLabel = formatShortMonthScope(previousMonthScope(scope));
 
   const { data: earnings, isLoading } = api.earnings.getDashboard.useQuery(
     scope,
@@ -92,14 +97,14 @@ export function SectionCards() {
     ? {
         revenue: "This Month Revenue",
         missed: "Missed This Month",
-        collected: "Collected This Month",
-        outstanding: "Outstanding This Month",
+        collected: `Collected in ${paymentMonthLabel}`,
+        outstanding: `Outstanding from ${paymentMonthLabel}`,
       }
     : {
         revenue: `${shortLabel} Revenue`,
         missed: `Missed in ${shortLabel}`,
-        collected: `Collected in ${shortLabel}`,
-        outstanding: `Outstanding in ${shortLabel}`,
+        collected: `Collected in ${paymentMonthLabel}`,
+        outstanding: `Outstanding from ${paymentMonthLabel}`,
       };
 
   // Count-up values (only animate in birthday mode)

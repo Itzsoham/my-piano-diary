@@ -92,9 +92,9 @@ interface DashboardData {
   monthEarnings: number;
   /** CANCELLED lessons dated inside the selected month — revenue not billed. */
   monthLoss: number;
-  /** Transactions recorded against the selected billing month. */
+  /** Transactions recorded against the billing month before the selected one. */
   monthCollected: number;
-  /** Expected minus received for the selected billing month, floored at 0. */
+  /** Expected minus received for that prior billing month, floored at 0. */
   monthOutstanding: number;
 }
 
@@ -307,18 +307,40 @@ export const earningsRouter = createTRPCRouter({
         0,
       );
 
+      // Tuition is collected and followed up after a month has finished. Keep
+      // the revenue tiles on the selected teaching month, but use the prior
+      // billing month for payment collection and outstanding balances.
+      const paymentMonth = resolveMonth(
+        timezone,
+        previousMonthScope({ month: month.month, year: month.year }),
+      );
+
+      const paymentMonthCompletedLessons = await ctx.db.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          date: {
+            gte: paymentMonth.start,
+            lte: paymentMonth.end,
+          },
+          status: "COMPLETE",
+        },
+        select: {
+          studentId: true,
+          rate: true,
+        },
+      });
+
       // Get count of all students for this teacher
       const totalStudents = await ctx.db.student.count({
         where: { teacherId: teacher.id },
       });
 
-      // Payment months are keyed by month/year rather than by lesson date, so
-      // the billing month the teacher is looking at *is* the selected month.
+      // Payment months are keyed by month/year rather than by lesson date.
       const monthPayments = await ctx.db.paymentMonth.findMany({
         where: {
           teacherId: teacher.id,
-          month: month.month,
-          year: month.year,
+          month: paymentMonth.month,
+          year: paymentMonth.year,
         },
         include: {
           transactions: true,
@@ -336,7 +358,7 @@ export const earningsRouter = createTRPCRouter({
       // they have actually paid against it. Floored per student, so one
       // family's overpayment never cancels out another family's arrears.
       const expectedByStudent = new Map<string, number>();
-      monthCompletedLessons.forEach((lesson) => {
+      paymentMonthCompletedLessons.forEach((lesson) => {
         const current = expectedByStudent.get(lesson.studentId) ?? 0;
         expectedByStudent.set(lesson.studentId, current + lesson.rate);
       });
