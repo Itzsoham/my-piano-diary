@@ -97,3 +97,6 @@ Transition mood: end
 
 **Music mood for this video:** upbeat, warm, cosy
 **Audio summary:** a laid-back warm bed that starts under the typed text, lifts at the title, ticks along with tidy UI sounds, and fades under the logo with a single bell.
+
+## Revision — louder mix
+- Music bed set to 0.4 in the volume automation lane (the lane overrides data-volume, so the bed had been at full level and masked the SFX). Added typing ticks on every other character, scene-change slides, attendance ticks and a counter sound. Final audio is loudness-normalized to -14 LUFS.
