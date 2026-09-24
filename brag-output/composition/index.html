@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>My Piano Diary — brag</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/audio-data.js"></script>
+    <style>
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; src: url("assets/fonts/jakarta-600.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 700; src: url("assets/fonts/jakarta-700.woff2") format("woff2"); }
+      @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; src: url("assets/fonts/jakarta-800.woff2") format("woff2"); }
+      @font-face { font-family: "Gelasio"; font-weight: 700; src: url("assets/fonts/gelasio-700.woff2") format("woff2"); }
+      @font-face { font-family: "Gelasio"; font-weight: 600; font-style: italic; src: url("assets/fonts/gelasio-600i.woff2") format("woff2"); }
+
+      :root {
+        --floss: #f0f9f8;
+        --cotton: #ffd3dd;
+        --bubblegum: #f3a2be;
+        --mint: #c6e6e3;
+        --wintergreen: #81bfb7;
+        --pink-100: oklch(0.949 0.028 358);
+        --pink-600: oklch(0.6 0.161 0.2);
+        --pink-700: oklch(0.5 0.138 358.5);
+        --teal-100: oklch(0.94 0.02 185.5);
+        --teal-700: oklch(0.482 0.059 179.7);
+        --sand-100: oklch(0.96 0.032 81);
+        --sand-300: oklch(0.87 0.06 80);
+        --sand-700: oklch(0.47 0.07 70);
+        --ink: oklch(0.328 0.027 203.5);
+        --ink-soft: oklch(0.524 0.03 193.3);
+        --ok-bg: oklch(0.942 0.022 179.2);
+        --no-bg: oklch(0.932 0.037 1);
+        --grad-pink: linear-gradient(135deg, color-mix(in srgb, var(--pink-600) 70%, var(--pink-700)), var(--pink-700));
+        --line: oklch(0.9 0.02 190);
+        --shadow: 0 30px 80px -30px oklch(0.6 0.12 358 / 0.35), 0 8px 24px -12px oklch(0.4 0.05 200 / 0.2);
+        --sans: "Plus Jakarta Sans", sans-serif;
+        --serif: "Gelasio", serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--floss); color: var(--ink); font-family: var(--sans); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--floss); }
+
+      /* ── persistent background ───────────────────────────────── */
+      #bg { position: absolute; inset: 0; }
+      .bg-grad { position: absolute; inset: 0; background: linear-gradient(135deg, oklch(0.93 0.045 356) 0%, var(--floss) 50%, oklch(0.92 0.04 187) 100%); }
+      .blob { position: absolute; border-radius: 46% 54% 40% 60% / 55% 45% 60% 40%; filter: blur(60px); }
+      #blob-a { width: 640px; height: 640px; left: -160px; top: -200px; background: oklch(0.9 0.06 358 / 0.75); }
+      #blob-b { width: 720px; height: 720px; right: -220px; top: 260px; background: oklch(0.88 0.05 187 / 0.7); }
+      #blob-c { width: 520px; height: 520px; left: 620px; bottom: -300px; background: oklch(0.95 0.03 358 / 0.8); }
+      .orn { position: absolute; color: var(--bubblegum); }
+      .orn svg { display: block; width: 100%; height: 100%; }
+
+      .clip { position: absolute; inset: 0; }
+      .scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+      /* ── scene 1: the text ──────────────────────────────────── */
+      .phone-col { display: flex; flex-direction: column; align-items: flex-start; width: 1100px; }
+      .stamp-time { font-size: 26px; font-weight: 700; color: var(--ink-soft); letter-spacing: 0.02em; margin: 0 0 18px 34px; }
+      .sender { display: flex; align-items: flex-end; gap: 22px; }
+      .avatar { width: 92px; height: 92px; border-radius: 50%; background: var(--mint); color: var(--teal-700); font-weight: 800; font-size: 34px; display: flex; align-items: center; justify-content: center; flex: none; }
+      .bubble { position: relative; background: #fff; border-radius: 44px 44px 44px 12px; padding: 34px 48px; box-shadow: var(--shadow); font-size: 64px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+      .bubble .ch { opacity: 0; }
+      .caret { display: inline-block; width: 5px; height: 62px; margin-left: 6px; vertical-align: -8px; background: var(--pink-600); border-radius: 3px; }
+      .parent-line { margin: 30px 0 0 116px; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 44px; color: var(--ink-soft); }
+
+      /* ── scene 2: reveal ───────────────────────────────────── */
+      .reveal { display: flex; flex-direction: column; align-items: center; text-align: center; }
+      .logo { width: 220px; height: 220px; display: block; }
+      .name { font-family: var(--serif); font-weight: 700; font-size: 132px; letter-spacing: -0.03em; line-height: 1; margin: 18px 0 0; color: var(--ink); }
+      .tagline { margin-top: 30px; font-family: var(--serif); font-weight: 700; font-size: 56px; line-height: 1.2; letter-spacing: -0.015em; }
+      .tagline .l1, .tagline .l2 { display: block; }
+      .grad { background: var(--grad-pink); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .squiggle { display: block; width: 420px; height: 22px; margin: 16px auto 0; color: var(--bubblegum); }
+
+      /* ── two-column feature scenes ─────────────────────────── */
+      .split { display: grid; grid-template-columns: 640px 900px; gap: 110px; align-items: center; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 12px; padding: 12px 24px; border-radius: 999px; background: #fff; border: 2px solid var(--line); font-size: 24px; font-weight: 700; color: var(--teal-700); }
+      .eyebrow svg { width: 26px; height: 26px; color: var(--bubblegum); }
+      .headline { font-family: var(--serif); font-weight: 700; font-size: 80px; line-height: 1.06; letter-spacing: -0.03em; margin: 28px 0 0; }
+      .sub { margin-top: 26px; font-size: 32px; line-height: 1.4; color: var(--ink-soft); font-weight: 600; max-width: 600px; }
+      .card { position: relative; background: #fff; border-radius: 40px; box-shadow: var(--shadow); padding: 44px 48px; border: 2px solid var(--line); }
+      .card-title { font-family: var(--serif); font-weight: 700; font-size: 44px; margin: 0; letter-spacing: -0.02em; }
+      .card-meta { font-size: 24px; color: var(--ink-soft); font-weight: 600; margin-top: 8px; }
+
+      /* dashboard */
+      .band { margin-top: 26px; border-radius: 26px; padding: 22px 28px; background: linear-gradient(135deg, var(--pink-100), var(--teal-100)); display: flex; justify-content: space-between; align-items: center; font-size: 28px; font-weight: 700; }
+      .band .money { color: var(--pink-700); font-weight: 800; }
+      .rows { margin-top: 18px; }
+      .row { position: relative; display: grid; grid-template-columns: 72px 1fr 170px 200px; align-items: center; gap: 20px; padding: 18px 8px; border-bottom: 2px solid var(--line); font-size: 28px; font-weight: 700; }
+      .row:last-child { border-bottom: 0; }
+      .av { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; }
+      .av.p { background: var(--pink-100); color: var(--pink-700); }
+      .av.t { background: var(--teal-100); color: var(--teal-700); }
+      .time { color: var(--ink-soft); font-weight: 600; font-size: 26px; }
+      .chip-slot { position: relative; height: 50px; }
+      .chip { position: absolute; right: 0; top: 0; height: 50px; display: inline-flex; align-items: center; gap: 10px; padding: 0 20px; border-radius: 999px; font-size: 20px; font-weight: 800; letter-spacing: 0.04em; white-space: nowrap; }
+      .chip i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+      .chip.ok { background: var(--ok-bg); color: var(--teal-700); }
+      .chip.ok i { background: var(--wintergreen); }
+      .chip.wait { background: var(--sand-100); color: var(--sand-700); }
+      .chip.wait i { background: var(--sand-300); }
+      .chip.no { background: var(--no-bg); color: var(--pink-700); }
+      .chip.no i { background: var(--bubblegum); }
+      .cursor { position: absolute; width: 48px; height: 58px; z-index: 5; }
+      .cursor svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 6px 10px oklch(0.3 0.03 200 / 0.3)); }
+      #cur-dash { right: 40px; top: 30px; }
+      .spark { position: absolute; width: 40px; height: 40px; color: var(--bubblegum); }
+      .spark svg { display: block; width: 100%; height: 100%; }
+      #chip-spark { right: -26px; top: -26px; }
+
+      /* blossom rater */
+      .blossoms { position: relative; display: flex; gap: 24px; margin-top: 44px; }
+      .bl { position: relative; width: 120px; height: 120px; }
+      .bl svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .bl .off { color: var(--pink-100); }
+      .bl .on { color: var(--pink-600); opacity: 0; }
+      #cur-bl { left: 70px; top: 80px; }
+      .score-row { display: flex; align-items: baseline; gap: 16px; margin-top: 34px; }
+      .score { font-size: 64px; font-weight: 800; color: var(--pink-700); letter-spacing: -0.02em; min-width: 150px; }
+      .score small { font-size: 32px; color: var(--ink-soft); font-weight: 700; }
+      .caption { margin-top: 18px; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 42px; line-height: 1.25; color: var(--ink); }
+
+      /* report paper */
+      .paper { background: #fffdf8; border-radius: 18px; padding: 48px 56px; box-shadow: var(--shadow); border: 2px solid oklch(0.92 0.03 80); font-family: var(--serif); position: relative; }
+      .paper h3 { margin: 0; font-size: 50px; font-weight: 700; letter-spacing: -0.02em; }
+      .paper .who { font-family: var(--sans); font-size: 24px; font-weight: 700; color: var(--ink-soft); margin-top: 6px; }
+      .grid { margin-top: 30px; display: grid; grid-template-columns: 110px repeat(3, 1fr); row-gap: 16px; align-items: center; font-family: var(--sans); font-size: 24px; font-weight: 700; color: var(--ink-soft); }
+      .dot { width: 40px; height: 40px; border-radius: 50%; background: var(--ok-bg); border: 3px solid var(--wintergreen); display: flex; align-items: center; justify-content: center; }
+      .dot svg { width: 22px; height: 22px; color: var(--teal-700); display: block; }
+      .sum { margin-top: 34px; border-top: 2px dashed oklch(0.85 0.03 80); padding-top: 24px; font-family: var(--sans); }
+      .sum .line { display: flex; justify-content: space-between; font-size: 30px; font-weight: 700; color: var(--ink-soft); }
+      .sum .total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; font-size: 40px; font-weight: 800; color: var(--ink); }
+      .sum .total .amt { font-size: 64px; color: var(--pink-700); letter-spacing: -0.02em; }
+      .paid { position: absolute; right: 44px; top: 120px; width: 190px; height: 190px; border-radius: 50%; border: 6px solid var(--pink-600); color: var(--pink-700); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--sans); font-weight: 800; background: oklch(1 0 0 / 0.75); }
+      .paid b { font-size: 50px; letter-spacing: 0.08em; line-height: 1; }
+      .paid span { font-size: 18px; letter-spacing: 0.14em; margin-top: 6px; }
+
+      /* outro */
+      .outro .name { font-size: 120px; }
+      .outro .tagline { font-size: 48px; }
+      .foot { margin-top: 44px; display: inline-flex; gap: 14px; align-items: center; padding: 14px 30px; border-radius: 999px; background: #fff; border: 2px solid var(--line); font-size: 28px; font-weight: 700; color: var(--ink); }
+      .foot svg { width: 26px; height: 26px; color: var(--pink-600); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="22">
+      <!-- persistent background -->
+      <div id="bg" class="clip" data-start="0" data-duration="22" data-track-index="0">
+        <div class="bg-grad"></div>
+        <div id="blob-a" class="blob" data-layout-allow-overflow></div>
+        <div id="blob-b" class="blob" data-layout-allow-overflow></div>
+        <div id="blob-c" class="blob" data-layout-allow-overflow></div>
+        <div class="orn" id="orn1" style="left: 120px; top: 120px; width: 70px; height: 70px"><svg viewBox="0 0 24 24"><use href="#blossom" /></svg></div>
+        <div class="orn" id="orn2" style="right: 150px; top: 90px; width: 46px; height: 46px; color: var(--wintergreen)"><svg viewBox="0 0 24 24"><use href="#sparkle" /></svg></div>
+        <div class="orn" id="orn3" style="left: 210px; bottom: 110px; width: 40px; height: 40px; color: var(--wintergreen)"><svg viewBox="0 0 24 24"><use href="#sparkle" /></svg></div>
+        <div class="orn" id="orn4" style="right: 130px; bottom: 140px; width: 84px; height: 84px"><svg viewBox="0 0 24 24"><use href="#blossom" /></svg></div>
+      </div>
+
+      <!-- Scene 1 — the text -->
+      <section id="s1" class="clip" data-start="0" data-duration="3.4" data-track-index="1">
+        <div class="scene" id="s1-in">
+          <div class="phone-col">
+            <div class="stamp-time" id="s1-time">Tue · 9:41 PM</div>
+            <div class="sender">
+              <div class="avatar" id="s1-av">MS</div>
+              <div class="bubble" id="s1-bubble"><span id="s1-text">sorry, did I pay you for March?</span><span class="caret" id="s1-caret"></span></div>
+            </div>
+            <div class="parent-line" id="s1-parent">— every piano parent, ever</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 2 — reveal -->
+      <section id="s2" class="clip" data-start="3.4" data-duration="3" data-track-index="1">
+        <div class="scene" id="s2-in">
+          <div class="reveal">
+            <img class="logo" id="s2-logo" src="assets/img/logo.png" alt="My Piano Diary logo" />
+            <h1 class="name" id="s2-name">My Piano Diary</h1>
+            <div class="tagline">
+              <span class="l1" id="s2-l1">Every lesson, every blossom,</span>
+              <span class="l2 grad" id="s2-l2">in one soft little diary.</span>
+            </div>
+            <svg class="squiggle" viewBox="0 0 200 12" preserveAspectRatio="none"><path id="s2-sq" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" d="M3 8C13 2 23 11 33 6.5S53 1.5 63 7s20 4.5 30 -.5 20 -4 30 1.5 20 3 30 -2 20 -3.5 30 1.5 12 3 14 2" /></svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 3 — today -->
+      <section id="s3" class="clip" data-start="6.4" data-duration="4.2" data-track-index="1">
+        <div class="scene" id="s3-in">
+          <div class="split">
+            <div id="s3-left">
+              <div class="eyebrow"><svg viewBox="0 0 24 24"><use href="#blossom" /></svg>Your morning, in one look</div>
+              <h2 class="headline">Open it and you already know your day</h2>
+            </div>
+            <div class="card" id="s3-card">
+              <h3 class="card-title">Good evening, Ms. Linh</h3>
+              <div class="band"><span>4 lessons today</span><span class="money">₹4,800 expected</span></div>
+              <div class="rows">
+                <div class="row" id="r1"><div class="av p">AM</div><div>Aarav M.</div><div class="time">4:00 PM</div><div class="chip-slot"><span class="chip ok"><i></i>COMPLETE</span></div></div>
+                <div class="row" id="r2"><div class="av t">IR</div><div>Ishita R.</div><div class="time">5:00 PM</div><div class="chip-slot"><span class="chip ok"><i></i>COMPLETE</span></div></div>
+                <div class="row" id="r3"><div class="av p">MS</div><div>Meera S.</div><div class="time">6:15 PM</div>
+                  <div class="chip-slot">
+                    <span class="chip wait" id="chip-wait" data-layout-allow-overlap><i></i>PENDING</span>
+                    <span class="chip ok" id="chip-ok" data-layout-allow-overlap><i></i>COMPLETE</span>
+                    <div class="spark" id="chip-spark"><svg viewBox="0 0 24 24"><use href="#sparkle" /></svg></div>
+                    <div class="cursor" id="cur-dash"><svg viewBox="0 0 24 29"><use href="#cursor" /></svg></div>
+                  </div>
+                </div>
+                <div class="row" id="r4"><div class="av t">KT</div><div>Kabir T.</div><div class="time">7:30 PM</div><div class="chip-slot"><span class="chip no"><i></i>CANCELLED</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 4 — blossom scoring -->
+      <section id="s4" class="clip" data-start="10.6" data-duration="4.4" data-track-index="1">
+        <div class="scene" id="s4-in">
+          <div class="split">
+            <div id="s4-left">
+              <div class="eyebrow"><svg viewBox="0 0 24 24"><use href="#blossom" /></svg>Blossom scoring</div>
+              <h2 class="headline">Rate the lesson.</h2>
+              <p class="sub">One to five blossoms, while you still remember how it went.</p>
+            </div>
+            <div class="card" id="s4-card">
+              <h3 class="card-title">How did that lesson go?</h3>
+              <div class="card-meta">Meera S. · Für Elise · 45 min</div>
+              <div class="blossoms">
+                <div class="bl" id="b1"><svg class="off" viewBox="0 0 24 24"><use href="#blossom" /></svg><svg class="on" viewBox="0 0 24 24"><use href="#blossom" /></svg></div>
+                <div class="bl" id="b2"><svg class="off" viewBox="0 0 24 24"><use href="#blossom" /></svg><svg class="on" viewBox="0 0 24 24"><use href="#blossom" /></svg></div>
+                <div class="bl" id="b3"><svg class="off" viewBox="0 0 24 24"><use href="#blossom" /></svg><svg class="on" viewBox="0 0 24 24"><use href="#blossom" /></svg></div>
+                <div class="bl" id="b4"><svg class="off" viewBox="0 0 24 24"><use href="#blossom" /></svg><svg class="on" viewBox="0 0 24 24"><use href="#blossom" /></svg></div>
+                <div class="bl" id="b5"><svg class="off" viewBox="0 0 24 24"><use href="#blossom" /></svg><svg class="on" viewBox="0 0 24 24"><use href="#blossom" /></svg></div>
+                <div class="cursor" id="cur-bl"><svg viewBox="0 0 24 29"><use href="#cursor" /></svg></div>
+              </div>
+              <div class="score-row"><div class="score" id="score"><span id="score-n">0</span><small> / 5</small></div></div>
+              <div class="caption" id="s4-caption">“Really good — she fixed bar 24 herself.”</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 5 — the month, on paper -->
+      <section id="s5" class="clip" data-start="15" data-duration="4.2" data-track-index="1">
+        <div class="scene" id="s5-in">
+          <div class="split">
+            <div id="s5-left">
+              <div class="eyebrow"><svg viewBox="0 0 24 24"><use href="#blossom" /></svg>Monthly reports</div>
+              <h2 class="headline">Print the month.</h2>
+              <p class="sub">Tuition at the rate each lesson was booked at — one sheet to hand the parents.</p>
+            </div>
+            <div class="paper" id="s5-paper">
+              <h3>Meera S. — March 2026</h3>
+              <div class="who">Monthly report · My Piano Diary</div>
+              <div class="grid" id="s5-grid"></div>
+              <div class="sum">
+                <div class="line" id="s5-line"><span>12 lessons × ₹600</span><span>12 / 12 attended</span></div>
+                <div class="total" id="s5-total"><span>Total</span><span class="amt">₹<span id="amt">0</span></span></div>
+              </div>
+              <div class="paid" id="s5-paid"><b>PAID</b><span>MARCH</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 6 — outro -->
+      <section id="s6" class="clip" data-start="19.2" data-duration="2.8" data-track-index="1">
+        <div class="scene" id="s6-in">
+          <div class="reveal outro">
+            <img class="logo" id="s6-logo" src="assets/img/logo.png" alt="My Piano Diary logo" />
+            <h1 class="name" id="s6-name">My Piano Diary</h1>
+            <div class="tagline" id="s6-tag">
+              <span class="l1">Every lesson, every blossom,</span>
+              <span class="l2 grad">in one soft little diary.</span>
+            </div>
+            <div class="foot" id="s6-foot"><svg viewBox="0 0 24 24"><use href="#blossom" /></svg>Open source · github.com/Itzsoham/my-piano-diary</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- audio -->
+      <audio id="music" src="assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3" data-start="0" data-duration="22" data-track-index="10" data-volume="0.32"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.6,"v":1},{"t":20.4,"v":1},{"t":22,"v":0}]}]}'></audio>
+      <audio id="k1" src="assets/sfx/keypress-003.wav" data-start="0.55" data-duration="0.3" data-track-index="11" data-volume="0.35"></audio>
+      <audio id="k2" src="assets/sfx/keypress-012.wav" data-start="0.78" data-duration="0.3" data-track-index="12" data-volume="0.3"></audio>
+      <audio id="k3" src="assets/sfx/keypress-007.wav" data-start="1.0" data-duration="0.3" data-track-index="11" data-volume="0.35"></audio>
+      <audio id="k4" src="assets/sfx/keypress-018.wav" data-start="1.22" data-duration="0.3" data-track-index="12" data-volume="0.3"></audio>
+      <audio id="k5" src="assets/sfx/keypress-024.wav" data-start="1.45" data-duration="0.3" data-track-index="11" data-volume="0.35"></audio>
+      <audio id="k6" src="assets/sfx/keypress-003.wav" data-start="1.68" data-duration="0.3" data-track-index="12" data-volume="0.3"></audio>
+      <audio id="k7" src="assets/sfx/keypress-012.wav" data-start="1.9" data-duration="0.3" data-track-index="11" data-volume="0.35"></audio>
+      <audio id="sx-title" src="assets/sfx/impactSoft_medium_001.ogg" data-start="3.66" data-duration="0.5" data-track-index="13" data-volume="0.7"></audio>
+      <audio id="sx-row1" src="assets/sfx/card-slide-1.ogg" data-start="6.84" data-duration="0.6" data-track-index="14" data-volume="0.45"></audio>
+      <audio id="sx-row4" src="assets/sfx/drop_001.ogg" data-start="8.42" data-duration="0.5" data-track-index="15" data-volume="0.55"></audio>
+      <audio id="sx-click" src="assets/sfx/click_003.ogg" data-start="9.5" data-duration="0.3" data-track-index="16" data-volume="0.8"></audio>
+      <audio id="sx-okay" src="assets/sfx/impactGlass_light_001.ogg" data-start="9.56" data-duration="0.6" data-track-index="17" data-volume="0.45"></audio>
+      <audio id="sx-card" src="assets/sfx/drop_002.ogg" data-start="10.54" data-duration="0.5" data-track-index="13" data-volume="0.55"></audio>
+      <audio id="sx-b1" src="assets/sfx/impactWood_light_001.ogg" data-start="11.06" data-duration="0.4" data-track-index="14" data-volume="0.5"></audio>
+      <audio id="sx-b2" src="assets/sfx/impactGlass_light_001.ogg" data-start="11.6" data-duration="0.5" data-track-index="15" data-volume="0.4"></audio>
+      <audio id="sx-b3" src="assets/sfx/impactGlass_light_002.ogg" data-start="12.12" data-duration="0.5" data-track-index="16" data-volume="0.45"></audio>
+      <audio id="sx-b4" src="assets/sfx/impactGlass_light_003.ogg" data-start="12.65" data-duration="0.6" data-track-index="17" data-volume="0.5"></audio>
+      <audio id="sx-paper" src="assets/sfx/card-slide-1.ogg" data-start="15.0" data-duration="0.6" data-track-index="13" data-volume="0.45"></audio>
+      <audio id="sx-paid" src="assets/sfx/impactSoft_heavy_003.ogg" data-start="17.36" data-duration="0.7" data-track-index="14" data-volume="0.75"></audio>
+      <audio id="sx-bell" src="assets/sfx/impactBell_heavy_000.ogg" data-start="19.46" data-duration="2" data-track-index="15" data-volume="0.55"></audio>
+
+      <!-- shared symbols -->
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <defs>
+          <symbol id="blossom" viewBox="0 0 24 24">
+            <g fill="currentColor">
+              <ellipse cx="12" cy="6" rx="3.2" ry="4.5" />
+              <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(72 12 12)" />
+              <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(144 12 12)" />
+              <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(216 12 12)" />
+              <ellipse cx="12" cy="6" rx="3.2" ry="4.5" transform="rotate(288 12 12)" />
+            </g>
+            <circle cx="12" cy="12" r="2.7" fill="#ffffff" opacity="0.9" />
+          </symbol>
+          <symbol id="sparkle" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 1.5c.9 5.7 3.9 8.7 9.6 9.6-5.7.9-8.7 3.9-9.6 9.6-.9-5.7-3.9-8.7-9.6-9.6C8.1 10.2 11.1 7.2 12 1.5z" />
+          </symbol>
+          <symbol id="cursor" viewBox="0 0 24 29">
+            <path d="M2 2 L2 23 L7.5 17.8 L11.2 26.2 L15 24.6 L11.4 16.4 L19 16.2 Z" fill="#ffffff" stroke="oklch(0.328 0.027 203.5)" stroke-width="2" stroke-linejoin="round" />
+          </symbol>
+          <symbol id="check" viewBox="0 0 24 24">
+            <path d="M5 12.5 L10 17 L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          </symbol>
+        </defs>
+      </svg>
+    </div>
+
+    <script>
+      (function () {
+        // ── build DOM that is easier generated than hand-written ──
+        var textEl = document.getElementById("s1-text");
+        var msg = textEl.textContent;
+        textEl.textContent = "";
+        var chars = [];
+        for (var i = 0; i < msg.length; i++) {
+          var s = document.createElement("span");
+          s.className = "ch";
+          s.textContent = msg[i];
+          textEl.appendChild(s);
+          chars.push(s);
+        }
+
+        var grid = document.getElementById("s5-grid");
+        var dots = [];
+        var weeks = ["Week 1", "Week 2", "Week 3", "Week 4"];
+        for (var w = 0; w < 4; w++) {
+          var label = document.createElement("div");
+          label.textContent = weeks[w];
+          grid.appendChild(label);
+          for (var d = 0; d < 3; d++) {
+            var dot = document.createElement("div");
+            dot.className = "dot";
+            dot.innerHTML = '<svg viewBox="0 0 24 24"><use href="#check" /></svg>';
+            grid.appendChild(dot);
+            dots.push(dot);
+          }
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        var E = "power3.out";
+
+        // ── background: slow drift + audio-reactive breathing ──
+        tl.fromTo("#orn1", { rotation: 0, y: 0 }, { rotation: 40, y: 20, duration: 22, ease: "none" }, 0);
+        tl.fromTo("#orn4", { rotation: 0, y: 0 }, { rotation: -35, y: -24, duration: 22, ease: "none" }, 0);
+        tl.fromTo("#orn2", { scale: 0.8 }, { scale: 1.15, duration: 2.75, ease: "sine.inOut", yoyo: true, repeat: 7 }, 0);
+        tl.fromTo("#orn3", { scale: 1.1 }, { scale: 0.8, duration: 2.75, ease: "sine.inOut", yoyo: true, repeat: 7 }, 0);
+        tl.fromTo("#blob-a", { x: 0, y: 0 }, { x: 120, y: 60, duration: 22, ease: "none" }, 0);
+        tl.fromTo("#blob-b", { x: 0, y: 0 }, { x: -140, y: -40, duration: 22, ease: "none" }, 0);
+        var A = window.AUDIO_RMS;
+        var blobA = document.getElementById("blob-a");
+        var blobB = document.getElementById("blob-b");
+        var blobC = document.getElementById("blob-c");
+        for (var f = 0; f < A.frames.length; f++) {
+          tl.call(
+            (function (v) {
+              return function () {
+                // music warmth: blobs gently swell (~0–12%) with the bed's energy
+                blobA.style.scale = String(1 + v * 0.12);
+                blobB.style.scale = String(1 + v * 0.1);
+                blobC.style.opacity = String(0.7 + v * 0.3);
+              };
+            })(A.frames[f]),
+            [],
+            f / A.fps
+          );
+        }
+
+        // ── Scene 1: the text (0–3.4) ──
+        tl.fromTo("#s1-time", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, 0.15);
+        tl.fromTo("#s1-av", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.8)" }, 0.2);
+        tl.fromTo("#s1-bubble", { opacity: 0, y: 30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)", transformOrigin: "0% 100%" }, 0.25);
+        var t0 = 0.55, step = 0.045;
+        chars.forEach(function (c, i) { tl.set(c, { opacity: 1 }, t0 + i * step); });
+        tl.fromTo("#s1-caret", { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "steps(1)", yoyo: true, repeat: 5 }, t0 + chars.length * step);
+        tl.fromTo("#s1-parent", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 2.1);
+        tl.to("#s1-in", { opacity: 0, y: -60, duration: 0.35, ease: "power2.in" }, 3.05);
+
+        // ── Scene 2: reveal (3.4–6.4) ──
+        tl.fromTo("#s2-logo", { opacity: 0, scale: 0.5, rotation: -10 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" }, 3.45);
+        tl.fromTo("#s2-name", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.55, ease: E }, 3.7); // beat-locked: 3.70s
+        tl.fromTo("#s2-l1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 4.1);
+        tl.fromTo("#s2-l2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 4.35);
+        tl.fromTo("#s2-sq", { strokeDasharray: 260, strokeDashoffset: 260 }, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut" }, 4.7);
+        tl.to("#s2-in", { opacity: 0, x: -80, duration: 0.35, ease: "power2.in" }, 6.05);
+
+        // ── Scene 3: today (6.4–10.6) ──
+        tl.fromTo("#s3-left", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.55, ease: E }, 6.4);
+        tl.fromTo("#s3-card", { opacity: 0, x: 90 }, { opacity: 1, x: 0, duration: 0.6, ease: E }, 6.45);
+        // beat-grid: rows at 6.86, 7.40, 7.92, 8.44 — then the full set holds ~2s
+        [["#r1", 6.86], ["#r2", 7.4], ["#r3", 7.92], ["#r4", 8.44]].forEach(function (r) {
+          tl.fromTo(r[0], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, r[1]);
+        });
+        tl.set("#chip-ok", { opacity: 0 }, 0);
+        tl.set("#chip-spark", { opacity: 0, scale: 0 }, 0);
+        tl.fromTo("#cur-dash", { opacity: 0, x: 260, y: 170 }, { opacity: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 8.8);
+        tl.to("#cur-dash", { scale: 0.85, duration: 0.08, yoyo: true, repeat: 1 }, 9.5); // beat-grid: click at 9.50
+        tl.to("#chip-wait", { opacity: 0, scale: 0.8, duration: 0.18 }, 9.52);
+        tl.fromTo("#chip-ok", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2.2)" }, 9.56);
+        tl.to("#chip-spark", { opacity: 1, scale: 1, rotation: 45, duration: 0.3, ease: "back.out(2)" }, 9.6);
+        tl.to("#chip-spark", { opacity: 0, scale: 0.4, duration: 0.3 }, 10.0);
+        tl.to("#cur-dash", { opacity: 0, x: 60, y: 60, duration: 0.3 }, 9.9);
+        tl.to("#s3-in", { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 10.28);
+
+        // ── Scene 4: blossom scoring (10.6–15.0) ──
+        tl.fromTo("#s4-left", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 10.6);
+        tl.fromTo("#s4-card", { opacity: 0, y: 60, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: E }, 10.6); // beat-locked: 10.54s (within 0.06)
+        tl.set("#s4-caption", { opacity: 0 }, 0);
+        tl.fromTo("#cur-bl", { opacity: 0, x: -80, y: 60 }, { opacity: 1, x: 0, y: 0, duration: 0.4, ease: E }, 10.75);
+        var scoreEl = document.getElementById("score-n");
+        // beat-grid: blossoms at 11.06, 11.60, 12.12, 12.65
+        [11.06, 11.6, 12.12, 12.65].forEach(function (t, i) {
+          var bl = "#b" + (i + 1);
+          tl.to("#cur-bl", { x: i * 144, duration: i === 0 ? 0.01 : 0.3, ease: "power2.inOut" }, t - (i === 0 ? 0 : 0.3));
+          tl.fromTo(bl + " .on", { opacity: 0, scale: 0.4, rotation: -40 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "back.out(2.4)", transformOrigin: "50% 50%" }, t);
+          tl.fromTo(bl, { scale: 1 }, { scale: 1.12, duration: 0.12, yoyo: true, repeat: 1 }, t);
+        });
+        var sc = { v: 0 };
+        // steps(4) over 2.12s jumps at 11.06, 11.59, 12.12, 12.65 — matching each blossom
+        tl.fromTo(sc, { v: 0 }, { v: 4, duration: 2.12, ease: "steps(4)", onUpdate: function () { scoreEl.textContent = String(Math.round(sc.v)); } }, 10.53);
+        tl.fromTo("#score", { scale: 1 }, { scale: 1.08, duration: 0.15, yoyo: true, repeat: 1, transformOrigin: "0% 50%" }, 12.65);
+        tl.to("#cur-bl", { opacity: 0, y: 40, duration: 0.3 }, 12.95);
+        tl.fromTo("#s4-caption", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: E }, 12.8);
+        tl.to("#s4-in", { opacity: 0, x: -80, duration: 0.3, ease: "power2.in" }, 14.7);
+
+        // ── Scene 5: the month, on paper (15.0–19.2) ──
+        tl.fromTo("#s5-left", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 15.0);
+        tl.fromTo("#s5-paper", { opacity: 0, y: 120, rotation: 3 }, { opacity: 1, y: 0, rotation: -1, duration: 0.6, ease: E }, 15.0);
+        dots.forEach(function (d, i) {
+          tl.fromTo(d, { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2.5)" }, 15.5 + i * 0.07);
+        });
+        tl.fromTo("#s5-line", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, 16.3);
+        tl.fromTo("#s5-total", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, 16.6);
+        var amt = document.getElementById("amt");
+        var counter = { v: 0 };
+        tl.fromTo(counter, { v: 0 }, {
+          v: 7200, duration: 0.7, ease: "power2.out",
+          onUpdate: function () { amt.textContent = (Math.round(counter.v / 100) * 100).toLocaleString("en-IN"); }
+        }, 16.6);
+        tl.fromTo("#s5-paid", { opacity: 0, scale: 2.2, rotation: -30 }, { opacity: 1, scale: 1, rotation: -14, duration: 0.3, ease: "power4.in" }, 17.08); // lands on beat 17.38
+        tl.to("#s5-paper", { x: 6, duration: 0.05, yoyo: true, repeat: 3 }, 17.38);
+        tl.to("#s5-in", { opacity: 0, duration: 0.35 }, 18.85);
+
+        // ── Scene 6: outro (19.2–22) ──
+        tl.fromTo("#s6-logo", { opacity: 0, scale: 0.4, rotation: 12 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.8)" }, 19.25);
+        tl.fromTo("#s6-name", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 19.5);
+        tl.fromTo("#s6-tag", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 19.8);
+        tl.fromTo("#s6-foot", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 20.2);
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

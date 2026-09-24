@@ -1,0 +1,1 @@
+Made My Piano Diary: a soft little diary for piano teachers. It scores every lesson in blossoms, prints the month for the parents, and means nobody has to text "sorry, did I pay you for March?" again. 🌸🎹 Open source: github.com/Itzsoham/my-piano-diary

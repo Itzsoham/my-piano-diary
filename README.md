@@ -25,6 +25,15 @@
     </div>
 </div>
 
+<div align="center">
+  <br />
+  <a href="brag-output/brag.mp4">
+    <img src="brag-output/brag.jpg" alt="My Piano Diary — watch the 22-second tour" width="720" />
+  </a>
+  <br />
+  <sub>▶️ <a href="brag-output/brag.mp4">Watch the 22-second tour</a></sub>
+</div>
+
 ## 📋 <a name="table">Table of Contents</a>
 
 1. 🤖 [Introduction](#introduction)
