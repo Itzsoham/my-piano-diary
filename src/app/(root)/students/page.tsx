@@ -1,8 +1,6 @@
 import { api } from "@/trpc/server";
 import { StudentsHero } from "./_components/students-hero";
-import { StudentsTable } from "./_components/students-table";
-import { FamiliesManager } from "./_components/families-manager";
-import { ParentsManager } from "./_components/parents-manager";
+import { StudentsTabsView } from "./_components/students-tabs-view";
 
 export const metadata = {
   title: "Students",
@@ -11,36 +9,17 @@ export const metadata = {
 };
 
 export default async function StudentsPage() {
-  const students = await api.student.getAll();
+  const students = await api.student.getAll({ includeInactive: true });
+  const activeCount = students.filter((s) => s.isActive).length;
 
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
-        <div className="flex flex-col gap-8 pb-6 md:gap-10 md:pb-10">
-          <StudentsHero count={students.length} />
+        <div className="flex flex-col gap-6 pb-6 md:gap-8 md:pb-10">
+          <StudentsHero count={activeCount} />
 
           <div className="px-4 lg:px-6">
-            <StudentsTable data={students} />
-          </div>
-
-          <div className="px-4 lg:px-6">
-            <FamiliesManager
-              students={students.map((student) => ({
-                id: student.id,
-                name: student.name,
-                avatar: student.avatar,
-              }))}
-            />
-          </div>
-
-          <div className="px-4 lg:px-6">
-            <ParentsManager
-              students={students.map((student) => ({
-                id: student.id,
-                name: student.name,
-                avatar: student.avatar,
-              }))}
-            />
+            <StudentsTabsView students={students} />
           </div>
         </div>
       </div>

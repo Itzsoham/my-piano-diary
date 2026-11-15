@@ -8,6 +8,8 @@ import {
   Plus,
   Search,
   Trash,
+  UserCheck,
+  UserX,
   WalletCards,
 } from "lucide-react";
 import {
@@ -49,6 +51,7 @@ type Student = {
   name: string;
   avatar: string | null;
   notes: string | null;
+  isActive: boolean;
   lessonRate: number;
   onlineLessonRate: number;
   _count: {
@@ -130,6 +133,7 @@ interface StudentCardProps {
   onEditOpenChange: (open: boolean) => void;
   onEditRequest: () => void;
   onDeleteRequest: () => void;
+  onToggleActive: () => void;
 }
 
 /** One card in the "garden". Ornament (strip wash + corner blossom) frames
@@ -145,13 +149,18 @@ function StudentCard({
   onEditOpenChange,
   onEditRequest,
   onDeleteRequest,
+  onToggleActive,
 }: StudentCardProps) {
   const lessonCount = student._count.lessons;
 
   return (
     <Card
       style={{ "--i": index } as React.CSSProperties}
-      className="rise relative flex flex-col gap-0 overflow-hidden rounded-4xl border-pink-100/80 p-0 shadow-(--sh) transition-all duration-300 hover:-translate-y-1 hover:shadow-(--sh-lg)"
+      className={cn(
+        "rise relative flex flex-col gap-0 overflow-hidden rounded-4xl border-pink-100/80 p-0 shadow-(--sh) transition-all duration-300 hover:-translate-y-1 hover:shadow-(--sh-lg)",
+        !student.isActive &&
+          "opacity-80 border-stone-200/80 bg-stone-50/40 grayscale-[20%]",
+      )}
     >
       {/* header strip — decorative gradient wash + corner blossom watermark */}
       <div className="hero-band relative h-14 shrink-0" aria-hidden="true">
@@ -179,9 +188,22 @@ function StudentCard({
 
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="text-ink truncate text-base font-semibold">
-              {student.name}
-            </h3>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <h3 className="text-ink truncate text-base font-semibold">
+                {student.name}
+              </h3>
+              {student.isActive ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-600/20">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  Active
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-600 ring-1 ring-stone-400/20">
+                  <span className="size-1.5 rounded-full bg-stone-400" />
+                  Inactive
+                </span>
+              )}
+            </div>
             <Badge className="mt-1.5 border-transparent bg-teal-100 text-teal-700 tabular-nums">
               {lessonCount} {lessonCount === 1 ? "lesson" : "lessons"}
             </Badge>
@@ -250,6 +272,19 @@ function StudentCard({
                 <Edit className="mr-2 size-4" />
                 Edit
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onToggleActive}>
+                {student.isActive ? (
+                  <>
+                    <UserX className="mr-2 size-4 text-stone-600" />
+                    Mark as Inactive
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="mr-2 size-4 text-emerald-600" />
+                    Reactivate Student
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href={paymentHref}>
                   <WalletCards className="mr-2 size-4" />
@@ -291,6 +326,19 @@ export function StudentsTable({ data }: StudentsTableProps) {
     [currentMonth, currentYear],
   );
 
+  const [statusFilter, setStatusFilter] = React.useState<
+    "all" | "active" | "inactive"
+  >("all");
+
+  const activeCount = React.useMemo(
+    () => data.filter((s) => s.isActive).length,
+    [data],
+  );
+  const inactiveCount = React.useMemo(
+    () => data.filter((s) => !s.isActive).length,
+    [data],
+  );
+
   // Search text piggybacks on the same sessionStorage-persisted
   // ColumnFiltersState shape the table used before, so previously saved
   // state (and the shared hook, also used by the pieces list) keeps working.
@@ -306,10 +354,16 @@ export function StudentsTable({ data }: StudentsTableProps) {
   );
 
   const filteredStudents = React.useMemo(() => {
+    let list = data;
+    if (statusFilter === "active") {
+      list = list.filter((student) => student.isActive);
+    } else if (statusFilter === "inactive") {
+      list = list.filter((student) => !student.isActive);
+    }
     const query = nameFilter.trim().toLowerCase();
-    if (!query) return data;
-    return data.filter((student) => student.name.toLowerCase().includes(query));
-  }, [data, nameFilter]);
+    if (!query) return list;
+    return list.filter((student) => student.name.toLowerCase().includes(query));
+  }, [data, statusFilter, nameFilter]);
 
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -317,12 +371,12 @@ export function StudentsTable({ data }: StudentsTableProps) {
   });
 
   // Mirror tanstack's default autoResetPageIndex behaviour: a new search
-  // always lands back on page 1.
+  // or status filter change always lands back on page 1.
   React.useEffect(() => {
     setPagination((prev) =>
       prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 },
     );
-  }, [nameFilter]);
+  }, [nameFilter, statusFilter]);
 
   const columns = React.useMemo<ColumnDef<Student>[]>(
     () => [{ id: "student", accessorKey: "id" }],
@@ -373,6 +427,28 @@ export function StudentsTable({ data }: StudentsTableProps) {
     },
     onSettled: () => {
       void utils.student.getAll.invalidate();
+      void utils.earnings.getDashboard.invalidate();
+      router.refresh();
+    },
+  });
+
+  const toggleActiveMutation = api.student.toggleActive.useMutation({
+    onSuccess: (updated) => {
+      toast.success(
+        updated.isActive
+          ? `${updated.name} reactivated`
+          : `${updated.name} marked as inactive`,
+        { id: "student-toggle-active" },
+      );
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Failed to update student status", {
+        id: "student-toggle-active",
+      });
+    },
+    onSettled: () => {
+      void utils.student.getAll.invalidate();
+      void utils.earnings.getDashboard.invalidate();
       router.refresh();
     },
   });
@@ -418,7 +494,9 @@ export function StudentsTable({ data }: StudentsTableProps) {
         style={{ "--i": 4 } as React.CSSProperties}
       >
         <p className="text-ink-soft text-sm">
-          No students match &ldquo;{nameFilter}&rdquo; — try another name.
+          {nameFilter
+            ? `No students match "${nameFilter}" — try another name.`
+            : `No ${statusFilter} students found.`}
         </p>
       </div>
     );
@@ -440,6 +518,9 @@ export function StudentsTable({ data }: StudentsTableProps) {
             }
             onEditRequest={() => setShowEditSheet(student.id)}
             onDeleteRequest={() => handleDelete(student.id, student.name)}
+            onToggleActive={() =>
+              toggleActiveMutation.mutate({ id: student.id })
+            }
           />
         ))}
 
@@ -472,26 +553,113 @@ export function StudentsTable({ data }: StudentsTableProps) {
         storageKey="students"
       />
 
-      {/* Filter bar — rounded, pink-tinted, matches the app's filter-bar look. */}
-      <div className="bg-card/80 flex flex-col gap-3 rounded-3xl border border-pink-100 p-3 shadow-(--sh-xs) sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-sm">
-          <Search
-            aria-hidden="true"
-            className="text-ink-soft pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2"
-          />
-          <label htmlFor="student-search" className="sr-only">
-            Filter students
-          </label>
-          <Input
-            id="student-search"
-            type="search"
-            autoComplete="off"
-            placeholder="Filter students…"
-            value={nameFilter}
-            onChange={(event) => setNameFilter(event.target.value)}
-            className="h-11 w-full rounded-full pl-10"
-          />
+      {/* Filter bar — rounded, pink-tinted, with search and Active / Inactive / All status pills */}
+      <div className="bg-card/80 flex flex-col gap-3 rounded-3xl border border-pink-100 p-3 shadow-(--sh-xs) lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center flex-1">
+          <div className="relative w-full sm:max-w-xs">
+            <Search
+              aria-hidden="true"
+              className="text-ink-soft pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2"
+            />
+            <label htmlFor="student-search" className="sr-only">
+              Filter students
+            </label>
+            <Input
+              id="student-search"
+              type="search"
+              autoComplete="off"
+              placeholder="Filter students…"
+              value={nameFilter}
+              onChange={(event) => setNameFilter(event.target.value)}
+              className="h-10 w-full rounded-full pl-10 text-sm"
+            />
+          </div>
+
+          {/* Status filter pills */}
+          <div
+            role="radiogroup"
+            aria-label="Filter by student status"
+            className="flex items-center gap-1 rounded-full bg-pink-50/70 p-1 border border-pink-100/80 w-fit"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={statusFilter === "all"}
+              onClick={() => setStatusFilter("all")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
+                statusFilter === "all"
+                  ? "bg-white text-pink-700 shadow-xs"
+                  : "text-ink-muted hover:text-ink hover:bg-white/50",
+              )}
+            >
+              All
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.2 text-[10px]",
+                  statusFilter === "all"
+                    ? "bg-pink-100 text-pink-700 font-bold"
+                    : "bg-black/5 text-ink-muted",
+                )}
+              >
+                {data.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="radio"
+              aria-checked={statusFilter === "active"}
+              onClick={() => setStatusFilter("active")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
+                statusFilter === "active"
+                  ? "bg-white text-emerald-700 shadow-xs"
+                  : "text-ink-muted hover:text-ink hover:bg-white/50",
+              )}
+            >
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              Active
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.2 text-[10px]",
+                  statusFilter === "active"
+                    ? "bg-emerald-100 text-emerald-700 font-bold"
+                    : "bg-black/5 text-ink-muted",
+                )}
+              >
+                {activeCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="radio"
+              aria-checked={statusFilter === "inactive"}
+              onClick={() => setStatusFilter("inactive")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer",
+                statusFilter === "inactive"
+                  ? "bg-white text-stone-700 shadow-xs"
+                  : "text-ink-muted hover:text-ink hover:bg-white/50",
+              )}
+            >
+              <span className="size-1.5 rounded-full bg-stone-400" />
+              Inactive
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.2 text-[10px]",
+                  statusFilter === "inactive"
+                    ? "bg-stone-200 text-stone-700 font-bold"
+                    : "bg-black/5 text-ink-muted",
+                )}
+              >
+                {inactiveCount}
+              </span>
+            </button>
+          </div>
         </div>
+
         <StudentSheet mode="create" trigger={addStudentTrigger} />
       </div>
 

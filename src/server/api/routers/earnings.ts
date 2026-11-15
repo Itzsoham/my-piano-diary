@@ -332,7 +332,7 @@ export const earningsRouter = createTRPCRouter({
 
       // Get count of all students for this teacher
       const totalStudents = await ctx.db.student.count({
-        where: { teacherId: teacher.id },
+        where: { teacherId: teacher.id, isActive: true },
       });
 
       // Payment months are keyed by month/year rather than by lesson date.
@@ -636,6 +636,7 @@ export const earningsRouter = createTRPCRouter({
           },
           status: "COMPLETE",
           score: { not: null },
+          student: { isActive: true },
         },
         select: {
           score: true,
@@ -763,7 +764,7 @@ export const earningsRouter = createTRPCRouter({
 
       const [students, lessons] = await Promise.all([
         ctx.db.student.findMany({
-          where: { teacherId: teacher.id },
+          where: { teacherId: teacher.id, isActive: true },
           select: { id: true, name: true, avatar: true },
         }),
         ctx.db.lesson.findMany({
@@ -1010,6 +1011,7 @@ export const earningsRouter = createTRPCRouter({
           ctx.db.student.count({
             where: {
               teacherId: teacher.id,
+              isActive: true,
               createdAt: { lte: month.end },
             },
           }),

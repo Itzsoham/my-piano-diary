@@ -9,39 +9,56 @@ import {
 import { fromUTC, getStartOfMonthUTC } from "@/lib/timezone";
 
 export const studentRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const teacher = await ctx.db.teacher.findUnique({
-      where: { userId: ctx.session.user.id },
-    });
+  getAll: protectedProcedure
+    .input(
+      z
+        .object({
+          includeInactive: z.boolean().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
 
-    if (!teacher) {
-      return [];
-    }
+      if (!teacher) {
+        return [];
+      }
 
-    return ctx.db.student.findMany({
-      where: {
+      const whereClause: {
+        teacherId: string;
+        isActive?: boolean;
+      } = {
         teacherId: teacher.id,
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        teacher: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
+      };
+
+      if (!input?.includeInactive) {
+        whereClause.isActive = true;
+      }
+
+      return ctx.db.student.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        include: {
+          teacher: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                },
               },
             },
           },
-        },
-        _count: {
-          select: {
-            lessons: true,
+          _count: {
+            select: {
+              lessons: true,
+            },
           },
         },
-      },
-    });
-  }),
+      });
+    }),
 
   getByGuid: protectedProcedure
     .input(z.object({ id: idSchema }))
@@ -100,6 +117,7 @@ export const studentRouter = createTRPCRouter({
       return ctx.db.student.create({
         data: {
           name: input.name,
+          isActive: input.isActive ?? true,
           ...(input.notes && { notes: input.notes }),
           ...(input.avatar && { avatar: input.avatar }),
           ...(input.lessonRate !== undefined && {
@@ -144,6 +162,7 @@ export const studentRouter = createTRPCRouter({
         where: { id },
         data: {
           ...(data.name !== undefined && { name: data.name }),
+          ...(data.isActive !== undefined && { isActive: data.isActive }),
           ...(data.notes !== undefined && { notes: data.notes }),
           ...(data.avatar !== undefined && { avatar: data.avatar }),
           ...(data.lessonRate !== undefined && { lessonRate: data.lessonRate }),
@@ -228,6 +247,36 @@ export const studentRouter = createTRPCRouter({
 
       return ctx.db.student.delete({
         where: { id: input.id },
+      });
+    }),
+
+  toggleActive: protectedProcedure
+    .input(z.object({ id: idSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const teacher = await ctx.db.teacher.findUnique({
+        where: { userId: ctx.session.user.id },
+      });
+
+      if (!teacher) {
+        throw new Error("Teacher not found");
+      }
+
+      const student = await ctx.db.student.findFirst({
+        where: {
+          id: input.id,
+          teacherId: teacher.id,
+        },
+      });
+
+      if (!student) {
+        throw new Error("Student not found");
+      }
+
+      return ctx.db.student.update({
+        where: { id: input.id },
+        data: {
+          isActive: !student.isActive,
+        },
       });
     }),
 });

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BookOpen, CalendarDays, MapPin, User, Wifi } from "lucide-react";
+import { BookOpen, CalendarDays, MapPin, User, UserCheck, Wifi } from "lucide-react";
 
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrency } from "@/lib/currency";
@@ -30,6 +31,7 @@ const studentFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   avatar: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   notes: z.string().optional(),
+  isActive: z.boolean(),
   lessonRate: z
     .number()
     .int("Lesson rate must be an integer")
@@ -111,6 +113,7 @@ export function StudentForm({
       name: "",
       avatar: "",
       notes: "",
+      isActive: true,
       lessonRate: 0,
       onlineLessonRate: 0,
     },
@@ -134,6 +137,7 @@ export function StudentForm({
         name: student.name,
         avatar: student.avatar ?? "",
         notes: student.notes ?? "",
+        isActive: student.isActive ?? true,
         lessonRate: student.lessonRate ?? 0,
         onlineLessonRate: student.onlineLessonRate ?? 0,
       });
@@ -147,6 +151,7 @@ export function StudentForm({
         ...data,
         avatar: data.avatar ?? undefined,
         notes: data.notes ?? undefined,
+        isActive: data.isActive,
         lessonRate: data.lessonRate,
         onlineLessonRate: data.onlineLessonRate,
       });
@@ -155,6 +160,7 @@ export function StudentForm({
         ...data,
         avatar: data.avatar ?? undefined,
         notes: data.notes ?? undefined,
+        isActive: data.isActive,
         lessonRate: data.lessonRate,
         onlineLessonRate: data.onlineLessonRate,
       });
@@ -350,6 +356,30 @@ export function StudentForm({
                     Track important information about the student
                   </FormDescription>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-pink-100 bg-pink-50/40 p-4 shadow-xs">
+                  <div className="space-y-0.5 pr-2">
+                    <FormLabel className="text-pink-900 font-medium">
+                      Active Student
+                    </FormLabel>
+                    <FormDescription className="text-xs text-ink-muted">
+                      Active students appear in scheduling dropdowns, lesson filters, rankings, and active counts. Turn off if you stop teaching this student.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="data-[state=checked]:bg-pink-500"
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

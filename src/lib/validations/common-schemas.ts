@@ -84,6 +84,7 @@ export const createStudentSchema = z.object({
   levelId: idSchema.optional(),
   notes: descriptionSchema,
   avatar: z.string().url().optional(),
+  isActive: z.boolean().default(true).optional(),
   lessonRate: z
     .number()
     .int("Lesson rate must be an integer")

@@ -96,6 +96,7 @@ model Student {
   notes      String?
   lessonRate Int             @default(0)
   onlineLessonRate Int       @default(0)
+  isActive   Boolean         @default(true)
   createdAt  DateTime        @default(now()) @db.Timestamptz
   lessons    Lesson[]
   teacher    Teacher         @relation(fields: [teacherId], references: [id])
@@ -107,6 +108,7 @@ model Student {
   practiceVideos    PracticeVideo[]
 
   @@index([teacherId])
+  @@index([teacherId, isActive])
 }
 
 model Piece {
