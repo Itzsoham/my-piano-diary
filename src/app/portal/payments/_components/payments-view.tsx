@@ -9,6 +9,9 @@ import {
   Maximize2,
   QrCode,
   WalletCards,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
 } from "lucide-react";
 
 import { Blossom } from "@/components/blossom/blossom";
@@ -39,8 +42,12 @@ const getInitials = (name: string) => {
 
 export function PortalPaymentsView() {
   const { currency } = useCurrency();
-  const { data: payments = [], isLoading: isPaymentsLoading } =
-    api.portal.payments.useQuery();
+  const [showAllHistory, setShowAllHistory] = React.useState(false);
+  const { data: payments = [], isLoading: isPaymentsLoading, isFetching: isPaymentsFetching } =
+    api.portal.payments.useQuery(
+      { all: showAllHistory, limitMonths: 3 },
+      { placeholderData: (prev) => prev },
+    );
   const { data: qr } = api.portal.qr.useQuery();
 
   const [qrDialogOpen, setQrDialogOpen] = React.useState(false);
@@ -167,6 +174,9 @@ export function PortalPaymentsView() {
               childPayment={child}
               currency={currency}
               statusBadgeConfig={statusBadgeConfig}
+              showAll={showAllHistory}
+              onToggleShowAll={() => setShowAllHistory((prev) => !prev)}
+              isFetching={isPaymentsFetching}
             />
           ))
         )}
@@ -216,6 +226,9 @@ function ChildPaymentCard({
   childPayment,
   currency,
   statusBadgeConfig,
+  showAll,
+  onToggleShowAll,
+  isFetching,
 }: {
   childPayment: ChildPaymentSummary;
   currency: CurrencyCode;
@@ -223,6 +236,9 @@ function ChildPaymentCard({
     "UNPAID" | "PARTIAL" | "PAID",
     { label: string; bg: string; fg: string; dot: string }
   >;
+  showAll: boolean;
+  onToggleShowAll: () => void;
+  isFetching?: boolean;
 }) {
   return (
     <Card className="rounded-2xl border-pink-200/70 p-5 shadow-(--sh) bg-card space-y-4">
@@ -333,6 +349,47 @@ function ChildPaymentCard({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {childPayment.hasMore && !showAll && (
+        <div className="pt-2 text-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleShowAll}
+            disabled={isFetching}
+            className="rounded-full border-pink-200 bg-white px-4 text-xs font-semibold text-pink-700 shadow-xs hover:bg-pink-50 hover:text-pink-800 transition cursor-pointer"
+          >
+            {isFetching ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="size-3.5 animate-spin" />
+                Loading older months...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <ChevronDown className="size-3.5" />
+                Show older billing history ({childPayment.totalMonthsCount - childPayment.months.length} more {childPayment.totalMonthsCount - childPayment.months.length === 1 ? "month" : "months"})
+              </span>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {showAll && childPayment.totalMonthsCount > 3 && (
+        <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-pink-100 text-xs text-ink-soft">
+          <span className="italic">
+            Showing all {childPayment.totalMonthsCount} billing months
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleShowAll}
+            className="h-8 rounded-full text-xs font-medium text-pink-700 hover:text-pink-800 hover:bg-pink-50 cursor-pointer"
+          >
+            <ChevronUp className="size-3.5 mr-1" />
+            Show recent 3 months only
+          </Button>
         </div>
       )}
     </Card>

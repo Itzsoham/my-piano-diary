@@ -351,7 +351,16 @@ export const portalRouter = createTRPCRouter({
    * Payments history & dues for linked students.
    * Recalculates expected amounts from completed lessons in teacher's timezone.
    */
-  payments: parentProcedure.query(async ({ ctx }) => {
+  payments: parentProcedure
+    .input(
+      z
+        .object({
+          all: z.boolean().optional(),
+          limitMonths: z.number().int().min(1).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
     const parentWithTeacher = await ctx.db.parent.findUnique({
       where: { id: ctx.parent.id },
       include: {
@@ -444,7 +453,14 @@ export const portalRouter = createTRPCRouter({
         studentPms.map((pm) => [`${pm.year}-${pm.month}`, pm]),
       );
 
-      const months = sortedMonths.map((ym) => {
+      const totalMonthsCount = sortedMonths.length;
+      const showAll = input?.all ?? false;
+      const limit = showAll ? undefined : (input?.limitMonths ?? 3);
+      const targetMonths =
+        limit !== undefined ? sortedMonths.slice(0, limit) : sortedMonths;
+      const hasMore = totalMonthsCount > targetMonths.length;
+
+      const months = targetMonths.map((ym) => {
         const [year, month] = ym.split("-").map(Number);
         const pm = pmByYm.get(ym);
         const expected = expMap.get(ym) ?? 0;
@@ -467,6 +483,8 @@ export const portalRouter = createTRPCRouter({
 
       return {
         student,
+        hasMore,
+        totalMonthsCount,
         months,
       };
     });
