@@ -28,7 +28,7 @@ function hasSessionCookie(req: NextRequest) {
 /** Prefix-matched: everything under these trees is public. "/design-mockups"
  *  is here because the landing page links to /design-mockups/index.html and the
  *  matcher below only excludes image/audio extensions, not .html. */
-const PUBLIC_PATHS = ["/login", "/register", "/forever", "/design-mockups"];
+const PUBLIC_PATHS = ["/login", "/register", "/forever", "/design-mockups", "/portal"];
 
 /** Matched EXACTLY, never by prefix. The landing page lives at "/", and every
  *  pathname starts with "/" — putting it in PUBLIC_PATHS would make the whole

@@ -78,7 +78,7 @@ export function LoginForm() {
       if (result.success && result.user) {
         toast.success(result.message);
         setUser(result.user);
-        router.push("/dashboard");
+        if (result.role === "PARENT") { router.push("/portal"); } else { router.push("/dashboard"); }
         router.refresh();
       } else {
         toast.error(result.message);

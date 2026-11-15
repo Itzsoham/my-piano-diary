@@ -32,13 +32,14 @@ export async function loginAction(formData: FormData) {
     // Fetch user details to return to client
     const user = await db.user.findUnique({
       where: { email: validatedData.email },
-      select: { id: true, email: true, name: true, image: true },
+      select: { id: true, email: true, name: true, image: true, role: true },
     });
 
     return {
       success: true,
       message: "Login successful!",
       user,
+      role: user?.role ?? "TEACHER",
     };
   } catch (error) {
     if (error instanceof AuthError) {
@@ -108,21 +109,35 @@ export async function registerAction(formData: FormData) {
       timezone = "UTC";
     }
 
-    // Create new user
-    const newUser = await db.user.create({
-      data: {
-        name: validatedData.name,
-        email: validatedData.email,
-        password: hashedPassword,
-        timezone,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
-        timezone: true,
-      },
+    // Create new user + teacher in a single transaction so a freshly
+    // registered studio can manage parent accounts and payment settings
+    // immediately, without needing to create a student first.
+    const newUser = await db.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: validatedData.name,
+          email: validatedData.email,
+          password: hashedPassword,
+          timezone,
+          role: "TEACHER",
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+          timezone: true,
+        },
+      });
+
+      await tx.teacher.create({
+        data: {
+          userId: user.id,
+          timezone,
+        },
+      });
+
+      return user;
     });
 
     // Automatically sign in the new user

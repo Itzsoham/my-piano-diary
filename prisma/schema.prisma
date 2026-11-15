@@ -8,6 +8,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  TEACHER
+  PARENT
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -16,10 +21,13 @@ model User {
   image         String?
   password      String?
   timezone      String    @default("UTC")
+  role          UserRole  @default(TEACHER)
   createdAt     DateTime  @default(now()) @db.Timestamptz
   accounts      Account[]
   sessions      Session[]
   teacher       Teacher?
+  parent        Parent?
+  practiceVideos PracticeVideo[]
 }
 
 model Account {
@@ -67,7 +75,17 @@ model Teacher {
   payments  PaymentMonth[]
   paymentTransactions PaymentTransaction[]
   families  Family[]
+  parents   Parent[]
+  practiceVideos PracticeVideo[]
   user      User      @relation(fields: [userId], references: [id])
+  /// Teacher's own payment QR image (UPI / VietQR / QRIS / bank QR).
+  /// Stored as a small base64 data URL (~10–100 KB); parents scan it with
+  /// their banking app.
+  paymentQrData String?
+  paymentQrName String?
+  /// Short note shown next to the QR, e.g. "Pay to BIDV · Nguyen Minh Anh —
+  /// put student name + month in the payment note".
+  paymentNote   String?
 }
 
 model Student {
@@ -85,6 +103,8 @@ model Student {
   payments   PaymentMonth[]
   paymentTransactions PaymentTransaction[]
   familyMemberships FamilyMember[]
+  parentLinks       ParentStudent[]
+  practiceVideos    PracticeVideo[]
 
   @@index([teacherId])
 }
@@ -221,4 +241,57 @@ model FamilyMember {
 
   @@unique([familyId, studentId])
   @@index([studentId])
+}
+
+
+/// A parent login. Owns a User (role PARENT) and is linked to N students
+/// (so one account can cover siblings).
+model Parent {
+  id         String    @id @default(cuid())
+  userId     String    @unique          // the login — has role PARENT
+  teacherId  String                     // which studio it belongs to
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teacher    Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  studentLinks ParentStudent[]
+
+  @@index([teacherId])
+}
+
+model ParentStudent {
+  id        String  @id @default(cuid())
+  parentId  String
+  studentId String
+  parent    Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, studentId])
+  @@index([studentId])
+}
+
+enum VideoProvider {
+  YOUTUBE
+  DRIVE
+  CLOUDINARY
+  LINK
+}
+
+model PracticeVideo {
+  id         String        @id @default(cuid())
+  studentId  String
+  teacherId  String
+  postedById String        // User.id of whoever posted (parent — or teacher later)
+  title      String
+  note       String?
+  url        String        // watch/embed URL, or Cloudinary secure_url
+  provider   VideoProvider
+  teacherComment String?   // teacher feedback, the core of the loop
+  createdAt  DateTime      @default(now()) @db.Timestamptz
+
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher    Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  postedBy   User     @relation(fields: [postedById], references: [id], onDelete: Cascade)
+
+  @@index([teacherId, createdAt])
+  @@index([studentId, createdAt])
 }

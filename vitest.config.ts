@@ -4,6 +4,11 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   // Resolves the "@/*" and "@prisma/*" aliases from tsconfig.json.
   plugins: [tsconfigPaths()],
+  resolve: {
+    alias: {
+      "next/server": "next/server.js",
+    },
+  },
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],

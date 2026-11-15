@@ -143,3 +143,38 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/** Authenticated TEACHER only. Injects ctx.teacher. */
+export const teacherProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(async ({ ctx, next }) => {
+    if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const teacher = await ctx.db.teacher.findUnique({
+      where: { userId: ctx.session.user.id },
+    });
+    if (ctx.session.user.role !== "TEACHER" || !teacher) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Teacher account required" });
+    }
+    return next({ ctx: { session: ctx.session, teacher } });
+  });
+
+/** Authenticated PARENT only. Injects ctx.parent + ctx.studentIds. */
+export const parentProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(async ({ ctx, next }) => {
+    if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const parent = await ctx.db.parent.findUnique({
+      where: { userId: ctx.session.user.id },
+      include: { studentLinks: true },
+    });
+    if (ctx.session.user.role !== "PARENT" || !parent) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Parent account required" });
+    }
+    return next({
+      ctx: {
+        session: ctx.session,
+        parent,
+        studentIds: parent.studentLinks.map((l) => l.studentId),
+      },
+    });
+  });

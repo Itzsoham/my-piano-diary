@@ -15,20 +15,19 @@ declare module "next-auth" {
     user: {
       id: string;
       timezone: string;
-      // ...other properties
-      // role: UserRole;
+      role: "TEACHER" | "PARENT";
     } & DefaultSession["user"];
   }
 
   interface JWT {
     id: string;
+    role?: "TEACHER" | "PARENT";
     image?: string | null;
     timezone?: string;
   }
 
   interface User {
-    // ...other properties
-    // role: UserRole;
+    role?: "TEACHER" | "PARENT";
     image?: string | null;
     timezone?: string;
   }
@@ -75,6 +74,7 @@ export const authConfig = {
           name: user.name,
           image: user.image,
           timezone: user.timezone,
+          role: user.role as "TEACHER" | "PARENT",
         };
       },
     }),
@@ -95,11 +95,21 @@ export const authConfig = {
     signIn: "/login",
   },
   callbacks: {
-    jwt: ({ token, user }) => {
+    jwt: async ({ token, user }) => {
       if (user) {
         token.id = user.id;
         token.image = user.image;
         token.timezone = user.timezone ?? "UTC";
+        token.role = user.role ?? "TEACHER";
+      }
+      // Backfill: existing sessions before this change have no role in the JWT.
+      // Look it up once and stamp it so old teacher sessions survive the deploy.
+      if (token.id && !token.role) {
+        const dbUser = await db.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true },
+        });
+        token.role = dbUser?.role ?? "TEACHER";
       }
       return token;
     },
@@ -110,6 +120,7 @@ export const authConfig = {
         id: token.id as string,
         image: token.image as string | null | undefined,
         timezone: (token.timezone as string | undefined) ?? "UTC",
+        role: (token.role as "TEACHER" | "PARENT") ?? "TEACHER",
       },
     }),
   },

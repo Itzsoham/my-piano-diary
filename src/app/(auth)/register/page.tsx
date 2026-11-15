@@ -15,7 +15,7 @@ export default async function Register() {
   const session = await getServerAuthSession();
 
   if (session) {
-    redirect("/dashboard");
+    redirect(session.user.role === "PARENT" ? "/portal" : "/dashboard");
   }
 
   return (

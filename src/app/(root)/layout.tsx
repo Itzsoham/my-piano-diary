@@ -29,6 +29,11 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // Parents who land in the studio shell bounce to their portal
+  if (session.user.role !== "TEACHER") {
+    redirect("/portal");
+  }
+
   return (
     <>
       {/* Atmospheric birthday blur orbs — behind everything */}

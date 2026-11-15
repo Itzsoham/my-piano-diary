@@ -2,6 +2,7 @@ import { api } from "@/trpc/server";
 import { StudentsHero } from "./_components/students-hero";
 import { StudentsTable } from "./_components/students-table";
 import { FamiliesManager } from "./_components/families-manager";
+import { ParentsManager } from "./_components/parents-manager";
 
 export const metadata = {
   title: "Students",
@@ -24,6 +25,16 @@ export default async function StudentsPage() {
 
           <div className="px-4 lg:px-6">
             <FamiliesManager
+              students={students.map((student) => ({
+                id: student.id,
+                name: student.name,
+                avatar: student.avatar,
+              }))}
+            />
+          </div>
+
+          <div className="px-4 lg:px-6">
+            <ParentsManager
               students={students.map((student) => ({
                 id: student.id,
                 name: student.name,

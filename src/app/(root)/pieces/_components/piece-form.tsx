@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { BookOpen, CalendarDays, Loader2, Music } from "lucide-react";
 
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
@@ -54,8 +55,6 @@ export function PieceForm({
 
   const createMutation = api.piece.create.useMutation({
     onSuccess: () => {
-      // Close only after the server confirms, so a failed submit keeps the
-      // form open with the entered values intact.
       toast.success("Piece created successfully", { id: "piece-create" });
       onSuccess?.();
     },
@@ -138,23 +137,23 @@ export function PieceForm({
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-6 sm:space-y-10"
+          className="space-y-6 sm:space-y-8"
         >
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-5">
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel className="text-pink-700">Piece Title</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter piece title"
-                      className="h-11"
+                      placeholder="e.g. Für Elise, Moonlight Sonata..."
+                      className="h-11 rounded-2xl border-(--line-pink) focus-visible:ring-pink-400"
                       {...field}
                     />
                   </FormControl>
@@ -163,59 +162,72 @@ export function PieceForm({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="difficulty"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Difficulty</FormLabel>
-                  <FormControl>
-                    <div className="mb-2 flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-4">
-                      <StarRating
-                        value={field.value ?? 1}
-                        onChange={field.onChange}
-                        size="lg"
-                        align="center"
-                        showLabel
-                      />
+            {/* Difficulty rating card */}
+            <div className="space-y-3 rounded-2xl border border-(--line-pink) bg-pink-50/40 p-4 shadow-(--sh-sm) sm:space-y-4 sm:p-5">
+              <FormField
+                control={form.control}
+                name="difficulty"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="text-pink-700">
+                        Difficulty Rating
+                      </FormLabel>
+                      <span className="text-xs font-semibold text-pink-700">
+                        {difficultyScale[field.value ?? 1]?.title}
+                      </span>
                     </div>
-                  </FormControl>
-                  <FormDescription>
-                    {difficultyScale[field.value ?? 1]?.title}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormControl>
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-(--line-pink) bg-card/80 p-4">
+                        <StarRating
+                          value={field.value ?? 1}
+                          onChange={field.onChange}
+                          size="lg"
+                          align="center"
+                          showLabel
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription className="text-xs text-ink-soft">
+                      Set a star rating (1–5) to help match students to appropriate repertoire.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Notes / description card */}
+            <div className="space-y-4 rounded-2xl border border-(--line-pink) bg-pink-50/40 p-4 shadow-(--sh-sm) sm:space-y-5 sm:p-5">
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-pink-700">
+                      Notes & Composer Details
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Add notes about composer, tempo, key, or teaching points..."
+                        className="bg-card min-h-32 resize-none rounded-2xl border-(--line-pink) focus-visible:ring-pink-400"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Helpful instructions or reminders for lessons
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Add details about the piece..."
-                      className="min-h-32 resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Add notes about the composer, style, or key details
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="flex flex-col justify-end gap-2 pt-4 sm:flex-row sm:gap-3 sm:pt-6">
+          <div className="flex flex-col justify-end gap-2 pt-2 sm:flex-row sm:gap-3">
             <Button
               type="button"
-              className="h-10 rounded-full sm:h-auto"
+              className="h-11 rounded-full sm:h-auto"
               variant="ghost"
               onClick={() => onSuccess?.()}
             >
@@ -224,44 +236,68 @@ export function PieceForm({
             <Button
               type="submit"
               disabled={isPending}
-              className="h-10 rounded-full bg-pink-500 font-medium text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-pink-600 hover:shadow-md sm:h-auto"
+              className="h-11 rounded-full [background-image:var(--grad-pink)] px-6 font-semibold text-white shadow-(--sh-pink) transition hover:scale-[1.02] hover:shadow-lg hover:brightness-110 sm:h-auto"
             >
+              {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               {isPending
                 ? pieceId
                   ? "Saving..."
                   : "Adding..."
                 : pieceId
                   ? "Save Changes"
-                  : "Add to Diary"}
+                  : "Add to Repertoire"}
             </Button>
           </div>
         </form>
       </Form>
 
+      {/* Piece Information card in edit mode */}
       {piece && (
-        <div className="space-y-3 rounded-lg border p-3 sm:space-y-4 sm:p-4">
-          <h4 className="font-semibold">Piece Information</h4>
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">Total Lessons:</span>{" "}
-              <span className="font-medium">
-                {"_count" in piece &&
-                piece._count &&
-                typeof piece._count === "object" &&
-                "lessons" in piece._count
-                  ? piece._count.lessons
-                  : 0}
+        <div className="space-y-4 rounded-2xl border border-(--line-strong) p-4 sm:p-5">
+          <h4 className="text-ink font-serif text-base font-normal">
+            Piece Information
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-pink-100 text-pink-700"
+              >
+                <BookOpen className="size-4" />
               </span>
+              <div className="min-w-0">
+                <div className="text-ink-soft text-xs font-semibold">
+                  Total Lesson Assignments
+                </div>
+                <div className="text-ink text-sm">
+                  {"_count" in piece &&
+                  piece._count &&
+                  typeof piece._count === "object" &&
+                  "lessons" in piece._count
+                    ? `${piece._count.lessons} lessons recorded`
+                    : "0 lessons recorded"}
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Created:</span>{" "}
-              <span className="font-medium">
-                {new Date(piece.createdAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="bg-sand-100 text-sand-700 flex size-8 shrink-0 items-center justify-center rounded-lg"
+              >
+                <CalendarDays className="size-4" />
               </span>
+              <div className="min-w-0">
+                <div className="text-ink-soft text-xs font-semibold">
+                  Added to Repertoire
+                </div>
+                <div className="text-ink text-sm">
+                  {new Date(piece.createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>

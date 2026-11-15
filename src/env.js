@@ -33,6 +33,7 @@ export const env = createEnv({
     // Vercel we fall back to the deployment URL, and locally to localhost.
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
   },
 
   /**
@@ -49,6 +50,7 @@ export const env = createEnv({
     NEXT_PUBLIC_ERROR_TRACKING_URL: process.env.NEXT_PUBLIC_ERROR_TRACKING_URL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -65,6 +65,8 @@ export const PRIVATE_ROUTES = [
   "/pieces",
   "/reports",
   "/payments",
+  "/practice",
+  "/portal",
   "/profile",
   "/leaderboard",
   "/notifications",

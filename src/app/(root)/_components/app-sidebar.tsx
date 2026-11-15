@@ -10,6 +10,7 @@ import {
   CalendarDays,
   FileText,
   WalletCards,
+  Video,
 } from "lucide-react";
 
 import { NavMain } from "@/app/(root)/_components/nav-main";
@@ -76,6 +77,11 @@ const data = {
       url: "/payments",
       icon: WalletCards,
     },
+    {
+      title: "Practice",
+      url: "/practice",
+      icon: Video,
+    },
   ],
 };
 
@@ -130,7 +136,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               size="lg"
               asChild
-              className="transition-none hover:bg-transparent md:h-14"
+              className="transition-none hover:bg-transparent md:h-14 [&>svg]:size-auto"
             >
               <Link
                 href="/dashboard"
@@ -138,8 +144,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   handleLogoClick(e);
                   if (isMobile) setOpenMobile(false);
                 }}
+                className="flex items-center gap-3"
               >
-                <LogoMark variant={logoVariant} size={40} />
+                <div className="flex shrink-0 items-center justify-center">
+                  <LogoMark
+                    variant={logoVariant}
+                    size={42}
+                    className="size-11! group-data-[collapsible=icon]:size-7! transition-transform"
+                  />
+                </div>
                 <span className="sr-only">{APP_CONFIG.name}</span>
                 <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                   <span className="text-primary flex items-center gap-1 truncate text-base font-semibold">

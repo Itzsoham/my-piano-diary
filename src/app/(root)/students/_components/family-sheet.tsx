@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp, Loader2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { Blossom } from "@/components/blossom/blossom";
+import { Blossom, Squiggle } from "@/components/blossom/blossom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,41 +119,48 @@ export function FamilySheet({
     }
   };
 
+  const title = isEdit ? "Edit Family" : "Add a New Family";
+  const description =
+    "Bundle siblings or a parent + child so their monthly attendance and tuition print on one combined sheet.";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col overflow-y-auto sm:max-w-125">
-        <SheetHeader className="border-b pb-4">
-          <SheetTitle className="text-ink flex items-center gap-2 font-serif text-xl font-semibold">
-            <Blossom size={18} className="text-bubblegum" />
-            {isEdit ? "Edit family" : "Create a family"}
-          </SheetTitle>
-          <SheetDescription>
-            Bundle siblings or a parent + child so their monthly attendance and
-            tuition print on one combined sheet.
-          </SheetDescription>
+      <SheetContent className="overflow-x-hidden overflow-y-auto rounded-l-3xl border-(--line-pink) sm:max-w-150">
+        {/* Header band matching student-sheet design */}
+        <SheetHeader className="border-b border-(--line-pink) bg-[linear-gradient(160deg,var(--pink-50),var(--surface)_78%)] px-6 pt-6 pb-5">
+          <div className="inline-block">
+            <SheetTitle className="text-ink flex items-center gap-2 font-serif text-xl leading-tight font-normal sm:text-2xl">
+              <Blossom className="text-bubblegum" size={19} />
+              {title}
+            </SheetTitle>
+            <Squiggle className="text-bubblegum mt-1 h-2 w-full" />
+          </div>
+          <SheetDescription className="text-ink-soft text-sm">{description}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 p-6">
+        <div className="space-y-6 px-6 pt-6 pb-8">
           <div className="space-y-2">
-            <Label htmlFor="family-name">Family name</Label>
+            <Label htmlFor="family-name" className="text-sm font-medium text-pink-700">
+              Family Name
+            </Label>
             <Input
               id="family-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Nguyen family"
+              placeholder="e.g. Nguyen Family"
               maxLength={100}
-              className="h-11 rounded-2xl focus-visible:ring-pink-400"
+              className="h-11 rounded-2xl border-(--line-pink) focus-visible:ring-pink-400"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Add students</Label>
+            <Label className="text-sm font-medium text-pink-700">Add Students</Label>
             <Select
               value=""
               onValueChange={addMember}
               disabled={availableStudents.length === 0}
             >
-              <SelectTrigger className="h-11 w-full rounded-2xl focus-visible:ring-pink-400">
+              <SelectTrigger className="h-11 w-full rounded-2xl border-(--line-pink) focus-visible:ring-pink-400">
                 <SelectValue
                   placeholder={
                     availableStudents.length === 0
@@ -162,7 +169,7 @@ export function FamilySheet({
                   }
                 />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-2xl border-(--line-pink)">
                 {availableStudents.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
@@ -172,22 +179,23 @@ export function FamilySheet({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          {/* Members list card container */}
+          <div className="space-y-4 rounded-2xl border border-(--line-pink) bg-pink-50/40 p-4 shadow-(--sh-sm) sm:space-y-5 sm:p-5">
             <div className="flex items-center justify-between gap-2">
-              <Label>
-                Members{" "}
-                <span className="text-muted-foreground font-normal">
+              <Label className="text-sm font-medium text-pink-700">
+                Family Members{" "}
+                <span className="font-normal text-muted-foreground">
                   ({memberIds.length})
                 </span>
               </Label>
-              <span className="text-ink-soft text-xs">
-                Order = row order on the sheet
+              <span className="text-xs text-ink-soft">
+                Order = row order on report
               </span>
             </div>
 
             {memberIds.length === 0 ? (
-              <p className="text-ink-soft rounded-2xl border border-dashed border-pink-200 bg-pink-50/50 p-4 text-center text-sm">
-                No students yet. Add at least 2 above.
+              <p className="rounded-2xl border border-dashed border-(--line-pink) bg-card/60 p-5 text-center text-sm text-ink-soft">
+                No students selected yet. Pick at least 2 students above.
               </p>
             ) : (
               <ul className="space-y-2">
@@ -196,7 +204,7 @@ export function FamilySheet({
                   return (
                     <li
                       key={id}
-                      className="bg-card flex items-center gap-2 rounded-2xl border border-pink-100 p-2 shadow-xs"
+                      className="bg-card flex items-center gap-3 rounded-2xl border border-(--line-pink) p-2.5 shadow-xs transition hover:border-pink-300"
                     >
                       <span className="text-ink-soft w-5 shrink-0 text-center text-sm font-bold tabular-nums">
                         {index + 1}
@@ -214,7 +222,7 @@ export function FamilySheet({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-ink-soft size-8 rounded-full hover:bg-pink-50 hover:text-pink-700"
+                        className="text-ink-soft size-8 rounded-full hover:bg-pink-100 hover:text-pink-700"
                         onClick={() => move(index, -1)}
                         disabled={index === 0}
                         aria-label="Move up"
@@ -225,7 +233,7 @@ export function FamilySheet({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="text-ink-soft size-8 rounded-full hover:bg-pink-50 hover:text-pink-700"
+                        className="text-ink-soft size-8 rounded-full hover:bg-pink-100 hover:text-pink-700"
                         onClick={() => move(index, 1)}
                         disabled={index === memberIds.length - 1}
                         aria-label="Move down"
@@ -236,7 +244,7 @@ export function FamilySheet({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="hover:bg-no-bg hover:text-no-fg size-8 rounded-full text-pink-700"
+                        className="size-8 rounded-full text-pink-600 hover:bg-pink-100 hover:text-pink-800"
                         onClick={() => removeMember(id)}
                         aria-label="Remove"
                       >
@@ -248,24 +256,57 @@ export function FamilySheet({
               </ul>
             )}
           </div>
-        </div>
 
-        <div className="flex justify-end gap-2 border-t p-4">
-          <Button
-            variant="outline"
-            className="rounded-full"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="rounded-full"
-            onClick={handleSave}
-            disabled={!canSave || isPending}
-          >
-            {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-            {isEdit ? "Save changes" : "Create family"}
-          </Button>
+          <div className="flex flex-col justify-end gap-2 pt-2 sm:flex-row sm:gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-11 rounded-full sm:h-auto"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-full [background-image:var(--grad-pink)] px-6 font-semibold text-white shadow-(--sh-pink) transition hover:scale-[1.02] hover:shadow-lg hover:brightness-110 sm:h-auto"
+              onClick={handleSave}
+              disabled={!canSave || isPending}
+            >
+              {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {isPending
+                ? "Saving..."
+                : isEdit
+                  ? "Save Changes"
+                  : "Create Family"}
+            </Button>
+          </div>
+
+          {/* Family Information block when editing */}
+          {family && (
+            <div className="space-y-4 rounded-2xl border border-(--line-strong) p-4 sm:p-5">
+              <h4 className="text-ink font-serif text-base font-normal">
+                Family Information
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-pink-100 text-pink-700"
+                  >
+                    <Users className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-ink-soft text-xs font-semibold">
+                      Total Sibling Members
+                    </div>
+                    <div className="text-ink text-sm">
+                      {family.members.length} students linked
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

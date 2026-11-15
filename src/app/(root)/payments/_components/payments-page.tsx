@@ -26,6 +26,7 @@ import { useCurrency } from "@/lib/currency";
 import { PaymentHistoryDialog } from "./payment-history-dialog";
 import { PaymentTransactionDialog } from "./payment-transaction-dialog";
 import { PaymentsTable } from "./payments-table";
+import { PaymentQrCard } from "./payment-qr-card";
 
 // Smooth count-up hook (mirrors section-cards)
 function useCountUp(target: number, duration = 800) {
@@ -326,6 +327,9 @@ export function PaymentsPageContent({
           table.
         </p>
       </div>
+
+      {/* Studio Payment QR configuration */}
+      <PaymentQrCard />
 
       {/* Filter bar */}
       <div

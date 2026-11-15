@@ -429,6 +429,104 @@ export const updatePasswordSchema = z.object({
 });
 
 /**
+ * Parent management schemas (Teacher studio)
+ */
+export const createParentAccountSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(80, "Name must be at most 80 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password must be at most 72 characters"),
+  studentIds: z
+    .array(z.string().cuid("Invalid student ID"))
+    .min(1, "Select at least one student"),
+});
+
+export const updateParentAccountSchema = z.object({
+  parentId: z.string().cuid("Invalid parent ID"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters")
+    .max(80, "Name must be at most 80 characters")
+    .optional(),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password must be at most 72 characters")
+    .optional(),
+});
+
+export const setParentStudentsSchema = z.object({
+  parentId: z.string().cuid("Invalid parent ID"),
+  studentIds: z.array(z.string().cuid("Invalid student ID")),
+});
+
+export const deleteParentAccountSchema = z.object({
+  parentId: z.string().cuid("Invalid parent ID"),
+});
+
+/**
+ * Payment QR schemas
+ */
+const QR_DATA_URL_REGEX =
+  /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/;
+
+export const setPaymentQrSchema = z.object({
+  dataUrl: z
+    .string()
+    .max(400_000, "Image must be under 300 KB")
+    .regex(
+      QR_DATA_URL_REGEX,
+      "QR must be a base64 PNG, JPEG, or WebP image",
+    ),
+  name: z.string().max(120, "Name must be at most 120 characters").optional(),
+  note: z.string().max(280, "Note must be at most 280 characters").optional(),
+});
+
+/**
+ * Practice video schemas
+ */
+export const addPracticeVideoSchema = z.object({
+  studentId: z.string().cuid("Invalid student ID"),
+  title: z
+    .string()
+    .trim()
+    .min(2, "Title must be at least 2 characters")
+    .max(140, "Title must be at most 140 characters"),
+  note: z
+    .string()
+    .max(1000, "Note must be at most 1000 characters")
+    .optional()
+    .or(z.literal("")),
+  url: z
+    .string()
+    .url("Must be a valid URL")
+    .refine(
+      (u) => u.startsWith("http://") || u.startsWith("https://"),
+      "Only HTTP/HTTPS URLs are allowed",
+    ),
+});
+
+export const deletePracticeVideoSchema = z.object({
+  videoId: z.string().cuid("Invalid video ID"),
+});
+
+export const updatePracticeVideoCommentSchema = z.object({
+  videoId: z.string().cuid("Invalid video ID"),
+  teacherComment: z
+    .string()
+    .max(2000, "Comment must be at most 2000 characters")
+    .nullable()
+    .optional(),
+});
+
+/**
  * TypeScript types inferred from schemas
  */
 export type CreateStudentInput = z.infer<typeof createStudentSchema>;
@@ -473,3 +571,14 @@ export type GetPaymentUnpaidSummaryInput = z.infer<
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
+
+export type CreateParentAccountInput = z.infer<typeof createParentAccountSchema>;
+export type UpdateParentAccountInput = z.infer<typeof updateParentAccountSchema>;
+export type SetParentStudentsInput = z.infer<typeof setParentStudentsSchema>;
+export type DeleteParentAccountInput = z.infer<typeof deleteParentAccountSchema>;
+export type SetPaymentQrInput = z.infer<typeof setPaymentQrSchema>;
+export type AddPracticeVideoInput = z.infer<typeof addPracticeVideoSchema>;
+export type DeletePracticeVideoInput = z.infer<typeof deletePracticeVideoSchema>;
+export type UpdatePracticeVideoCommentInput = z.infer<
+  typeof updatePracticeVideoCommentSchema
+>;
