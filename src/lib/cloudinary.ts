@@ -78,7 +78,13 @@ export async function uploadPracticeMedia(
             error?: { message?: string };
           };
           if (errorJson.error?.message) {
-            errorMsg = errorJson.error.message;
+            const rawMsg = errorJson.error.message;
+            if (rawMsg.toLowerCase().includes("file size")) {
+              errorMsg =
+                "File exceeds Cloudinary free tier limit (100MB for video, 10MB for photos). For larger videos, please paste a YouTube or Google Drive link!";
+            } else {
+              errorMsg = rawMsg;
+            }
           }
         } catch {
           // ignore

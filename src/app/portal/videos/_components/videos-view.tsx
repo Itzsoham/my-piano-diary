@@ -205,8 +205,21 @@ export function PortalVideosView() {
       return;
     }
 
-    if (file.size > 150 * 1024 * 1024) {
-      toast.error("File size cannot exceed 150MB");
+    const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB (Cloudinary Free tier limit)
+    const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB (Cloudinary Free tier limit)
+
+    if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      toast.error(
+        "Video exceeds Cloudinary free tier limit (100MB). For larger recordings, click the link button to paste a YouTube or Google Drive link!",
+        { duration: 5500 },
+      );
+      return;
+    }
+
+    if (isImage && file.size > MAX_IMAGE_BYTES) {
+      toast.error(
+        "Photo exceeds Cloudinary free tier limit (10MB). Please select a smaller photo.",
+      );
       return;
     }
 
@@ -673,7 +686,7 @@ export function PortalVideosView() {
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
                 className="size-9 rounded-full text-pink-600 hover:bg-pink-100 hover:text-pink-800 shrink-0"
-                title="Attach Video or Photo"
+                title="Attach Video (max 100MB) or Photo (max 10MB)"
               >
                 <Paperclip className="size-4" />
               </Button>
@@ -689,7 +702,7 @@ export function PortalVideosView() {
                     variant="ghost"
                     size="icon"
                     className="size-9 rounded-full text-pink-600 hover:bg-pink-100 hover:text-pink-800 shrink-0"
-                    title="Paste YouTube or Google Drive Link"
+                    title="Paste YouTube or Google Drive Link (unlimited size)"
                   >
                     <LinkIcon className="size-4" />
                   </Button>
@@ -701,6 +714,9 @@ export function PortalVideosView() {
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-ink">
                       Paste Video Link
+                    </p>
+                    <p className="text-[10px] text-ink-soft">
+                      No size limit — paste any YouTube or Google Drive video link.
                     </p>
                     <Input
                       value={tempLinkInput}

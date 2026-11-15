@@ -110,8 +110,21 @@ export function VideoPostDialog({
       return;
     }
 
-    if (file.size > 150 * 1024 * 1024) {
-      toast.error("File size cannot exceed 150MB");
+    const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB (Cloudinary Free tier limit)
+    const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB (Cloudinary Free tier limit)
+
+    if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      toast.error(
+        "Video exceeds Cloudinary free tier limit (100MB). For larger recordings, please switch to the 'Share via Link' tab to paste a YouTube or Google Drive link!",
+        { duration: 5500 },
+      );
+      return;
+    }
+
+    if (isImage && file.size > MAX_IMAGE_BYTES) {
+      toast.error(
+        "Photo exceeds Cloudinary free tier limit (10MB). Please select a smaller photo.",
+      );
       return;
     }
 
@@ -308,7 +321,7 @@ export function VideoPostDialog({
                       Drop video or photo here, or click to browse
                     </p>
                     <p className="text-[10px] text-ink-soft">
-                      Supports MP4, MOV, WebM, JPG, PNG up to 150MB
+                      Supports MP4, MOV, WebM up to 100MB · Photos up to 10MB
                     </p>
                   </div>
                 )}
